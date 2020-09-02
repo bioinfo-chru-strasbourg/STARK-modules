@@ -1,0 +1,74 @@
+{
+  "code" : "EDITH",
+  "name": "EDITH",
+  "fullname": "STARK dashbord & interfaces",
+  "description": "EDITH (Excellent Dashboard & Interfaces To Help STARK Experience) provides an IHM as a Dashboard for STARK analyses and results.",
+  "release": "1.0",
+  "available": true,
+  "services": {
+    "dashboard": {
+      "code": "dashboard",
+      "name": "Dashboard",
+      "container": "STARK-module-EDITH-service-dashboard",
+      "description": "EDITH Dashboard resuming main informations on runs, analyses and results. Provides available IHM services organized in modules",
+      "release": "1.0",
+      "type": "IHM",
+      "available": true,
+      "link": {
+        "available": true,
+        "protocol": "http",
+        "ip": "",
+        "port": "4202",
+        "path": ""
+      }
+    },
+    "statistics": {
+      "code": "statistics",
+      "name": "Statistics",
+      "container": "STARK-module-EDITH-service-dashboard",
+      "description": "Statistics on runs, groups, projects, analyses and samples, stored in repository, archives and sequencing raw sequencing data..",
+      "release": "1.0",
+      "type": "IHM",
+      "available": true,
+      "link": {
+        "available": true,
+        "protocol": "http",
+        "ip": "",
+        "port": "4202",
+        "path": "index.statistics.php"
+      }
+    },
+    "activity": {
+      "code": "activity",
+      "name": "Activity",
+      "container": "STARK-module-EDITH-service-dashboard",
+      "description": "Activity for runs analyses, queued, running, archived and availabled in repository.",
+      "release": "1.0",
+      "type": "IHM",
+      "available": true,
+      "link": {
+        "available": true,
+        "protocol": "http",
+        "ip": "",
+        "port": "4202",
+        "path": "index.activity.php"
+      }
+    },
+    "results": {
+      "code": "results",
+      "name": "Results",
+      "container": "STARK-module-EDITH-service-dashboard",
+      "description": "Reports Browser provides a direct access to STARK reports (validation report, VCF, TSV, BED...) availabled in reporitories.",
+      "release": "1.0",
+      "type": "IHM",
+      "available": false,
+      "link": {
+        "available": true,
+        "protocol": "http",
+        "ip": "",
+        "port": "4202",
+        "path": "index.results.php"
+      }
+    }
+  }
+}

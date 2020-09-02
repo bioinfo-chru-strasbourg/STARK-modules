@@ -1,0 +1,50 @@
+#########
+# STARK #
+#########
+# Usage: docker-compose up
+
+version: '3'
+
+# SERVICES
+##########
+
+services:
+
+
+    # GENOME BROWSER IGV
+    STARK-module-GENOMEBROWSER-service-IGV:
+        image: ${DOCKER_STARK_SERVICE_GENOMEBROWSER_IGV_IMAGE}
+        build:
+            context: ${DOCKER_STARK_SERVICE_GENOMEBROWSER_IGV_CONTEXT}
+            dockerfile: Dockerfile
+        container_name: ${DOCKER_STARK_SERVICE_GENOMEBROWSER_IGV_CONTAINER_NAME}
+        restart: always
+        env_file:
+            - ${DOCKER_COMPOSE_SERVICE_GENOMEBROWSER_MODULE_ENV}
+        volumes:
+            # GENOMEBROWSER Config
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_SERVICES}/${DOCKER_STARK_MODULE}:${DOCKER_STARK_INNER_FOLDER_SERVICES}/${DOCKER_STARK_MODULE}:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_SERVICES}/${DOCKER_STARK_SERVICES_FOLDER_GENOMEBROWSER_IGV}:${DOCKER_STARK_INNER_FOLDER_SERVICES}/${DOCKER_STARK_SERVICES_FOLDER_GENOMEBROWSER_IGV}:rw
+        ports:
+            - ${DOCKER_STARK_SERVICE_PORT_PATTERN}${DOCKER_STARK_SERVICE_GENOMEBROWSER_IGV_PORT}:${DOCKER_STARK_SERVICE_GENOMEBROWSER_IGV_PORT_INNER}
+        networks:
+            - ${DOCKER_GENOMEBROWSER_NETWORK}
+            - stark_stark
+
+
+# NETWORK
+###########
+
+networks:
+
+    stark_stark:
+        external: true
+
+    genomebrowser:
+        driver: "bridge"
+        ipam:
+            driver: default
+            config:
+                - subnet: ${DOCKER_STARK_SERVICE_SUBNET_PATTERN}${DOCKER_STARK_SERVICE_GENOMEBROWSER_SUBNET}
+                #  gateway: ${DOCKER_STARK_SERVICE_SUBNET_PATTERN}${DOCKER_STARK_SERVICE_GENOMEBROWSER_GATEWAY}
+

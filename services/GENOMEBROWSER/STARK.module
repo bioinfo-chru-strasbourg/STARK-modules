@@ -1,0 +1,42 @@
+{
+  "code" : "GENOMEBROWSER",
+  "name": "Genome Browser",
+  "fullname": "Genome Browser",
+  "description": "Genome Browser STARK module provides multiple genome browsers, either internal or external.",
+  "release": "1.0",
+  "available": true,
+  "services": {
+    "IGV": {
+      "code": "IGV",
+      "name": "Genome Browser IGV",
+      "description": "Genome Browser IGV - Integrative Genomics Viewer.",
+      "release": "1.0",
+      "type": "IHM",
+      "container": "STARK-module-GENOMEBROWSER-service-IGV",
+      "available": true,
+      "link": {
+        "available": true,
+        "protocol": "http",
+        "ip": "",
+        "port": "4203",
+        "port_inner": "8080",
+        "path": ""
+      }
+    },
+    "UCSC-GBG": {
+      "code": "UCSC-GBG",
+      "name": "Genome Browser UCSC GBG",
+      "description": "Genome Browser UCSC GBG - UCSC Genome Browser Gateway.",
+      "type": "WEB",
+      "release": "1.0",
+      "available": true,
+      "link": {
+        "available": true,
+        "protocol": "https",
+        "ip": "genome.ucsc.edu",
+        "port": "",
+        "path": "cgi-bin/hgGateway"
+      }
+    }
+  }
+}

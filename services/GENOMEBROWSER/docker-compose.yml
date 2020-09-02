@@ -1,0 +1,39 @@
+#########
+# STARK #
+#########
+# Usage: docker-compose up
+
+version: '3'
+
+# SERVICES
+##########
+
+services:
+
+
+    # GENOME BROWSER IGV
+    genomebrowser-igv:
+        image: ${IGV_IMAGE}
+        build:
+            context: ${IGV_CONTEXT}
+            dockerfile: Dockerfile
+        container_name: ${IGV_CONTAINER_NAME}
+        restart: always
+        ports:
+            - ${IGV_PORT}:${IGV_PORT_INNER}
+        deploy:
+            replicas: 2
+        networks: 
+            - igv
+
+
+networks:
+    igv:
+        driver: "bridge"
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.42.0.0/30
+
+                
+
