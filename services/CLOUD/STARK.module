@@ -1,0 +1,26 @@
+{
+  "code" : "CLOUD",
+  "name": "Cloud",
+  "fullname": "STARK Cloud",
+  "description": "Cloud sharing data such as raw input data (runs and manifests), repositories (Repository and Archives), databases.",
+  "release": "1.0",
+  "available": true,
+  "services": {
+    "CLOUD": {
+      "code": "CLOUD",
+      "name": "Cloud",
+      "type": "IHM",
+      "container": "STARK-module-CLOUD-service-CLOUD",
+      "description": "A Cloud space in read only to share data and results",
+      "release": "1.0",
+      "available": true,
+      "link": {
+        "available": true,
+        "protocol": "http",
+        "ip": "",
+        "port": "4209",
+        "path": ""
+      }
+    }
+  }
+}

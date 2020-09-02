@@ -225,6 +225,7 @@ if [ -z "$FOLDER_SERVICES" ]; then
 fi;
 
 mkdir -p $FOLDER_SERVICES
+chmod o+x $FOLDER_SERVICES  2>/dev/null
 
 (($VERBOSE)) && echo "#[INFO] STARK services modules folder '$FOLDER_SERVICES'"
 
@@ -322,20 +323,28 @@ for service_module in $(ls -d $SCRIPT_DIR/$MODULES 2>/dev/null); do
 			(($DEBUG)) && echo "#[INFO] Service module '$module_name' - Alternate environment file creation"
 			cat $ENV 1> $TMP_FOLDER/.env 2>$TMP_FOLDER/.env.err
 			cat $service_module_env 1>> $TMP_FOLDER/.env 2>>$TMP_FOLDER/.env.err
+
+			# Create folder
+			mkdir -p $FOLDER_SERVICES/$module_name
+			chmod o+wx $FOLDER_SERVICES/$module_name 2>/dev/null
+
 			# Module configuration file
 			(($DEBUG)) && echo "#[INFO] Service module '$module_name' - Module configuration file copy"
-			#echo $COMMAND_COPY $service_module_module $SERVICES/$module_name/;
 			$COMMAND_COPY $service_module_module $FOLDER_SERVICES/$module_name/;
+
+			# Readme file
 			(($DEBUG)) && echo "#[INFO] Service module '$module_name' - Readme file copy"
 			if [ "$service_module_readme" != "" ]; then
 				$COMMAND_COPY $service_module_readme $FOLDER_SERVICES/$module_name/ 2>/dev/null;
 			fi;
 			
+			# Files permissions
+			chmod o+r -R $FOLDER_SERVICES/$module_name/* 2>/dev/null
+
 			# DEBUG
 			(($DEBUG)) && cat $TMP_FOLDER/.env $TMP_FOLDER/.env.err
 			(($DEBUG)) && echo "    docker-compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND"
 			(($DEBUG)) && docker-compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config
-
 
 			# patch for --env-file unavailable
 			if (( $(docker-compose --help | grep "\-\-env\-file" -c) )); then

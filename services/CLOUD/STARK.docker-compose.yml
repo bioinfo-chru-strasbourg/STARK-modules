@@ -1,0 +1,58 @@
+#########
+# STARK #
+#########
+# Usage: docker-compose up
+
+version: '3'
+
+# SERVICES
+##########
+
+services:
+
+
+    # STARK IMAGES
+    ##############
+
+    # STARK SERVICE CLOUD
+    stark-service-cloud:
+        image: ${DOCKER_STARK_SERVICE_CLOUD_IMAGE}
+        container_name: ${DOCKER_STARK_SERVICE_CLOUD_CONTAINER_NAME}
+        command: -r ${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER_DATA} --noauth #--auth.method='none' --lockPassword --perm.admin=false --perm.create=false --perm.delete=false --perm.execute=false --perm.modify=false --perm.rename=false --signup=false
+        restart: always
+        env_file:
+            - STARK.env
+        ports:
+            - ${DOCKER_STARK_SERVICE_PORT_PATTERN}${DOCKER_STARK_SERVICE_CLOUD_PORT}:${DOCKER_STARK_SERVICE_CLOUD_PORT_INNER}
+        volumes:
+            # Volumes for configuration
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_SERVICE_CLOUD_FOLDER}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER}:ro
+            # Data available on the cloud (no link with service data)
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_INPUT}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER_DATA}/Input:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER_DATA}/Repository:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVE}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER_DATA}/Archive:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER_DATA}/Databases:ro
+        restart: always
+        networks:
+            - cloud
+            - stark_stark
+
+
+# NETWORK
+###########
+
+# NETWORK
+###########
+
+networks:
+
+    stark_stark:
+        external: true
+
+    cloud:
+        driver: "bridge"
+        ipam:
+            driver: default
+            config:
+                - subnet: ${DOCKER_STARK_SERVICE_SUBNET_PATTERN}${DOCKER_STARK_SERVICE_CLOUD_SUBNET}
+                #  gateway: ${DOCKER_STARK_SERVICE_SUBNET_PATTERN}${DOCKER_STARK_SERVICE_CLOUD_GATEWAY}
