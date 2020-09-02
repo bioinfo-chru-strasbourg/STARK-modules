@@ -18,7 +18,7 @@ STARK Modules & Services are additional tools for STARK experience, such as API,
 
 Services are located in the folder 'services', and are organized in separated modules (folders), containing 'STARK.docker-compose.yml' file describing services, 'STARK.env' file including all parameters, and 'STARK.module' file describing the module and all services, especially to share information and access to other modules.
 
-Services use a main STARK Docker Compose environment file, in root folder by default (.env). If services folder is not within main STARK code, ensure to correctly use this configuration file (as an example as a symlink, or by using ___--env___ option).
+Services use a main STARK Docker Compose environment file, in root folder by default (.env). If services folder is not within main STARK code, ensure to correctly use this configuration file (as an example as a symlink, or by using ```--env``` option).
 
 
 Start services
