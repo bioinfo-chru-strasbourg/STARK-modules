@@ -33,9 +33,25 @@ services:
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVE}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER_DATA}/Archive:ro
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER_DATA}/Databases:ro
         restart: always
+        depends_on:
+            - stark-service-cloud-config
         networks:
             - cloud
             - stark_stark
+
+
+    # STARK SERVICE CLOUD Config
+    # mkdir volumes
+    stark-service-cloud-config:
+        image: centos
+        volumes:
+            # Volumes for configuration
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_SERVICE_CLOUD_FOLDER}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER}:rw
+            # Data available on the cloud (no link with service data)
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_INPUT}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER_DATA}/Input:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER_DATA}/Repository:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVE}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER_DATA}/Archive:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_SERVICE_CLOUD_INNER_FOLDER_DATA}/Databases:ro
 
 
 # NETWORK

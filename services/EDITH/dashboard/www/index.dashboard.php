@@ -220,7 +220,7 @@ $CONTENT_SECTION_DASHBOARD='
 						<div class="p-2 col-12" style="float: left;">
 						<p class="mbr-text mbr-fonts-style display-7" style="text-align: $align;">
 							<b>Search a analysis/sample in repositories</b>
-							<form action="index.reports.php method="POST" >
+							<form action="index.reports.php" method="POST" >
 								<span class="head-item mbr-fonts-style display-7">
 								<input name="analysis" value="" style="width:150px" class=""></input>
 								<input name="sample" value="" style="width:100px" class=""></input>

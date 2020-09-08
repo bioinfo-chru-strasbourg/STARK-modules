@@ -8,7 +8,7 @@ WORKDIR /app
 
 RUN apt-get update -y --no-install-recommends && \
     apt-get install -y git libicu-dev unzip zip --no-install-recommends && \
-    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --with-openssl=/usr/local && \
 	apt-get clean -y && apt-get autoclean -y && apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
