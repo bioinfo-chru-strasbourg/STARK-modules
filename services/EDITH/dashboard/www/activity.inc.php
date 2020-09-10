@@ -409,7 +409,7 @@ foreach ($runs_infos as $run=>$run_infos) {
 	}
 	if (count($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"])) {
 		$sequencing_message_plus.="<br><a target='SampleSheet' href='".$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["file"]."'>SampleSheet</a>";
-		$sequencing_message_plus.="<br><span style='color:gray'>".implode("&nbsp;&nbsp;&nbsp;",array_keys($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"]))."</span>";
+		$sequencing_message_plus.="<br><span style='color:gray'>".implode("&nbsp;&nbsp;&nbsp; ",array_keys($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"]))."</span>";
 	}
 
 	// echo "<pre>";
