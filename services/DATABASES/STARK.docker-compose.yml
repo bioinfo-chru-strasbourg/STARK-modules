@@ -25,6 +25,8 @@ services:
             - FOLDER_DATABASES=${DOCKER_STARK_SERVICE_DATABASES_IHM_SUBFOLDER_DATABASES}
             - FOLDER_DATABASES_SUBFOLDER_DEJAVU=dejavu
         volumes:
+            # DEV
+            - /Users/lebechea/BIOINFO/git/STARK-modules/services/DATABASES/IHM/www:/app
             # DATABASES dashboard Config
             #- ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}/${DOCKER_STARK_SERVICES_FOLDER_DATABASES_IHM}:${DOCKER_STARK_SERVICE_DATABASES_IHM_INNER_FOLDER_CONFIG}:ro
             # Data folders available (need to be coherent with other services)
@@ -41,25 +43,29 @@ services:
     # DATABASES DEJAVU listener
     STARK-module-DATABASES-service-DEJAVU-listener:
         image: ${DOCKER_STARK_SERVICE_DATABASES_DEJAVU_listener}
+        build:
+            context: ${DOCKER_STARK_SERVICE_DATABASES_DEJAVU_listener_CONTEXT}
+            dockerfile: Dockerfile
         container_name: ${DOCKER_STARK_SERVICE_DATABASES_DEJAVU_listener_CONTAINER_NAME}
         entrypoint: /bin/bash
-        #command: -c "while true; do /tool/toolbox/dejavu.generate.sh --verbose; sleep ${DOCKER_STARK_SERVICE_DATABASES_DEJAVU_listener_SLEEP}; done"
-        command: -c "while true; do sleep ${DOCKER_STARK_SERVICE_DATABASES_DEJAVU_listener_SLEEP}; done"
+        command: -c "while true; do /tool/toolbox/dejavu.generate.sh --verbose; sleep ${DOCKER_STARK_SERVICE_DATABASES_DEJAVU_listener_SLEEP}; done"
+        #command: -c "while true; do sleep ${DOCKER_STARK_SERVICE_DATABASES_DEJAVU_listener_SLEEP}; done"
         #command: -c "/tool/toolbox/dejavu.generate.sh"
         environment:
             # Docker STARK image
             - DEJAVU_FOLDER=${DOCKER_STARK_INNER_FOLDER_DATABASES}/${DOCKER_STARK_SERVICE_DATABASES_DEJAVU_listener_DATABASE_subfolder}
-            - REPO_FOLDER=${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVE},${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}
+            - REPO_FOLDER=${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES},${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}
         volumes:
             # DEV
             #- /Users/lebechea/BIOINFO/git/STARK/toolbox/dejavu.generate.sh:/tool/toolbox/dejavu.generate.sh
+            - /Users/lebechea/BIOINFO/git/STARK-modules/services/DATABASES/DEJAVU/scripts/dejavu.generate.sh:/tool/toolbox/dejavu.generate.sh
             #- /Users/lebechea/BIOINFO/git/STARK/toolbox/index_annovar.pl:/tool/toolbox/index_annovar.pl
             # DEJAVU folder
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/${DOCKER_STARK_SERVICE_DATABASES_DEJAVU_listener_DATABASE_subfolder}:${DOCKER_STARK_INNER_FOLDER_DATABASES}/${DOCKER_STARK_SERVICE_DATABASES_DEJAVU_listener_DATABASE_subfolder}:rw
             # STARK MyApp if autodetection of repositiry
             #- ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG_MYAPPS}:${DOCKER_STARK_INNER_FOLDER_CONFIG_MYAPPS}:ro
             # Repository folders
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVE}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVE}:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:ro
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:ro
         restart: always
         env_file:

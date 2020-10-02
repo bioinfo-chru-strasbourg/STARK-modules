@@ -1,0 +1,10 @@
+networks:
+  stark_stark:
+    external: true
+  structuralvariation:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: ${DOCKER_STARK_SERVICE_SUBNET_PATTERN}${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_SUBNET}
+      driver: default
+version: '3'

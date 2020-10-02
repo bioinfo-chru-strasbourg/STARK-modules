@@ -325,10 +325,10 @@ if (count($vcf_files)>0) {
 	#echo "VCF Files through URL";
 
 	#DEV
-	#http://localhost:4200/repositories/Archive/SOMATIC/HEMATOLOGY/RUN_TEST_TAG_LISTENER_MIN/P1439/P1439.final.vcf.gz
-	#http://192.168.1.14:4200/repositories/Archive/SOMATIC/HEMATOLOGY/RUN_TEST_TAG_LISTENER_MIN/P1439/P1439.final.vcf.gz
-	#http://localhost:4200/repositories/Archive/SOMATIC/SOLIDTUMOR/RUN_TEST_TAG_LISTENER_MIN/P1335/P1335.final.vcf.gz
-	#http://192.168.1.14:4200/repositories/Archive/SOMATIC/SOLIDTUMOR/RUN_TEST_TAG_LISTENER_MIN/P1335/P1335.final.vcf.gz
+	#http://localhost:4200/repositories/Archives/SOMATIC/HEMATOLOGY/RUN_TEST_TAG_LISTENER_MIN/P1439/P1439.final.vcf.gz
+	#http://192.168.1.14:4200/repositories/Archives/SOMATIC/HEMATOLOGY/RUN_TEST_TAG_LISTENER_MIN/P1439/P1439.final.vcf.gz
+	#http://localhost:4200/repositories/Archives/SOMATIC/SOLIDTUMOR/RUN_TEST_TAG_LISTENER_MIN/P1335/P1335.final.vcf.gz
+	#http://192.168.1.14:4200/repositories/Archives/SOMATIC/SOLIDTUMOR/RUN_TEST_TAG_LISTENER_MIN/P1335/P1335.final.vcf.gz
 	#print_r($vcf_files);
 	#print_r(file($vcf_files[0]));
 

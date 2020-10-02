@@ -1,0 +1,122 @@
+#########
+# STARK #
+#########
+# Usage: docker-compose up
+
+version: '3'
+
+# SERVICES
+##########
+
+#services:
+
+    # HELP
+    # To run service (e.g. CLI) with docker-compose run (examples):
+    # Changing entrypoint 
+    # env $(cat ../../.env STARK.env | grep "#" -v) docker-compose -f STARK.docker-compose.yml run --entrypoint=/STARK/tools/DECoN/current/bin/DECoN.launch.sh STARK-module-STRUCTURALVARIATION-service-DECoN_CLI /STARK/data/DECoN/Repository/HUSDIAGGEN/BRCA/CPS_AF206 /STARK/data/DECoN_DOCKER/ RUN true
+    # Changing only CMD (with image entrypoint as bash, usualy the case with CLI)
+    # env $(cat ../../.env STARK.env | grep "#" -v) docker-compose -f STARK.docker-compose.yml run STARK-module-STRUCTURALVARIATION-service-DECoN_CLI -c "/STARK/tools/DECoN/current/bin/DECoN.launch.sh /STARK/data/DECoN/Repository/HUSDIAGGEN/BRCA/CPS_AF206 /STARK/data/DECoN_DOCKER2/ RUN true"
+    # Generic command with YML and YML-service
+    # YML=services/STRUCTURALVARIATION/STARK.docker-compose.yml && YML_service=STARK-module-STRUCTURALVARIATION-service-DECoN_CLI && env $(cat $(dirname $YML)/../../.env $(dirname $YML)/STARK.env | grep "#" -v) docker-compose -f $YML run $YML_service -c "/STARK/tools/DECoN/current/bin/DECoN.launch.sh /STARK/data/DECoN/Repository/HUSDIAGGEN/BRCA/CPS_AF206 /STARK/data/DECoN_DOCKER2/ RUN true"
+
+    # DECoN CLI
+    # STARK-module-STRUCTURALVARIATION-service-DECoN_CLI:
+    #     image: ${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_CLI_IMAGE}
+    #     build:
+    #         context: ${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_CONTEXT}
+    #         dockerfile: Dockerfile
+    #     container_name: ${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_CLI_CONTAINER_NAME}
+    #     entrypoint: /bin/bash
+    #     command: -c "while true; do sleep ${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_CLI_SLEEP}; done"
+    #     volumes:
+    #         # Config
+    #         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
+    #         # Input
+    #         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATA}:${DOCKER_STARK_INNER_FOLDER_DATA}:rw
+    #         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_INPUT}:${DOCKER_STARK_INNER_FOLDER_INPUT}:ro
+    #         # Output
+    #         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:rw
+    #         #- ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:rw
+    #         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:rw
+    #     restart: always
+    #     env_file:
+    #         - ${DOCKER_COMPOSE_SERVICE_STARK_MODULE_ENV}
+    #     networks:
+    #         - ${DOCKER_STRUCTURALVARIATION_NETWORK}
+    #         - stark_stark
+
+
+    # # EDITH DASHBOARD
+    # STARK-module-STRUCTURALVARIATION-service-DECoN_IHM:
+    #     image: ${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_IMAGE}
+    #     build:
+    #         context: ${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_CONTEXT}
+    #         dockerfile: Dockerfile
+    #     container_name: ${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_CONTAINER_NAME}
+    #     restart: always
+    #     env_file:
+    #         - ${DOCKER_COMPOSE_SERVICE_STARK_MODULE_ENV}
+    #     environment:
+    #         - FOLDER_STRUCTURALVARIATION=${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_SUBFOLDER_STRUCTURALVARIATION}
+    #         - FOLDER_STRUCTURALVARIATION_SUBFOLDER_DEJAVU=dejavu
+    #     volumes:
+    #         # STRUCTURALVARIATION dashboard Config
+    #         #- ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}/${DOCKER_STARK_SERVICES_FOLDER_STRUCTURALVARIATION_DECoN_IHM}:${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_INNER_FOLDER_CONFIG}:ro
+    #         # Data folders available (need to be coherent with other services)
+    #         # STRUCTURALVARIATION folder
+    #         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_STRUCTURALVARIATION}:${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_INNER_FOLDER_DATA}/${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_PUBLIC_DIR}/${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_SUBFOLDER_STRUCTURALVARIATION}:ro
+    #         #- ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_STRUCTURALVARIATION}/${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_listener_DATABASE_subfolder}:${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_INNER_FOLDER_DATA}/${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_PUBLIC_DIR}/${DOCKER_STARK_SERVICE_DEJAVU_DECoN_IHM_SUBFOLDER_DATABASE_subfolder}:ro
+    #     ports:
+    #         - ${DOCKER_STARK_SERVICE_PORT_PATTERN}${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_PORT}:${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DECoN_IHM_PORT_INNER}
+    #     networks:
+    #         - ${DOCKER_STRUCTURALVARIATION_NETWORK}
+    #         - stark_stark
+
+
+    # # STRUCTURALVARIATION DEJAVU listener
+    # STARK-module-STRUCTURALVARIATION-service-DEJAVU-listener:
+    #     image: ${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DEJAVU_listener}
+    #     container_name: ${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DEJAVU_listener_CONTAINER_NAME}
+    #     entrypoint: /bin/bash
+    #     #command: -c "while true; do /tool/toolbox/dejavu.generate.sh --verbose; sleep ${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DEJAVU_listener_SLEEP}; done"
+    #     command: -c "while true; do sleep ${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DEJAVU_listener_SLEEP}; done"
+    #     #command: -c "/tool/toolbox/dejavu.generate.sh"
+    #     environment:
+    #         # Docker STARK image
+    #         - DEJAVU_FOLDER=${DOCKER_STARK_INNER_FOLDER_STRUCTURALVARIATION}/${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DEJAVU_listener_DATABASE_subfolder}
+    #         - REPO_FOLDER=${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES},${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}
+    #     volumes:
+    #         # DEV
+    #         #- /Users/lebechea/BIOINFO/git/STARK/toolbox/dejavu.generate.sh:/tool/toolbox/dejavu.generate.sh
+    #         #- /Users/lebechea/BIOINFO/git/STARK/toolbox/index_annovar.pl:/tool/toolbox/index_annovar.pl
+    #         # DEJAVU folder
+    #         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_STRUCTURALVARIATION}/${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DEJAVU_listener_DATABASE_subfolder}:${DOCKER_STARK_INNER_FOLDER_STRUCTURALVARIATION}/${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_DEJAVU_listener_DATABASE_subfolder}:rw
+    #         # STARK MyApp if autodetection of repositiry
+    #         #- ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG_MYAPPS}:${DOCKER_STARK_INNER_FOLDER_CONFIG_MYAPPS}:ro
+    #         # Repository folders
+    #         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:ro
+    #         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:ro
+    #     restart: always
+    #     env_file:
+    #         - ${DOCKER_COMPOSE_SERVICE_STARK_MODULE_ENV}
+    #     networks:
+    #         - ${DOCKER_STRUCTURALVARIATION_NETWORK}
+    #         - stark_stark
+
+
+# NETWORK
+###########
+
+networks:
+
+    stark_stark:
+        external: true
+
+    structuralvariation:
+        driver: "bridge"
+        ipam:
+            driver: default
+            config:
+                - subnet: ${DOCKER_STARK_SERVICE_SUBNET_PATTERN}${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_SUBNET}
+                #  gateway: ${DOCKER_STARK_SERVICE_SUBNET_PATTERN}${DOCKER_STARK_SERVICE_STRUCTURALVARIATION_GATEWAY}
+    

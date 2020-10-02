@@ -631,7 +631,7 @@ foreach ($runs_infos as $run=>$run_infos) {
 		}
 
 		foreach ($run_infos["repositories"]["run_path"] as $repository_path=>$repository_path_infos) {
-			# http://localhost:42002/index.reports.php?PATH=repositories/Archive/SOMATIC/HEMATOLOGY/RUN_TEST_TAG/
+			# http://localhost:42002/index.reports.php?PATH=repositories/Archives/SOMATIC/HEMATOLOGY/RUN_TEST_TAG/
 			#$REPORTS_RUN_LINK="<a target='METRICS' href='index.reports.php?PATH=$run_path'>REPORT</a>";
 			$repository_path_split=explode("/",$repository_path);
 			$repository_message_plus.="<br><a target='REPORT' href='index.reports.php?PATH=$repository_path'>".$repository_path_split[1]."/".$repository_path_split[2]."/".$repository_path_split[3]."</a>";

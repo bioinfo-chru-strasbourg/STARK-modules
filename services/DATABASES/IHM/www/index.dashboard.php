@@ -62,10 +62,9 @@ include "databases.inc.php";
 
 
 
-
-#######################
+#########################
 ### SECTION DATABASES ###
-#######################
+#########################
 
 if (1) {
 
@@ -132,18 +131,44 @@ if (1) {
 				};
 			} elseif (is_array($database_obj->{'releases'}->{"current"}->{"release"})) {
 				$database_info_current="
-					<br>"
+					<br>Releases"
 					."["
 					.implode($database_obj->{'releases'}->{"current"}->{"release"})
 					."]"
 					;
 			} else {
 				$database_info_current="
-					<br>
+					<br>Release:
 					<i>".$database_obj->{'releases'}->{'current'}->{'release'}."</i>"
 				;
 			}
 		};
+
+		# Current Date
+		$database_info_current_date="";
+		if ($database_obj->{'releases'}->{"current"}->{"date"}) {
+			if (is_object($database_obj->{'releases'}->{"current"}->{"date"})) {
+				$database_info_current_date="
+					<br>Dates
+					";
+				foreach ($database_obj->{'releases'}->{"current"}->{"date"} as $key=>$value) {
+					$database_info_current_date.="<br>&nbsp;&nbsp;&nbsp;$key - $value";
+				};
+			} elseif (is_array($database_obj->{'releases'}->{"current"}->{"date"})) {
+				$database_info_current_date="
+					<br>Dates "
+					."["
+					.implode($database_obj->{'releases'}->{"current"}->{"date"})
+					."]"
+					;
+			} else {
+				$database_info_current_date="
+					<br>Date:
+					<i>".$database_obj->{'releases'}->{'current'}->{'date'}."</i>"
+				;
+			}
+		};
+
 
 
 		# Current assembly
@@ -151,14 +176,14 @@ if (1) {
 		if ($database_obj->{'releases'}->{"current"}->{"assembly"}) {
 			if (is_object($database_obj->{'releases'}->{"current"}->{"assembly"})) {
 				$database_info_assembly="
-					<br>Releases
+					<br>Assembly: 
 					";
 				foreach ($database_obj->{'releases'}->{"current"}->{"assembly"} as $key=>$value) {
 					$database_info_assembly.="<br>&nbsp;&nbsp;&nbsp;$key - $value";
 				};
 			} elseif (is_array($database_obj->{'releases'}->{"current"}->{"assembly"})) {
 				$database_info_assembly="
-					<br>"
+					<br>Assembly: "
 					."["
 					.implode($database_obj->{'releases'}->{"current"}->{"assembly"})
 					."]"
@@ -166,7 +191,7 @@ if (1) {
 
 			} else {
 				$database_info_assembly="
-				<br>
+				<br>Assembly: 
 				[".implode(", ",$database_obj->{'releases'}->{"current"}->{"assembly"})."]";
 			};
 		};
@@ -197,7 +222,7 @@ if (1) {
 		$CONTENT_SECTION_DATABASE_CONTENT.='
 
 			<div class="card p-3 col-12 col-md-4 mb-3">
-				<a href="" class="navbar-caption text-secondary ">
+				<a href="index.databases.php?database='.$database_info_code.'" class="navbar-caption text-secondary ">
 					<div class="media mb-0">
 						<div class="card-img align-self-center">
 							<span class="mbr-iconfont mbri-database" style="color: rgb(20, 157, 204); fill: rgb(20, 157, 204);"></span>
@@ -213,7 +238,8 @@ if (1) {
 					<p class="mbr-text mbr-fonts-style display-7">
 						<b>'.$database_info_fullname.'</b>
 						'.$database_info_current.'
-						<!--'.$database_info_assembly.'-->
+						'.$database_info_current_date.'
+						'.$database_info_assembly.'
 						<!--'.$database_info_download.'-->
 						<br>'.$database_info_description.'
 						'.$database_info_website_url.'

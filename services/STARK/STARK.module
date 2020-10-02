@@ -37,7 +37,7 @@
       "name": "STARK DAta Sharing service",
       "type": "DAS",
       "container": "STARK-module-STARK-service-DAS",
-      "description": "A STARK DAS service is started as a daemon, to share DATA through URI http://<IP>:<PORT> (default http://localhost:4201/static/data/public), especially for inputs (Input runs and manifests), repositories (Repository and Archive), data space folder, and all available databases.",
+      "description": "A STARK DAS service is started as a daemon, to share DATA through URI http://<IP>:<PORT> (default http://localhost:4201/static/data/public), especially for inputs (Input runs and manifests), repositories (Repository and Archives), data space folder, and all available databases.",
       "release": "1.0",
       "available": true,
       "link": {

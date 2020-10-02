@@ -66,7 +66,7 @@ A STARK DAta Sharing (DAS) web server provides data publically through URI http:
 By default, data available are (\<path\>):
 - runs: inputs/Input/runs
 - repository: repositories/Repository 
-- archive: repositories/Archive 
+- archives: repositories/Archives 
 - data: data
 - databases: databases
 

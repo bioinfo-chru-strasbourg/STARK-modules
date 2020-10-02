@@ -79,20 +79,41 @@ foreach ($docker_containers_obj as $docker_containers_obj_id=>$docker_containers
 ### MODULES
 
 # Find modules configurations
-$modules = array_filter(glob($folder_services.'/*/STARK.module'), 'is_file');
+$modules = array_filter(glob($folder_services.'/*/STARK*.module'), 'is_file');
+
+
+// echo "<pre>";
+$module_folders=array();
+foreach ($modules as $module_file) {
+	
+	$module_folder_name=basename(dirname($module_file));
+	if (!array_key_exists($module_folder_name,$module_folders)) {
+		$module_folders[$module_folder_name]=array();
+	};
+	
+	$module_folders[$module_folder_name]=array_merge($module_folders[$module_folder_name],json_decode(implode("",file($module_file)), true));
+
+}
+// print_r($module_folders);
+// echo "</pre>";
+
 
 # init
 $modules_obj_array;
 
 # Foeach modules
-foreach ($modules as $module_file) {
+#foreach ($modules as $module_file) {
+foreach ($module_folders as $module_folder=>$module_array) {
 
 	# Read JSON file
-	$module_json=implode("",file($module_file));
+	#$module_json=implode("",file($module_file));
+	$module_json=json_encode($module_array);
 	$module_obj=json_decode($module_json);
 	
 	# Module code
 	$module_info_code=$module_obj->{'code'};
+
+	$service_infos=null;
 	
 	# Services array
 	foreach ($module_obj->{'services'} as $service=>$service_infos) {
@@ -171,6 +192,11 @@ foreach ($modules as $module_file) {
 	# Module array
 	$modules_obj_array[$module_info_code]=$module_obj;
 };
+
+# DEV
+// echo "<pre>";
+// print_r($modules_obj_array);
+// echo "</pre>";
 
 
 ### PLUGINS

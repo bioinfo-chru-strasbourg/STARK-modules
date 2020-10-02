@@ -131,14 +131,14 @@ foreach ($ACTIVITY_STATUS as $activity=>$status_list) {
 	$ACTIVITY_DIV.="
 		<div class='p-2 col-4' style='float: left;'>
 			<p class='mbr-text mbr-fonts-style display-7' style='text-align: $align;'>
-				<b>$activity</b>
+				<b>".ucfirst($activity)."</b>
 				<small>
 	";
 	foreach ($status_list as $status=>$nb) {
 		if (!in_array($status,$status_exclude) ) {
 			$ACTIVITY_DIV.="
 					<br>
-					<b>$nb</b> <span style='color:".$ACTIVITY_STATUS_COLOR[$activity][$status]."'>$status</span> 
+					<b>$nb</b> <span style='color:".$ACTIVITY_STATUS_COLOR[$activity][$status]."'>".$status."</span> 
 			";
 		};
 	};
@@ -300,6 +300,7 @@ foreach ($modules_obj_array as $module_name=>$module_obj) {
 			$service_type=$service_infos->{'type'};
 			$service_available=$service_infos->{'available'};
 			$service_href='';
+			$service_href_html='';
 			
 			if ( ($service_type=="IHM" || $service_type=="WEB")
 				&& $service_infos->{'link'}!="" && $service_infos->{'link'}->{'available'}) {
