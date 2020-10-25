@@ -28,21 +28,21 @@ Services
 
 A STARK Command Line Interface (CLI) is started as a container to execute custom analyses with data and runs, available in inner main folder (default /STARK/data and /STARK/input/runs, resp.).
 
-Use STARK Command Line Interface with command 'docker exec STARK-module-STARK-service-CLI STARK', to execute a STARK command with data and runs (run names will be automatically found in input folder). For more information, use HELP option.
+Use STARK Command Line Interface with command 'docker exec stark-module-submodule-stark-cli STARK', to execute a STARK command with data and runs (run names will be automatically found in input folder). For more information, use HELP option.
 
 ```
-$ docker exec STARK-module-STARK-service-CLI STARK --help
-$ docker exec STARK-module-STARK-service-CLI STARK --run=<my_run>
-$ docker exec STARK-module-STARK-service-CLI STARK --reads=/STARK/data/<my_data>/<my_fastq> --design=/STARK/data/<my_data>/<my_design> --application=<my_application>
+$ docker exec stark-module-submodule-stark-cli STARK --help
+$ docker exec stark-module-submodule-stark-cli STARK --run=<my_run>
+$ docker exec stark-module-submodule-stark-cli STARK --reads=/STARK/data/<my_data>/<my_fastq> --design=/STARK/data/<my_data>/<my_design> --application=<my_application>
 ```
 
 STARK Command Line Interface can be used in interactive mode ('-ti' option). All tools used by STARK can be executed as they are in the PATH environment variable (e.g. samtools, bcftools). Available tools can be found in 'STARK/tools' folder.
 
 ```
-$ docker exec -ti STARK-module-STARK-service-CLI bash
-$ docker exec STARK-module-STARK-service-CLI samtools
-$ docker exec STARK-module-STARK-service-CLI bcftools
-$ docker exec STARK-module-STARK-service-CLI bash -c "find /STARK/tools -mindepth 2 -maxdepth 2 -type d"
+$ docker exec -ti stark-module-submodule-stark-cli bash
+$ docker exec stark-module-submodule-stark-cli samtools
+$ docker exec stark-module-submodule-stark-cli bcftools
+$ docker exec stark-module-submodule-stark-cli bash -c "find /STARK/tools -mindepth 2 -maxdepth 2 -type d"
 ```
 
 ---

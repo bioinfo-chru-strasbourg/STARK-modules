@@ -1,35 +1,8 @@
 {
-  "code" : "DATABASES",
+"code" : "databases",
   "name": "Databases",
   "fullname": "STARK Databases",
   "description": "STARK databases for analyses, and much more.",
   "release": "1.0",
-  "available": true,
-  "services": {
-    "dashboard": {
-      "code": "dashboard",
-      "name": "Dashboard",
-      "type": "IHM",
-      "container": "STARK-module-DATABASES-service-IHM",
-      "description": "Dashboard for databases tracking and exploration.",
-      "release": "1.0",
-      "available": true,
-      "link": {
-        "available": true,
-        "protocol": "http",
-        "ip": "",
-        "port": "4206",
-        "path": ""
-      }
-    },
-    "DEJAVU-listener": {
-      "code": "DEJAVU-listener",
-      "name": "DEJAVU databases listener",
-      "type": "listener",
-      "container": "STARK-module-DATABASES-service-DEJAVU-listener",
-      "description": "A DEJAVU databases listener (TODO).",
-      "release": "1.0",
-      "available": true
-    }
-  }
+  "available": true
 }

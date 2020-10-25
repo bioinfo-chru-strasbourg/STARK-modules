@@ -1,8 +1,0 @@
-{
-  "code" : "STRUCTURALVARIATION",
-  "name": "Structural Variation",
-  "fullname": "Structural Variation detection",
-  "description": "STARK Structural Variation detection such as CNV and mobile element.",
-  "release": "1.0",
-  "available": true
-}

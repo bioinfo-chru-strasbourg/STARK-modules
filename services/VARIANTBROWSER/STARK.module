@@ -1,25 +1,8 @@
 {
-  "code" : "VARIANTBROWSER",
+  "code" : "variantbrowser",
   "name": "Variant Browser",
   "fullname": "Variant Browser",
   "description": "Variant Browser STARK module provides multiple vcf browsers, either internal or external.",
   "release": "1.0",
-  "available": true,
-  "services": {
-    "VISION": {
-      "code": "VISION",
-      "name": "Variant Browser JARVIS/VISION",
-      "description": "VCF Browser JARVIS [Just A Rather Marvellous Variant Interface System] - VISION [Vcf vIewer and Simplified prioritizatION] - JARVIS is an efficient software tool functionally annotating genetic variants in order to detected causative cancer mutations",
-      "release": "1.0.2b",
-      "type": "IHM",
-      "available": true,
-      "link": {
-        "available": true,
-        "protocol": "http",
-        "ip": "",
-        "port": "4204",
-        "path": "vision.php"
-      }
-    }
-  }
+  "available": true
 }

@@ -1,0 +1,16 @@
+{
+  "submodules": {
+    "dejavu": {
+      "services": {
+        "listener": {
+          "code": "DEJAVU-listener",
+          "name": "DEJAVU databases listener",
+          "type": "listener",
+          "description": "A DEJAVU databases listener.",
+          "release": "1.0",
+          "available": true
+        }
+      }
+    }
+  }
+}
