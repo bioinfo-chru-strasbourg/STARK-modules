@@ -1,0 +1,24 @@
+{
+  "submodules": {
+    "dashboard": {
+      "services": {
+        "dashboard": {
+          "code": "dashboard",
+          "name": "Dashboard",
+          "description": "Databases Dashboard resuming main informations on databases used in STARK and more",
+          "release": "1.0",
+          "type": "IHM",
+          "available": true,
+          "link": {
+            "available": true,
+            "protocol": "http",
+            "ip": "",
+            "port": "4206",
+            "port_inner": "80",
+            "path": ""
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+#########
+# STARK #
+#########
+# Usage: docker-compose up
+
+version: '3'
+
+# SERVICES
+##########
+
+services:
+
+
+    # CQI
+    stark-module-common-submodule-listener-service-listener:
+        image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE}
+        build:
+            context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE_CONTEXT}
+            dockerfile: Dockerfile
+        container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_NAME}
+        restart: "no"
+        entrypoint: /bin/bash
+        command: -c " echo 'Welcome to COMMON listener' "
+        #command: -c " while ((1)); do sleep ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_SLEEP}; done; "   # dev - start as CLI
+        env_file:
+            - ${DOCKER_STARK_MODULE_ENV}
+            - ${DOCKER_STARK_MODULE_SUBMODULE_ENV}
+        volumes:
+            # Main configuration
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_CONFIG}:ro
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}:rw
+        networks: 
+            - ${DOCKER_STARK_MAIN_NETWORK}
+
+
+
+# NETWORK
+###########
+
+networks:
+    
+    stark_stark:
+        external: true
+
+
+
+

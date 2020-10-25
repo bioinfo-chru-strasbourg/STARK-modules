@@ -1,0 +1,8 @@
+{
+  "code" : "cloud",
+  "name": "Cloud",
+  "fullname": "STARK Cloud",
+  "description": "Cloud sharing data such as raw input data (runs and manifests), repositories (Repository and Archives), databases.",
+  "release": "1.0",
+  "available": true
+}
