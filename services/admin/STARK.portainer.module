@@ -1,0 +1,24 @@
+{
+  "submodules": {
+    "portainer": {
+      "services": {
+        "portainer": {
+          "code": "Portainer",
+          "name": "Portainer",
+          "type": "IHM",
+          "description": "Portainer makes managing containerized software environments quick and easy",
+          "release": "1.24.1",
+          "available": true,
+          "link": {
+            "available": true,
+            "protocol": "http",
+            "ip": "",
+            "port": "4290",
+            "port_inner": "9000",
+            "path": ""
+          }
+        }
+      }
+    }
+  }
+}

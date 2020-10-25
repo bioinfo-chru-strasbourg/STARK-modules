@@ -1,0 +1,16 @@
+{
+  "submodules": {
+    "listener": {
+      "services": {
+        "listener": {
+          "code": "listener",
+          "name": "COMMON listener service",
+          "type": "listener",
+          "description": "Common listener, create image and configure listener.",
+          "release": "1.0",
+          "available": false
+        }
+      }
+    }
+  }
+}

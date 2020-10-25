@@ -1,0 +1,8 @@
+{
+  "code" : "admin",
+  "name": "Admin",
+  "fullname": "STARK Admin",
+  "description": "Admin services to monitor and manage modules, services, ressources...",
+  "release": "1.0",
+  "available": true
+}
