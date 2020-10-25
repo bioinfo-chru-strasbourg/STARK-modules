@@ -1,8 +1,0 @@
-{
-  "code" : "variantbrowser",
-  "name": "Variant Browser",
-  "fullname": "Variant Browser",
-  "description": "Variant Browser STARK module provides multiple vcf browsers, either internal or external.",
-  "release": "1.0",
-  "available": true
-}
