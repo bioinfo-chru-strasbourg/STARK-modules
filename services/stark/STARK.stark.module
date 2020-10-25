@@ -1,0 +1,56 @@
+{
+  "submodules": {
+    "stark": {
+      "services": {
+        "cli": {
+          "code": "cli",
+          "name": "STARK Command Line Interface",
+          "type": "CLI",
+          "description": "A STARK Command Line Interface (CLI) is started as a container to execute custom analyses with data and runs, available in inner main folder (default /STARK/data and /STARK/data, resp.).",
+          "release": "1.0",
+          "available": true
+        },
+        "api": {
+          "code": "api",
+          "name": "STARK Application Program Interface",
+          "type": "API",
+          "description": "A STARK Application Program Interface (API) is available through URI http://<IP>:<PORT> (default http://localhost:4200, help with an internet browser). Use STARK Command Line Interface with command 'docker exec STARK-CLI STARK', to execute a STARK command with data and runs (run names will be automatically found in input folder). For more information, use HELP option. STARK Command Line Interface can be used in interactive mode ('-ti' option). All tools used by STARK can be executed as they are in the PATH environment variable (e.g. samtools, bcftools). Available tools can be found in 'STARK/tools' folder.",
+          "release": "1.0",
+          "available": true,
+          "link": {
+            "available": true,
+            "protocol": "http",
+            "ip": "",
+            "port": "4200",
+            "port_inner": "8000",
+            "path": ""
+          }
+        },
+        "das": {
+          "code": "das",
+          "name": "STARK DAta Sharing service",
+          "type": "DAS",
+          "description": "A STARK DAS service is started as a daemon, to share DATA through URI http://<IP>:<PORT> (default http://localhost:4201/static/data/public), especially for inputs (Input runs and manifests), repositories (Repository and Archives), data space folder, and all available databases.",
+          "release": "1.0",
+          "available": true,
+          "link": {
+            "available": true,
+            "protocol": "http",
+            "ip": "",
+            "port": "4201",
+            "port_inner": "5000",
+            "path": "static/data/public"
+          }
+        },
+        "listener": {
+          "code": "listener",
+          "name": "STARK listener service",
+          "type": "listener",
+          "description": "A STARK listener service is started as a daemon, listening for new sequenced NGS run (new folder in input/runs) and well configured (RTAComplete.txt and SampleSheet.csv), and send a request to STARK API. A STARK listener clear service is checking (once at services start) STARK listener and STARK API log files to reload requests if needed (useful after a server stop/crash).",
+          "release": "1.0",
+          "available": true
+        }
+      }
+    }
+  }
+}
