@@ -1,0 +1,24 @@
+{
+  "submodules": {
+    "igv": {
+      "services": {
+        "igv": {
+          "code": "igv",
+          "name": "IGV Integrative Genomics Viewer",
+          "description": "Genome Browser IGV - Integrative Genomics Viewer.",
+          "release": "latest",
+          "type": "IHM",
+          "available": true,
+          "link": {
+            "available": true,
+            "protocol": "http",
+            "ip": "",
+            "port": "4203",
+            "port_inner": "8080",
+            "path": ""
+          }
+        }
+      }
+    }
+  }
+}
