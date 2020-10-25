@@ -1,8 +1,0 @@
-{
-"code" : "databases",
-  "name": "Databases",
-  "fullname": "STARK Databases",
-  "description": "STARK databases for analyses, and much more.",
-  "release": "1.0",
-  "available": true
-}
