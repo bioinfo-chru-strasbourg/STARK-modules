@@ -16,9 +16,9 @@ Introduction
 
 STARK Modules & Services are additional tools for STARK experience, such as API, listener, interfaces.
 
-Services are located in the folder 'services', and are organized in separated modules (folders), containing 'STARK.docker-compose.yml' file describing services, 'STARK.env' file including all parameters, and 'STARK.module' file describing the module and all services, especially to share information and access to other modules.
+Services are located in the folder 'services', and are organized in separated modules (folders), containing 'STARK.docker-compose.yml' file describing services, 'STARK.env' file including all environment variables (appended to main environment variables), and 'STARK.module' file describing the module and all services, especially to share information and access to other modules. Submodules can be defined with prefix on each configuration files (such as prefix 'STARK.my_submodule' for all file, 'STARK.my_submodule.docker-compose.yml', 'STARK.my_submodule.env' and 'STARK.my_submodule.module')
 
-Services use a main STARK Docker Compose environment file, in root folder by default (.env). If services folder is not within main STARK code, ensure to correctly use this configuration file (as an example as a symlink, or by using ```--env``` option).
+Services use a main STARK Docker Compose environment file, and a specific STARK Docker Compose environment file for modules (default '.env,./services/STARK.env'). If services folder is not within main STARK code, ensure to correctly use this configuration file (as an example as a symlink, or by using ```--env``` option).
 
 
 Start services
@@ -38,25 +38,36 @@ $ services/services.sh --modules=* --command=up
 
 To start all services of a module, just use ```--modules``` option.
 Use a list of module 'module1,module2,...' and a wildcard to '*' to specify which modules to start. Default value is '*' (all modules).
-Use ```--services=``` option to specify a particular service within a module.
+Use ```--submodules=``` option to specify a particular submodule within a module, and use ```--services=``` option to specify a particular service within a module.
 
-As an example, main STARK module named 'STARK' (folder 'services/STARK') includes multiple services:  a CLI (Command Line Interface), an API (Application Program Interface), a Listener and its cleaner, and a DAS service (DAta Sharing).
+As an example, main STARK module named 'stark' (folder 'services/stark') includes multiple services within the submodule 'stark': a CLI (Command Line Interface), an API (Application Program Interface), a Listener and its cleaner, and a DAS service (DAta Sharing).
 
 To start all services of module STARK:
 ```
-$ services/services.sh --modules=STARK --command=up
+$ services/services.sh --modules=stark --command=up
 ```
 
 To start only API of module STARK (as mentioned in STARK.docker-compose.yml file):
 ```
-$ services/services.sh --modules=STARK --services=STARK-module-STARK-service-API --command=up
+$ services/services.sh --modules=stark --services=stark-module-stark-submodule-stark-service-api --command=up
 ```
+
+To start EDITH (a dasboard service within EDITH submodule):
+```
+$ services/services.sh --modules=edith --command=up
+```
+
+To start only submodule jarvis of module variantbrowser:
+```
+$ services/services.sh --modules=variantbrowser --submodules=jarvis --command=up
+```
+
 
 ---
 **Other commands**
 
 Modules and services actions are driven by ```--command``` option:
-- up: Create and start containers (in daemon mode)
+- up: Create and start containers (in detached mode '-d')
 - down: Stop and remove containers, networks, images, and volumes
 - start: Start services
 - stop: Stop services
