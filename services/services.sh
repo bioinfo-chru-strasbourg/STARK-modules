@@ -346,21 +346,26 @@ for service_module in \
 	
 		# Services list
 		list_services="$MAIN_MODULE_PREFIX"
-		for services_full_path in $(ls $service_module/$MAIN_MODULE_PREFIX.*.docker-compose.yml 2>/dev/null); do
-			list_services=$list_services" "$(echo $services_full_path | xargs basename | sed 's/.docker-compose.yml$//' )
+		# for services_full_path in $(ls $service_module/$MAIN_MODULE_PREFIX.*.docker-compose.yml $service_module/*/$MAIN_MODULE_PREFIX.*.docker-compose.yml 2>/dev/null); do
+		# 	#list_services=$list_services" "$(echo $services_full_path | xargs basename | sed 's/.docker-compose.yml$//' )
+		# 	list_services=$list_services" "$(echo $services_full_path | sed 's#'$service_module'/##' | sed 's/.docker-compose.yml$//' )
+		# done;
+		for services_full_path in $(ls $service_module/*/$MAIN_MODULE_PREFIX*.docker-compose.yml 2>/dev/null); do
+			#list_services=$list_services" "$(echo $services_full_path | xargs basename | sed 's/.docker-compose.yml$//' )
+			list_services=$list_services" "$(echo $services_full_path | sed 's#'$service_module'/##' | sed 's/.docker-compose.yml$//' )
 		done;
+
 	
 		#for service_prefix in "STARK" $list_services; do
 		for service_prefix in $list_services; do
 
+
 			# Service name
-			service_name=$(echo $service_prefix | sed 's/^'$MAIN_MODULE_PREFIX'//' | sed 's/^.//')
-			[[ $service_name == "" ]] && service_name="main"
+			service_name=$(echo $service_prefix | xargs dirname | sed 's/^'$MAIN_MODULE_PREFIX'//' | sed 's/^\.//')
+			service_folder=$service_name
+			[[ $service_name == "" ]] && service_name="main" && service_folder=""
 			#(($VERBOSE)) && echo "#[INFO] Module '$module_name' Service '$service_prefix/$service_name'"
 			#(($VERBOSE)) && echo "#[INFO] STARK Module '$module_name' Service '$service_name'"
-
-			#SUBMODULES=""
-			#service_name="listener"
 
 			if $(list_include_item "$SUBMODULES" "$service_name") || [ "$SUBMODULES" == "" ]; then
 
@@ -434,17 +439,18 @@ for service_module in \
 					cat $service_module_env 1>> $TMP_FOLDER/.env 2>>$TMP_FOLDER/.env.err
 
 					# Create folder
-					mkdir -p $FOLDER_SERVICES/$module_name
+					mkdir -p $FOLDER_SERVICES/$module_name/$service_folder
 					chmod o+wx $FOLDER_SERVICES/$module_name 2>/dev/null
+					chmod o+wx $FOLDER_SERVICES/$module_name/$service_folder 2>/dev/null
 
 					# Module configuration file
 					(($DEBUG)) && echo "#[INFO] STARK Module '$module_name' - Module configuration file copy"
-					$COMMAND_COPY $service_module_module $FOLDER_SERVICES/$module_name/;
+					$COMMAND_COPY $service_module_module $FOLDER_SERVICES/$module_name/$service_folder;
 
 					# Readme file
 					(($DEBUG)) && echo "#[INFO] STARK Module '$module_name' - Readme file copy"
 					if [ "$service_module_readme" != "" ]; then
-						$COMMAND_COPY $service_module_readme $FOLDER_SERVICES/$module_name/ 2>/dev/null;
+						$COMMAND_COPY $service_module_readme $FOLDER_SERVICES/$module_name/$service_folder 2>/dev/null;
 					fi;
 					
 					# Files permissions
@@ -460,12 +466,12 @@ for service_module in \
 						
 						# Command
 						if docker-compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
-							> $TMP_FOLDER/docker-compose.out
-							if docker-compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 1>>$TMP_FOLDER/docker-compose.out 2>>$TMP_FOLDER/docker-compose.out; then
-								(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.out | grep "Found orphan containers" -v
+							> $TMP_FOLDER/docker-compose.err
+							if docker-compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.err; then
+								(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.err | grep "Found orphan containers" -v
 							else
 								echo "#[ERROR] docker-compose error";
-								cat $TMP_FOLDER/docker-compose.out
+								cat $TMP_FOLDER/docker-compose.err
 								exit 1;
 							fi;
 						else
@@ -474,19 +480,18 @@ for service_module in \
 							exit 1;
 						fi;
 						
-
 					else
 
 						(($VERBOSE)) &&  echo "#[WARNING] STARK Module Docker version does not provide '--env-file' parameter. STARK module is patched to work, but please update your docker version."
 
 						# Command
 						if env $(cat $TMP_FOLDER/.env | grep "#" -v) docker-compose --file $service_module_yml -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
-							> $TMP_FOLDER/docker-compose.out
-							if env $(cat $TMP_FOLDER/.env | grep "#" -v) docker-compose --file $service_module_yml -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 1>>$TMP_FOLDER/docker-compose.out 2>>$TMP_FOLDER/docker-compose.out; then
-								(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.out | grep "Found orphan containers" -v
+							> $TMP_FOLDER/docker-compose.err
+							if env $(cat $TMP_FOLDER/.env | grep "#" -v) docker-compose --file $service_module_yml -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.out ; then
+								(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.err | grep "Found orphan containers" -v
 							else
 								echo "#[ERROR] docker-compose error";
-								cat $TMP_FOLDER/docker-compose.out
+								cat $TMP_FOLDER/docker-compose.err
 								exit 1;
 							fi;
 						else
