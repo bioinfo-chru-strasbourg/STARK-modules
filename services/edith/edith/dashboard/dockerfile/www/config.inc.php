@@ -251,12 +251,28 @@ if ($_ENV["FOLDER_INPUTS"] != "") {
 	$folder_inputs="inputs";
 };
 
+# Create folder
+if (!is_dir($folder_inputs)) {
+	if (!mkdir($folder_inputs, 0777, true)) {
+		die("Failed to create folders '$folder_inputs'...");
+	};
+};
+
+
 # REPOSITORIES folder
 if ($_ENV["FOLDER_REPOSITORIES"] != "") {
 	$folder_repositories=$_ENV["FOLDER_REPOSITORIES"];
 } else {
 	$folder_repositories="repositories";
 };
+
+# Create folder
+if (!is_dir($folder_repositories)) {
+	if (!mkdir($folder_repositories, 0777, true)) {
+		die("Failed to create folders '$folder_repositories'...");
+	};
+};
+
 
 # API
 if ($_ENV["FOLDER_API"] != "") {
@@ -265,11 +281,41 @@ if ($_ENV["FOLDER_API"] != "") {
 	$folder_api=$folder_services."/stark/stark/api";
 };
 
+# Create folder
+if (!is_dir($folder_api)) {
+	if (!mkdir($folder_api, 0777, true)) {
+		die("Failed to create folders '$folder_api'...");
+	};
+};
+
+
 # listener
 if ($_ENV["FOLDER_LISTENER"] != "") {
 	$folder_listener=$_ENV["FOLDER_LISTENER"];
 } else {
 	$folder_listener=$folder_services."/stark/stark/listener";
+};
+
+# Create folder
+if (!is_dir($folder_listener)) {
+	if (!mkdir($folder_listener, 0777, true)) {
+		die("Failed to create folders '$folder_listener'...");
+	};
+};
+
+
+# IGV
+if ($_ENV["FOLDER_IGV"] != "") {
+	$folder_igv=$_ENV["FOLDER_IGV"];
+} else {
+	$folder_igv=$folder_services."/genomebrowser/igv/igv";
+};
+
+# Create folder
+if (!is_dir($folder_igv)) {
+	if (!mkdir($folder_igv, 0777, true)) {
+		die("Failed to create folders '$folder_igv'...");
+	};
 };
 
 
