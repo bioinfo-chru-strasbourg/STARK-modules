@@ -157,7 +157,10 @@ $IGV_JSON_ID=$DATE.".".rand ( 1 , 1000000 );
 $IGV_JSON_FILENAME="$IGV_JSON_ID.json";
 
 # JSON FILE
-$IGV_JSON_FILE="".$folder_services."/GENOMEBROWSER/IGV/$IGV_JSON_FILENAME";
+#$IGV_JSON_FILE="".$folder_services."/GENOMEBROWSER/IGV/$IGV_JSON_FILENAME";
+$IGV_JSON_FILE=$folder_igv."/".$IGV_JSON_FILENAME;
+
+
 
 if ($DEBUG) {
 	echo "<br>$IGV_JSON_FILE";
@@ -396,7 +399,10 @@ fclose($myfile);
 ####################
 
 # FINAL URL
-$FINAL_URL="$uri_igv?file=$uri_das/services/GENOMEBROWSER/IGV/$IGV_JSON_FILENAME";
+#$FINAL_URL="$uri_igv?file=$uri_das/services/GENOMEBROWSER/IGV/$IGV_JSON_FILENAME";
+$FINAL_URL="$uri_igv?file=$uri_das/$folder_igv/$IGV_JSON_FILENAME";
+
+
 
 # DEV
 if ($DEBUG) {
