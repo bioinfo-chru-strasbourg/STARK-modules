@@ -19,9 +19,11 @@ import json
 import os
 import re
 import subprocess
+import sys
 import time
 
 from datetime import datetime
+sys.path.insert(1,"/app/bin/config")
 from launcher import launch
 from os.path import join as osj
 
@@ -307,8 +309,8 @@ def myoptions():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-i", "--input", type = str, default = " ", help = "list of runs to listen to : <PATH_RUN_1>,<PATH_RUN_2>...", dest = 'listInput')
 	parser.add_argument("-n", "--servicename", type = str, default = "TEST", help = "name of the service to use", dest = 'serviceName')
-	parser.add_argument("-j", "--json", type = str, default = "listener.json", help = "path to the triggers file listener.json", dest = 'jsonFile')
-	parser.add_argument("-c", "--config", type = str, default = "listener.conf", help = "path to the config file listener.conf", dest = 'configFile')
+	parser.add_argument("-j", "--json", type = str, default = "config/listener.json", help = "path to the triggers file listener.json", dest = 'jsonFile')
+	parser.add_argument("-c", "--config", type = str, default = "", help = "path to the config file listener.conf", dest = 'configFile')
 	parser.add_argument("-f", "--containersfile", type = str, default = "", help = "path to the container's file folder", dest = 'containersFile')
 	parser.add_argument("-t", "--nbDaysBack", type = int, default = 30, help = "folder older than x days", dest = 'days')
 	parser.add_argument("-d", "--minDelay", type = int, default = 5, help = "delay to sleep between two listening", dest = 'delay')
