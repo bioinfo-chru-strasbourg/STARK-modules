@@ -4,7 +4,7 @@
       "services": {
         "dashboard": {
           "code": "dashboard",
-          "name": "Dashboard",
+          "name": "Databases Dashboard",
           "description": "Databases Dashboard resuming main informations on databases used in STARK and more",
           "release": "1.0",
           "type": "IHM",

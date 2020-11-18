@@ -4,11 +4,27 @@
       "services": {
         "listener": {
           "code": "DEJAVU-listener",
-          "name": "DEJAVU databases listener",
+          "name": "DejaVu databases listener",
           "type": "listener",
           "description": "A DEJAVU databases listener.",
           "release": "1.0",
           "available": true
+        },
+        "dashboard": {
+          "code": "DEJAVU-dashboard",
+          "name": "DejaVu Dashboard",
+          "description": "Databases DejaVu resuming informations on dejavu viriants for all group and projects",
+          "release": "1.0",
+          "type": "IHM",
+          "available": true,
+          "link": {
+            "available": true,
+            "protocol": "http",
+            "ip": "",
+            "port": "4207",
+            "port_inner": "80",
+            "path": ""
+          }
         }
       }
     }
