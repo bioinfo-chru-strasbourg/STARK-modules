@@ -258,12 +258,10 @@ LOG=$DEJAVU_FOLDER_LOG/$RELEASE.log
 GP_FOLDER_LIST=""
 
 if [ ! -z "$REPO_FOLDER" ]; then
-	GP_FOLDER_LIST=$(find $REPO_FOLDER -maxdepth 2 -mindepth 2 -type d 2>/dev/null)
+	#GP_FOLDER_LIST=$(find -L $REPO_FOLDER -maxdepth 2 -mindepth 2 -type d 2>/dev/null)
+	GP_FOLDER_LIST=$(ls $(ls $REPO_FOLDER/*/*/*/STARKCopyComplete.txt | xargs dirname | xargs dirname | sort -u | sed 's#$#/*/*/*'$VCF_PATTERN'#g') | xargs dirname | xargs dirname | xargs dirname | sort -u)
 fi;
 
-# DEV
-#GP_FOLDER_LIST="/STARK/output/archives/HUSTUMSOL/MTPTHS /STARK/output/archives/SOMATIC/SOLIDTUMOR"
-#GP_FOLDER_LIST="/STARK/output/archives/HUSTUMSOL/MTPTHS /STARK/output/archives/SOMATIC/SOLIDTUMOR /STARK/output/repository/HUSTUMSOL/MTPTHS /STARK/output/repository/SOMATIC/SOLIDTUMOR"
 
 
 (($VERBOSE)) && echo "#"
@@ -311,9 +309,9 @@ else
 
 	for GP_FOLDER in $GP_FOLDER_LIST; do
 		if [ -d "$GP" ]; then
-			REPO=$(dirname $(dirname $GP_FOLDER))
-			GROUP=$(basename $(dirname $GP_FOLDER))
-			PROJECT=$(basename $GP_FOLDER)
+			REPO=$(dirname $(dirname "$GP_FOLDER"))
+			GROUP=$(basename $(dirname "$GP_FOLDER"))
+			PROJECT=$(basename "$GP_FOLDER")
 
 	        (($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' repository '$REPO' "
 	        #GP_FOLDER_LIST="$GP_FOLDER_LIST\n$APP_FOLDER_ARCHIVES/$APP_GROUP/$APP_PROJECT"
@@ -351,7 +349,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 
 	# NB VARIANT
 	#NB_VCF=$(find $GP_FOLDER/*/*/ -maxdepth 1 -name '*.final.vcf.gz' -a ! -name '*.*-*.final.vcf.gz' 2>/dev/null | wc -l)
-	NB_VCF=$(find $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN 2>/dev/null | wc -l)
+	NB_VCF=$(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN 2>/dev/null | wc -l)
 
 	(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' repository '$REPO' $NB_VCF VCF found"
 
@@ -362,7 +360,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 
 		# TMP folder creation
 		mkdir -p $TMP/$GROUP/$PROJECT
-		cp -f $(find $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN) $TMP/$GROUP/$PROJECT/ 2>/dev/null
+		cp -f $(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN) $TMP/$GROUP/$PROJECT/ 2>/dev/null
 		NB_VCF_FOUND=$(ls $TMP/$GROUP/$PROJECT/*.vcf.gz | wc -w)
 		(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' $NB_VCF_FOUND VCF considered files (some files may be found multiple times)"
 		
@@ -379,16 +377,16 @@ done;
 
 for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 
-	REPO=$(dirname $(dirname $GP_FOLDER))
-	GROUP=$(basename $(dirname $GP_FOLDER))
-	PROJECT=$(basename $GP_FOLDER)
+	REPO=$(dirname $(dirname "$GP_FOLDER"))
+	GROUP=$(basename $(dirname "$GP_FOLDER"))
+	PROJECT=$(basename "$GP_FOLDER")
 
 	#(($VERBOSE)) && echo "#"
 	#(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' process"
 
 
 
-	if [ ! -s $DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done ]; then
+	if [ ! -s "$DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done" ]; then
 
 		# MK files
 		> $MK
