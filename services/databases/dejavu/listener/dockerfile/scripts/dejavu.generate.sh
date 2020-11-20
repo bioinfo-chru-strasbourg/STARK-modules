@@ -259,7 +259,7 @@ GP_FOLDER_LIST=""
 
 if [ ! -z "$REPO_FOLDER" ]; then
 	#GP_FOLDER_LIST=$(find -L $REPO_FOLDER -maxdepth 2 -mindepth 2 -type d 2>/dev/null)
-	GP_FOLDER_LIST=$(ls $(ls $REPO_FOLDER/*/*/*/STARKCopyComplete.txt | xargs dirname | xargs dirname | sort -u | sed 's#$#/*/*/*'$VCF_PATTERN'#g') | xargs dirname | xargs dirname | xargs dirname | sort -u)
+	GP_FOLDER_LIST=$(ls $(ls $REPO_FOLDER/*/*/*/STARKCopyComplete.txt 2>/dev/null | xargs dirname | xargs dirname | sort -u | sed 's#$#/*/*/*'$VCF_PATTERN'#g') 2>/dev/null | xargs dirname | xargs dirname | xargs dirname | sort -u)
 fi;
 
 
