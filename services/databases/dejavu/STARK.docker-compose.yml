@@ -42,8 +42,6 @@ services:
             # Repository folders
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:ro
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:ro
-            # dev
-            #- /Users/lebechea/BIOINFO/git/STARK-modules/services/databases/dejavu/listener/dockerfile/scripts/dejavu.generate.dev.sh:/tool/toolbox/dejavu.generate.sh:ro
         networks:
             - stark_stark
 
@@ -71,8 +69,6 @@ services:
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_DASHBOARD_PARAM_INNER_FOLDER_DATA}/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_DASHBOARD_PARAM_PUBLIC_DIR}/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_DASHBOARD_PARAM_FOLDER_SERVICES}:rw
             # Databases
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_DASHBOARD_PARAM_INNER_FOLDER_DATA}/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_DASHBOARD_PARAM_PUBLIC_DIR}/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_DASHBOARD_PARAM_FOLDER_DATABASES}:ro
-            # DEV
-            #- /Users/lebechea/BIOINFO/git/STARK-modules/services/databases/dejavu/dashboard/dockerfile/www.dev:/app
         networks:
             - stark_stark
 
