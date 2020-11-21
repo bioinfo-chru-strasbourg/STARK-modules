@@ -413,14 +413,22 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			fi;
 		done
 
+		#echo $VCFGZ_LIST > $TMP/$GROUP/$PROJECT/VCF_LIST
 		
-		echo "$TMP/$GROUP/$PROJECT/dejavu.simple.vcf: $VCFGZ_LIST
-		if [ $VCFGZ_NB -gt 1 ]; then \
-			$BCFTOOLS merge $TMP/$GROUP/$PROJECT/*.simple.vcf.gz | $BCFTOOLS norm -m -any | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@; \
-		else \
-			$BCFTOOLS norm -m -any $VCFGZ_LIST | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@; \
+		echo "$TMP/$GROUP/$PROJECT/dejavu.simple.vcf: $VCFGZ_LIST" >> $MK
+		if [ $VCFGZ_NB -gt 1 ]; then
+			echo "	$BCFTOOLS merge $TMP/$GROUP/$PROJECT/*.simple.vcf.gz | $BCFTOOLS norm -m -any | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
+		else
+			echo "	$BCFTOOLS norm -m -any $VCFGZ_LIST | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
 		fi;
-		" >> $MK
+
+		# echo "$TMP/$GROUP/$PROJECT/dejavu.simple.vcf: $VCFGZ_LIST
+		# if [ $VCFGZ_NB -gt 1 ]; then \
+		# 	$BCFTOOLS merge $TMP/$GROUP/$PROJECT/*.simple.vcf.gz | $BCFTOOLS norm -m -any | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@; \
+		# else \
+		# 	$BCFTOOLS norm -m -any $VCFGZ_LIST | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@; \
+		# fi;
+		# " >> $MK
 
 		echo "$TMP/$GROUP/$PROJECT/dejavu.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
 			cp $TMP/$GROUP/$PROJECT/dejavu.simple.vcf $TMP/$GROUP/$PROJECT/dejavu.vcf
@@ -443,10 +451,10 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			" >> $MK
 		fi;
 
-		echo "$TMP/$GROUP/$PROJECT/VCF_LIST: $VCFGZ_LIST
-		ls $^ > $TMP/$GROUP/$PROJECT/VCF_LIST
+		# echo "$TMP/$GROUP/$PROJECT/VCF_LIST: $VCFGZ_LIST
+		# ls $^ > $TMP/$GROUP/$PROJECT/VCF_LIST
 
-		" >> $MK
+		# " >> $MK
 
 		echo "%.vcf.gz: %.vcf
 			$BGZIP -c $< > \$@
