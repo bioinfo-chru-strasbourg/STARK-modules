@@ -1,0 +1,23 @@
+{
+	"CQI": [
+	{
+		"name": "HORIZON",
+		"description": "",
+		"VCF": "/home1/BAS/lamouchj/input/CQI_REF/HORIZON/HORIZON.vcf.gz",
+		"BED": "/home1/BAS/lamouchj/input/CQI_REF/HORIZON/HORIZON_set-bed.bed"
+		},
+		{
+		"name": "ACROMETRIX",
+		"description": "",
+		"VCF": "/home1/BAS/lamouchj/input/CQI_REF/ACROMETRIX/ACROMETRIX.vcf.gz",
+		"BED": "None"
+		},
+		{
+		"name": "TeCoriell",
+		"description": "",
+		"VCF": "/home1/BAS/lamouchj/input/CQI_REF/TeCoriell/TeCoriell.vcf.gz",
+		"BED": "None",
+		"Coriell": "/home1/BAS/lamouchj/Coriell"
+		}
+	]
+}

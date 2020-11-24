@@ -1,0 +1,8 @@
+{
+  "code" : "qualitycontrol",
+  "name": "Quality Control",
+  "fullname": "Quality Control services",
+  "description": "STARK Quality Control provides services to validate analyses, such as CQI (Continuous Quality Improvement). It contains an API (Application Program Interface) and a Listener",
+  "release": "1.0",
+  "available": true
+}

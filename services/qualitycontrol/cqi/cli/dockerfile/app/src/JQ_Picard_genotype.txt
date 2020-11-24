@@ -1,0 +1,8 @@
+#JQ version 1-6
+cat CQI.json | jq -cr '.CQI | . [] | select( .name == "HORIZON" ) | .VCF' 
+jq '.CQI | .[] | .[] ' CQI.json
+
+
+
+
+https://gatk.broadinstitute.org/hc/en-us/articles/360036345732-GenotypeConcordance-Picard-
