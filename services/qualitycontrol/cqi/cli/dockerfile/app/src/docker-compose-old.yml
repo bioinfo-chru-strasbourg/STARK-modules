@@ -1,0 +1,34 @@
+version: '3'
+services:
+   cqi-services-conda:
+      image: ${CQI_CONDA}
+      container_name: cqi-conda
+      env_file:
+          - .env
+      volumes:
+          - /home1/BAS/lamouchj:/home1/BAS/lamouchj
+          - /home1/TOOLS/genomes/hg19:/home1/TOOLS/genomes/hg19
+      tty: true
+      entrypoint: /bin/sh
+   cqi-services-rtg:
+      image: ${CQI_RTG}
+      container_name: cqi-rtg
+      env_file:
+          - .env
+      volumes:
+          - /home1/BAS/lamouchj:/home1/BAS/lamouchj
+          - /home1/TOOLS/genomes/hg19:/home1/TOOLS/genomes/hg19
+      tty: true 
+      entrypoint: /bin/sh 
+   cqi-services-config:
+      image: ${CQI_config}
+      container_name: cqi-config
+      env_file:
+          - .env
+      volumes:
+          - /home1/BAS/lamouchj:/home1/BAS/lamouchj
+      tty: true
+      entrypoint: /bin/sh 
+
+
+#TEST commande avec /bin/bash devant conf STARK18

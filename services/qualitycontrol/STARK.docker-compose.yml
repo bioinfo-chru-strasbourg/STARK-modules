@@ -1,0 +1,7 @@
+#########
+# STARK #
+#########
+# Usage: docker-compose up
+
+version: '3'
+

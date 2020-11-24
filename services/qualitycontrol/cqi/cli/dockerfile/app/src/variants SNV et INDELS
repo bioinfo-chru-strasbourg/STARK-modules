@@ -1,0 +1,4 @@
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER
+chr12   57490461        .       GA      CC      .       VeryLowQual
+chr13   28623579        .       TC      AA      .       VeryLowQual
+chr13   28623603        .       TG      CT      .       VeryLowQual

@@ -1,0 +1,7 @@
+/app/config/conf/canoes.json
+
+docker run -ti --rm --name=service-CQI-analyses --env-file=/home1/L_PROD/NGS/BAS/lamouchj/CQI/.env -v /home1/L_PROD/NGS/BAS/lamouchj/CQI:/home1/L_PROD/NGS/BAS/lamouchj/CQI -v /home1/L_PROD/NGS/BAS/lamouchj/input/CQI_REF:/home1/L_PROD/NGS/BAS/lamouchj/input/CQI_REF -v /home1/L_PROD/NGS/BIO_INFO/BIO_INFO_JB/DATASET_ONCO:/home1/L_PROD/NGS/BIO_INFO/BIO_INFO_JB/DATASET_ONCO -v /home1/TOOLS/genomes/hg19:/home1/TOOLS/genomes/hg19:ro cqi:1.1 /bin/bash -c "source activate variant && /home1/L_PROD/NGS/BAS/lamouchj/CQI/bin/compare_vcf_1.2.sh --run=/home1/L_PROD/NGS/BIO_INFO/BIO_INFO_JB/DATASET_ONCO/RUN_VALIDATION --json=/home1/L_PROD/NGS/BAS/lamouchj/CQI/bin/CQI.json" 
+
+
+
+docker run -ti --rm --name=service-CQI-analyses --env-file=/home1/bin/STARK-modules/current/services/QUALITYMANAGMENT/CQI/.env -v /home1/bin/STARK-modules/current/services/QUALITYMANAGMENT/CQI:/app/QUALITYMANAGMENT/CQI -v /home1/data/current/databases/VCFDB/current:/app/VCFDB/current -v /home1/TOOLS/genomes/hg19:/home1/TOOLS/genomes/hg19:ro -v /home1/data/current/output/repository/HUSHEMATO/TSOMYELOID/200925_M01658_0474_000000000-JB872:/home1/data/current/output/repository/HUSHEMATO/TSOMYELOID/200925_M01658_0474_000000000-JB872 cqi:1.1 /bin/bash -c "source activate variant && /app/QUALITYMANAGMENT/CQI/bin/CQI_1.2.sh --genome=/home1/TOOLS/genomes/hg19/hg19.fa --run=/home1/data/current/output/repository/HUSHEMATO/TSOMYELOID/200925_M01658_0474_000000000-JB872"

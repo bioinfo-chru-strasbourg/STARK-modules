@@ -1,0 +1,35 @@
+FROM continuumio/miniconda:latest
+
+###############################
+####  CQI vcf comparison
+###############################
+
+#necessary libs
+RUN mkdir -p /usr/share/man/man1
+RUN apt-get update && apt-get install -y \
+	build-essential \
+	default-jdk \
+	git \
+	vim \
+	unzip \
+	graphviz \
+	gv \
+	docker.io \
+	bc 
+
+#set up env 
+WORKDIR /
+COPY variant.yml /
+
+#prepare env (base)
+RUN conda env list
+ 
+# create environment (variant)
+RUN conda env create -f variant.yml
+ 
+# activate environment
+RUN echo "source activate variant" > ~/.bashrc
+ENV PATH /opt/conda/envs/env/bin:$PATH
+
+CMD ["/bin/bash"]
+

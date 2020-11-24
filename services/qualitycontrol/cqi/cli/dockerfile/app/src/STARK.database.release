@@ -1,0 +1,14 @@
+
+                {
+                        "release": "202008",
+                        "date": "202008",
+                        "files": [ "20200708_OMIMannotations.tsv" ],
+                        "assembly": [ "hg19" ],
+                        "download": {
+                                "methode": "manually downloaded and formatted",
+                                "URL": [ "https://assets.thermofisher.com/TFS-Assets/CDD/Application-Notes/FRM0016300-A-AMX-Oncology-Hotspot-Performance-Data.xls", "https://horizondiscovery.com/en/products/diagnostic-reference-standards/PIFs/-/media/C0411632E83F48A3B7EE5F488112F42F.ashx", "ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/latest/GRCh37/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz" ],
+                                "files": [ "FRM0016300-A-AMX-Oncology-Hotspot-Performance-Data.xls", "HD827_HD832_HD833_variant_annotation_COSMICv85_dbSNPv151.xlsx, HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf" ],
+                                "date": "2020-09-11"
+                        }
+                }
+

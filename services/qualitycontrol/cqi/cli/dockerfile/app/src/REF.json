@@ -1,0 +1,35 @@
+{
+	"CQI": [
+	{
+		"name": "HORIZON",
+		"description": "",
+		"VCF": "/home1/data/current/databases/VCFDB/202008/HORIZON/HORIZON.vcf.gz"
+		},
+		{
+		"name": "ACROMETRIX",
+		"description": "",
+		"VCF": "/home1/data/current/databases/VCFDB/202008/ACROMETRIX/ACROMETRIX.vcf.gz"
+		},
+		{
+		"name": "TeCoriell",
+		"description": "",
+		"VCF": "/home1/data/current/databases/VCFDB/202008/TeCoriell/TeCoriell_multi-split.vcf.gz",
+		"Coriell": "TeCoriell.vcf.gz"
+		},
+		{
+		"name": "VALIDATION100",
+		"description": "Dataset for CQI validation, based on ACROMETRIX AGILENT HUSHEMATO XTHS Laurent V2",
+		"VCF": "/home1/L_PROD/NGS/BIO_INFO/BIO_INFO_JB/DATASET_ONCO/VALIDATION_CQI_DATASET/100.vcf.gz"
+		},
+		{
+		"name": "VALIDATION50",
+		"description": "Dataset for CQI validation, based on ACROMETRIX AGILENT HUSHEMATO XTHS Laurent V2",
+		"VCF": "/home1/L_PROD/NGS/BIO_INFO/BIO_INFO_JB/DATASET_ONCO/VALIDATION_CQI_DATASET/50.vcf.gz"
+		},
+		{
+		"name": "VALIDATION0",
+		"description": "Dataset for CQI validation, based on ACROMETRIX AGILENT HUSHEMATO XTHS Laurent V2",
+		"VCF": "/home1/L_PROD/NGS/BIO_INFO/BIO_INFO_JB/DATASET_ONCO/VALIDATION_CQI_DATASET/0.vcf.gz"
+		}
+	]
+}

@@ -1,0 +1,39 @@
+version: '3'
+services:
+  cqi-standalone:
+    image: ${DOCKER_STARK_SERVICE_CQI_MODULE_IMAGE}
+    build: 
+      context: ${DOCKER_CQI_CONTEXT}
+      dockerfile: Dockerfile
+    container_name: ${DOCKER_CQI_CONTAINER_NAME}
+    restart: "no"
+    env_file: .env
+    environment:
+        - MICROSERVICE_IMAGE=${DOCKER_STARK_SERVICE_CQI_MODULE_IMAGE}
+        - MICROSERVICE_MONTAGE=-v ${DOCKER_FOLDER_GENOME}:/${DOCKER_FOLDER_GENOME}
+        - MICROSERVICE_LAUNCH=source activate variant && /app/bin/CQI_1.3.sh 
+        - GENOME=${DOCKER_FOLDER_GENOME}/hg19.fa
+    volumes:
+        - ${LOCALTIME}:${LOCALTIME}:ro
+        # Docker sock - if sock access ok
+        - ${DOCKER_SOCK}:${DOCKER_SOCK}
+        # Folder to share data
+        - ${DOCKER_STARK_MAIN_SERVICES_FOLDER}/${DOCKER_STARK_MODULES_FOLDER}/${DOCKER_CQI_DATA}:${DOCKER_CQI_INNER_FOLDER_DATA}/${DOCKER_CQI_DATA}
+    networks:
+        - ${DOCKER_CQI_NETWORK}
+    entrypoint: "/bin/bash"
+    #entrypoint: ${CQI_BIN} 
+    #command: -c "echo 'Welcome to CQI service from QUALITYCONTROL module in STARK pipeline'"
+    tty: true
+
+
+networks:
+    cqi:
+        driver: "bridge"
+        ipam:
+          config:
+          - subnet: ${DOCKER_IP}
+
+
+    stark_stark:
+      external: true

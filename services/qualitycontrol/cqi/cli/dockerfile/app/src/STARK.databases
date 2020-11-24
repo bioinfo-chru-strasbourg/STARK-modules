@@ -1,0 +1,9 @@
+
+                {
+                        "code": "vcfdb",
+                        "name": "VCFDB",
+                        "fullname": "Variant Call Format Databases",
+                        "website": "https://www.nist.gov/programs-projects/genome-bottle",
+                        "description": "Thoses VCF were produced using lists of variants provided by several Organisms having taken part of NIST project also known as Genome in a bottle"
+                }
+

@@ -1,0 +1,18 @@
+{
+	"services": {
+		"CQI": {
+			"infos": {
+				"name": "CQI",
+				"description": "CQI analysis",
+				"triggers-description": "(STARKCopyComplete.txt AND !CQIComplete.txt AND !CQIRunning.txt AND CQI#)"
+			},
+			"triggers": {
+				"AND":
+				{
+					"file": ["STARKCopyComplete.txt", "!CQIComplete.txt", "!CQIRunning.txt"],
+					"tags": ["CQI#"]
+				}
+			}
+		}
+	}
+}
