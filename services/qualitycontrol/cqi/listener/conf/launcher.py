@@ -66,7 +66,7 @@ def createRunningFile(run, serviceName):
 	file.write("# ["+datetime.now().strftime("%d/%m/%Y %H:%M:%S")+"] "+os.path.basename(run)+" running with "+serviceName+"\n")
 	file.close()
 
-def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile):
+def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile, repository):
 	createRunningFile(run, serviceName)
 	samplesheet = find_any_samplesheet(run)
 	assert samplesheet != "NO_SAMPLESHEET_FOUND",\
