@@ -1,0 +1,8 @@
+{
+	"bedtools":"/home1/TOOLS/tools/bedtools/2.27.1/bin",
+	"gatk":"/home1/TOOLS/tools/gatk/current/GenomeAnalysisTK.jar",
+	"java":"/home1/TOOLS/tools/java/1.8.0_65/bin/java",
+	"annotsv":"/home1/TOOLS/tools/AnnotSV/AnnotSV_2.1",
+	"R":"/home1/TOOLS/tools/anaconda/miniconda2/bin/R",
+	"genome":"/home1/TOOLS/genomes/hg19/hg19.fa"
+}

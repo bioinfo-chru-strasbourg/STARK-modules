@@ -1,0 +1,21 @@
+{
+	"services": {
+		"CANOES": {
+			"infos": {
+				"name": "CANOES",
+				"description": "CANOES analysis",
+				"triggers-description": "(STARKCopyComplete.txt AND !CANOESComplete.txt AND !CANOESRunning.txt AND #CANOES)"
+			},
+			"triggers": {
+				"AND":
+				{
+					"file": ["STARKCopyComplete.txt", "!CANOESComplete.txt", "!CANOESRunning.txt"],
+					"OR_1": {
+						"group": ["DIAG", "!HUSDIAGGEN"],
+						"tags": ["#CANOES"]
+					}
+				}
+			}
+		}
+	}
+}
