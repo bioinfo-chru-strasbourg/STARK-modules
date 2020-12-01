@@ -1,0 +1,320 @@
+import multiprocessing
+import os
+import shutil
+import random
+import string
+import subprocess
+
+def parse(dico):
+	data={}
+	for file in dico:
+		name=dico[file]["vcf"].split("/")[-1].split(".")[0]
+		data[name]=dico[file]["vcf"]
+	return data
+
+def get_pool_name(pool):
+	dico_pool = {}
+	for item in pool:
+		name = pool[item]["vcf"].split("/")[-1].split(".")[0]
+		dico_pool[name] = pool[item]["vcf"]
+	return dico_pool
+
+def writejson(d,f):
+	"""
+	Read dict, return a json file
+	"""
+	with open(f, 'w') as outfile:
+		json.dump(d, outfile, indent=4)
+
+output = config["analysis"]["output"]
+log = output+"/.log"
+pool_name = get_pool_name(config["analysis"]["pool"])
+
+if "thread" in config["analysis"]:
+	nbCPU =  config["analysis"]["thread"]
+else:
+	if multiprocessing.cpu_count() > 2:
+		nbCPU = multiprocessing.cpu_count()-1
+	else:
+		nbCPU = 1
+
+interval_padding = 100
+
+
+rule all:
+	params:
+		bgzip = config["tools"]["bgzip"],
+		tabix = config["tools"]["tabix"]
+	input:
+		sample_vcf = expand(output+"/{sample}.final.vcf",sample=config["analysis"]["sample"]),
+		pool_vcf = expand(output+"/{poolname}.pool.vcf",poolname=pool_name)
+	log:
+		log+"/all.log"
+	shell:
+		"""
+			for file in {input.sample_vcf};
+			do
+				{params.bgzip} --force $file && {params.tabix} -p vcf $file.gz
+			done;
+
+			for file in {input.pool_vcf};
+			do
+				renamedext=$(echo $file | sed s/.pool.vcf/.final.vcf/g)
+				{params.bgzip} -c $file > $renamedext.gz
+			done;
+		"""
+
+
+rule paste_vcf_pool:
+	input:
+		lambda wildcards: pool_name[wildcards.poolname]
+	output:
+		temp(output+"/{poolname}.pool.vcf")
+	shell:
+		"""
+			cp {input} {output}
+		"""
+
+rule add_info:
+	input:
+		vcf = output+"/{sample}.trio.howard.norm.uniq.sorted.vcf",
+		cov = output+"/all.gatk.cov"
+	output:
+		vcf = temp(output+"/{sample}.final.vcf")
+	run:
+		subprocess.call("mkdir -p "+output.vcf+".dict", shell=True)
+		subprocess.call("awk -F \":\" '{print $0 >> (\""+output.vcf+".dict/COVFILE\" $1)}' "+input.cov, shell=True)
+		
+		#load header only
+		dictRes = {}
+		header = False
+		with open(input.cov,'r') as infile:
+			for line in infile:
+				field = line.strip().split('\t')
+				locus = field[0]
+				dictRes[locus]={}
+				data  = []
+				for i in range(3,len(field),5):
+					data.append(field[i])
+				for i in range(4,len(field),5):
+					data.append(field[i])
+				if not header:
+					header = data
+				for i in range(0,len(data)):
+					dictRes[locus][header[i]]=data[i].strip().replace(' ','|')
+				break #load header only. That's ugly, but I don't have the time to proofread this block.
+
+		currentChr = "INITIATION"
+		with open(input.vcf,'r') as infile:
+			with open(output.vcf,'w') as outfile:
+				for line in infile:
+					if line.startswith("##"):
+						outfile.write(line)
+					elif line.startswith("#"):
+						for info in dictRes["Locus"]:
+							outfile.write('##INFO=<ID='+info+',Number=.,Type=String,Description="GATK '+info+'">\n')
+						outfile.write(line)
+					else:
+						field = line.strip().split("\t")
+						locus = field[0]+":"+field[1]
+						
+						if field[0] != currentChr:
+							#flush chr dict and load a new one
+							#vcf should be sorted at this point, so each file will only be loaded once, and only for the chr actually in the vcf
+							#previously all chr were loaded at once which caused a memory error, hence why the files are split. 
+							dictRes = {}
+							currentChr = field[0]
+							with open(output.vcf+".dict/COVFILE"+currentChr,'r') as infile:
+								for line in infile:
+									field = line.strip().split('\t')
+									locus = field[0]
+									dictRes[locus]={}
+									data  = []
+									for i in range(3,len(field),5):
+										data.append(field[i])
+									for i in range(4,len(field),5):
+										data.append(field[i])
+									if not header:
+										header = data
+									for i in range(0,len(data)):
+										dictRes[locus][header[i]]=data[i].strip().replace(' ','|')
+							
+						if locus in dictRes:
+							for info in dictRes[locus]:
+								field[7]=field[7]+';'+info+'='+dictRes[locus][info]
+							outfile.write('\t'.join(field)+'\n')
+		subprocess.call("rm -rf "+output.vcf+".dict", shell=True)
+
+rule copy_vcf_pool:
+	params:
+		bcftools = config["tools"]["bcftools"],
+		output = config["analysis"]["output"]
+	input:
+		lambda wildcards: config["analysis"]["pool"][wildcards.pool]["vcf"]
+	output:
+		tmp = temp(output+"/{pool}.pool.renamed.vcf")
+	log:
+		log+"/{pool}.bcftools.log"
+	shell:
+		"""
+			sed "s/$(grep '^#CHROM' {input} | awk -F'\t' '{{print $10}}')/{wildcards.pool}/g" {input} | {params.bcftools} annotate --remove "^INFO/FindByPipelines,INFO/GenotypeConcordance" > {output.tmp} 2>> {log}
+		"""
+
+rule copy_vcf_sample:
+	params:
+		bcftools = config["tools"]["bcftools"]
+	input:
+		lambda wildcards: config["analysis"]["sample"][wildcards.sample]["vcf"]
+	output:
+		temp(output+"/{sample}.sample.renamed.vcf")
+	log:
+		log+"/{sample}.bcftools.log"
+	shell:
+		"""
+			{params.bcftools} annotate --remove "^INFO/FindByPipelines,INFO/GenotypeConcordance" {input} > {output} 2>> {log}
+		"""
+
+rule compress_index_vcf:
+	params:
+		bgzip = config["tools"]["bgzip"],
+		tabix = config["tools"]["tabix"]
+	input:
+		"{w}.renamed.vcf"
+	output:
+		gz  = temp("{w}.renamed.vcf.gz"),
+		tbi = temp("{w}.renamed.vcf.gz.tbi")
+	shell:
+		"""
+			{params.bgzip} -c {input} > {output.gz} && {params.tabix} -p vcf {output.gz}
+		"""
+
+rule merge_vcf:
+	params:
+		bcftools=config["tools"]["bcftools"]
+	input:
+		sample_vcf = output+"/{sample}.sample.renamed.vcf.gz",
+		sample_vcf_tbi = output+"/{sample}.sample.renamed.vcf.gz.tbi",
+		pool_vcf = expand(output+"/{pool}.pool.renamed.vcf.gz", pool=config["analysis"]["pool"]),
+		pool_vcf_tbi = expand(output+"/{pool}.pool.renamed.vcf.gz.tbi", pool=config["analysis"]["pool"])
+	output:
+		temp(output+"/{sample}.merged.vcf")
+	log:
+		log+"/{sample}.bcftools.log"
+	shell:
+		"""
+			{params.bcftools} merge {input.sample_vcf} {input.pool_vcf} -o {output} 2>> {log}
+		"""
+
+rule howard_trio:
+	params:
+		howard = config["tools"]["howard"]
+	input:
+		output+"/{sample}.merged.vcf"
+	output:
+		temp(output+"/{sample}.trio.howard.vcf")
+	log:
+		log+"/{sample}.howard.log"
+	shell:
+		"""
+			{params.howard} --input={input} --output={output} --calculation=BARCODE --trio=POOL_M,POOL_F,{wildcards.sample} &>> {log}
+		"""
+
+rule normalize_vcf:
+	params:
+		bcftools = config["tools"]["bcftools"],
+		genome = config["analysis"]["genome"]
+	input:
+		output+"/{sample}.trio.howard.vcf"
+	output:
+		temp(output+"/{sample}.trio.howard.norm.vcf")
+	log:
+		log+"/{sample}.bcftools.log"
+	shell:
+		"""
+			{params.bcftools} norm -m-any {input} | {params.bcftools} norm -d none -f {params.genome} -o {output} 2>> {log}
+		"""
+
+rule uniq_trio:
+	params:
+		bcftools=config["tools"]["bcftools"]
+	input:
+		output+"/{sample}.trio.howard.norm.vcf"
+	output:
+		temp(output+"/{sample}.trio.howard.norm.uniq.vcf")
+	log:
+		log+"/{sample}.bcftools.log"
+	shell:
+		"""
+			{params.bcftools} view -s {wildcards.sample} {input} | grep -v '^##HOWARD' > {output} 2>> {log}
+		"""
+
+# rule sort_vcf:
+	# params:
+		# bcftools = config["tools"]["bcftools"]
+	# input:
+		# output+"/{sample}.trio.howard.norm.uniq.vcf"
+	# output:
+		# temp(output+"/{sample}.trio.howard.norm.uniq.sorted.vcf")
+	# log:
+		# log+"/{sample}.bcftools.sorted.log"
+	# shell:
+		# """
+			# cat {input} | awk '$1 ~ /^#/ {{print $0;next}} {{print $0 | "sort -k1,1V -k2,2n"}}' > {output}
+		# """
+
+rule sort_vcf:
+	params:
+		bcftools = config["tools"]["bcftools"]
+	input:
+		output+"/{sample}.trio.howard.norm.uniq.vcf"
+	output:
+		temp(output+"/{sample}.trio.howard.norm.uniq.sorted.vcf")
+	log:
+		log+"/{sample}.bcftools.sorted.log"
+	shell:
+		"""
+			{params.bcftools} sort -o {output} {input}
+		"""
+
+rule depth_of_coverage_v2:
+	params:
+		cpu     = nbCPU//2,
+		padding = interval_padding,
+		java    = config["tools"]["java"],
+		gatk    = config["tools"]["gatk"]
+	input:
+		genome  = config["analysis"]["genome"],
+		bed     = config["analysis"]["bed"],
+		bam     = lambda wildcards: config["analysis"]["pool"][wildcards.pool]["bam"]
+	output:
+		temp(output+"/{pool}.gatk.cov"),
+		temp(output+"/{pool}.gatk.cov.sample_cumulative_coverage_counts"),
+		temp(output+"/{pool}.gatk.cov.sample_cumulative_coverage_proportions"),
+		temp(output+"/{pool}.gatk.cov.sample_statistics"),
+		temp(output+"/{pool}.gatk.cov.sample_summary")
+	log:
+		temp(log+"/{pool}.gatk.cov.log")
+	shell:
+		"""
+			{params.java} -jar {params.gatk} -nt {params.cpu} -omitIntervals -T DepthOfCoverage -R {input.genome} -o {output[0]} -I {input.bam} --includeDeletions --minMappingQuality 10 --printBaseCounts -L {input.bed} --interval_padding {params.padding} &>> {log};
+		"""
+
+rule rename_pool_coverage_v2:
+	input:
+		output+"/{pool}.gatk.cov"
+	output:
+		temp(output+"/{pool}.gatk.renamed.cov")
+	shell:
+		"""
+			sed '1 s/^.*$/Locus\tTotal_Depth\tAverage_Depth_sample\t{wildcards.pool}_Depth\t{wildcards.pool}_base_counts/' {input} > {output}
+		"""
+
+rule merge_coverage_v2:
+	input:
+		expand(output+"/{pool}.gatk.renamed.cov", pool=config["analysis"]["pool"])
+	output:
+		temp(output+"/all.gatk.cov")
+	shell:
+		"""
+			paste {input} > {output}
+		"""

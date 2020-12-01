@@ -19,11 +19,9 @@ import json
 import os
 import re
 import subprocess
-import sys
 import time
 
 from datetime import datetime
-sys.path.insert(1,"/app/bin/config")
 from launcher import launch
 from os.path import join as osj
 
@@ -75,10 +73,8 @@ def get_sample_project_from_samplesheet(samplesheetPath):
 	
 	Returns a python list containing all tags from samplesheet.
 	"""
-	if samplesheetPath == "NO_SAMPLESHEET_FOUND":
-		return []
-	# assert samplesheetPath != "NO_SAMPLESHEET_FOUND", \
-			# "[ERROR] find_any_samplesheet() couldn't find any samplesheet. Check if the --fromResultDir argument is set correctly."
+	assert samplesheetPath != "NO_SAMPLESHEET_FOUND", \
+			"[ERROR] find_any_samplesheet() couldn't find any samplesheet. Check if the --fromResultDir argument is set correctly."
 	assert_file_exists_and_is_readable(samplesheetPath)
 	inDataTable = False
 	sampleProject = []
@@ -114,7 +110,7 @@ def find_any_samplesheet(runDir, fromResDir = False):
 		defined by the bool fromResDir)
 	3) first correct file path is returned
 	"""
-	p = subprocess.Popen("find -L "+runDir+" -maxdepth 4 -name *SampleSheet.csv", stdout=subprocess.PIPE, shell=True)
+	p = subprocess.Popen("find -L "+runDir+" -maxdepth 3 -name *SampleSheet.csv", stdout=subprocess.PIPE, shell=True)
 	out = p.stdout.readlines()
 	for ss in out:
 		ss = ss.decode("utf-8").strip()
@@ -129,22 +125,23 @@ def find_any_samplesheet(runDir, fromResDir = False):
 	return "NO_SAMPLESHEET_FOUND"
 
 def checkTags(tag, sampleTagsList, analysisTagsList):
-	if tag.startswith("!"):
-		for t in sampleTagsList:
-			if not tag in t:
-				return True
-		for t in analysisTagsList:
-			if not tag in t:
-				return True
-		return False
-	else:
-		for t in sampleTagsList:
-			if tag in t:
-				return True
-		for t in analysisTagsList:
-			if tag in t:
-				return True
-		return False
+	for serviceTag in tag:
+		if serviceTag.startswith("!"):
+			for t in sampleTagsList:
+				if not serviceTag in t:
+					return True
+			for t in analysisTagsList:
+				if not serviceTag in t:
+					return True
+			return False
+		else:
+			for t in sampleTagsList:
+				if serviceTag in t:
+					return True
+			for t in analysisTagsList:
+				if serviceTag in t:
+					return True
+			return False
 
 def getAnalysisTagsFromSampleList(sampleList,run):
 	analysisTagsList = []
@@ -188,12 +185,12 @@ def checkTriggers(jconfig, serviceName, run):
 		return True
 	sampleProject = []
 	for key in jconfig.keys():
-		if key.startswith("AND"):
+		if key == "AND":
 			if all([checkTriggers({andKey : jconfig[key][andKey]}, serviceName, run) for andKey in jconfig[key].keys()]):
 				return True
 			else: 
 				return False
-		elif key.startswith("OR"):
+		elif key.startswith("OR_"):
 			if any([checkTriggers({andKey : jconfig[key][andKey]}, serviceName, run) for andKey in jconfig[key].keys()]):
 				return True
 			else: 
@@ -232,7 +229,6 @@ def checkTriggers(jconfig, serviceName, run):
 			else:
 				return False
 		elif key == "group" or key == "project":
-			# print(run)
 			if not sampleProject:
 				sampleProject = get_sample_project_from_samplesheet(find_any_samplesheet(run))
 				# print(sampleProject)
@@ -300,7 +296,8 @@ def main(groupInputList, serviceName, jsonFile, days, delay, containersFile, con
 				run = getRunName(starkComplete)
 				if verifyTriggers(run, serviceName, jsonFile):
 					print("Launching "+serviceName+" analysis for run "+run)
-					launch(run, serviceName, containersFile, os.getenv('MICROSERVICE_MONTAGE'), os.getenv('MICROSERVICE_IMAGE'), os.getenv('MICROSERVICE_LAUNCH'), configFile, os.getenv('MICROSERVICE_REPOSITORY'))
+					# launch(run, serviceName, containersFile, os.getenv('MICROSERVICE_MONTAGE'), os.getenv('MICROSERVICE_IMAGE'), os.getenv('MICROSERVICE_LAUNCH'), configFile)
+					launch(run, serviceName, containersFile, "-v /home1/TOOLS/tools/pool/1.2:/home1/TOOLS/tools/pool/1.2 -v "+run+":"+run+" -v /home1/DB/current/genomes/current:/home1/DB/current/genomes/current -v /home1/TOOLS:/home1/TOOLS", "pool:1.2", "python lib/wrapper.py -g /home1/DB/current/genomes/current/hg19.fa", configFile)
 		time.sleep(60.0*delay)
 
 def myoptions():
@@ -311,8 +308,8 @@ def myoptions():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-i", "--input", type = str, default = " ", help = "list of runs to listen to : <PATH_RUN_1>,<PATH_RUN_2>...", dest = 'listInput')
 	parser.add_argument("-n", "--servicename", type = str, default = "TEST", help = "name of the service to use", dest = 'serviceName')
-	parser.add_argument("-j", "--json", type = str, default = "config/listener.json", help = "path to the triggers file listener.json", dest = 'jsonFile')
-	parser.add_argument("-c", "--config", type = str, default = "", help = "path to the config file listener.conf", dest = 'configFile')
+	parser.add_argument("-j", "--json", type = str, default = "listener.json", help = "path to the triggers file listener.json", dest = 'jsonFile')
+	parser.add_argument("-c", "--config", type = str, default = "listener.conf", help = "path to the config file listener.conf", dest = 'configFile')
 	parser.add_argument("-f", "--containersfile", type = str, default = "", help = "path to the container's file folder", dest = 'containersFile')
 	parser.add_argument("-t", "--nbDaysBack", type = int, default = 30, help = "folder older than x days", dest = 'days')
 	parser.add_argument("-d", "--minDelay", type = int, default = 5, help = "delay to sleep between two listening", dest = 'delay')

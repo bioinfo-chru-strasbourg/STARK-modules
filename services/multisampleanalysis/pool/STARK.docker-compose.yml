@@ -12,12 +12,14 @@ services:
 
 
     # cli
-    stark-module-structuralvariation-submodule-canoes-service-cli:
+    stark-module-pool-submodule-pool-service-cli:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
-        # depends_on: stark-module-structuralvariation-submodule-canoes-service-setup
+        # depends_on: stark-module-pool-submodule-pool-service-setup
         build:
             context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT}
             dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT_DOCKERFILE}
+            args:
+                STARK_IMAGE: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_BUILD_ARGS_STARK_IMAGE}
         container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME}
         restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_RESTART}
         entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_ENTRYPOINT}
@@ -35,13 +37,12 @@ services:
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG}:ro
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}:rw
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_ANNOTSV_HOST_PATTERN}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_ANNOTSV_INNER}:ro
         networks: 
             - ${DOCKER_STARK_MAIN_NETWORK}
 
 
     # listener
-    stark-module-structuralvariation-submodule-canoes-service-listener:
+    stark-module-pool-submodule-pool-service-listener:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE}
         container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_NAME}
         entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_ENTRYPOINT}
