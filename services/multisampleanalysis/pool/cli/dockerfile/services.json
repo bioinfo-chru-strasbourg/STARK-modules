@@ -1,0 +1,68 @@
+{
+	"services": {
+		"POOL": {
+			"infos": {
+				"name": "POOL",
+				"description": "POOL analysis",
+				"triggers-description": "(STARKComplete.txt AND !POOLComplete.txt AND !POOLRunning.txt AND #POOL)"
+			},
+			"triggers": {
+				"AND":
+				{
+					"file": ["STARKComplete.txt", "!POOLComplete.txt", "!POOLRunning.txt"],
+					"tags": ["#POOL"]
+				}
+			}
+		},
+		"VaRank": {
+			"infos": {
+				"name": "VaRank",
+				"description": "VaRank analysis",
+				"triggers-description": "[ STARKComplete.txt AND !VaRankComplete.txt AND !VaRankRunning.txt AND (#VaRank OR g:DIAG OR p:RP|Mito|BBS) AND (!#POOL OR POOLComplete.txt) ]"
+			},
+			"triggers": {
+				"AND":
+				{
+					"file": ["STARKComplete.txt", "!VaRankComplete.txt", "!VaRankRunning.txt"],
+					"OR_1": {
+						"tags": ["#VaRank"],
+						"group": ["DIAG"],
+						"project": ["RP", "Mito", "BBS"]
+					},
+					"OR_2" : {
+						"tags": ["!#POOL"],
+						"file": ["POOLComplete.txt"]
+					}
+				}
+			}
+		},
+		"CANOES": {
+			"infos": {
+				"name": "CANOES",
+				"description": "CANOES analysis",
+				"triggers-description": "(STARKComplete.txt AND !CANOESComplete.txt AND !CANOESRunning.txt AND #CANOES)"
+			},
+			"triggers": {
+				"AND":
+				{
+					"file": ["STARKComplete.txt", "!CANOESComplete.txt", "!CANOESRunning.txt"],
+					"tags": ["#CANOES"]
+				}
+			}
+		},
+		"CQI": {
+			"infos": {
+				"name": "CQI",
+				"description": "CQI analysis",
+				"triggers-description": "(STARKComplete.txt AND !CQIComplete.txt AND !CQIRunning.txt AND #CQI)"
+			},
+			"triggers": {
+				"AND":
+				{
+					"file": ["STARKComplete.txt", "!CQIComplete.txt", "!CQIRunning.txt"],
+					"tags": ["#CQI"]
+				}
+			}
+		}
+	}
+}

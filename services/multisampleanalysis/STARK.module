@@ -1,0 +1,8 @@
+{
+  "code" : "Multi Sample Analysis",
+  "name": "Multi Sample Analysis",
+  "fullname": "Multi Sample Analysis",
+  "description": "Multi Sample Analysis from multiple VCF files, such as trio, pool, composite heterozygous variants",
+  "release": "1.0",
+  "available": true
+}

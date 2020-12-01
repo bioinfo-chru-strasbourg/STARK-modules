@@ -1,0 +1,24 @@
+version: '3'
+services:
+  POOL-listener:
+    image: ${DOCKER_POOL_IMAGE}
+    build: 
+        context: ${DOCKER_POOL_CONTEXT}
+        dockerfile: Dockerfile
+    container_name: ${DOCKER_POOL_LISTENER_CONTAINER_NAME}
+    env_file:
+      - .env
+    networks:
+      - POOL-service
+    volumes:
+      - ${STARK_MAIN_FOLDER}:${STARK_MAIN_FOLDER}
+      - ${DOCKER_SOCK}:${DOCKER_SOCK}
+    command: python /app/service/listener.py --input=${STARK_REPOSITORY} --nbDaysBack=${DAEMON_RUN_EXISTENCE} --servicename=${MICROSERVICE_NAME} --dockerimage=${MICROSERVICE_IMAGE} --config=${STARK_CONFIG} --json=${SERVICES_JSON} --minDelay=${DAEMON_DELAY} --genome=${GENOME_FOLDER}
+
+
+networks:
+  POOL-service:
+    driver: "bridge"
+    ipam:
+        config:
+          - subnet: 172.22.0.0/16
