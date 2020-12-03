@@ -84,7 +84,6 @@ $repository_filter_brace="{".join(",",array_unique($repository_filter))."}";
 #echo "repository_filter_brace=$repository_filter_brace";
 #echo "scan";
 
-$_SESSION=[];
 
 if (!isset($_SESSION["repositories"])) {
 
