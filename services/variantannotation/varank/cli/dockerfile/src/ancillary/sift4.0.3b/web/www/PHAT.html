@@ -1,0 +1,66 @@
+<basefont size = 4>
+<body bgcolor=white>
+<TITLE>PHAT matrices : Matrices for transmembrane proteins</TITLE>
+<H1><center>The PHAT matrices</center>
+<center><i>A Matrix Series for Transmembrane Regions</i></center></H1>
+<P>
+<A HREF="PHAT_submission.html">Submit a transmembrane protein sequence</A>
+<i>(aligns transmembrane sequences with the PHAT matrix)</i>
+<BR><BR>
+<A HREF="PHAT_profile.html">Sequence converted to profile format for SWAT</A>
+<i>(for those who want to run their searches locally)</i><BR>
+<BR>
+The <b>PHAT</b> matrix series are built from <b>predicted hydrophobic and transmembrane</b> regions.  It performs significantly better at database searching on transmembrane regions than any previously published matrix.
+<P>
+Database searching algorithms for proteins use a scoring matrix that is based on average protein properties and is dominated by globular proteins.  However, transmembrane regions of a protein are in a distinctly different environment than globular proteins.  Hence, one would expect the substitution scores to differ and a matrix specialized for transmembrane regions to work better than matrices that have been generalized for all proteins. 
+<P>
+<BR>
+A substitution score for amino acid i to j can be calculated from alignment data by: 
+<BR>
+<BR>
+<center>s<sub><small>ij</small></sub> = C log (p<small><sub>ij</sub></small> / q<small><sub>i</sub></small>q<small><sub>j</small></sub>) </center>
+<BR>
+where C is a constant, p<small><sub>ij</sub></small>'s are the target or observed frequencies and q<small><sub>i</sub></small>'s are the background frequencies
+<a href="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=PubMed&cmd=Retrieve&list_uids=2051488&dopt=Abstract">(see Altschul, 1991 for details)</a>.<BR>
+<BR>
+The <b>PHAT</b> matrix series are built from target frequencies obtained from <a href="http://blocks.fhcrc.org/">BLOCKS</a>  predicted to be transmembrane by
+<a href="http://www.embl-heidelberg.de/predictprotein/">PHDhtm</a>
+and background frequencies from hydrophobic and transmembrane regions as determined by
+<a href="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=PubMed&cmd=Retrieve&list_uids=8126732&dopt=Abstract"> Persson-Argos </a> transmembrane propensity values:
+<BR>
+<BR>
+<center>s<sub><small>ij</small></sub><small><sup><b>PHAT</b></small></sup> = 
+C log 
+ (p<small><sub>ij</sub></small><small><sup><b>PHDhtm</b></sup></small> / q<small><sub>i</sub></small><small><sup><b>P-A</b></sup></small>q<small>
+<sub>j</small></sub><small><sup><b>P-A</b></sup></small>) </center>
+<BR>
+The <b>PHAT</b> matrix series have been shown to work significantly better than
+BLOSUM62 <a href="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=PubMed&cmd=Retrieve&list_uids=1438297&dopt=Abstract">(Henikoff and Henikoff, 1992)</a>
+, JTT-modified PAM <a href="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=PubMed&cmd=Retrieve&list_uids=1633570&dopt=Abstract">(Jones, Taylor, Thornton, 1992)</a>
+, and other transmembrane matrices <a href="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=PubMed&cmd=Retrieve&list_uids=8112466&dopt=Abstract">(Jones, Taylor, Thornton, 1994)</a>
+.
+<BR>
+<BR>
+For more details, see our paper:<BR> 
+<b>PHAT: a transmembrane-specific substitution matrix</b>
+<BR>(Ng, Henikoff, Henikoff 2000 <i>Bioinformatics</i> <b>16:</b> 760-766 + Errata 
+in <i>Bioinformatics </i><b>17</b>:290) <BR><BR>
+If you do not have access to <i>Bioinformatics</i>, you can also download the manuscript <A HREF="phat_paper.pdf">here</A> (that have the correct figures).<BR>
+<P>
+<BR>
+You can download the matrices here.
+<BR>
+<A HREF="PHAT_matrices/"><IMG ALIGN=absbottom BORDER=0 SRC="internal-gopher-menu">PHAT matrices series</A>
+<BR>
+<A HREF="Persson_Argos/"><IMG ALIGN=absbottom BORDER=0 SRC="internal-gopher-menu
+">Persson-Argos matrix series</A>
+<BR>
+<A HREF="PHDhtm_matrices/"><IMG ALIGN=absbottom BORDER=0 SRC="internal-gopher-menu">PHDhtm matrix series</A>
+<BR>
+<BR>
+<A HREF="PHAT_submission.html">Submit a transmembrane protein sequence</A>
+
+<HR>
+Questions or comments?<BR>
+Contact <A HREF="/sift-bin/contact.pl">us</A>
+

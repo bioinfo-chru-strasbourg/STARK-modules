@@ -1,0 +1,11 @@
+#      Compile one program with blimps routines on Solaris
+#	Usage to compile program.c:   cccb <program>
+set b = /usr/local/blimps
+set CC = /opt/sfw/bin/gcc
+
+# optimization doesn't work for some linux systems?
+#$CC -O2 -I$b/include -L$b/lib -o $1 $1.c -lblocks -lmatrix -lsequences -lfrequency -lpssm -lprotomat -lfiles -lmemory -loptions -lgcode -lstrutil -lsl -lm
+
+#$CC -I$b/include -L$b/lib -o $1 $1.c -lblocks -lmatrix -lsequences -lfrequency -lpssm -lprotomat -lfiles -lmemory -loptions -lgcode -lstrutil -lsl -lm
+
+$CC -I$b/include -L$b/lib -o $1 $1.c -lblimps -lm

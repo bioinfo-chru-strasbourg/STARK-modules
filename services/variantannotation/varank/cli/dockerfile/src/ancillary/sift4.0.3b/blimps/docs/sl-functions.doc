@@ -1,0 +1,250 @@
+BLIMPS (BLocks IMProved Searcher)
+(C) Copyright 1993, Fred Hutchinson Cancer Research Center
+
+sl-functions.doc -- A Quick Introduction to the Functions
+
+------------------------------------------------------------------------
+
+	    -- How to use the Generic SkipList package --
+		A Quick Introduction to the Functions
+
+				  by
+			  Dominic Giampaolo
+			(nick@maxine.wpi.edu)
+
+
+    This Generic SkipList package provides a way to create a sorted
+list of any type of data.  All you must do is provide a way to compare
+the data (similar to the way you use the qsort() library function),
+and (optionally) a way to free that data. The steps to using a
+SkipList are as follows :
+
+
+    1) #include "skiplist.h" in your program.
+
+    2) Wherever you want to use a skiplist, declare one like this :
+
+	   SkipList mylist;
+
+       Notice that you don't need to declare mylist as a pointer or
+       anything special.  The data type SkipList is opaque and you
+       should not poke into it.  All you have to do is declare a
+       variable to be of type SkipList, and once you've done a
+       NewSL(), you can go about your business inserting, deleting,
+       and searching, while not worrying about how the data is stored.
+
+    3) Call NewSL() :
+
+	    list = NewSL(mycompare, myfreeitem, ALLOW_DUPLICATES);
+
+       The arguments to NewSL() are : 
+           1) A pointer to a comparison function, which is described
+	      below.  This argument is MANDATORY, and must point to a
+	      valid comparison function.
+
+	   2) An optional (pass a NULL if you don't want one) pointer
+	      to a freeitem function which will be called everytime a
+	      node is deleted (so you can free your data).
+
+	   3) A flag specifying if you want to allow duplicates in the
+	      list or not (either ALLOW_DUPLICATES or NO_DUPLICATES).
+
+
+    4) Insert, Delete, and Search for elements to your heart's content :
+
+	    result   = InsertSL(mylist, item_ptr);
+
+       The insert function, InsertSL() takes a list argument (created
+       with NewSL()), and a pointer to some kind of data (whether that
+       be a structure, character string, or whatever).  The result
+       returned is TRUE if the item was inserted properly and FALSE
+       otherwise.  If, when you created the list, you specified that
+       no duplicates be allowed, and the item you want to insert is a
+       duplicate, InsertSL() will return the error, DUPLICATE_ITEM.
+       The object that you insert should probably be dynamically
+       allocated (via malloc() or whatever) or be permanent global data.
+
+
+	    result   = DeleteSL(mylist, item_ptr);
+
+       DeleteSL() will delete an item you inserted with InsertSL().
+       The return value indicates if the item was in the list or not.
+       You will only get back TRUE (if the deletion was successful) or
+       FALSE (if something went wrong).  If you specified a freeitem
+       function in NewSL(), that function will be called with a
+       pointer to whatever data is stored in that node (so you can
+       free the object's memory and do cleanup for it).
+
+
+	    item_ptr = SearchSL(mylist, some_ptr);
+
+       SearchSL() is special, because this is where all the super
+       fastness of SkipLists's comes into play.  Its first argument is
+       a list that was created by NewSL().  The second argument is a
+       pointer to the same data type that you've been putting in to
+       the list.  Your comparison function will get this pointer as
+       one of its arguments, and will use it to decide if it has found
+       the element you are looking for.  Generally if you are using
+       character strings, you would just pass the character string you
+       are looking for.  If you were using some special data
+       structure, it's up to you what values are in the structure, but
+       it should be enough that your comparison function can do a
+       valid comparison between the item you are searching for and the
+       elements in the list.  The return value is a pointer to the
+       item in the list (which is most likely different than the 
+       pointer you passed in), or NULL if it was not found.  
+
+
+    5) Doing something to the whole list :
+
+	    DoForSL(mylist, mycallback, data_ptr);
+
+       This function will sequentially iterate through the whole list,
+       calling your callback function "mycallback" for each item in
+       the list.  Your callback function should expect to be called
+       with a pointer to the item in the list and the extra argument,
+       data_ptr (which can point to any arbitrary data you want). The
+       DoForSL() function is very useful for iterating through all the
+       elements in a list and doing something to them (like printing
+       them out or saving them to disk or whatever).  Your callback
+       function should return TRUE if it wants DoForSL() to continue
+       going through the list, or FALSE if it wants DoForSL() to stop
+       iterating through the list.  It is important to make sure that
+       you consciously return either TRUE or FALSE depending on what
+       you want to happen (keep going through the list or stop).
+       Otherwise you'll wind up with weird intermittent types of
+       behavior in your program.  
+
+
+    6) Free the list and all its associated memory :
+
+	    FreeSL(mylist);
+
+       This will just go through and free all the elements (and memory
+       taken up by) all the nodes in a list.  It will also free the
+       list structure itself.  If you specified a freeitem function
+       when you created the list, it will be called for every node
+       with a pointer to that node's data (so you can properly free
+       things and such)
+
+[   7) Decrease the amount of nodes that are saved when a node is
+       deleted. 
+
+	    LowerSavedNodesLevel();
+
+       This decreases the number of skiplist nodes to save for the
+       smallest sized nodes.  There is a separate number of nodes to
+       save for each sized node.  The number to save for a particluar
+       node level is the number of the previous level - 1/4 of that
+       level.  For example if the first level were 10:
+	  10  8  6  5  4  3  2  2  2 ...
+       Note that due to rounding the lowest number of nodes to save is
+       two.  Also due to rounding when the number to save decreases to
+       one (or zero), the number of nodes saved for each level is one
+       (or zero).
+
+       This function is only usefull if you are woried about memory
+       usage. 
+
+
+Added by Bill Alford]
+
+	     -- Description of the Comparison Function --
+
+    You can insert as many elements as you'd like (upto the limits of
+free memory).  The list items are always maintained in sorted order.  This
+is done by calling your comparison function with two pointers.	Your
+comparison function should return less than zero if the first argument is
+less than second, zero if both arguments are equal, and greater than zero
+if the second argument is greater than the first.  For example, if we had a
+SkipList that worked with integers, our comparison might look like this :
+
+       int myintcompare(int *a_, int *b_)
+	{
+	   int a = *a_, b = *b_;      /* for readability */
+
+	   if (a < b)
+	     return -1;
+
+	   if (a > b)
+	     return 1;
+
+	   if (a == b)
+	     return 0;
+	}
+
+
+    Of course that's a stupid way to implement a comparison function
+(instead use : return (*a - *b); ), but you get the point.  For a Skiplist
+that works with character strings, you might do the following :
+
+       int mystringcompare(char *a, char *b)
+	{
+	   return strcmp(a, b);   /* strcmp() already does what we want */
+	}
+
+    With more complicated user defined structures, you could have any
+imaginable type of comparison, so long as you return less than zero for
+a < b, zero for a == b, and greater than zero for a > b.  Just remember,
+you are getting pointers to the data elements, not the actual data
+elements.  Remember also, the comparison should always work the same
+for any two elements.  If you want another example of this, look at
+the qsort() function in the ANSI C library.
+
+
+
+	      -- Description of the freeitem callback --
+
+    The freeitem callback function works similarly to the comparison
+function callback. If you provide one (you can specify a NULL),
+everytime a node is freed, your freeitem function is called with a
+pointer to the data item for that node.  If you had some dynamically
+allocated structure (say a symbol table entry), when you free the list
+or delete an item, you can free your storage that is associated with
+that node. Here is an example freeitem function :
+
+	void myfreeitem(somestruct *item)
+	 {
+	    /* do whatever other free()'s are necessary */
+	    free(item);
+	 }
+
+    Simple and to the point.  If you do not specify a freeitem callback (by
+passing a NULL to NewSL()), whenever a node is deleted or the list freed,
+the data pointers go into lala land.  Either you better keep track of those
+pointers elsewhere (a duplication of effort, but may be necessary), or they
+better not point to dynamically allocated memory.  Basically, just make
+sure you don't stick yourself with a memory loss problem.
+
+
+			  -- Other Things --
+
+    When you search for an item, if it is found, a pointer to it is
+returned, otherwise NULL.  YOU MAY NOT CHANGE THE POINTER'S DATA!  If you
+do, and it changes the ordering of the list, kiss your sorted list goodbye.
+If you do need to change the pointer's data, remove the item from the list,
+change it's data, then add it back in.
+
+
+
+     This conclusion is coming up fast because it is 2:00am and after
+having just watched 6+ hours straight of StarWars, I'm kinda beat and
+should be sleeping, not programming.  In any case, the above steps
+pretty much describe everything.  I think that between the above docs
+the example program, and the mini-article (skiplist.doc), you should
+be able to figure out what's going on.  If not, send me some e-mail
+(nick@maxine.wpi.edu) and I'll try to help out.
+
+     Oh, one final thing.  This code is under the GNU COPYLEFT and if
+you want to use it, please keep that in mind.  If you have any code
+that you'd like to share with me (or others), feel free to pass it on
+(I like adding things to my library of code).  I think the idea of
+sharing software is a good one, and so hopefully getting this little
+gift will motivate you to also contribute something (because we all
+benefit when you do that).
+
+
+     May the force be with you! :-)
+
+--dominic giampaolo (nick@maxine.wpi.edu)
+

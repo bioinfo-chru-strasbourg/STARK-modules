@@ -1,0 +1,51 @@
+<body bgcolor=white>
+<TITLE>SIFT on dbSNP</TITLE>
+<H1>
+<img src="pics/sifter.gif" align=left width="15%">
+S<font color=red>I</font>F<font color=blue>T</font> on dbSNP
+
+<FORM ENCTYPE="MULTIPART/FORM-DATA" METHOD="POST" ACTION="/sift-bin/SIFT_pid_subst_submit.pl">
+</H1>
+<BR><b>SIFT Predictions on Protein IDs</b>:   SIFT was applied to all human nonsynonymous SNPs in <A HREF="http://ncbi.nlm.nih.gov/SNP/">dbSNP (build 129)</A>.  The sequence alignment used for prediction were taken from NCBI's <A HREF="http://www.ncbi.nlm.nih.gov/sutils/static/blinkhelp.html">precomputed BLAST searches</A> and was composed of either the best hit to other organisms or all BLAST hits.  Scoring is as described in 
+<i>Genome Research </i> <b>12:</b> 436-446.<BR>
+<BR>
+If we are unable to successfully retrieve your nsSNP from the database, please go to the <A HREF="SIFT.html">SIFT homepage</A> to see your other options. 
+<!--You can also <A HREF=" ">download</A> all dbSNP predictions.-->
+<BR>
+<BR>
+ <HR>
+Enter your email address if you want the results through email : <BR>
+<i>Please check that your address is correct and your mailbox is not full.</i><BR>
+ <BR>
+<INPUT SIZE=50 NAME="address">
+</INPUT SIZE>
+<BR>
+<BR>
+<HR>
+<BR>
+<font color=blue>dbSNP Protein IDs</font><BR>
+One RefSeq accession (starting with XP / NP)  or gi number per line.<BR>
+[<A HREF="pid_example.txt">Sample format</A>]<BR></font>
+<BR>
+Paste in RefSeq accessions or gi numbers<BR>
+<TEXTAREA NAME="GI" ROWS=5 COLS=30></TEXTAREA>
+<BR>
+<BR>-or-<BR>
+<BR>
+Upload file containing RefSeq accessions or gi numbers<BR>
+<INPUT SIZE=50 NAME="GI_file" TYPE="file">
+</TD>
+</TR>
+</TBODY></TABLE>
+<BR>
+<BR>
+<INPUT TYPE=submit>
+<INPUT TYPE=reset>
+<HR>
+<BR>
+[<A HREF="/">SIFT home page</A>]
+<A HREF="SIFT_help.html">SIFT help page</A>]
+<BR>
+<i>Questions or comments?<BR>
+Contact <A HREF="/sift-bin/contact.pl"> us </A><BR>
+Last updated: February 2005</i><BR>

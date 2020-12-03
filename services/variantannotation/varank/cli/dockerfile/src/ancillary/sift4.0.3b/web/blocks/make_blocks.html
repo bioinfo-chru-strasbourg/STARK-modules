@@ -1,0 +1,90 @@
+<HTML>
+<TITLE>Block Maker</TITLE>
+<H1><IMG ALIGN=MIDDLE SRC="/blocks/icons/blocks.xbm"> Block Maker</H1>
+<P>at the 
+<A HREF="http://www.fhcrc.org/">Fred Hutchinson Cancer Research Center</A> 
+BlockS WWW server.
+<HR>
+
+<FORM ENCTYPE="MULTIPART/FORM-DATA" METHOD="POST" ACTION="/blocks-bin/makeblocks.pl">
+
+Block Maker finds conserved blocks in a group of
+two or more <B>unaligned</B> protein sequences, which are assumed to be related,
+using two different algorithms.<BR>
+<B>If you already have a multiple alignment, please use the
+<A HREF="/blocks/process_blocks.html">Multiple Alignment Processor</A>
+instead.</B><P>
+
+At least <STRONG>two</STRONG> related protein sequences must be provided 
+to make blocks.
+Each sequence must have a unique name of <STRONG>10 characters or less</STRONG>.
+If you have the accession numbers of some sequences you would like to use,
+<A TARGET="entrez" HREF="http://www.ncbi.nlm.nih.gov/entrez/batchentrez.cgi?db=Nucleotide">Batch Entrez</A> can create a file for you in 
+<A HREF="http://www.ncbi.nlm.nih.gov/BLAST/fasta.html">FASTA format</A>.
+<P>
+If you have a file a sequences in a format other than FASTA, you can convert
+them to FASTA format at the
+<A HREF="http://www.ebi.ac.uk/cgi-bin/readseq.cgi">EBI conversion tool</A>.
+<P>
+It may take <STRONG>several minutes</STRONG> to
+process your sequences. If you are not prepared to wait for a response,
+or have more than 25 sequences or more than 15,000 amino acids,
+please provide an email address and your
+results will be returned to you in two messages. The second
+message contains your blocks in 
+<A HREF="/blocks/blocks_format.html">Blocks Database format</A>,
+and you can copy and paste these into the
+<A HREF="/blocks/process_blocks.html">Multiple Alignment Processor</A>
+to get
+<A HREF="/blocks/help/about_logos.html">Logos</A> and
+<A HREF="/blocks/help/about_trees.html">Trees</A>,
+to search sequence database using
+<A HREF="/blocks/help/about_cobbler.html">Cobbler</A> 
+or
+<A HREF="http://meme.sdsc.edu/meme/mast-intro.html">Mast</A>,
+and to predict PCR primers using <A HREF="/blocks/codehop.html">CODEHOPs</A>.
+<HR>
+Enter your email address if you want the results through email:<BR>
+<INPUT SIZE=50 NAME="address"><P>
+
+Enter a short description of your group of sequences:<BR>
+<INPUT SIZE=20 NAME="desc"><P>
+
+Enter the name of a file containing your protein sequences:<BR>
+<INPUT SIZE=50 NAME="seqfile" TYPE="file"><BR>
+-or-<BR>
+Enter your protein sequences in a single format (e.g. 
+<A HREF="http://www.ncbi.nlm.nih.gov/BLAST/fasta.html">FASTA</A>):<BR>
+<TEXTAREA NAME="sequences" ROWS=10 COLS=70></TEXTAREA>
+
+<HR>
+<INPUT TYPE=submit VALUE = "Make Blocks">
+<INPUT TYPE=reset>
+<P>
+<STRONG>Note:</STRONG> It may take several minutes to compute the results:
+Please be patient.
+
+<HR>
+You might be interested in trying other
+<A HREF="http://dot.imgen.bcm.tmc.edu:9331/multi-align/multi-align.html">multiple sequence alignment methods</A>,
+including ClustalW, MAP and PIMA, at the Human Genome Center at the Baylor 
+College of Medicine, 
+<A HREF="http://meme.sdsc.edu/meme/intro.html">Multiple EM for Motif Elicitation</A>
+at the <A HREF="http://www.sdsc.edu/">San Diego Supercomputer Center</A> 
+and the
+<A HREF="http://bayesweb.wadsworth.org/gibbs/gibbs.html">Gibbs Motif Sampler</A>
+at the <A HREF="http://www.wadsworth.org">Wadsworth Center</A>.
+
+<HR>
+<P>
+<A HREF="/blocks">[Blocks home]</A> 
+<A HREF="/blocks/blocks_search.html">[Block Searcher]</A>
+<A HREF="/blocks/make_blocks.html">[Block Maker]</A>
+<A HREF="/blocks-bin/getblock.sh">[Get Blocks]</A>
+<A HREF="/blocks-bin/LAMA_search.sh">[LAMA Searcher]</A>
+<HR>
+<HR>
+<A href="/blocks-bin/contact.pl">Contact us</A><P>
+Page last modified on <MODIFICATION_DATE>Oct 2003</MODIFICATION_DATE>
+</HTML>
+

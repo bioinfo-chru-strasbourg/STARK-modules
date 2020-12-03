@@ -1,0 +1,64 @@
+<body bgcolor=white>
+<TITLE>SIFT retrieving SNPs - HELP</TITLE>
+<H1>
+<img src="pics/sifter.gif" align=left width="5%">
+S<font color=red>I</font>F<font color=blue>T</font> SNP Help Page
+</H1>
+<BR>
+<BR>
+There are many resources to retrieve SNPs:<BR>
+<BR>
+<h3>I. From <b>HapMap</b> (human SNPs genotyped in different populations):</h3> 
+<ol>
+<li>Go to <A HREF="http://hapmap.ncbi.nlm.nih.gov">http://hapmap.ncbi.nlm.nih.gov/</A HREF></li> 
+<li> On the left hand side, click on HapMart</li>
+<li> Choose database: Hapmap's latest release</li>
+<li> Choose dataset: Your population of interest</li>
+<i>In the next steps, we want to restrict to nonsynonmyous SNPs only.</i><BR>
+<li> Click on <b>Filters</b> on left-hand side
+<li> Check the box " <b>SNPs found in</b>" 
+<li> Set the box to <b>Exons - non-synonymous coding SNPs </b>
+<li> You can also filter on minor allele frequency, validation, etc.</li>
+<i>Now we want to print out the list of rs id's.</i><BR>
+<li> Click on <b>Attributes</b> on left-hand side panel
+<li> Under variation, click "<b>marker id</b>"
+<li> Hit button "<b>Results</b>" in top panel
+<li> Export all results to get a list of rs id's to enter into the SIFT website</li> 
+</ol>
+<BR>
+<h3>II. From BioMart (all organisms):</h3>
+<ol>
+<li> Go to <A HREF="http://www.biomart.org">http://www.biomart.org/</A> 
+<li> Click on the link for <b>BioMart Central Portal</b>
+<li> Choose database: <b>Ensembl <i>v.#</i> VARIATION </b>
+<li> Choose dataset: your organism</li>
+<i>In the next steps, we want to restrict to nonsynonmyous SNPs only.</i><BR>
+<li> Click on <b>Filters</b> on left-hand side
+<li> Expand <b>Gene associated variation filters</b></li>
+<li> Check on the box " <b>Consequence type</b>"
+<li> Set the box to <b>NON_SYNONYMOUS_CODING</b>
+<li> You can also filter on regions, genes, etc.</li>
+<i>Now we want to print out the list of rs id's.</i><BR>
+<li> Click on <b>Attributes</b> on left-hand side panel
+<li> Expand <b>Variation</b></li>
+<li> Under variation, click "<b>Variation ID</b>"
+<li> Hit button "<b>Results</b>" in top panel
+<li> Export all results to get a list of rs id's to enter into the SIFT website</li>  
+</ol>
+<h3>III. From dbSNP (all organisms):</h3> 
+<ol>
+<li>Open <A HREF="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=Snp">Entrez dbSNP</A> in a new window (right click mouse).<BR>
+<li>Query your gene of interest to find nonsynonymous SNPs.
+For example, to get nsSNPs in the human LPL gene, type in <b>"coding nonsynon"[FUNC] AND "human"[ORGN] AND "LPL"[GENE]</b></li>
+<li>Change "Display" button to <b>dbSNP Batch Report</b> and hit "Display"<BR></li>
+<li> Copy and paste the rs numbers into the <A HREF="SIFT_dbSNP.html">SIFT website</A></li><BR>
+<BR>
+[<A HREF="/">SIFT home page</A>]
+<A HREF="SIFT_help.html">SIFT help page</A>]
+<BR>
+<BR>
+<HR>
+<BR>
+<i>Questions or comments?<BR>
+Contact <A HREF="/sift-bin/contact.pl" > us </A><BR>
+Last updated: February 2005</i><BR>

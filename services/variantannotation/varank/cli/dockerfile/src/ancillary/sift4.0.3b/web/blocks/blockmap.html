@@ -1,0 +1,33 @@
+<HTML><TITLE>Blocks Map</TITLE>
+<H1 ALIGN=CENTER><iMG ALIGN=MIDDLE SRC="/blocks/icons/hutch_logo.gif">
+Blocks Map<IMG ALIGN=MIDDLE SRC="/blocks/icons/blocks.xbm"></H1>
+<HR>
+
+<FORM METHOD=POST ENCTYPE="multipart/mixed" ACTION="/blocks-bin/blockmap.pl">
+
+Enter a protein sequence identifier (e.g. P00743) to map it in all blocks
+in the Blocks and Prints Databases,<BR>or enter a Blocks or Prints
+family identifier (e.g. IPB002383 or PR00722) to see all protein sequences
+for that family:<P>
+
+<table border = 1>
+<tr><td><b> Protein Sequence or Family Identifier: </b></td> <td><input type="text" name="name"></td></tr>
+<tr><td><b> Input Type:</b></td> <td><select size="2" name="type" >
+<option value="SEQ">Sequence Identifier</option>
+<option selected value="FAM">Family Identifier</option>
+</select></td></tr>
+
+<tr><td><b> View: </b></td> <td><select size="2" name="condensed" >
+<option selected value="YES">Condensed</option>
+<option  value="NO">Expanded</option>
+</select></td></tr>
+</table>
+
+<br>
+<table border =1>
+<p><tr>
+<td><input type="submit" value="Submit"></td>
+</tr>
+</table>
+
+</FORM></HTML>

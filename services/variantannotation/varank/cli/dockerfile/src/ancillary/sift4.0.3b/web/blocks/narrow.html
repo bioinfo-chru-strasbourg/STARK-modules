@@ -1,0 +1,73 @@
+<HTML>
+<TITLE>Narrow PSSMs</title>
+<H1 ALIGN=CENTER><IMG ALIGN=MIDDLE SRC="/blocks/icons/hutch_logo.gif">
+Blocks WWW Server
+<IMG ALIGN=MIDDLE SRC="/blocks/icons/blocks.xbm"></H1>
+<P>
+A service for biological sequence analysis at the
+<A HREF="http://www.fhcrc.org/">Fred Hutchinson Cancer Research Center</A>
+in Seattle, Washington, USA.
+<HR>
+
+<FORM ENCTYPE="MULTIPART/FORM-DATA" METHOD="POST" ACTION="/blocks-bin/narrow.pl">
+
+<P>
+
+This page will convert a narrow
+<A HREF="help/narrow.block">block</A> ,
+<A HREF="help/narrow.freq">frequency</A> or
+<A HREF="help/narrow.weight">weight</A> 
+<A HREF="help/PSSM_def.html">PSSM</A> to
+BLIMPS and 
+<A HREF="http://meme.sdsc.edu/meme/website/motif_format.html">MAST format</A>
+and then search it vs 
+<A HREF="http://www.expasy.ch/sprot">Swiss-Prot</A> using
+<A HREF="ftp://ftp.ncbi.nih.gov/repository/blocks/unix/blimps/">BLIMPS</A>.
+<BR>
+The conversion is done as follows:<BR>
+<UL>
+<LI>If a block is input, equal sequence weights are used.
+<LI>If a block is input, amino acid frequencies are computed for each position.
+<LI>If a block or frequency PSSM is input, minimal pseudo counts are
+added to the actual counts; just enough to allow log-odds to be computed.
+For a block, 1 pseudo-count per 10,000 real counts is computed using a substitution matrix.
+For a frequency PSSM, 10,000 real counts and 1 pseudo-count are assumed
+and the pseudo-count is computed using background frequencies.
+<LI>If a block or frequency PSSM is input, the expected values for the
+odds ratios are taken from Swiss-Prot and the log base e (scale in nats) 
+of the odds ratios is computed.
+<LI>This PSSM is output in MAST format.
+<LI>This PSSM is converted to a positive matrix and output in BLIMPS format.
+
+
+<P>
+If you have a multiple alignment, you can 
+<A HREF="process_blocks.html">reformat it</A> 
+as a 
+<A HREF="blocks_format.html">BLOCK</A>.
+<P>
+
+Select a query type:<BR>
+<SELECT NAME="type" SIZE=3>
+<OPTION VALUE="F" SELECTED> Frequency PSSM in MAST format
+<OPTION VALUE="W"> Weight PSSM in MAST format
+<OPTION VALUE="B"> Block
+</SELECT>
+
+<P>
+Enter the name of a file containing your query:<BR>
+<INPUT SIZE=50 NAME="qfile" TYPE="file"><BR>
+-or-<BR>
+Enter your query:<BR>
+<TEXTAREA NAME="query" ROWS=10 COLS=60></TEXTAREA>
+
+
+<HR>
+<INPUT TYPE=submit>
+<INPUT TYPE=reset>
+<BR>
+
+<HR>
+<A href="/blocks-bin/contact.pl">Contact us</A><P>
+Page last modified on <MODIFICATION_DATE>Mar 2003</MODIFICATION_DATE>
+</HTML>
