@@ -1,0 +1,4 @@
+#   /robots.txt file for http://blocks.fhcrc.org/
+#
+User-agent: *
+Disallow: /

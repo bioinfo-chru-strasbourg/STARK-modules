@@ -1,0 +1,75 @@
+<HTML>
+
+<TITLE>Biassed Blocks Finder</TITLE>
+
+<BODY>
+<H1><IMG ALIGN=MIDDLE SRC="/blocks/icons/blocks.xbm">Identifying biassed blocks</H1>
+<P>at the 
+<A HREF="http://www.fhcrc.org/">Fred Hutchinson Cancer Research Center</A> BLOCKS WWW server.
+<HR>
+
+Compositionally biassed blocks are made up of sequence segments rich 
+in a few amino acids or short repeats. 
+Biassed blocks are not
+neccesarily misaligned. Some conserved protein regions are rich in 
+charged residues, like basic-zipper transcription factors, or in hydrophobic
+amino acids, like transmembranal regions.
+However, blocks biassed toward the same amino acid(s) can give a significant 
+<A HREF="/blocks-bin/LAMA_search.sh">LAMA</A> (block to block alignment) 
+score, even without being biologically related.
+<P>
+Biassed blocks have a high number of columns similar to one another.
+Such a block can be identified by comparing all of its columns with
+each other, clumping those columns sharing high pairwise scores, and counting 
+the number of columns in the largest clump.
+<P>
+Two parameters are used: 
+which pairwise column score is considered "high" and
+what fraction of columns in the largest clump is considered "high".
+The column comparison measure used is the normalized sum of products (p).
+p(A,B) is the sum of A(i)*B(i) for all i amino acids (20) in block 
+columns A and B (actually <A HREF="help/PSSM_def.html">PSSM</A>
+columns).
+About 5% of the blocks in the Blocks+ (10 June 2000) database were judged
+biassed using the default parameters of 0.50 for the cutoff pairwise column
+score and 25% of columns in the largest clump of columns.
+<P>
+
+<FORM METHOD="POST" ACTION="/blocks-bin/biassed_blocks_finder">
+
+Paste your block(s) below and <INPUT TYPE=submit VALUE="submit">. 
+The blocks must be in the
+<A HREF="help/blocks_format.html">BLOCK format</A>.
+You can reformat multiple sequence alignments to that format
+<A HREF="block_formatter.html">here</A>)
+<HR>
+
+<TEXTAREA NAME="BLOCK" ROWS=20 COLS=70></TEXTAREA>
+
+<HR>
+
+<INPUT TYPE=submit VALUE="Submit">
+<INPUT TYPE=reset VALUE="Reset & Clear">
+
+<HR>
+</FORM>
+
+<p>
+
+
+<A HREF="help/LAMA_help.html">LAMA Searcher Help</A>
+<P>
+
+<A HREF="/blocks">[Blocks home]</A> 
+<A HREF="/blocks/blocks_search.html">[Block Searcher]</A>
+<A HREF="/blocks/make_blocks.html">[Block Maker]</A>
+<A HREF="/blocks-bin/getblock.sh">[Get Blocks]</A>
+<A HREF="/blocks/block_formatter.html">[Blocks Formatter]</A>
+<A HREF="/blocks-bin/LAMA_search.sh">[LAMA Searcher]</A>
+
+<HR>
+<A href="/blocks-bin/contact.pl">Contact us</A>
+Page last modified <MODIFICATION_DATE>June 2000</MODIFICATION_DATE>
+
+</BODY>
+</HTML>

@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-16" />
+    <!--[if IE]>
+      <style type="text/css">
+        #content { overflow: hidden; width: 933px; } 
+        #main_content_3c #content, #main_content_2c #content { width: 953px; } 
+        #main_content_2c #content #middle_content { width: 710px; }
+        #main_content_3c #middle_content { width: 515px; }
+      </style>
+    <![endif]-->
+    <!--[if lt IE 7.]>
+      <style type="text/css">
+        #main_logo { height: 79px; }
+      </style>
+    <![endif]-->
+    <title>SIFT Batch Protein</title>
+
+    <style type="text/css">
+      #middle_content_template { 
+        margin: 0;
+        margin-left: 210px;
+      } /* end #middle_content_template */
+      
+      #middle_content_template, #left_content ul { text-align: left; }
+    </style>
+
+    
+    
+  </head>
+  <body> 
+        <div id="project">SIFT Batch Protein 
+	</div>
+
+      </div>
+    </div>
+    <div id="menu_border">
+      <div id="menu">
+        <div id="menu_container">
+          <ul>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div id="content">
+      <div id="container_1">
+        <div id="container_2">
+
+          <div id="content_header">
+            <div class="clearfix">
+              <div id="left_content">
+                <ul>
+                </ul>
+
+              </div>
+	      <FORM ENCTYPE="MULTIPART/FORM-DATA" METHOD="POST" ACTION="/sift-bin/SIFT_pid_subst_all_submit.pl">
+              <div id="middle_content_template">
+                  <p><b>SIFT Batch Protein provides SIFT predictions for a list of RefSeq IDs or gi numbers</b> and their corresponding amino acid substitutions. If no amino acid substitution is listed, prediction for dbSNP nonsynonymous variants will be returned.  
+			<BR><BR>
+
+
+		  </p>
+		  <HR>
+		  <p class="header2"><b>User Input</b></p>
+		  <p>
+			Enter your email address if you want the results through email : <BR>
+			<i>Please check that your address is correct and your mailbox is not full.</i><BR>
+ 			
+			<INPUT SIZE=50 NAME="address">
+			</INPUT SIZE>
+			<BR>
+			
+			<HR>
+			<font color=blue>Protein IDs</font><BR>
+			One RefSeq accession (starting with XP / NP)  or gi number per line (Limit 1000 proteins, please!).<BR>
+			[<A HREF="pid_all_example.html">Sample format</A>]<BR></font>
+			<BR>
+			Paste in RefSeq accessions or gi numbers<BR>
+			<TEXTAREA NAME="GI" ROWS=10 COLS=30></TEXTAREA>
+			<BR>
+			<BR>-or-<BR>
+			<BR>
+			Upload file containing RefSeq accessions or gi numbers<BR>
+			<INPUT SIZE=50 NAME="GI_file" TYPE="file">
+			</TD>
+			</TR>
+			</TBODY></TABLE>
+			<HR>
+			<BR>
+			Select sequences to include:
+  			<SELECT NAME="sequences_to_select" SIZE="1">
+  			<OPTION VALUE="ALL">all BLAST hits
+  			<OPTION VALUE="BEST" SELECTED>best BLAST hit to each organism
+  			</SELECT>
+			<BR>
+			<i>If you receive a warning that the sequences were not diverse enough for prediction on your substitution, try "all BLAST hits".  If that fails, you can submit <A HREF="
+			SIFT_seq_submit2.html">here</A> and have SIFT find the appropriate number of sequences.</i><BR>
+			<BR>
+			Remove sequences more than
+			<input type=text name=seq_identity_filter size=3 maxlength = 3 value="90">
+			percent identical to query<BR>
+			<i>This cleans out any polymorphic alleles (sequences in the database that are nearly identical to your protein but already containing the substitutions of interest). The contaminating sequences may cause the substitution to be predicted as tolerated. </i>
+			<BR>
+			<BR>
+			<HR>
+			<BR>
+			<INPUT TYPE=submit>
+			<INPUT TYPE=reset>
+		  </p>
+		  </FORM>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <div id="home_border">
+      <div id="home_bar">
+        <div id="home_container">
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>
+

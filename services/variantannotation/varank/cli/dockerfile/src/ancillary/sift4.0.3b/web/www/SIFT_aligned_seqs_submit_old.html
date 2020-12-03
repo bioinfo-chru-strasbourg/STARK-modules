@@ -1,0 +1,92 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>SIFT Homepage</title>
+<link rel="stylesheet" type="text/css" href="/www/css/main.css" />
+</head>
+<!-- Begin Wrapper -->
+   <div id="wrapper">
+    <!-- Begin Header -->
+         <div id="header">
+
+
+
+<body bgcolor=white>
+<TITLE>SIFT:Submit aligned sequences</TITLE>
+<H1>
+<img src="pics/sifter.gif" align=left width="15%">
+S<font color=red>I</font>F<font color=blue>T</font>: Submit aligned sequences</H1>
+<BR>
+<FORM ENCTYPE="MULTIPART/FORM-DATA" METHOD="POST" ACTION="/sift-bin/SIFT_aligned_seqs_submit.pl">
+Submit your query sequence along with other protein sequences that are aligned to it for SIFT.  Your query sequence is the sequence that you would like prediction on (i.e. the sequence in which you have introduced the amino acid substitutions). <b> 
+The query sequence should be first in the alignment.  The positions of amino acid substitutions should be with respect to the query sequence.
+  </b>
+Partial sequences should be flanked by Xes at the beginning and end of the sequence so that those positions are not considered gaps (and hence have liberal prediction).
+<BR>
+<A HREF="/">[SIFT home page]</A>
+<A HREF="SIFT_help.html">[More info]</A><BR>
+<BR>
+
+</div>
+<div id="content">
+<font color=blue>Enter alignment</font><BR>
+Enter your protein query sequence aligned with related protein sequences. These protein sequences are assumed to be functional, and is what SIFT will base its prediction on. The normal (functional) query sequence should appear first. 
+<BR>
+<BR>
+Enter the name of the file containing your aligned protein sequences 
+<A HREF="http://blocks.fhcrc.org/blocks/help/blocks_format.html#fasta">
+[clustal, msf, or fasta format]</A>.
+<INPUT SIZE=50 NAME="alignment_file" TYPE="file"><BR><BR>
+<center>-or-</center><BR>
+Paste in your aligned protein sequences 
+<A HREF="http://blocks.fhcrc.org/blocks/help/blocks_format.html#fasta">
+[clustal, msf, or fasta format]</A>.<BR>
+<TEXTAREA NAME = "aligned_seqs" ROWS=10 COLS=70></TEXTAREA>
+<BR>
+<BR>
+<HR>
+<font color=blue>Substitutions to be predicted on (can be left blank)</font><BR>
+<BR>
+Enter the name of file containing substitutions of interest:
+<A HREF="SIFT_help.html#substitution">[format]</A>:
+<BR>
+<INPUT SIZE=50 NAME="substitution_file" TYPE="file"><BR><BR>
+<center>-or-</center><BR>
+Enter the substitutions of interest:
+<A HREF="SIFT_help.html#substitution">[format]</A>:
+<BR>
+<TEXTAREA NAME = "substitutions" ROWS=5 COLS=50></TEXTAREA>
+<BR><BR>
+<HR>
+<BR>
+<font color=blue>Parameters</font><BR>
+<BR>
+<!--
+<input type=checkbox checked name=gap_option value="TRUE">Account for Gaps<BR>
+<i>  If your alignment is especially gapped, turn this off.</i><BR>
+<BR>
+-->
+Remove sequences more than 
+<input type=text name=seq_identity_filter size=3 maxlength = 3 value="100"> 
+percent identical to query<BR>
+<i>This cleans out any polymorphic alleles (sequences in the alignment that 
+are nearly identical to your 
+protein but already containing the substitutions of interest).  
+The contaminating sequences may cause the substitution to be predicted 
+as tolerated.
+</i>
+<BR>
+<BR>
+<INPUT TYPE=submit>
+<INPUT TYPE=reset>
+</div>
+<div id="footer">
+[<A HREF="/">SIFT home page</A>]
+<A HREF="SIFT_help.html">SIFT help page</A>]
+<BR>
+<i>Questions or comments?<BR>
+Contact <A HREF="/sift-bin/contact.pl"> us </A><BR>
+Last updated: November 2008</i><BR>
+</div>
+</div>

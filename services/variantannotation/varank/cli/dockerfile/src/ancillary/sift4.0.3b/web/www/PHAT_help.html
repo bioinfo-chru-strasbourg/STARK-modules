@@ -1,0 +1,79 @@
+<basefont size = 4>
+<body bgcolor=white>             
+<title>Instructions on Using PHAT with SWAT</title>
+<H1><Center>Instructions on Using PHAT with SWAT</Center></H1>
+<br>
+<li>
+<a href="#SWAT">Why we use SWAT</a></li>
+<li>
+<a href="#sequence_submission">Submitting sequences</a></li>
+
+
+<li>
+<a href="#database_sequences">Submitting a database</a></li>
+
+<BR>
+<BR>
+<P>
+<BR>
+
+<a name="SWAT"> <font size=+1>Why we use SWAT</font></a></li>
+<BR>
+<BR>
+We use <A HREF="http://bozeman.mbt.washington.edu/">SWAT</A>
+ (Green, P.  University of Washington), a Smith-Waterman alignment tool, to align sequences because it is the only program that we know of that can accept profiles.  As with any searching/alignment tool, only those with low enough E-values should be considered.  Due to the time it takes to execute SWAT, our server is unable to support entire database searches and we ask that you 
+<a href="#database_sequences">submit your own database of sequences</a> to search your query against.
+<BR>
+
+<a name="sequence_submission">
+<BR>
+<font size=+1>Submitting Sequences</font> </a><BR>
+<BR>
+If your FASTA sequence looks like:
+<PRE>
+>sp|P45090|ARTQ_HAEIN ARGININE TRANSPORT SYSTEM PERMEASE PROTEIN ARTQ - Haemophilus influenzae.
+MFSDFLSLMFTAALMTLGLAVCSLLLGLFLSLIFAVLEANRFVGKPMTVF
+VALLRGLPEIIVVLLVYFGSTELVEMLTGEYIEFGAFGCGVLALSLIFAA
+YASQTLRGAIQAIPKGQWESGAALGLSKSYTFIHIVMPQVWRHALPGLST
+QWLVLLKDTALVSLIGVDDLMHQADLINTNTHQPFTWYGIAALIYLAVTL
+ISQVGIRKLELRFTRFERGVK
+</PRE>
+<BR>
+Then to give transmembrane regions to the above FASTA sequence, enter a fasta-like 
+sequence with <strong>X</strong>'s for nontransmembrane amino acids and 
+<strong>T</strong>'s for amino acids 
+considered to lie transmembrane regions.<BR>
+Below is the correct format for 5 transmembrane regions in ARTQ_HAEIN that occur at positions 13-37, 47-71
+, 84-103, 1
+43, 167, 185-206.  (These were the regions predicted by <A HREF="http://www.enzi
+m.hu/hmmtop/"> HMMTOP</A>.) <BR>    
+<PRE>
+>sp|P45090|ARTQ_HAEIN ARGININE TRANSPORT SYSTEM PERMEASE PROTEIN ARTQ - Haemophilus influenzae.
+XXXXXXXXXXXXTTTTTTTTTTTTTTTTTTTTTTTTTXXXXXXXXXTTTT
+TTTTTTTTTTTTTTTTTTTTTXXXXXXXXXXXXTTTTTTTTTTTTTTTTT
+TTTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXTTTTTTTT
+TTTTTTTTTTTTTTTTTXXXXXXXXXXXXXXXXXTTTTTTTTTTTTTTTT
+TTTTTTXXXXXXXXXXXXXXX
+</PRE>
+The length of your FASTA sequence and corresponding transmembrane sequence must be exactly the same.
+<br>
+<BR>
+<a name="database_sequences"><font size=+1>Sequence Database</font></a>
+<BR>
+<BR>
+<P>
+Your database of sequences should be in FASTA format.  We ask that you submit a database because searching Swiss-Prot using SWAT takes about 30 minutes to an hour, and we are unable to support this on our server.  
+If you desire to search against an entire database, please contact 
+<A HREF="http://bozeman.mbt.washington.edu/">Phil Green </a> 
+(University of Washington) on how to obtain SWAT.  
+</P><BR>
+<P>
+The PHAT matrices where constructed independent of SWAT. You can download  
+<A HREF="PHAT_matrices/">the PHAT matrices</A> as well as the <A HREF="ftp://ftp.ncbi.nlm.nih.gov/repository/blocks/unix/blosum/">BLOSUM matrices</A> from us.
+</P>
+<BR>
+<BR>
+<HR>
+Questions or comments?<BR>
+Contact <A HREF="/sift-bin/contact.pl" >us</A>
+

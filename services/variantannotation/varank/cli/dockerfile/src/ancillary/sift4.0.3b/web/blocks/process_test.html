@@ -1,0 +1,98 @@
+<HTML>
+
+<TITLE>Blocks Multiple Alignment Processor</TITLE>
+
+<BODY>
+
+<FORM ENCTYPE="MULTIPART/FORM-DATA" METHOD="POST" ACTION="/blocks-bin/process_blocks.new">
+
+<H1><IMG ALIGN=MIDDLE SRC="/blocks/icons/blocks.xbm">Blocks Multiple Alignment Processor</H1>
+Blocks are carved out from a protein multiple sequence alignment to provide
+input for:
+<UL>
+<LI>
+<A HREF= "help/about_logos.html">Sequence logos</A>
+<BR>
+<LI>
+<A HREF="help/about_trees.html">Phylogenetic trees</A> 
+<BR>
+<LI>
+<A HREF="http://www.proweb.org/3dblocks_intro.html">Structures</A> 
+<BR>
+<LI>
+<A HREF="/blocks/papers/BLOCKS_PERF.html">
+Blocks-based searches</A>, which may be performed using search engines such as
+<BR>
+<UL>
+<LI>
+<A HREF="http://meme.sdsc.edu/meme/website/mast-intro.html">MAST</A> 
+<BR>
+<LI>
+<A HREF="help/LAMA_help.html">LAMA</A> 
+<BR>
+</UL>
+<LI>
+<A HREF="help/CODEHOP/CODEHOP_help.html">CODEHOP</A> oligonucleotide primers
+<BR>
+<LI>
+<A HREF="http://blocks.fhcrc.org/sift/SIFT.html">SIFT</A>
+deleterious substitution predictions
+</UL>
+
+Your multiple alignment may include up to 400 sequences in one of
+the following formats:
+<UL>
+<LI><A HREF="help/blocks_format.html">Blocks format</A>
+such as is provided by 
+<A HREF="/blocks/make_blocks.html">Block Maker</A>. 
+<UL>
+<LI>
+You may <A HREF="block_formatter.html">format</A> alignments manually as blocks.
+<P>
+</UL>
+
+<LI>
+<A HREF="help/blocks_format.html#fasta">FASTA, CLUSTAL/STOCKHOLM or MSF format</A>.
+<P>
+</UL>
+
+Ungapped regions between the requested minimum and maximum widths will be
+carved out of the submitted multiple alignment and converted to Blocks format. 
+You can insert a column of gaps in your FASTA, CLUSTAL or MSF
+alignment to force block edges.
+<HR>
+Enter the minimum block width:
+<INPUT SIZE=3 NAME="minwidth" TYPE="text" VALUE="10"><BR>
+Enter the maximum block width:
+<INPUT SIZE=3 NAME="maxwidth" TYPE="text" VALUE="55"><BR>
+
+Enter the name of a file containing your protein multiple alignment:<BR>
+<INPUT SIZE=50 NAME="seqfile" TYPE="file"><BR>
+-or-<BR>
+Enter your protein multiple alignment below and <INPUT TYPE=submit VALUE=
+"Submit">.<BR>
+
+<TEXTAREA NAME="sequences" ROWS=10 COLS=60></TEXTAREA>
+
+<HR>
+
+<INPUT TYPE=submit VALUE="Submit">
+<INPUT TYPE=reset VALUE="Clear Input">
+
+<HR>
+</FORM>
+<P>
+<A HREF="/blocks">[Blocks home]</A> 
+<A HREF="/blocks/blocks_search.html">[Block Searcher]</A>
+<A HREF="/blocks/make_blocks.html">[Block Maker]</A>
+<A HREF="/blocks-bin/getblock.sh">[Get Blocks]</A>
+<A HREF="/blocks/block_formatter.html">[Blocks Formatter]</A>
+<A HREF="/blocks-bin/LAMA_search.sh">[LAMA Searcher]</A>
+
+<HR>
+<A HREF="contact.html">Contact us</A> <P>
+Page last modified <MODIFICATION_DATE>Aug 2003</MODIFICATION_DATE>
+
+
+</BODY>
+</HTML>

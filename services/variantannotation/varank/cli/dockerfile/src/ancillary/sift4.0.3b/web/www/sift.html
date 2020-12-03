@@ -1,0 +1,101 @@
+<body bgcolor=white>
+<HTML>
+<HEAD>
+<TITLE>SIFT</TITLE>
+<meta NAME="description" CONTENT="SIFT predicts if an amino acid substitution is deleterious to protein function.  SIFT can be applied to nonsynonymous polymorphisms and missense mutations.  Mutations can be submitted for prediction.">
+<meta name="keywords" content="nonsynonymous,polymorphism,amino acid,substitution,missense,mutation">
+<H1>
+<img src="/blocks/icons/hutch_logo.gif" align=right width="10%">
+<img src="pics/sifter.gif" align=left width="12%"> 
+<center><bold><big>
+S</big></bold>orting
+<bold>
+<font color=red><big>I</big></font></bold>ntolerant
+<big>F</big>rom
+<font color=blue><big>T</big></font>olerant
+</H1>
+<center>at the 
+<A HREF="http://www.fhcrc.org/">Fred Hutchinson Cancer Research Center</A>.  <BR>Brought to you by the <A HREF="/blocks">Blocks WWW server</A>.
+</center>
+</center>
+<BR>
+<BR>
+<BR>
+SIFT predicts whether an amino acid substitution affects protein function based on sequence homology and the physical properties of amino acids. SIFT can be applied to naturally occurring nonsynonymous polymorphisms and laboratory-induced missense mutations.<BR><BR>
+Given a protein sequence, SIFT will return predictions for what amino acid substitutions will affect protein function.<BR>
+<BR>
+SIFT is a multistep procedure that:<BR>
+<horizontal spacer size=10> (1) searches for and chooses similar sequences <BR> 
+<horizontal spacer size=10> (2) makes an alignment of these sequences<BR>
+<horizontal spacer size=10> (3) calculates scores based on the amino acids appearing at each position in the alignment. <BR> 
+<BR>
+<!--[<A HREF="SIFT_help.html">More SIFT details</A>]
+[<A HREF="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&list_uids=11337480&dopt=Abstract">Reference</A>]-->
+<!--[<A HREF="/blocks/license.html">Licensing information</A>]-->
+You can:<BR>
+submit a <A HREF="SIFT_dbSNP.html">dbSNP id</A> (SNPs from multiple proteins, 2 minutes)<BR>
+<b>-or-</b> submit a <A HREF=SIFT_BLink_submit.html>GI #</A> (2 minutes)  <BR>
+<b>-or-</b> <spacer type=horizontal size=10> submit <A HREF="SIFT_seq_submit2.html">a protein sequence</A>
+
+<!--[<A HREF="SIFT_seq_submit.html">Version 1</A>
+ <A HREF="SIFT_seq_submit2.html">Version 2</A>] -->
+ (10-15 minutes)<BR>
+<b>-or-</b> submit a <A HREF="SIFT_related_seqs_submit.html">query sequence along with related sequences</A> (< 1 minute) <BR>
+<b>-or-</b>   submit <A HREF="SIFT_aligned_seqs_submit.html">alignment of your query sequence 
+with related sequences</A> 
+(< 1 minute)<BR>
+<b>-or</b> submit a <A HREF="/blocks/process_blocks.html">block</A> <BR>
+<BR> 
+<BR>
+SIFT for in-house use (version 3.0, released March 21, 2008):<BR>
+<A HREF="/blocks/license.html">Copyright</A>
+<spacer type=horizontal size=5>
+<A HREF="sift3.0.tar">code & exe (Sun, Linux)</A>
+<spacer type=horizontal size=5>
+<A HREF="/sift-bin/contact.pl">Report bugs</A><BR>
+<BR>
+<!--<img src="/blocks/icons/new.gif" align=left width="7%">-->
+<A HREF="SIFTing_databases.html">Prediction on human SNPs</A> (<i>Genome Research</i> <b>12:</b> 436-446 <A HREF="GR_SIFT_on_dbSNP.pdf">pdf</A>)<BR>
+<!--Implementation (<i>Genome Research</i> <b>11:</b> 863-874 <A HREF="GR_SIFTimplementation.pdf">pdf<A>)-->
+Initial training/test sets for SIFT: 
+<A HREF="test_sets/LacITable.txt">LacI</A HREF>,
+<A HREF="test_sets/LysozymeTable.txt">Lysozyme</A HREF>,
+<A HREF="test_sets/HIVproteaseTable.txt">HIV protease</A HREF>
+<BR>
+<!--SIFT predictions are also available at <A HREF="http://hgvbase.cgb.ki.se">HGvBASE</A><BR>-->
+<BR>
+Other prediction tools for amino acid substitutions:
+<A HREF="http://www.bork.embl-heidelberg.de/PolyPhen">PolyPhen</A>
+,
+<A HREF="http://mendel.stanford.edu/SidowLab/downloads/MAPP/MAPP.html">MAPP</A> ,
+<A HREF="http://www.snps3d.org">SNPs3D</A HREF>,
+<A HREF="http://mmb2.pcb.ub.es:8080/PMut/">PMut</A HREF><BR>
+<horizontal spacer size=10><i>Many prediction tools have been developed since SIFT was first published it 2001.</i>  MAPP, SNPs3D, and PMut are three methods that have been shown to perform better than SIFT in their published results. <BR>
+<horizontal spacer size=15><b>-</b> SNPs3D is great for fast retrieval of predictions of nsSNPs from dbSNP <BR>
+<horizontal spacer size=15><b>-</b> MAPP is great if you only have one or two proteins to predict on<BR> 
+<BR>
+
+
+Our review <b>"Predicting the Effects of Amino Acid Substitutions on Protein Function"</b> in <i>Annual Review of Genomics and Human Genetics</i>:<BR>  
+<A HREF="annurev.genom.7.Ng_Henikoff.pdf">Chapter</A HREF> <BR>
+<A HREF="annurev.genom.7.080505_SuppTable1.pdf">Supplementary Table 1 </A HREF> <BR> 
+<A HREF="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=pubmed&cmd=Retrieve&dopt=AbstractPlus&list_uids=16824020&query_hl=1&itool=pubmed_docsum">Citation</A >
+<BR>
+<BR>
+<BR>
+Referencing SIFT<BR>
+ <A HREF="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&list_uids=11337480&dopt=Abstract">version 1</A> (<A HREF="GR_SIFTimplementation.pdf">pdf</A>), 
+<A HREF="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&list_uids=11875032&dopt=Abstract">version 2</A> (<A HREF="GR_SIFT_on_dbSNP.pdf">pdf</A>)<BR>
+<BR>
+<A HREF="SIFT_help.html">SIFT help page</A>
+<BR>
+<A HREF="about_me.html">About the author</A>
+<BR>
+<HR>
+Page last modified <MODIFICATION_DATE>January 2007</MODIFICATION_DATE>
+<Address>
+Questions or comments?<BR>
+Contact <A HREF="/sift-bin/contact.pl" >us</A>
+</Address>
+
+

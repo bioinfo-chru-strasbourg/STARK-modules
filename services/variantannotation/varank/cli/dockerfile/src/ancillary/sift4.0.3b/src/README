@@ -1,0 +1,19 @@
+Need to compile these six SIFT programs with an ANSI C compiler:
+
+choose_seqs_via_psiblastseedmedian.c
+clump_output_alignedseq.c
+consensus_to_seq.c
+info_on_seqs.c
+psiblast_res_to_fasta_dbpairwise.c
+seqs_from_psiblast_res.c
+
+1. First you must obtain and install the blimps libraries from:
+	ftp://ncbi.nlm.nih.gov/repository/blocks/unix/blimps/
+	SIFT source code is compatible with BLIMPS 3.8.
+
+2.   Edit the cccb script for your blimps installation, and type
+   "csh compile.csh" which calls cccb up and compiles each program.
+
+
+4. Depending on the platform, copy fastaseqs from either sift2.1/bin/solaris or sift2.1/bin/linux to sift2.1/bin  
+

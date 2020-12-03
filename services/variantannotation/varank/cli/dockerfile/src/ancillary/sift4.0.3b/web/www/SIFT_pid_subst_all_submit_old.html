@@ -1,0 +1,99 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>SIFT Homepage</title>
+<link rel="stylesheet" type="text/css" href="/www/css/main.css" />
+</head>
+<!-- Begin Wrapper -->
+   <div id="wrapper">
+    <!-- Begin Header -->
+         <div id="header">
+
+
+
+
+<body bgcolor=white>
+<TITLE>SIFT Batch Protein Analysis</TITLE>
+<H1>
+<img src="pics/sifter.gif" align=left width="15%">
+S<font color=red>I</font>F<font color=blue>T</font> Batch 
+</H1>
+<FORM ENCTYPE="MULTIPART/FORM-DATA" METHOD="POST" ACTION="/sift-bin/SIFT_pid_subst_all_submit.pl">
+<BR><b>SIFT Batch</b>: You can submit a list of RefSeq accession or gi IDs and their corresponding amino acid substitutions for prediction.  If no amino acid substitution is listed, prediction for dbSNP nonsynonymous variants will be returned. Sequences are chosen from NCBI's <A HREF="http://www.ncbi.nlm.nih.gov/sutils/static/blinkhelp.html">precomputed BLAST searches</A>.  Either all BLAST hits can be used in the protein alignment or the top hit to each organism.  Scoring is as described in 
+<i>Genome Research </i> <b>12:</b> 436-446.
+<BR>
+<BR>
+You can also <A HREF="SIFT_related_seqs_submit.html">submit your protein sequence
+and related sequences</A> or <A HREF="SIFT_aligned_seqs_submit.html">aligned
+sequences </A> if you already have them.<BR>
+
+
+<BR>
+<i>Results are deleted after an hour, so please save them! </i>
+<BR>
+[<A HREF="/">SIFT home page</A>]
+[<A HREF="SIFT_help.html">SIFT help</A>]
+</A>
+</div>
+<div id="content">
+Enter your email address if you want the results through email : <BR>
+<i>Please check that your address is correct and your mailbox is not full.</i><BR>
+ <BR>
+<INPUT SIZE=50 NAME="address">
+</INPUT SIZE>
+<BR>
+<BR>
+<HR>
+
+<font color=blue>Protein IDs</font><BR>
+One RefSeq accession (starting with XP / NP)  or gi number per line (Limit 1000 proteins, please!).<BR>
+[<A HREF="pid_all_example.html">Sample format</A>]<BR></font>
+<BR>
+Paste in RefSeq accessions or gi numbers<BR>
+<TEXTAREA NAME="GI" ROWS=5 COLS=30></TEXTAREA>
+<BR>
+<BR>-or-<BR>
+<BR>
+Upload file containing RefSeq accessions or gi numbers<BR>
+<INPUT SIZE=50 NAME="GI_file" TYPE="file">
+</TD>
+</TR>
+</TBODY></TABLE>
+<HR>
+<BR>
+<font color=blue>Parameters</font><BR>
+<BR>
+ Select sequences to include:
+  <SELECT NAME="sequences_to_select" SIZE="1">
+  <OPTION VALUE="ALL">all BLAST hits 
+  <OPTION VALUE="BEST" SELECTED>best BLAST hit to each organism
+  </SELECT>
+<BR>
+<i>If you receive a warning that the sequences were not diverse enough for prediction on your substitution, try "all BLAST hits".  If that fails, you can submit <A HREF="
+SIFT_seq_submit2.html">here</A> and have SIFT find the appropriate number of sequences.</i><BR>
+<BR>
+Remove sequences more than
+<input type=text name=seq_identity_filter size=3 maxlength = 3 value="90">
+percent identical to query<BR>
+<i>This cleans out any polymorphic alleles (sequences in the database that
+are nearly identical to your
+protein but already containing the substitutions of interest).
+The contaminating sequences may cause the substitution to be predicted
+as tolerated.
+</i>
+<BR>
+<HR>
+<BR>
+<INPUT TYPE=submit>
+<INPUT TYPE=reset>
+</div>
+<div id="footer">
+[<A HREF="/">SIFT home page</A>]
+<A HREF="SIFT_help.html">SIFT help page</A>]
+<BR>
+<i>Questions or comments?<BR>
+Contact <A HREF="/sift-bin/contact.pl"> us </A><BR>
+Last updated: November 2008</i><BR>
+</div>
+</div>

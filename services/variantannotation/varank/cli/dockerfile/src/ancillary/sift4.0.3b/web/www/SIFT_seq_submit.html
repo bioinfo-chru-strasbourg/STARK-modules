@@ -1,0 +1,83 @@
+<body bgcolor=white>
+<TITLE>SIFT v.1 Sequence Submission</TITLE>
+<H1>
+<img src="pics/sifter.gif" align=left width="20%">
+S<font color=red>I</font>F<font color=blue>T</font> v.1: Submit Protein Sequence </H1>
+<FORM ENCTYPE="MULTIPART/FORM-DATA" METHOD="POST" ACTION="/sift-bin/SIFT_seq_submit.pl">
+<font size=+1><b>This is an OLDER version of SIFT and is NOT maintained.  <BR>
+It is still made available for those working on similar bioinformatics algorithms.<BR>
+ <A HREF="SIFT_seq_submit2.html">SIFT v.2</A> should be use for most prediction purposes. </font></b>
+<BR>
+<BR>
+You can also submit <A HREF="SIFT_related_seqs_submit.html">
+your protein sequence
+and related sequences</A> or <A HREF="SIFT_aligned_seqs_submit.html">aligned sequences</A> if you already have them.
+<BR>
+The SIFT procedure is described in <i>Genome Research</i> <b>11:</b> 863-874.<BR>
+<BR>
+<A HREF="SIFT.html">[SIFT home page]</A>
+<A HREF="SIFT_help.html">[More info]</A>
+<BR>
+<!--  commented out email address 12/13/00
+<HR>
+Enter your email address if you want the results through email : <BR>
+<i>Please make sure your address is correct and your mailbox is not full</i><BR><BR>
+<INPUT SIZE=50 NAME="address">
+-->
+<BR>
+<HR>
+<BR>
+<font color=blue>Protein sequence</font><BR>
+<BR>
+Name of file containing protein query sequence 
+<A HREF="http://www.ncbi.nlm.nih.gov/BLAST/fasta.shtml">
+(fasta format)</A>.<BR>
+<INPUT SIZE=50 NAME="query_file" TYPE="file"><BR><BR>
+<center>-or-</center><BR>
+Paste in your protein query sequence <A HREF="http://www.ncbi.nlm.nih.gov/BLAST.fasta.shtml">(fasta format)</A>.<BR>
+<TEXTAREA NAME = "queryseq" ROWS=10 COLS=70></TEXTAREA>
+<BR>
+<BR>
+<HR>
+<BR>
+<font color=blue>Substitutions to be predicted on (can be left blank)</font><BR>
+<BR>
+Enter the name of file containing substitutions of interest <A HREF="SIFT_help.html#substitution">[format]</A>:
+<INPUT SIZE=50 NAME="substitution_file" TYPE="file"><BR><BR>
+<center>-or-</center><BR>
+Enter the substitutions of interest <A HREF="SIFT_help.html#substitution">[format]</A>:<BR>
+<TEXTAREA NAME = "substitutions" ROWS=5 COLS=50></TEXTAREA>
+<HR>
+<BR>
+<font color=blue>Parameters</font><BR>
+<BR>
+ Select database to search:
+  <SELECT NAME="database" SIZE="1">
+  <OPTION VALUE="sp" >SWISS-PROT
+  <OPTION VALUE="sp_tr" SELECTED>SWISS-PROT and TREMBL
+  <OPTION VALUE="nr">NCBI nonredundant
+  </SELECT>
+<BR>
+<A HREF="SIFT_help.html#CHOOSING_DATABASE">When to change this option</A><BR>
+<BR>
+<input type=checkbox checked name=gap_option value="TRUE">Account for Gaps<BR>
+<i>  If the alignment turns out to be especially gapped, resubmit with this option turned off. </i><BR>
+<BR>
+Remove sequences more than
+<input type=text name=seq_identity_filter size=3 maxlength = 3 value="95">
+percent identical to query<BR>
+<i>This cleans out any polymorphic alleles (sequences in the database that
+are nearly identical to your
+protein but already containing the substitutions of interest).
+The contaminating sequences may cause the substitution to be predicted
+as tolerated.
+</i>
+<BR>
+<HR>
+<BR>
+<INPUT TYPE=submit>
+<INPUT TYPE=reset>
+<HR>
+<BR>
+Questions or comments?<BR>
+Contact <A HREF="/sift-bin/contact.pl">us</A>

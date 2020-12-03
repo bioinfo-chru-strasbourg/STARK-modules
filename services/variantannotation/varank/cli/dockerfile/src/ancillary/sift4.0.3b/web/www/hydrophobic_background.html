@@ -1,0 +1,59 @@
+<basefont size = 4>
+<TITLE>Pauline's Hydrophobic Environment Background</TITLE>
+<H1>Background on Hydrophobic Environment Residue Program</H1>
+
+<P>
+The hydrophobic environment program will take a block and return a PSSM matrix (position-specific scoring matrix) as well as what residues are considered to be in a hydrophobic environment.  
+<P>
+At the bottom of the matrix, a summary of the output is given.  The following is a sample of the output:
+<BR>
+<BR>
+Total blocks processed : 4<BR>
+Blocks with hydrophobic residues over cutoff: 3<BR>
+Total number of hydrophobic residues: 49<BR>
+Blocks without any hydrophobic residues over cutoff: 1<BR>
+<BR>
+In this case, three of the four blocks had at least on hydrophobic residue, and in these blocks, 49 residues were deemed to be in hydrophobic environments.  One block did not have any residues that exceeded the cutoff score.
+
+<P>
+<b> Calculating the Hydropathy Score </b>
+<P>
+1)  The hydropathy score for an individual residue is determined by weighting the pssm residues with the hydropathy table selected.
+<BR>
+<BR>
+2)  There are two options for integrating the surrounding residues into the hydropathy score.
+<BR>
+Either:<BR>
+<BR>
+<ol type = a>a)  Given a window size, the hydropathy score of a residue is averaged with its
+ neighboring residues. 
+<BR> For example, if a window size of 5 is given,
+ then the hydropathy score of residue 34 is : <BR>
+<p align = center><u>(h score[32] + h score[33] + h score[34] + h score[35] + h score[36])</u> </p> 
+<p align = center> 5 </p>
+If this exceeds the cutoff, it is considered to be in a hydrophobic region.<BR>
+<BR>
+</ol>
+<ol>
+b)  The longest subsequences with the highest hydropathy score are found.   The score is divided by the length of the subsequence, and if the score exceeds the cutoff, then the <b>entire</b> subsequence is considered to be over the cutoff. <BR>
+In this case, a minimum sequence length is given so that the subsequences are at
+ least of this size.  For example, we probably want the minimum sequence length
+to be greater than 3 because we don't want to include those sequences which have
+ 2 or 3 hydrophobic residues next to each other by chance.
+<BR>
+The advantage of this option over the previous one is that hydrophobic residues at the edges of hydrophobic regions are often omitted in the previous procedure because neighboring hydrophilic residues tend to bring its hydropathy score down. 
+<BR>
+</ol>
+<BR>
+<BR>
+3)  Finally, if the score exceeds the cutoff, the residue is considered hydrophobic and a "Y" will printed on the last column of the pssm matrix.
+<BR>
+<BR>
+
+<LI>
+<A HREF="hydrophobic_form.html">Residues in hydrophobic environment form</A>
+<P>
+
+<HR>
+Page last modified on <MODIFICATION_DATE>Apr 1999</MODIFICATION_DATE>
+Questions ?  Contact <A HREF="/sift-bin/contact.pl"> us </A><BR>
