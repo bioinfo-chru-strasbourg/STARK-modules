@@ -1,0 +1,392 @@
+<HTML>
+<HEAD>
+<TITLE>CODEHOP</TITLE>
+</HEAD>
+<BODY TEXT="#000000" LINK="#0000ff" VLINK="#551a8b" ALINK="#ff0000" BGCOLOR="#ffffff">
+
+<TABLE BORDER=0>
+<TR>
+<TD><IMG ALIGN=LEFT SRC="/blocks/icons/blocks.xbm"></TD>
+<TD><H1>CODEHOP:<BR><U>CO</U>nsensus-<U>DE</U>generate <U>H</U>ybrid <U>O</U>ligonucleotide <U>P</U>rimers</H1></TD>
+<TD><IMG SRC="/blocks/help/CODEHOP/CODEHOP_mascot.jpeg" WIDTH="156" HEIGHT="80" ALT="CODEHOP mascot"></TD>
+</TR>
+<TR><TD></TD><TD></TD><TD>_______________________</TD></TR>
+</TABLE>
+
+<FORM METHOD="POST" ACTION="/blocks-bin/codehop.new">
+
+<H2>PCR primers designed from protein multiple sequence alignments</H2>
+<UL>
+  <LI><A HREF="/blocks/help/CODEHOP/tips.html">Getting started</A></LI>
+  <LI>Full <A HREF="/blocks/help/CODEHOP/CODEHOP_help.html">Help</A> file</LI>
+  <LI>The <A HREF="/blocks/help/CODEHOP/CODEHOP_program.html">CODEHOP algorithm</A>
+  <LI>The <A HREF="/blocks/help/CODEHOP/manuscript.html">CODEHOP manuscript</A>
+  <LI><A HREF="http://courses.washington.edu/bioinfo/CODEHOP/Codehop%20Genes.html">
+Genes</A> identified using CODEHOP
+<P>
+  <LI>The input should be a set of local multiple alignments (blocks) of a 
+group of related protein sequences. The alignments must be in 
+  <A HREF="/blocks/blocks_format.html">Blocks Database format</A>, such as in <A HREF="/blocks/make_blocks.html">Block Maker</A></LI> output.
+  <LI> Ungapped parts of Clustal- or FASTA-formatted global multiple 
+alignments can be automatically turned into blocks by the Blocks 
+<A HREF="/blocks/process_blocks.html">multiple alignment processor</A>. You can also manually reformat 
+multiple sequence alignments with the 
+ <A HREF="/blocks/block_formatter.html">Blocks formatter</A>.</LI> 
+  <LI> The output of all these programs contains links that send the 
+  resulting blocks to this page. 
+  <LI> If your sequences align globally, you will get better multiple 
+alignment results from <A HREF="http://www2.ebi.ac.uk/clustalw/">Clustal</A>
+than from the motif finders used by Block Maker.
+  <LI>Blocks are processed using sequence weights (the numbers
+following each sequence segment). To <A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#TIPS">emphasize particular sequences</A>
+in the block(s) manually adjust the sequence weights. Increase the
+number to give a sequence more weight.
+
+</UL>
+
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="1">
+<TR><TD>Paste your block(s) below:</TD>
+<TD ALIGN="RIGHT"><INPUT TYPE="SUBMIT" VALUE="Look for primers">
+<INPUT TYPE="RESET" VALUE="Reset & Clear">
+</TD></TR>
+<TR><TD COLSPAN="2"><TEXTAREA NAME="blocks" ROWS="10" COLS="70"></TEXTAREA>
+</TD></TR>
+</TABLE>
+
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="1">
+
+<TR><TD><A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#CODEHOP">Core</A> (degenerate 3' region)</TD>
+<TD>- <A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#DEGENERACY">degeneracy</A>
+[default=128]:</TD>
+<TD><INPUT TYPE="TEXT" SIZE="5" NAME="core_degen" VALUE="128"></TD>
+<TD VALIGN="TOP"></TD></TR>
+
+<TR><TD></TD>
+<TD>- <A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#STRICTNESS">strictness</A>
+[default=0.0]:</TD>
+<TD><INPUT TYPE="TEXT" SIZE="5" NAME="core_strict" VALUE="0.0"></TD>
+<TD VALIGN="TOP"></TD></TR>
+
+<TR><TD><A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#CODEHOP">Clamp</A>
+(non-degenerate 5' region)</TD>
+<TD>- <A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#TEMP">temperature</A>
+[default=60.0]:</TD>
+<TD><INPUT TYPE="TEXT" SIZE="5" NAME="clamp_temp" VALUE="60.0"></TD>
+<TD VALIGN="TOP"></TD></TR>
+
+<TR><TD></TD>
+<TD>- <A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#POLYX">poly-nuc</A>
+[default=5]:</TD>
+<TD><INPUT TYPE="TEXT" SIZE="5" NAME="polyx" VALUE="5"></TD>
+<TD VALIGN="TOP"></TD></TR>
+
+<TR><TD COLSPAN="2"><A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#TEMP">Primer concentration</A> [in nM,
+default=50nM]:</TD>
+<TD><INPUT TYPE="TEXT" SIZE="5" NAME="clamp_conc" VALUE="50"></TD>
+<TD>(<A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#TEMP">[K+]</A>=50mM)</TD></TR>
+
+</TABLE>
+
+<P>
+<A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#GCODE">Genetic code</A>
+<SELECT NAME="gcode" SIZE="1">
+  <OPTION VALUE="0" SELECTED>Standard
+  <OPTION VALUE="1">Vertebrate Mitochondrial
+  <OPTION VALUE="2">Yeast Mitochondrial
+  <OPTION VALUE="3">Mold Mitochondrial and Mycoplasma
+  <OPTION VALUE="4">Invertebrate Mitochondrial
+  <OPTION VALUE="5">Ciliate Nuclear
+  <OPTION VALUE="6">Echinoderm Mitochondrial
+  <OPTION VALUE="7">Euplotid Mitochondrial
+  <OPTION VALUE="8">Bacterial and Plant Plastid
+  <OPTION VALUE="9">Alternative Yeast Nuclear
+  <OPTION VALUE="10">Ascidian Mitochondrial
+  <OPTION VALUE="11">Flatworm Mitochondrial
+  <OPTION VALUE="12">Blepharisma Macronuclear
+  <OPTION VALUE="13">Chlorophycean Mitochondrial
+  <OPTION VALUE="14">Trematode Mitochondrial
+  <OPTION VALUE="15">Scenedesmus obliquus Mitochondrial
+  <OPTION VALUE="16">Thraustochytrium Mitochondrial
+</SELECT>
+
+<P>
+<A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#CODEUSE">Codon usage table</A>
+(scroll for more choices):
+<SELECT NAME="codonuse" SIZE="5">
+
+<OPTION>------gbbct------
+<OPTION VALUE="achole.codon.use">Acholeplasma laidlawii
+<OPTION VALUE="agro.codon.use">Agrobacterium tumefaciens
+<OPTION VALUE="bacsub.codon.use">Bacillus subtilis
+<OPTION VALUE="bact.codon.use">Bacillus thuringiensis
+<OPTION VALUE="bartb.codon.use">Bartonella bacilliformis
+<OPTION VALUE="barth.codon.use">Bartonella henselae
+<OPTION VALUE="brucella.codon.use">Brucella abortus
+<OPTION VALUE="burkhold.codon.use">Burkholderia glumae
+<OPTION VALUE="campy.codon.use">Campylobacter jejuni
+<OPTION VALUE="chlam.codon.use">Chlamydia trachomatis
+<OPTION VALUE="chllim.codon.use">Chlorobium limicola
+<OPTION VALUE="chlvib.codon.use">Chlorobium vibrioforme
+<OPTION VALUE="chltep.codon.use">Chlorobium tepidum
+<OPTION VALUE="clostr.codon.use">Clostridium botulinum
+<OPTION VALUE="colwellia.codon.use">Colwellia psychrerythraea 34H
+<OPTION VALUE="crenarch.codon.use">Crenarchaeota
+<OPTION VALUE="ehrl.codon.use">Ehrlichia chaffeensis
+<OPTION VALUE="ecoli.codon.use">Escherichia coli
+<OPTION VALUE="euryarch.codon.use">Euryarchaeota
+<OPTION VALUE="haemophilus.codon.use">Haemophilus influenzae
+<OPTION VALUE="halobac.codon.use">Halobacterium sp. NRC-1
+<OPTION VALUE="helico.codon.use">Helicobacter pylori 26695
+<OPTION VALUE="lacto.codon.use">Lactobacillus casei
+<OPTION VALUE="lactis.codon.use">Lactococcus lactis subsp. lactis Il1403
+<OPTION VALUE="lepto.codon.use">Leptospira interrogans
+<OPTION VALUE="micrococ.codon.use">Micrococcus luteus
+<OPTION VALUE="myxo.codon.use">Myxococcus xanthus
+<OPTION VALUE="newt.codon.use">Notophthalmus viridescens
+<OPTION VALUE="pantoea.codon.use">Pantoea agglomerans
+<OPTION VALUE="paraco.codon.use">Paracoccus denitrificans
+<OPTION VALUE="picro.codon.use">Picrophilus torridus
+<OPTION VALUE="pseudoalt.codon.use">Pseudoalteromonas atlantica T6c
+<OPTION VALUE="pseudo.codon.use">Pseudomonas syringae pv. glycinea
+<OPTION VALUE="pyroc.codon.use">Pyrococcus horikoshii OT3
+<OPTION VALUE="ralston.codon.use">Ralstonia eutropha
+<OPTION VALUE="rhizoleg.codon.use">Rhizobium leguminosarum
+<OPTION VALUE="rhodo.codon.use">Rhodobacter sphaeroides
+<OPTION VALUE="rhodoc.codon.use">Rhodococcus erythropolis
+<OPTION VALUE="serratia.codon.use">Serratia marcescens
+<OPTION VALUE="shewanella.codon.use">Shewanella oneidensis MR-1
+<OPTION VALUE="sinorhiz.codon.use">Sinorhizobium meliloti
+<OPTION VALUE="staph.codon.use">Staphylococcus aureus
+<OPTION VALUE="strep.codon.use">Streptomyces coelicolor
+<OPTION VALUE="sulfolobus.codon.use">Sulfolobus solfataricus
+<OPTION VALUE="synecho.codon.use">Synechococcus sp.
+<OPTION VALUE="hopper.codon.use">Unknown flavobacteria
+<OPTION VALUE="vario.codon.use">Variovorax paradoxus
+<OPTION VALUE="vibrioc.codon.use">Vibrio cholerae O1 biovar eltor str. N16961
+<OPTION VALUE="vibriof.codon.use">Vibrio fischeri ES114
+<OPTION VALUE="xantho.codon.use">Xanthomonas oryzae pv. oryzae
+
+<OPTION>------gbinv------
+<OPTION VALUE="acanth.codon.use">Acanthamoeba castellanii
+<OPTION VALUE="coral.codon.use">Acropora millepora
+<OPTION VALUE="ancyl.codon.use">Ancylostoma canium
+<OPTION VALUE="mosquito.codon.use">Anopheles stephensi
+<OPTION VALUE="honeybee.codon.use">Apis mellifera
+<OPTION VALUE="seasnail.codon.use">Aplysia californica
+<OPTION VALUE="artemia.codon.use">Artemia franciscana
+<OPTION VALUE="ascaris.codon.use">Ascaris suum
+<OPTION VALUE="bivalve.codon.use">Bivalve mollusks
+<OPTION VALUE="cockroach.codon.use">Blattella germanica
+<OPTION VALUE="bombyx.codon.use">Bombyx mori
+<OPTION VALUE="brugia.codon.use">Brugia malayi
+<OPTION VALUE="worm.codon.use">Caenorhabditis elegans
+<OPTION VALUE="bluecrab.codon.use">Callinectes sapidus
+<OPTION VALUE="cephalopod.codon.use">Cephalopods
+<OPTION VALUE="wasp.codon.use">Cotesia congregata
+<OPTION VALUE="cparvum.codon.use">Cryptosporidium parvum
+<OPTION VALUE="culexpip.codon.use">Culex pipiens
+<OPTION VALUE="midge.codon.use">Culicoides sonorensis
+<OPTION VALUE="amoeba.codon.use">Dictyostelium discoideum
+<OPTION VALUE="fly.codon.use">Drosophila melanogaster
+<OPTION VALUE="microspor.codon.use">Encephalitozoon cuniculi GB-M1
+<OPTION VALUE="entam.codon.use">Entamoeba histolytica
+<OPTION VALUE="waxmoth.codon.use">Galleria mellonella
+<OPTION VALUE="geodia.codon.use">Geodia cydonium
+<OPTION VALUE="giardia.codon.use">Giardia intestinalis
+<OPTION VALUE="haem.codon.use">Haemonchus contortus
+<OPTION VALUE="helicov.codon.use">Helicoverpa armigera
+<OPTION VALUE="helio.codon.use">Heliothis virescens
+<OPTION VALUE="soycyst.codon.use">Heterodera glycines
+<OPTION VALUE="hirudo.codon.use">Hirudo medicinalis
+<OPTION VALUE="hydra.codon.use">Hydra vulgaris
+<OPTION VALUE="ant.codon.use">Lasius niger
+<OPTION VALUE="leishm.codon.use">Leishmania major
+<OPTION VALUE="leish.codon.use">Leishmania tarentolae
+<OPTION VALUE="shrimp.codon.use">Litopenaeus vannamei
+<OPTION VALUE="luci.codon.use">Lucilia cuprina
+<OPTION VALUE="lymn.codon.use">Lymnaea stagnalis
+<OPTION VALUE="musca.codon.use">Musca domestica
+<OPTION VALUE="bmussel.codon.use">Mytilus edulis
+<OPTION VALUE="mussel.codon.use">Mytilus galloprovincialis
+<OPTION VALUE="myzus.codon.use">Myzus persicae
+<OPTION VALUE="onch.codon.use">Onchocerca volvulus
+<OPTION VALUE="placo.codon.use">Placopecten magellanicus
+<OPTION VALUE="plasmo.codon.use">Plasmodium falciparum
+<OPTION VALUE="jellyfish.codon.use">Podocoryne carnea
+<OPTION VALUE="schis.codon.use">Schistosoma mansoni
+<OPTION VALUE="strongy.codon.use">Strongylocentrotus purpuratus
+<OPTION VALUE="suberites.codon.use">Suberites domuncula
+<OPTION VALUE="tetrapyr.codon.use">Tetrahymena pyriformis
+<OPTION VALUE="tetra.codon.use">Tetrahymena thermophila
+<OPTION VALUE="trich.codon.use">Trichinella spiralis
+<OPTION VALUE="trichomonas.codon.use">Trichomonas vaginalis
+<OPTION VALUE="tryp.codon.use">Trypanosoma brucei
+
+<OPTION>------gbmam------
+<OPTION VALUE="cow.codon.use">Bos taurus
+<OPTION VALUE="dog.codon.use">Canis familiaris
+<OPTION VALUE="horse.codon.use">Equus caballus
+<OPTION VALUE="rabbit.codon.use">Oryctolagus cuniculus
+<OPTION VALUE="sheep.codon.use">Ovis aries
+<OPTION VALUE="pig.codon.use">Sus scrofa
+
+<OPTION>------gbpln------
+<OPTION VALUE="alder.codon.use">Alnus glutinosa
+<OPTION VALUE="snapdragon.codon.use">Antirrhinum majus
+<OPTION VALUE="arab.codon.use">Arabadopsis thaliana
+<OPTION VALUE="asperfum.codon.use">Aspergillus fumigatus
+<OPTION VALUE="aspernid.codon.use">Aspergillus nidulans
+<OPTION VALUE="bixa.codon.use">Bixa orellana
+<OPTION VALUE="napus.codon.use">Brassica napus
+<OPTION VALUE="broc.codon.use">Brassica oleracea
+<OPTION VALUE="campto.codon.use">Camptotheca acuminata
+<OPTION VALUE="fern.codon.use">Ceratopteris richardii
+<OPTION VALUE="chara.codon.use">Chara corallina
+<OPTION VALUE="chlamy.codon.use">Chlamydomonas reinhardtii
+<OPTION VALUE="citrus.codon.use">Citrus sinensis
+<OPTION VALUE="clarkiab.codon.use">Clarkia breweri
+<OPTION VALUE="clarkiac.codon.use">Clarkia concinna
+<OPTION VALUE="hazelnut.codon.use">Corylus avellana
+<OPTION VALUE="cucumber.codon.use">Cucumis sativus
+<OPTION VALUE="dunal.codon.use">Dunaliella salina
+<OPTION VALUE="emernid.codon.use">Emericella nidulans
+<OPTION VALUE="poppy.codon.use">Eschscholzia californica
+<OPTION VALUE="euglena.codon.use">Euglena gracilis
+<OPTION VALUE="fabaceae.codon.use">Fabaceae family
+<OPTION VALUE="gerbera.codon.use">Gerbera hybrid cultivar
+<OPTION VALUE="gerberatr.codon.use">Gerbera hybrid cv. 'Terra Regina'
+<OPTION VALUE="ginkgo.codon.use">Ginkgo biloba
+<OPTION VALUE="soybean.codon.use">Glycine max
+<OPTION VALUE="gony.codon.use">Gonyaulax polyedra
+<OPTION VALUE="gossy.codon.use">Gossypium hirsutum
+<OPTION VALUE="barley.codon.use">Hordeum vulgare
+<OPTION VALUE="lotus.codon.use">Lotus corniculatus var. japonicus
+<OPTION VALUE="lily.codon.use">Lilium longiflorum
+<OPTION VALUE="tomato.codon.use">Lycopersicon esculentum
+<OPTION VALUE="apple.codon.use">Malus domestica
+<OPTION VALUE="cassava.codon.use">Manihot esculenta
+<OPTION VALUE="marchan.codon.use">Marchantia polymorpha
+<OPTION VALUE="medicago.codon.use">Medicago truncatula
+<OPTION VALUE="iceplant.codon.use">Mesembryanthemum crystallinum
+<OPTION VALUE="mucorc.codon.use">Mucor circinelloides
+<OPTION VALUE="mucor.codon.use">Mucor racemosus
+<OPTION VALUE="banana.codon.use">Musa acuminata
+<OPTION VALUE="neur.codon.use">Neurospora crassa
+<OPTION VALUE="tobacco.codon.use">Nicotiana tabacum
+<OPTION VALUE="rice.codon.use">Oryza sativa
+<OPTION VALUE="petunia.codon.use">Petunia x hybrida
+<OPTION VALUE="bean.codon.use">Phaseolus vulgaris
+<OPTION VALUE="moss.codon.use">Physcomitrella patens
+<OPTION VALUE="pichian.codon.use">Pichia angusta
+<OPTION VALUE="pichia.codon.use">Pichia pastoris
+<OPTION VALUE="whitepine.codon.use">Pinus strobus
+<OPTION VALUE="scotspine.codon.use">Pinus sylvestris
+<OPTION VALUE="loblolly.codon.use">Pinus taeda
+<OPTION VALUE="pea.codon.use">Pisum sativum
+<OPTION VALUE="mushroom.codon.use">Pleurotus ostreatus
+<OPTION VALUE="porph.codon.use">Porphyra pulchra
+<OPTION VALUE="porphy.codon.use">Porphyra yezoensis
+<OPTION VALUE="peach.codon.use">Prunus persica
+<OPTION VALUE="castor.codon.use">Ricinus communis
+<OPTION VALUE="yeast.codon.use">Saccharomyces cerevisiae
+<OPTION VALUE="pombe.codon.use">Schizosaccharomyces pombe
+<OPTION VALUE="sclerotinia.codon.use">Sclerotinia sclerotiorum
+<OPTION VALUE="silene.codon.use">Silene latifolia
+<OPTION VALUE="potato.codon.use">Solanum tuberosum
+<OPTION VALUE="sorghum.codon.use">Sorghum bicolor
+<OPTION VALUE="fungus.codon.use">Trametes versicolor
+<OPTION VALUE="wheat.codon.use">Triticum aestivum
+<OPTION VALUE="mildew.codon.use">Uncinula necator
+<OPTION VALUE="ustilago.codon.use">Ustilago maydis
+<OPTION VALUE="grape.codon.use">Vitis vinifera
+<OPTION VALUE="zea.codon.use">Zea mays
+<OPTION VALUE="ginger.codon.use">Zingiber officinale
+<OPTION VALUE="zinnia.codon.use">Zinnia elegans
+
+<OPTION>------gbpri------
+<OPTION VALUE="human.codon.use" SELECTED>Homo sapiens
+
+<OPTION>------gbrod------
+<OPTION VALUE="cavia.codon.use">Cavia porcellus
+<OPTION VALUE="mouse.codon.use">Mus musculus
+<OPTION VALUE="rat.codon.use">Rattus norvegicus
+
+<OPTION>------gbvrl------
+<OPTION VALUE="bbtv.codon.use">Banana bunchy top virus
+<OPTION VALUE="civ.codon.use">Chilo iridescent virus
+<OPTION VALUE="grapev2.codon.use">Grapevine leafroll-associated virus 2
+<OPTION VALUE="herpes4.codon.use">Human herpesvirus 4
+<OPTION VALUE="pringspot.codon.use">Papaya ringspot virus
+<OPTION VALUE="vsv.codon.use">Vesicular stomatitis virus
+
+<OPTION>------gbvrt------
+<OPTION VALUE="amby.codon.use">Ambystoma mexicanum
+<OPTION VALUE="anas.codon.use">Anas platyrhynchos
+<OPTION VALUE="duck.codon.use">Cairina moschata
+<OPTION VALUE="crotalus.codon.use">Crotalus atrox
+<OPTION VALUE="zebra.codon.use">Danio rerio
+<OPTION VALUE="phagfish.codon.use">Eptatretus stouti
+<OPTION VALUE="fugu.codon.use">Fugu rubripes
+<OPTION VALUE="chicken.codon.use">Gallus gallus
+<OPTION VALUE="shark.codon.use">Ginglymostoma cirratum
+<OPTION VALUE="catfish.codon.use">Ictalurus punctatus
+<OPTION VALUE="ahagfish.codon.use">Myxine glutinosa
+<OPTION VALUE="lamprey.codon.use">Petromyzon marinus
+<OPTION VALUE="flounder.codon.use">Platichthys flesus
+<OPTION VALUE="turtle.codon.use">Trachemys scripta
+<OPTION VALUE="squalus.codon.use">Squalus acanthias
+<OPTION VALUE="frog.codon.use">Xenopus laevis
+
+<OPTION>------other------
+<OPTION VALUE="equal.codon.use">Equal
+</SELECT></P>
+
+<P>By default, up to 3 of the least degenerate primers in an 
+<A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#SHOWPRIMER">overlapping set</A>
+are shown.<BR>
+<TABLE>
+<TR><TD colspan=2>
+Show the
+<INPUT TYPE="TEXT" SIZE="3" NAME="outoligo" VALUE="3">
+least degenerate, or show all overlapping primers.
+<INPUT TYPE="CHECKBOX" NAME="verbose" VALUE="TRUE">
+</TD></TR>
+</TABLE>
+
+By default, the 3' base of the primer must be an invariant position,
+regardless of the core strictness setting.
+<BR>Use core strictness for the 3' base.
+<INPUT TYPE="CHECKBOX" NAME="begin" VALUE="TRUE">
+
+<TABLE>
+<TR><TD colspan=2>
+Force the 
+<A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#BOUNDARY">core/clamp boundary</A> to be a codon boundary.
+<INPUT TYPE="CHECKBOX" NAME="rose" VALUE="TRUE">
+
+<BR>Use the most common codons in the 
+<A HREF="/blocks/help/CODEHOP/CODEHOP_help.html#CLAMP">clamp</A>. 
+<INPUT TYPE="CHECKBOX" NAME="most" VALUE="TRUE"></P>
+</TD></TR>
+</TABLE>
+
+<P><INPUT TYPE="SUBMIT" VALUE="Look for primers">
+<INPUT TYPE="RESET" VALUE="Reset & Clear">
+<HR>
+</FORM>
+
+<B>
+[<A HREF="/blocks">Blocks home</A>]
+[<A HREF="/blocks/help/CODEHOP/CODEHOP_help.html">CODEHOP help</A>]
+[<A HREF="/blocks/help/CODEHOP/tips.html">Getting started</A>]
+[<A HREF="/blocks/help/CODEHOP/CODEHOP_program.html">CODEHOP program</A>]
+[<A TARGET=_blank HREF="https://icodehop.cphi.washington.edu/i-codehop-context/Welcome">New iCODEHOP program</A>]
+</B>
+<HR>
+
+<A href="/blocks-bin/contact.pl">Contact us</A><P>
+Page last modified <MODIFICATION_DATE>Aug 2007</MODIFICATION_DATE></P>
+
+</BODY>
+</HTML>
+

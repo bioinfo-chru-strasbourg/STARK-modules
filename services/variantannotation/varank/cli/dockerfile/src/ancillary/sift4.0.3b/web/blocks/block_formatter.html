@@ -1,0 +1,49 @@
+<TITLE>BLOCK Formatter</TITLE>
+<H1><iMG ALIGN=MIDDLE SRC="/blocks/icons/blocks.xbm"> BLOCK Formatter</H1>
+<P>at the 
+<A HREF="http://www.fhcrc.org/">Fred Hutchinson Cancer Research Center</A> BLOCKS WWW server.
+<HR>
+
+<FORM METHOD="POST" ACTION="/blocks-bin/format_block">
+
+Block Formatter will reformat a multiple alignment to the 
+<A HREF="help/blocks_format.html">BLOCK format</A> and present a
+graphical representation (<A HREF="help/about_logos.html">sequence logo</A>) 
+and a scoring matrix of it.<P>
+<HR>
+
+<BR>
+After 
+<A HREF="help/formatter_help.html#FIELDS">filling the form</A>
+you can <INPUT TYPE=submit VALUE="format the alignment">.<BR>
+If you wish to later resubmit you can 
+<INPUT TYPE=reset VALUE="clear the input">.<P>
+<HR><HR>
+
+<PRE>
+<A HREF="help/formatter_help.html#ID">ID</A>           <INPUT SIZE=15 NAME="ID">
+<A HREF="help/formatter_help.html#AC">Accession</A>    <INPUT SIZE=8 MAXLENGTH=8 NAME="AC"> Distance from previous block, <A HREF="help/formatter_help.html#DIST">min</A><INPUT SIZE=2 NAME="MIN_DIST"><A HREF="help/formatter_help.html#DIST">max</A><INPUT SIZE=4 NAME="MAX_DIST">
+<A HREF="help/formatter_help.html#DE">Description</A>  <INPUT SIZE=54 NAME="DE">
+<A HREF="help/formatter_help.html#METHOD">Align. method</A><INPUT SIZE=10 NAME="MA_METH"> <A HREF="help/formatter_help.html#WIDTH">Align. width</A><INPUT SIZE=4 NAME="MA_WIDTH"> <A HREF="help/formatter_help.html#SEQ_NUM">Number of sequences</A><INPUT SIZE=4 NAME="MA_SEQS">
+
+<A HREF="help/formatter_help.html#MA">Multiple alignment</A>:
+<A HREF="help/formatter_help.html#SEQ_NAME">Sequence</A>      <A HREF="help/formatter_help.html#SEQ_POS">Start</A>
+<A HREF="help/formatter_help.html#SEQ_NAME">names</A>         <A HREF="help/formatter_help.html#SEQ_POS">positions</A>  <A HREF="help/formatter_help.html#SEQ">Sequences</A> <B>(must be filled; one sequence per line 
+                                      or FASTA format)</B></PRE>
+<TEXTAREA NAME="SEQ_NAMES" ROWS=25 COLS=9></TEXTAREA>
+<TEXTAREA NAME="SEQ_POS"   ROWS=25 COLS=5></TEXTAREA>
+<TEXTAREA NAME="SEQS"      ROWS=25 COLS=40></TEXTAREA> 
+<HR>
+<INPUT TYPE=submit VALUE="format the alignment">
+<HR>
+<A HREF="/blocks">[Blocks home]</A> 
+<A HREF="blocks_search.html">[Block Searcher]</A>
+<A HREF="make_blocks.html">[Block Maker]</A>
+<A HREF="/blocks-bin/getblock.sh">[Get Blocks]</A>
+<A HREF="help/formatter_help.html">[Formatter Help]</A>
+<HR>
+Page last modified on <MODIFICATION_DATE>August 1996</MODIFICATION_DATE>
+<Address>
+<A HREF="/~pietro">Shmuel Pietrokovski</A>
+</Address>
+

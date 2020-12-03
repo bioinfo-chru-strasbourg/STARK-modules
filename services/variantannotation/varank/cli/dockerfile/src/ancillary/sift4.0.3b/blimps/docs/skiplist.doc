@@ -1,0 +1,299 @@
+BLIMPS (BLocks IMProved Searcher)
+(C) Copyright 1993, Fred Hutchinson Cancer Research Center
+
+skiplist.doc -- A description of what skiplists are.
+
+------------------------------------------------------------------------
+
+			     Generic SkipLists :
+		The last sorted list package you'll ever need
+
+
+				  by
+			  Dominic Giampaolo
+			(nick@maxine.wpi.edu)
+
+
+INTRODUCTION :
+
+    Many times when writing an application, you come across the
+problem of maintaining a sorted list of items.  The problem is a
+simple one, it's been around nearly since the inception of computers.
+But, if you don't pay attention to it, you can realize a serious
+bottleneck in your code. The easy solution to keeping any sorted list
+is an array or linked list.  However, when the number of items in your
+list reaches any reasonable size (even 50-100), maintaining sorted
+order can cause performance to become a critical issue. Programs that
+repeatedly add, delete, or search for items in a linear list will face
+a serious performance hit.  At that point, it becomes best to look for
+a better data structure to store the items.
+
+    Binary trees are one way of coping with the problem. But, unless
+you implement balanced binary trees, the wonderful O(Log(n)) binary
+search algorithim quickly degenerates to a linear linked list. Even
+though a balanced binary tree has Log(n) search time, insertions or
+deletions can take linear time, not to mention that the algorithims
+are difficult to write correctly. Other data structures such as AVL or
+Splay trees exist for handling the problem, but all are also
+notoriously difficult to implement and somewhat obscure. The data
+structures that exist for dealing with sorted lists are adequate once
+written, but tend to be too daunting for anyone but a coerced Data
+Structures student to write.
+
+    As with all things in computers, it would be nice if there were a
+faster, simpler way to solve the problem before us.  As we expected,
+there is such a better way.  Using a data structure called a SkipList,
+we can get better performance than balanced binary trees (or AVL or
+Splay trees) without the hassle associated with coding complex
+algorithms. The SkipList data structure, was invented by William D.
+Pugh at the University of Maryland. Skiplists use probability combined
+with a standard linked list to create a unique data structure that
+offers probabilistic performance that is as fast as, or faster than
+all the Tree based data structures. SkipLists benefit from
+tremendously easy implementation coupled with blazing speed, making
+them _the_ choice data structures for use in any problem requiring a
+sorted list of items.
+
+
+SKIP WHAT? :
+
+    SkipLists are similar to linked lists, but as I said, use
+probability to their advantage.  In searching through a standard
+sorted linked list, you compare each node with your key, and keep
+going until your key is equal to or less than the current node. On
+average, for N elements, this takes N/2 comparisons to find any given
+item.  In a standard linked list, each node has a pointer to the next
+one. Suppose we give every other node two pointers, one pointer to the
+next node, and the other to a node two in front. Now our search can
+first compare with the node that is two away from the current node and
+skip directly to that node if needed. This saves us having to compare
+with the intermediate node.  You might call this a "two-level" linked
+list.  Theoretically, to improve performance, you could keep doing
+this, giving every third node a pointer three nodes in front, every
+fourth node a pointer four nodes ahead, etc. One drawback is that you
+wind up using a large amount of space for pointers. The bigger
+drawback is that for each element you want to insert or delete, you
+have to reorganize (on average) half the list (because the sense of
+what's the second or third element changes).
+
+    SkipLists work similarly, but use probability to decide what a new
+node's level should be. That is to say, when you insert a new element,
+you randomly choose a level (less than a predefined maximum), and
+patch up the pointers of only a few previous nodes.  You avoid
+reorganizing the whole list because as you step through to find any
+given node, you keep track of which pointers need to be fixed, then
+after the insertion, go back and fix them.
+
+    Using this approach, SkipLists achieve a probabilistic performance
+of Log(N) time for insertions, deletions, and of course searches.
+This is fantastic performance for what would otherwise seem like a
+simple data structure. Suffice it to say that Log(N) peformance makes
+SkipLists an attractive alternative to balanced binary trees and
+linear lists. I won't go into too much depth about SkipLists here, as
+Mr. Pugh's paper(s) provide excellent discussions on the details and
+theory of SkipLists. I've provided the reference at the end of the
+article. Looking up the article is beneficial.  Even though you don't
+have to fully understand SkipLists to use the Generic SkipList library
+provided, it doesn't hurt to see why they work the way they do.
+
+
+GENERIC OR NAME BRAND? :
+
+    Of course with all the benefits that SkipLists offer, it would be
+nice if they were easy to work with so that we could make use of them
+whenever we need them.  There are a lot of different possible uses for
+SkipLists.  You could use them as a symbol table manager for a
+compiler/interpreter, or as the basis for a small database system, or
+to maintain a sorted list of input strings, or even to manage a list
+of input numbers. In all, there are an uncountable number of ways that
+you could make use of a SkipList.  We could implement a SkipList
+package for each and every conceivable type of data, but this leads to
+obvious problems of duplicated code and effort, not to mention that
+you will invariably not please everyone.  From that conclusion we can
+see that we need some way to create a generic SkipList that will work
+with any data. This may seem a daunting task at first, but using C's
+void pointer, we can do it.
+
+    A void pointer can point to anything, so we've immediately solved
+the problem of storing any type of data.  By passing void pointers, we
+can maintain pointers to information without regard to its type.  The
+void pointer is a powerful concept, allowing you to emulate some of
+the features of more sophisticated object-oriented languages while
+retaining C's flexibility and speed.
+
+    Maintaining a sorted list of items also means that we need to have
+some sort of comparison function.  Taking a cue from the ANSI library
+function qsort(), we can use a programmer defined callback function as
+a comparison routine.  All the callback routine must do is accept two
+arguments and return an integer value indicating whether the two items
+are equal or if the first is less than or greater than the second.
+
+    From this basis, we have a method to store pointers to arbitrary
+data and compare that data. This is all we need to manage sorted lists
+of arbitrary information. The SkipList package deals with the actual
+list structure, insulating you from the details.  All you must do is
+provide a way to compare the data, a small price to pay for the
+performance benefits of using a SkipList.
+
+
+OTHER CONCERNS :
+
+    Performance crops up again as a concern with these generic
+SkipList's.  The use of the callback function could prove to be a
+bottleneck if the size of the list becomes very large (greater than
+10,000).  This is a valid concern, and for applications that require
+the utmost in speed and have a large number of elements, implementing
+a SkipList with hardcoded data type comparisons may be essential.
+However, in testing, I found that a hardcoded SkipList versus a
+generic SkipList (on character strings) offered only about a 10%
+improvement in speed.  The tradeoff of generality versus speed is
+definitely not worth it in this case.
+
+    The use of the void pointer may bother some people because of the
+lack of type checking involved.  This is a valid concern.  It is
+possible to create a generic SkipList intended to be used for char
+pointers and then to incorrectly pass an int pointer.  This error will
+not be caught by the compiler, because it can't do type checking when
+a void pointer argument is expected.  Obviously, this could lead to
+bad behavior and even a system crash or core dump might result.  Alas,
+the void pointer allows us to emulate the features of an OOP, but we
+can't duplicate all the features.  Using C++ or Smalltalk, we could
+write a more robust implementation because we could sub-class a
+SkipList class and provide data type specific comparison functions
+with full type checking.  C provides no other mechanism for dealing
+with pointers to arbitrary data, and so we are stuck with the void
+pointer method.  The use of the void pointer as an argument is simply
+something the programmer must be aware of and not abuse. In practice,
+this is generally not a problem.
+
+
+THE ACTUAL IMPLEMENTATION :
+
+    Designs on paper are fine, but the real test is to code the design
+and see if it works.  If it does, you've succeeded, otherwise it's
+time to go back to the drawing board.  I implemented a generic
+SkipList package based on the design given above.  It compiles under a
+variety of operating systems (AmigaDOS and Unix, but MS-DOS, and OS/2
+should work pretty easily), and works fine under all of them.  The
+programming interface is also simple, and after using the package for
+a couple of projects, I've only needed to add a single extension to
+the basic operations of adding, deleting, and searching for items.
+
+    The first thing you must do is create a SkipList.  The function
+NewSL() accomplishes this.  It returns a created and initialized
+SkipList. Consider all of the fields in the SkipList structure as
+private and do NOT modify them except through the provided interfaces.
+The whole point of the generic SkipList was to avoid having to worry
+about the implementation details of a SkipList, so do not peek or poke
+into the structure.  I've chosen to further hide the type of a
+SkipList through the use of a typedef.  When you declare a variable of
+type _SkipList_, it is really a pointer to a SkipList.  Some people
+(including myself) generally find this type of hiding to be
+objectionable.  I chose to use the approach anyway, because a SkipList
+should truly be an opaque data type.
+
+    The arguments to NewSL() are the name of a comparison function, a
+free item function, and a flags argument.  The comparison function
+should work as I mentioned above.  It should accept two pointers to
+data items and return an integer which is less than zero if the first
+item is less than the second, zero if the first is equal to the
+second, and greater than zero if the first is greater than the second.
+The free item function should accept a single pointer to an item and
+free all the resources associated with that object.  The free item
+callback is made when an item is deleted or when the SkipList itself
+is deallocated as a whole.  The free item callback can be NULL.  If it
+is NULL, no callbacks are made to free the resources associated with
+an item in the list.  If you don't specify a free item callback, you
+should keep track of that information elsewhere or be prepared to lose
+memory.  Finally, the flags arguments lets you specify whether you
+want to allow duplicate items in the list or not.  The default
+(NO_DUPLICATES) will cause the insertion function to return an error
+if the item already exists in the list.
+
+    Once the SkipList is created, you can perform the standard insert,
+delete, and search functions using InsertSL(), DeleteSL(), and
+SearchSL().  The calling sequence is the same for all three functions.
+You pass the SkipList you created and a pointer to the element you
+want to add, delete, or search for.  If, when you created the
+SkipList, you specified that duplicates should not be allowed, then
+InsertSL() will return the error DUPLICATE_ITEM if you try to insert a
+duplicate item.  If you do allow duplicates, they will be placed in
+front of (before) any items already in the list with the same value.
+If you try to delete an item which is not in the list, DeleteSL() will
+return FALSE.  If the node is deleted properly, DeleteSL() will return
+TRUE. SearchSL() returns a pointer to the data item if it is in the
+list or NULL if the item you asked to search for is not in the list.
+In reality, SearchSL() returns a void pointer, and you will have to
+cast its return value in the same way you would with malloc().
+
+    Of course you eventually will need to deallocate a list and for
+this there is FreeSL().  This function will step through every item in
+the list, freeing the associated node resources.  If you provided a
+free item callback, it will be called for every item in the list.  If
+you didn't provide a free item callback, the data pointer in each node
+will be lost (unless you keep track of them elsewhere).  The only
+argument to FreeSL() is a SkipList you created with NewSL().
+
+
+BEYOND THE BASICS :
+
+    The standard functions of insertion, deletion and searching for
+elements in a list are sometimes not sufficient.  When I used the
+package, the only significant stumbling block was that once I had
+items in a list, I couldn't access them sequentially if I needed to
+(like to print the entire list).  To solve this dilema, I implemented
+a DoForSL() function. Given a SkipList, a callback routine and data
+pointer argument, DoForSL() will call the callback routine for every
+element of the SkipList. DoForSL() starts with the first item in the
+list and continues to make callbacks until the last element is reached
+or the callback routine returns FALSE.  After the end of the list is
+reached or the callback routine returns FALSE, DoForSL() returns. In
+this manner, you could easily build a sorted list of words, then print
+out the sorted list by using the DoForSL() function and a trivial
+print routine.  In theory, you could use DoForSL() to provide
+sequential access to the N'th element of a list.  DoForSL() is a
+useful building block routine that can be used to implement other
+higher level routines.
+
+
+WHAT ELSE? :
+
+    In Mr. Pugh's original paper on SkipLists, he mentions several
+extensions to basic SkipLists, and these are discussed in a second
+paper of his (also referenced at the end of this article). SkipLists
+can be modified to work on shared memory multiprocessors with
+concurrent updaters, you can further improve performance using search
+``fingers'', and you can even provide true sequential access to the
+list. For the sake of an understandable implementation, I left these
+features out, but they could be added with minimal effort. Interested
+readers are encourage to look up the references, as they provide an
+excellent in depth discussion of SkipLists.  Readers with FTP access
+on the Internet can FTP the original PostScript versions of the papers
+from mimsy.umd.edu.
+
+
+THAT'S ALL FOLKS :
+
+    So there you have it, we've gone from the starting point of a very
+elegant data structure, to the end and wound up with a cleanly
+implemented reusable module of code. The SkipList package presented
+here could be used in many applications for any type of data.  We've
+created a SkipList package that provides simple access to a high
+performance data structure with minimal programmer effort. As a whole,
+the SkipList package exhibits many qualities of ``good software'' (but
+of course still has room for improvement).  If you look at the example
+program, you'll see it truly is easy to make use of the SkipList
+package in your programs.  So, now you have a complete, efficient, and
+easy to use generic sorted list package at your disposal. Chalk
+another one up for software reusability!
+
+
+( don't forget reference to Mr. Pugh's paper that was in CACM )
+[Here is the reference:
+William Pugh, "Skip lists: a probabilistic alternative to balanced trees.",
+Communications of the ACM.  vol.33, no.6.  pp. 668-76.  June 1990.
+ 
+A Postscript format version is available for anonymous ftp from
+mimsy.cs.umd.edu.  The author can be contacted at pugh@cs.umd.edu.
+
+Bill]

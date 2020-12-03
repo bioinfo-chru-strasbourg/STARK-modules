@@ -1,0 +1,37 @@
+Version 2.0 original 
+
+ Version 2.1 released 03-24-04 by P.Ng 
+Added info_on_seqs "-" option to print out SIFT scores for entire protein.
+Updated Alignment.c to prevent segmentation fault if multiple blank lines in
+  PSI-BLAST output file.
+
+Version 2.1.1 released 01-10-07
+No software changes. Changed README notes for accurate description on how
+to run info_on_seqs by commandline. 
+
+Version 2.1.2 released 05-31-07
+Change cccb to compile correctly with blimps 8
+Change directons for sed and to download blimps 8
+
+Version 3.0 released 3-19-08
+Allow sequence retrieval from BLink
+(This uses precomputed NCBI BLAST searches, and can be a huge timesaver)
+
+Version 4.0 released 11-23-09
+Allows exome scale single nucleotide variant characterization and prediction (SIFT_exome_nssnvs.pl)
+Allows exome scale insertion/deletion variant characterization               (SIFT_exome_indels.pl)
+For instructions on how to use these tools, please see README_4.0
+
+VERSION 4.0.1 released 01-22-10 
+Retrieving sequences by gi reported to not be working. Fix get_BLINK_seq.pl script .
+Added SIFT_intersect_cds.pl so that users can filter out noncoding variants out of 
+  large genomic variant genomic lists.
+
+VERSION 4.0.2 released February 5, 2010
+Fix strand orientation in snv_db_engine.pl
+
+VERSION 4.0.3 released March 8, 2010
+Change snv_db_engine to match SIFT website
+Clarify instructions  for SIFT_exome_indels.pl and SIFT_intersect_cds.pl 
+Make available web tools
+ 

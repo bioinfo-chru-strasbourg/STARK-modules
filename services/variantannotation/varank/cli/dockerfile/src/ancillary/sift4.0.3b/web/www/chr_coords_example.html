@@ -1,0 +1,148 @@
+<b>Format Example 1 (for NCBI Human assembly version 36): RESIDUE BASED COORDINATE SYSTEM (comma separated)</b>
+<HR>
+3,81780820,1,T/C
+<BR>
+2,43881517,1,A/T,#User Comment
+<BR>
+2,43857514,1,T/C
+<BR>
+6,88375602,1,G/A,#User Comment
+<BR>
+22,29307353,-1,T/A
+<BR>
+10,115912482,-1,G/T
+<BR>
+10,115900918,-1,C/T
+<BR>
+16,69875502,1,G/T
+<BR>
+16,69876078,1,T/C
+<BR>
+16,69877147,1,G/A
+<BR>
+22,49000825,-1,T/A
+<BR>
+22,49000551,-1,A/C
+<BR>
+22,49006739,-1,T/G
+<BR>
+11,17476318,-1,C/G
+<BR>
+4,124033758,-1,G/T
+<BR>
+3,185041096,-1,C/G
+<BR>
+17,8101874,1,C/T
+<BR>
+<BR>
+<b>Format Example 2 (for NCBI Human assembly version 36): SPACE BASED COORDINATE SYSTEM (comma separated)</b>
+<HR>
+3,81780819,81780820,1,T/C
+<BR>
+2,43881516,43881517,1,A/T,#User Comment
+<BR>
+2,43857513,43857514,1,T/C
+<BR>
+6,88375601,88375602,1,G/A,#User Comment
+<BR>
+22,29307352,29307353,-1,T/A
+<BR>
+10,115912481,115912482,-1,G/T
+<BR>
+10,115900917,115900918,-1,C/T
+<BR>
+16,69875501,69875502,1,G/T
+<BR>
+16,69876077,69876078,1,T/C
+<BR>
+16,69877146,69877147,1,G/A
+<BR>
+22,49000824,49000825,-1,T/A
+<BR>
+22,49000550,49000551,-1,A/C
+<BR>
+22,49006738,49006739,-1,T/G
+<BR>
+11,17476317,17476318,-1,C/G
+<BR>
+4,124033757,124033758,-1,G/T
+<BR>
+3,185041095,185041096,-1,C/G
+<BR>
+17,8101873,8101874,1,C/T
+<BR>
+<BR><b>Format Example 3 (for NCBI Human assembly version 37): RESIDUE BASED COORDINATE SYSTEM (comma separated)</b>
+<br>1,100382265,1,C/G
+<br>1,100380997,1,A/G
+<br>22,30163533,1,A/C
+<br>X,10094215,1,G/A
+<br>X,10085674,1,C/T<br>
+20,50071099,1,G/T
+<br>
+21,19638426,1,G/T<br>
+2,230633386,-1,C/T
+<br>
+2,230312220,-1,C/T
+<br>
+1,100624830,-1,T/A
+<br>
+4,30723053,1,G/T
+<BR>
+<BR>
+<b>Format Example 4 (for NCBI Human assembly version 37): SPACE BASED COORDINATE SYSTEM (comma separated)</b>
+<HR>
+<br>1,100382264,100382265,1,C/G
+<br>1,100380996,100380997,1,A/G
+<br>22,30163532,30163533,1,A/C
+<br>X,10094214,10094215,1,G/A
+<br>X,10085673,10085674,1,C/T<br>
+20,50071098,50071099,1,G/T
+<br>
+21,19638425,19638426,1,G/T<br>
+2,230633385,230633386,-1,C/T
+<br>
+2,230312219,230312220,-1,C/T
+<br>
+1,100624829,100624830,-1,T/A
+<br>
+4,30723052,30723053,1,G/T
+
+
+<br><br>
+<b>Format Description</b>
+<HR>
+[comma separated: chromosome,coordinate,oientation,alleles,user comment(optional) ]<BR>
+Please do not use spaces except in the user comments field
+<BR>
+<br><i>Coordinate System:</i><BR>
+SIFT accepts both reidue-based and a space-based coordinates for single nucleotide variants.<BR>  
+If there is only one column of coordinates, as shown in Example 1 above, SIFT assumes the coordinate<BR> 
+system is  residue-based, if there are two columns, as shown in Example 2 above, SIFT assumes the<BR> 
+coordinate system is space-based.<BR><BR>
+The space-based coordinate system counts the spaces before and after bases rather than the bases themselves.<BR>
+Zero always refers to the space before the first base.<BR><BR> 
+The sequence 'ACGT' has coordinates (0,4) and its subsequence 'CG' has coordinates (1,3) as shown in Example 3 below.<BR> 
+The difference between the start and end coordinates gives the sequence length. Misinterpretation of these<BR> 
+coordinates can easily lead to 'off-by-one'. errors.  Space-based coordinates become necessary when describing<BR>
+insertions/deletions and genomic rearrangements.<BR><BR>
+Example 3:<BR>
+
+<p><font size="1">0</font> A <font size="1">1</font> C <font size="1">2</font> G <font size="1">3</font>  T <font size="1">4</font></p>
+<BR>
+In a residue based system as described in Example 4 below, each base is assigned a coordinate base on its<BR>
+absolute position, starting from 1. The sequence 'ACGT' has coordinates (1,4) and its subsequence 'CG' has <BR>
+coordinates (2,3).<BR><BR>
+Example 4:<BR>
+ACGT<BR>
+1 2 34<BR>
+<BR>
+<BR>
+<i>Orientation:</i><BR>
+Use 1 for positve strand and -1 for negative strand. If  orientation is not known, use 1 as default.<BR>
+<BR><BR><BR>
+<i>Alleles:</i><BR>
+Use 'base1/base2' where either base1 or base2 may be the reference allele. SIFT will predict for non-reference<BR>
+allele only. <BR>
+
+<HR>
+
