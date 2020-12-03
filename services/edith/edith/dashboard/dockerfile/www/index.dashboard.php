@@ -44,7 +44,6 @@ include "global_statistics.inc.php";
 include "activity.inc.php";
 
 
-
 ### CONTENT
 #############
 
@@ -167,7 +166,11 @@ $runs_list="<select name='analysis_from_list' id='analysis_from_list' onchange='
 # onfocus='this.size=10;' onblur='this.size=1;'
 #$runs_list="<select name='analysis' id='analysis' form='runs_list' onselect='this.form.submit()'>";
 $runs_list.="<option value=''>Select an analysis...</option>";
-$runs_list_array=$global[$repository]["runs"];
+$runs_list_array=[];
+foreach ($global as $repository=>$repository_data) {
+	$runs_list_array=array_merge($runs_list_array,$global[$repository]["runs"]);
+}
+#$runs_list_array=array_merge($runs_list_array,$global[$repository]["runs"]);
 krsort($runs_list_array);
 foreach ($runs_list_array as $run=>$nb_samples) {
 	#echo "$run=>$nb_samples<br>";
