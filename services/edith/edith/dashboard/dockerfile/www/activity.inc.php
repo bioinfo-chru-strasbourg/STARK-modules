@@ -206,9 +206,6 @@ foreach ($runs as $input=>$runs_list) {
 	foreach ($runs_list as $run=>$runs_nb) {
 		#echo "$input/$run<br>";
 		$inputs_runs_pattern[]="$input/runs/$run";
-		for ($i=1; $i<100000; $i++) {
-			$inputs_runs_pattern[]="$input/runs/$run";
-		};
 	};
 };
 $inputs_runs_pattern_brace="{".join(",",array_unique($inputs_runs_pattern))."}";
@@ -294,6 +291,8 @@ foreach ($runs_repositories as $runs_inputs_key=>$sample_path) {
 $LISTENER_LOG_PATTERN="{ID-*-NAME-*.log}";
 #$runs_listener_log=glob("analyses/stark-services/listener/$LISTENER_LOG_PATTERN",GLOB_BRACE);
 #$runs_listener_log=glob($folder_services."/".$STARK_LISTENER_SERVICE_FOLDER."/$LISTENER_LOG_PATTERN",GLOB_BRACE);
+
+
 $runs_listener_log=glob($folder_listener."/$LISTENER_LOG_PATTERN",GLOB_BRACE);
 array_multisort(array_map('filemtime', $runs_listener_log), SORT_NUMERIC, SORT_DESC, $runs_listener_log);
 foreach ($runs_listener_log as $runs_listener_log_key=>$runs_listener_log_file) {
@@ -343,7 +342,9 @@ foreach ($runs_launcher_log as $runs_launcher_log_key=>$runs_launcher_log_file) 
 	$ext=$runs_launcher_log_file_matches[5];
 	$run=$runs_launcher_log_file_matches[4];
 
-
+	#echo "run=$run<br> ";
+	#print_r($runs_list);
+	#if ($run!="") {
 	if ($run!="") {
 
 		# Full list
@@ -380,297 +381,301 @@ $tbody="";
 
 foreach ($runs_infos as $run=>$run_infos) {
 
-	if ($DEBUG) {
-		echo "<br><br>";
-		echo "run: $run";
-		echo "<pre>";
-		print_r($run_infos);
-		echo "</pre>";
-	};
+	if (isset($total_runs_list[$run])) {
 
-	$run_progress[$run]=array();
+		if ($DEBUG) {
+			echo "<br><br>";
+			echo "run: $run";
+			echo "<pre>";
+			print_r($run_infos);
+			echo "</pre>";
+		};
 
-	$run_status="unknown";
+		$run_progress[$run]=array();
 
-	# Sequencing
-	############
+		$run_status="unknown";
 
-	$sequencing_status_code=isset($run_infos["inputs"])+isset($run_infos["inputs"]["run_files"]["RTAComplete.txt"]);
+		# Sequencing
+		############
 
-	switch ($sequencing_status_code) {
-    case 0:
-		$sequencing_status="unavailable";
-		$sequencing_color="gray";
-		$sequencing_message="No run sequencing folder";
-		break;
-    case 1:
-        $sequencing_status="in progress";
-		$sequencing_color="orange";
-		$sequencing_message="Run sequencing seems to be in progress";
-        break;
-    case 2:
-        #$sequencing_status="complete";
-		if (!isset($run_infos["inputs"]["run_files"]["SampleSheet.csv"])) {
-			$sequencing_status="ready";
-			$sequencing_color="dodgerblue";
-			$sequencing_message="Ready for analysis (SampleSheet missing)";
-		} else {
-			$sequencing_status="complete";
-			$sequencing_color="green";
-			$sequencing_message="Complete for analysis ";
-		}
-        break;
-	default:
-        $sequencing_status="unknown";
-		$sequencing_color="gray";
-		$sequencing_message="No information";
-        break;
-	}
+		$sequencing_status_code=isset($run_infos["inputs"])+isset($run_infos["inputs"]["run_files"]["RTAComplete.txt"]);
 
-	$sequencing_message_plus="";
-	if (isset($runs_infos[$run]["inputs"]["run_files"]["RTAComplete.txt"])) {
-		$sequencing_message_plus.="<br>".implode(file($runs_infos[$run]["inputs"]["run_files"]["RTAComplete.txt"]["file"]))."";
-	}
-	if (count($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"])) {
-		$sequencing_message_plus.="<br><a target='SampleSheet' href='".$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["file"]."'>SampleSheet</a>";
-		$sequencing_message_plus.="<br><span style='color:gray'>".implode("&nbsp;&nbsp;&nbsp; ",array_keys($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"]))."</span>";
-	}
-
-	// echo "<pre>";
-	// print_r($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]);
-	// echo "</pre>";
-
-
-	$run_progress[$run]["sequencing"]["status"]=$sequencing_status;
-	$run_progress[$run]["sequencing"]["color"]=$sequencing_color;
-	$run_progress[$run]["sequencing"]["message"]=$sequencing_message;
-	$run_progress[$run]["sequencing"]["message_plus"]=$sequencing_message_plus;
-
-	if ($sequencing_status!="unavailable") {
-		$run_status="Sequencing ".$sequencing_status;
-		$run_color=$sequencing_color;
-	}
-
-
-
-	# Analysis
-	#############
-
-	// echo "<pre>";
-	// echo "RUN: $run<br>";
-	// print_r($run_infos);
-	// echo "</pre>";
-
-	// echo "RUN: $run<br>";
-	// echo "<pre>";
-	// print_r($run_infos["launcher"]);
-	// echo implode(file($run_infos["launcher"]["info"]));
-
-	$analysis_infos=array();
-	if (isset($run_task[$run]["task"])) {
-		$analysis_status=$run_task[$run]["task"]["status"];
-		$analysis_color=$run_task[$run]["task"]["color"];
-		$analysis_message="";
-		if ($run_task[$run]["task"]["error_level"]!=0) {
-			$analysis_color="red";
-			$run_status="error";
-			$analysis_message.="<span style='color:red'>Error '".$run_task[$run]["task"]["error_level"]."' </span><br>";
-		}
-		$analysis_message.="<span style='color:".$run_task[$run]["task"]["time_color"]."'>".$run_task[$run]["task"]["time"]."</span>";
-
-		# ANALYSIS INFOS
-		$analysis_infos["error_level"]=$run_task[$run]["task"]["error_level"];
-		$analysis_infos["status"]=$run_task[$run]["task"]["status"];
-		$analysis_infos["color"]=$run_task[$run]["task"]["color"];
-		$analysis_infos["time"]=$run_task[$run]["task"]["time"];
-		#$analysis_infos["time_color"]=$run_task[$run]["task"]["time_color"];
-		$analysis_infos["time_formated"]=$run_task[$run]["task"]["time_formated"];
-		#$analysis_infos["time_color"]=$run_task[$run]["task"]["time_color"];
-
-		#echo "<br><br>$run_task [$run][task]{status];".$analysis_infos["status"]."<br><br>";
-		
-
-	} elseif (isset($run_infos["launcher"]["info"])) {
-
-			$run_launcher_info_split=file($run_infos["launcher"]["info"]);
-
-			foreach ($run_launcher_info_split as $key => $value) {
-				# ERROR_LEVEL
-				preg_match("/Exit status: died with exit code (.*)/i", $value,$run_launcher_info_split_matches);
-				#print_r($run_launcher_info_split_matches);
-				if (isset($run_launcher_info_split_matches[1])) {
-					$analysis_infos["error_level"]=$run_launcher_info_split_matches[1];
-					if ($run_launcher_info_split_matches[1]!=0) {
-						$analysis_infos["status"]="error";
-						$analysis_infos["color"]="red";
-					} else {
-						$analysis_infos["status"]="finished";
-						$analysis_infos["color"]="green";
-					}
-				}
-				# TIME
-				preg_match("/Time run: (.*)s/i", $value,$run_launcher_info_split_matches);
-				#print_r($run_launcher_info_split_matches);
-				if (isset($run_launcher_info_split_matches[1])) {
-					$analysis_infos["time"]=$run_launcher_info_split_matches[1];
-					$analysis_infos["time_formated"]=str_replace(array("=","/",":","+"),array("d ","h ","m ","s "),gmdate("z=H/i:s+", explode("/",$run_launcher_info_split_matches[1])[0]));
-				}
+		switch ($sequencing_status_code) {
+		case 0:
+			$sequencing_status="unavailable";
+			$sequencing_color="gray";
+			$sequencing_message="No run sequencing folder";
+			break;
+		case 1:
+			$sequencing_status="in progress";
+			$sequencing_color="orange";
+			$sequencing_message="Run sequencing seems to be in progress";
+			break;
+		case 2:
+			#$sequencing_status="complete";
+			if (!isset($run_infos["inputs"]["run_files"]["SampleSheet.csv"])) {
+				$sequencing_status="ready";
+				$sequencing_color="dodgerblue";
+				$sequencing_message="Ready for analysis (SampleSheet missing)";
+			} else {
+				$sequencing_status="complete";
+				$sequencing_color="green";
+				$sequencing_message="Complete for analysis ";
 			}
-
-	} else {
-		# TODO - Check on log file !!!
-		$analysis_status="no information";
-		$analysis_color="red";
-		$analysis_message="Analysis launched but no Task Spooler information";
-	};
-
-
-	# Check analysis status code
-
-	$analysis_status_code=isset($run_infos["listener"])+isset($run_infos["launcher"]);
-	
-	switch ($analysis_status_code) {
-	case 0:
-		$analysis_status="unavailable";
-		$analysis_color="gray";
-		$analysis_message="No analysis information available";
-		break;
-	case 1:
-		#$analysis_status="detected";
-		#$analysis_color="orange";
-		if (isset($analysis_infos["status"])) {
-			$analysis_status=$analysis_infos["status"];
-		} else {
-			$analysis_status="detected";
+			break;
+		default:
+			$sequencing_status="unknown";
+			$sequencing_color="gray";
+			$sequencing_message="No information";
+			break;
 		}
-		if (isset($analysis_infos["color"])) {
-			$analysis_color=$analysis_infos["color"];
-		} else {
-			$analysis_color="orange";
+
+		$sequencing_message_plus="";
+		if (isset($runs_infos[$run]["inputs"]["run_files"]["RTAComplete.txt"])) {
+			$sequencing_message_plus.="<br>".implode(file($runs_infos[$run]["inputs"]["run_files"]["RTAComplete.txt"]["file"]))."";
 		}
-		$analysis_message="";
-		if ( isset($analysis_infos["time_formated"]) ) {
-			$analysis_message.="<span style='color:".$analysis_infos["time_color"]."'>".$analysis_infos["time_formated"];
-		};
+		if (count($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"])) {
+			$sequencing_message_plus.="<br><a target='SampleSheet' href='".$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["file"]."'>SampleSheet</a>";
+			$sequencing_message_plus.="<br><span style='color:gray'>".implode("&nbsp;&nbsp;&nbsp; ",array_keys($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"]))."</span>";
+		}
 
-		#$analysis_message="Run sequencing ready detected";
-		break;
-	case 2:
-		$analysis_status=$analysis_infos["status"];
-		$analysis_color=$analysis_infos["color"];
-		#$analysis_message="Run analysis launched";
-		$analysis_message="";
-		if ( isset($analysis_infos["time_formated"]) ) {
-			$analysis_message.="<span style='color:".$analysis_infos["time_color"]."'>".$analysis_infos["time_formated"];
-		};
-		break;
-	default:
-		$analysis_status="unavailable";
-		$analysis_color="gray";
-		$analysis_message="No analysis information available";
-		break;
-	};
+		// echo "<pre>";
+		// print_r($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]);
+		// echo "</pre>";
 
-	# default
-	$analysis_status=($analysis_status=="")?"unavailable":$analysis_status;
-	$analysis_color=($analysis_color=="")?"gray":$analysis_color;
-	$analysis_message=($analysis_message=="")?"No analysis information available":$analysis_message;
-	$analysis_message_plus=($analysis_message_plus=="")?"":$analysis_message_plus;
 
-	$analysis_message_plus="";
-	// if (isset($runs_infos[$run]["launcher"]["output"])) {
-	// 	$analysis_message_plus.="<br><br><a target='Output' href='".$runs_infos[$run]["launcher"]["output"]."' download>Output</a>";
-	// };
-	if (isset($runs_infos[$run]["launcher_list"]["output"])) {
-		$analysis_message_plus.="";
-		foreach ($runs_infos[$run]["launcher_list"]["output"] as $output_nb=>$output_file) {
-			#print_r(file($runs_infos[$run]["launcher_list"]["info"][$output_nb]));
+		$run_progress[$run]["sequencing"]["status"]=$sequencing_status;
+		$run_progress[$run]["sequencing"]["color"]=$sequencing_color;
+		$run_progress[$run]["sequencing"]["message"]=$sequencing_message;
+		$run_progress[$run]["sequencing"]["message_plus"]=$sequencing_message_plus;
 
-			# Final output (test exit code)
-			$output_exit_msg="";
-			$run_launcher_info_split=file($runs_infos[$run]["launcher_list"]["info"][$output_nb]);
-			foreach ($run_launcher_info_split as $key => $value) {
-				preg_match("/Exit status: died with exit code (.*)/i", $value,$run_launcher_info_split_matches);
-				if (isset($run_launcher_info_split_matches[1])) {
-					# If exit without error
-					if ($run_launcher_info_split_matches[1]==0) {
-						$output_exit_msg=" [<span style='color:green'>finished</span>]";
-					# If exit with error and no other output
-					} else {
-						$output_exit_msg=" [<span style='color:red'>error</span>]";
+		if ($sequencing_status!="unavailable") {
+			$run_status="Sequencing ".$sequencing_status;
+			$run_color=$sequencing_color;
+		}
+
+
+
+		# Analysis
+		#############
+
+		// echo "<pre>";
+		// echo "RUN: $run<br>";
+		// print_r($run_infos);
+		// echo "</pre>";
+
+		// echo "RUN: $run<br>";
+		// echo "<pre>";
+		// print_r($run_infos["launcher"]);
+		// echo implode(file($run_infos["launcher"]["info"]));
+
+		$analysis_infos=array();
+		if (isset($run_task[$run]["task"])) {
+			$analysis_status=$run_task[$run]["task"]["status"];
+			$analysis_color=$run_task[$run]["task"]["color"];
+			$analysis_message="";
+			if ($run_task[$run]["task"]["error_level"]!=0) {
+				$analysis_color="red";
+				$run_status="error";
+				$analysis_message.="<span style='color:red'>Error '".$run_task[$run]["task"]["error_level"]."' </span><br>";
+			}
+			$analysis_message.="<span style='color:".$run_task[$run]["task"]["time_color"]."'>".$run_task[$run]["task"]["time"]."</span>";
+
+			# ANALYSIS INFOS
+			$analysis_infos["error_level"]=$run_task[$run]["task"]["error_level"];
+			$analysis_infos["status"]=$run_task[$run]["task"]["status"];
+			$analysis_infos["color"]=$run_task[$run]["task"]["color"];
+			$analysis_infos["time"]=$run_task[$run]["task"]["time"];
+			#$analysis_infos["time_color"]=$run_task[$run]["task"]["time_color"];
+			$analysis_infos["time_formated"]=$run_task[$run]["task"]["time_formated"];
+			#$analysis_infos["time_color"]=$run_task[$run]["task"]["time_color"];
+
+			#echo "<br><br>$run_task [$run][task]{status];".$analysis_infos["status"]."<br><br>";
+			
+
+		} elseif (isset($run_infos["launcher"]["info"])) {
+
+				$run_launcher_info_split=file($run_infos["launcher"]["info"]);
+
+				foreach ($run_launcher_info_split as $key => $value) {
+					# ERROR_LEVEL
+					preg_match("/Exit status: died with exit code (.*)/i", $value,$run_launcher_info_split_matches);
+					#print_r($run_launcher_info_split_matches);
+					if (isset($run_launcher_info_split_matches[1])) {
+						$analysis_infos["error_level"]=$run_launcher_info_split_matches[1];
+						if ($run_launcher_info_split_matches[1]!=0) {
+							$analysis_infos["status"]="error";
+							$analysis_infos["color"]="red";
+						} else {
+							$analysis_infos["status"]="finished";
+							$analysis_infos["color"]="green";
+						}
+					}
+					# TIME
+					preg_match("/Time run: (.*)s/i", $value,$run_launcher_info_split_matches);
+					#print_r($run_launcher_info_split_matches);
+					if (isset($run_launcher_info_split_matches[1])) {
+						$analysis_infos["time"]=$run_launcher_info_split_matches[1];
+						$analysis_infos["time_formated"]=str_replace(array("=","/",":","+"),array("d ","h ","m ","s "),gmdate("z=H/i:s+", explode("/",$run_launcher_info_split_matches[1])[0]));
 					}
 				}
+
+		} else {
+			# TODO - Check on log file !!!
+			$analysis_status="no information";
+			$analysis_color="red";
+			$analysis_message="Analysis launched but no Task Spooler information";
+		};
+
+
+		# Check analysis status code
+
+		$analysis_status_code=isset($run_infos["listener"])+isset($run_infos["launcher"]);
+		
+		switch ($analysis_status_code) {
+		case 0:
+			$analysis_status="unavailable";
+			$analysis_color="gray";
+			$analysis_message="No analysis information available";
+			break;
+		case 1:
+			#$analysis_status="detected";
+			#$analysis_color="orange";
+			if (isset($analysis_infos["status"])) {
+				$analysis_status=$analysis_infos["status"];
+			} else {
+				$analysis_status="detected";
+			}
+			if (isset($analysis_infos["color"])) {
+				$analysis_color=$analysis_infos["color"];
+			} else {
+				$analysis_color="orange";
+			}
+			$analysis_message="";
+			if ( isset($analysis_infos["time_formated"]) ) {
+				$analysis_message.="<span style='color:".$analysis_infos["time_color"]."'>".$analysis_infos["time_formated"];
 			};
 
-
-			$analysis_message_plus="<br><a target='Output' href='".$output_file."' download>Output".$output_exit_msg."</a>".$analysis_message_plus;
+			#$analysis_message="Run sequencing ready detected";
+			break;
+		case 2:
+			$analysis_status=$analysis_infos["status"];
+			$analysis_color=$analysis_infos["color"];
+			#$analysis_message="Run analysis launched";
+			$analysis_message="";
+			if ( isset($analysis_infos["time_formated"]) ) {
+				$analysis_message.="<span style='color:".$analysis_infos["time_color"]."'>".$analysis_infos["time_formated"];
+			};
+			break;
+		default:
+			$analysis_status="unavailable";
+			$analysis_color="gray";
+			$analysis_message="No analysis information available";
+			break;
 		};
-		#$analysis_message_plus.="<br><br><a target='Output' href='".$runs_infos[$run]["launcher"]["output"]."' download>Output</a>";
-	};
 
-	$run_progress[$run]["analysis"]["status"]=$analysis_status;
-	$run_progress[$run]["analysis"]["color"]=$analysis_color;
-	$run_progress[$run]["analysis"]["message"]=$analysis_message;
-	$run_progress[$run]["analysis"]["message_plus"]=$analysis_message_plus;
+		# default
+		$analysis_status=($analysis_status=="")?"unavailable":$analysis_status;
+		$analysis_color=($analysis_color=="")?"gray":$analysis_color;
+		$analysis_message=($analysis_message=="")?"No analysis information available":$analysis_message;
+		$analysis_message_plus=($analysis_message_plus=="")?"":$analysis_message_plus;
 
-	if ($analysis_status!="unavailable") {
-		$run_status="Analysis ".$analysis_status;
-		$run_color=$analysis_color;
-	};
+		$analysis_message_plus="";
+		// if (isset($runs_infos[$run]["launcher"]["output"])) {
+		// 	$analysis_message_plus.="<br><br><a target='Output' href='".$runs_infos[$run]["launcher"]["output"]."' download>Output</a>";
+		// };
+		if (isset($runs_infos[$run]["launcher_list"]["output"])) {
+			$analysis_message_plus.="";
+			foreach ($runs_infos[$run]["launcher_list"]["output"] as $output_nb=>$output_file) {
+				#print_r(file($runs_infos[$run]["launcher_list"]["info"][$output_nb]));
+
+				# Final output (test exit code)
+				$output_exit_msg="";
+				$run_launcher_info_split=file($runs_infos[$run]["launcher_list"]["info"][$output_nb]);
+				foreach ($run_launcher_info_split as $key => $value) {
+					preg_match("/Exit status: died with exit code (.*)/i", $value,$run_launcher_info_split_matches);
+					if (isset($run_launcher_info_split_matches[1])) {
+						# If exit without error
+						if ($run_launcher_info_split_matches[1]==0) {
+							$output_exit_msg=" [<span style='color:green'>finished</span>]";
+						# If exit with error and no other output
+						} else {
+							$output_exit_msg=" [<span style='color:red'>error</span>]";
+						}
+					}
+				};
 
 
-	# Repository
-	#############
+				$analysis_message_plus="<br><a target='Output' href='".$output_file."' download>Output".$output_exit_msg."</a>".$analysis_message_plus;
+			};
+			#$analysis_message_plus.="<br><br><a target='Output' href='".$runs_infos[$run]["launcher"]["output"]."' download>Output</a>";
+		};
 
-	$repository_status_code=count($run_infos["repositories"]["run_path"]);
-	if ($repository_status_code==0) {
+		$run_progress[$run]["analysis"]["status"]=$analysis_status;
+		$run_progress[$run]["analysis"]["color"]=$analysis_color;
+		$run_progress[$run]["analysis"]["message"]=$analysis_message;
+		$run_progress[$run]["analysis"]["message_plus"]=$analysis_message_plus;
 
-		$repository_status="unavailable";
-		$repository_color="gray";
-		$repository_message="No results available";
-		$repository_message_plus="";
+		if ($analysis_status!="unavailable") {
+			$run_status="Analysis ".$analysis_status;
+			$run_color=$analysis_color;
+		};
 
 
-	} else {
+		# Repository
+		#############
 
-		$repository_status="available";
-		$repository_color="green";
-		$repository_message="Run results available in folders";
-		$repository_message_plus="";
+		$repository_status_code=count($run_infos["repositories"]["run_path"]);
+		if ($repository_status_code==0) {
 
-		# Check number of samples !
-		if (isset($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]) && isset($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"])) {
-			#$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"]["truc"]="truc";
-			$result1=array_diff($runs_infos[$run]["repositories"]["samples"],$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"]);
-			$result_missing=array_diff($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"],$runs_infos[$run]["repositories"]["samples"]);
-			$result=array_merge($result1,$result_missing);
-			if (count($result_missing)) {
-				if ($run_progress[$run]["analysis"]["color"]=="green") {
-					$missing_samples_color="red";
-				} else {
-					$missing_samples_color=$run_task[$run]["task"]["color"];
+			$repository_status="unavailable";
+			$repository_color="gray";
+			$repository_message="No results available";
+			$repository_message_plus="";
+
+
+		} else {
+
+			$repository_status="available";
+			$repository_color="green";
+			$repository_message="Run results available in folders";
+			$repository_message_plus="";
+
+			# Check number of samples !
+			if (isset($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]) && isset($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"])) {
+				#$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"]["truc"]="truc";
+				$result1=array_diff($runs_infos[$run]["repositories"]["samples"],$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"]);
+				$result_missing=array_diff($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"],$runs_infos[$run]["repositories"]["samples"]);
+				$result=array_merge($result1,$result_missing);
+				if (count($result_missing)) {
+					if ($run_progress[$run]["analysis"]["color"]=="green") {
+						$missing_samples_color="red";
+					} else {
+						$missing_samples_color=$run_task[$run]["task"]["color"];
+					}
+					$repository_message_plus.="<br><span style='color:$missing_samples_color'>Missing Samples (".implode(" ",$result_missing).")</span>";
 				}
-				$repository_message_plus.="<br><span style='color:$missing_samples_color'>Missing Samples (".implode(" ",$result_missing).")</span>";
 			}
+
+			foreach ($run_infos["repositories"]["run_path"] as $repository_path=>$repository_path_infos) {
+				# http://localhost:42002/index.reports.php?PATH=repositories/Archives/SOMATIC/HEMATOLOGY/RUN_TEST_TAG/
+				#$REPORTS_RUN_LINK="<a target='METRICS' href='index.reports.php?PATH=$run_path'>REPORT</a>";
+				$repository_path_split=explode("/",$repository_path);
+				$repository_message_plus.="<br><a target='REPORT' href='index.reports.php?PATH=$repository_path'>".$repository_path_split[1]."/".$repository_path_split[2]."/".$repository_path_split[3]."</a>";
+			}
+
+		};
+
+		$run_progress[$run]["repository"]["status"]=$repository_status;
+		$run_progress[$run]["repository"]["color"]=$repository_color;
+		$run_progress[$run]["repository"]["message"]=$repository_message;
+		$run_progress[$run]["repository"]["message_plus"]=$repository_message_plus;
+
+		if ($repository_status!="unavailable") {
+			$run_status="Results ".$repository_status;
+			$run_color=$repository_color;
 		}
 
-		foreach ($run_infos["repositories"]["run_path"] as $repository_path=>$repository_path_infos) {
-			# http://localhost:42002/index.reports.php?PATH=repositories/Archives/SOMATIC/HEMATOLOGY/RUN_TEST_TAG/
-			#$REPORTS_RUN_LINK="<a target='METRICS' href='index.reports.php?PATH=$run_path'>REPORT</a>";
-			$repository_path_split=explode("/",$repository_path);
-			$repository_message_plus.="<br><a target='REPORT' href='index.reports.php?PATH=$repository_path'>".$repository_path_split[1]."/".$repository_path_split[2]."/".$repository_path_split[3]."</a>";
-		}
-
-	};
-
-	$run_progress[$run]["repository"]["status"]=$repository_status;
-	$run_progress[$run]["repository"]["color"]=$repository_color;
-	$run_progress[$run]["repository"]["message"]=$repository_message;
-	$run_progress[$run]["repository"]["message_plus"]=$repository_message_plus;
-
-	if ($repository_status!="unavailable") {
-		$run_status="Results ".$repository_status;
-		$run_color=$repository_color;
 	}
 
 }

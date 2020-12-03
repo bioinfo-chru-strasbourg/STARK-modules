@@ -56,6 +56,7 @@ foreach ($runs_inputs as $key => $input_path) {
 		};
 	} elseif ($input_type=="runs" && is_dir($input_path)) {
 		$runs[$input][$input_file]++;
+		$total_runs_list[$input_file]++;
 	};
 };
 
@@ -80,7 +81,10 @@ if (empty($repository_filter)) {
 
 #$repository_filter=array("*/*/*");
 $repository_filter_brace="{".join(",",array_unique($repository_filter))."}";
+#echo "repository_filter_brace=$repository_filter_brace";
+#echo "scan";
 
+$_SESSION=[];
 
 if (!isset($_SESSION["repositories"])) {
 
@@ -91,13 +95,28 @@ if (!isset($_SESSION["repositories"])) {
 	#print_r(array_multisort(array_map('filemtime', $runs_repositories_folders), SORT_NUMERIC, SORT_ASC, $runs_repositories_folders));
 
 	$run_folders=[];
+	$project_folders=[];
 	foreach ($runs_repositories_folders as $key=>$run_folder) {
-		$run_folders[(1000-$key)]=dirname($run_folder);
+		$run_folders[$key]=dirname($run_folder);
+    	$project_folders[$key]=dirname(dirname($run_folder));
 	};
 	$run_folders_brace="{".join(",",array_unique($run_folders))."}";
+	$project_folders_brace="{".join(",",array_unique($project_folders))."}";
+	
 	
 	# fin samples (with copy complete)
-	$runs_repositories=glob("$run_folders_brace/*/STARKCopyComplete.txt",GLOB_BRACE|GLOB_NOSORT);
+	#$runs_repositories=glob("$run_folders_brace/*/STARKCopyComplete.txt",GLOB_BRACE|GLOB_NOSORT);
+	$runs_repositories_tmp=glob("$project_folders_brace/*/*/STARKCopyComplete.txt",GLOB_BRACE|GLOB_NOSORT);
+	$runs_repositories=[];
+	foreach ($run_folders as $run_folder_filter) {
+		$runs_repositories_filter=preg_grep('#^'.$run_folder_filter.'#', $runs_repositories_tmp);
+		// echo "<br>COUNT="; echo count($runs_repositories_filter);
+		// echo "<br>"; print_r($runs_repositories_filter);
+		// echo "<br>";
+		$runs_repositories=array_merge($runs_repositories,$runs_repositories_filter);
+	};
+
+
 	#$runs_repositories=glob("$run_folders_brace/*/STARKCopyComplete.txt",GLOB_BRACE);
 	#arsort($runs_repositories);
 	#print_r(array_multisort(array_map('filemtime', $runs_repositories), SORT_NUMERIC, SORT_DESC, $runs_repositories));
@@ -115,6 +134,8 @@ if (!isset($_SESSION["repositories"])) {
 	$runs_repositories=$_SESSION["repositories"]["runs_repositories"];
 
 };
+
+
 
 
 # process
@@ -143,14 +164,17 @@ foreach ($runs_repositories as $key => $sample_path) {
 	$run_by_group_project[$repository][$group][$project][$run]++;
 	$sample_by_group_project[$repository][$group][$project][$sample]++;
 
+	$total_runs_list[$run]++;
+
 };
 
 
+
 # Default Repository 
-if (isset($global["Repositoryy"])) {
+if (isset($global["Repository"])) {
 	$repository_default=$folder_repositories."/Repository";
 } else {
-	$repository_default=$folder_repositories."/$repositoryy";
+	$repository_default=$folder_repositories."/$repository";
 }
 
 
