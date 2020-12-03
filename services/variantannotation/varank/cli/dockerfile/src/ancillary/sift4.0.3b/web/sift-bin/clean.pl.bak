@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+#		clean.pl, reads stdin
+#cd ../tmp
+#ls -lgt | awk '{print $5 " " $6 " " $7 " " $8}' > out1
+#cat out1 | ../bin/clean.pl 12 > out2
+#Then chmod out2 and execute it
+#
+
+$age = $ARGV[0];		# Remove files > 12 hours old
+if ($age < 0) { $age = 12; }
+
+@months = ("x","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec");
+$gmtsecs = time();
+($sec, $min, $hour, $day, $month, $year) = (localtime)[0,1,2,3,4,5];
+$month += 1;
+$year += 1900;
+$mon = $months[$month];
+#print "month=$month mon=$mon day=$day\n";
+
+#($sec, $min, $hour, $day, $month, $year, $wday , $yday, $isdst) = localtime(gmtsecs);
+#$month += 1; $year += 1900;
+#print "month=$month day=$day wday=$wday yday=$yday isdst=$isdst\n";
+
+print "\#\!\/bin/csh\n";
+print "unalias rm\n";
+foreach $in_rec (<STDIN>)
+{
+	($fmon, $fday, $ftime, $fname) = split(/\s+/, $in_rec);
+        # Just file names that start w/ num or NP_
+        if ($fname =~ m/^[0-9]/ || $fname =~ m/^NP_/ || $fname =~ m/^XP_/)
+        {
+		($hh, $ss) = split(/:/, $ftime);
+		$hdiff = $hour - $hh;
+		if ($fmon eq $mon && $fday == $day && $hdiff > $age)
+		{
+			print "rm -f $fname\n";
+		}
+		elsif ($fmon eq $mon && $fday < $day)
+		{
+			$hdiff += 24;
+			if ($hdiff > $age)
+			{
+				print "rm -f $fname\n";
+			}
+		}
+#print STDERR "$in_rec";
+#print STDERR "hh=$hh ss=$ss fmon=$fmon mon=$mon fday=$fday day=$day hdiff=$hdiff age=$age\n";
+        }
+}
+print "exit(0)\n";
+exit(0);

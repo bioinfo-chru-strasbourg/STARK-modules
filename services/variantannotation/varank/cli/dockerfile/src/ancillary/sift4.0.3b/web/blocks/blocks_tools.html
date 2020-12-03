@@ -1,0 +1,117 @@
+<HTML>
+<TITLE>Blocks Tools</TITLE>
+<H1><iMG ALIGN=MIDDLE SRC="/blocks/icons/blocks.xbm"> Blocks Tools</H1>
+
+There are various tools that are used in the Blocks program suite.
+Here is a list of some of them and a description of each.
+
+<H3>Index:</H3><UL>
+<LI> <A href="#blocksearch">Block Search</A>
+<LI> <A href="#blimps">Blimps</A>
+<LI> <A href="#blksort">Blksort</A>
+<LI> <A href="#keyword">Blocks Keyword Search</A>
+<LI> <A href="#getblock">Getblock</A>
+<LI> <A href="#blockmkr">Block Maker</A>
+</UL>
+
+<A name="blocksearch"><H3>Block Search</H3></A>
+
+A block search uses blimps to do the searching and scoring and blksort
+to do the interpretation of the data.  See the <A href="help/help">Block Search help
+page</A> for more details. <P>
+
+Block searching is available through the <A href="blocks_search.html">web</A>. 
+
+
+<A name="blimps"><H3>Blimps</H3></A>
+
+Blimps is the program that is used both in the calibration phase of
+building the BLOCKS database and in the search of a sequence against
+the BLOCKS database.  In searching, the input to this program is the
+sequence to search with and the database to search against plus some
+other parameters that control how the search is done.  The output is a
+list of the top scoring comparisons of the sequence and alignments
+with the blocks.  The output of this program is not very human readable
+and can contain hundreds of scores.<P>
+
+Blimps was written by Bill Alford and is available for
+anonymous ftp at <A href="ftp://ftp.ncbi.nih.gov/repository/blocks/unix/blimps">URL
+ftp://ftp.ncbi.nih.gov/repository/blocks/unix/blimps/</A>.
+
+
+<A name="blksort"><H3>Blksort</H3></A>
+
+Blksort is a filter for the blimps output.  It reads the output and
+manipulates it so that it is easier to read.  Blksort also does
+analysis of the output to report the most likely correct hits of the
+hundreds of returned scores in the blimps output.  The probability of
+a particular comparison being valid is also computed and reported.
+<P>
+
+Blksort was written by Jorja Henikoff and is available for
+anonymous ftp at <A href="ftp://ftp.ncbi.nih.gov/repository/blocks/unix/blimps/analysis">URL
+ftp://ftp.ncbi.nih.gov/repository/blocks/unix/blimps/analysis/</A>.  This will soon be
+distributed with the blimps release.
+
+
+<A name="keyword"><H3>Blocks Keyword Search</H3></A>
+
+This tool is only available via the <A HREF="/blocks-bin/kidofwais.pl">web</A>.<P>
+
+The Blocks Keyword Search is able to retrieve a block from the BLOCKS
+database when given a word to search with.  The search engine is a
+version of wais (<A HREF="http://ls6-www.informatik.uni-dortmund.de/freeWAIS-sf/fwsf_toc.html">freeWAIS-sf</A>).
+The CGI script that interfaces to the wais database is <A
+HREF="http://www.cso.uiuc.edu/grady.html">kidofwais.pl</A> which has
+been modified from the original to interface with <A
+href="#getblock">Getblock</A>.
+
+<P>
+
+freeWAIS-sf was derived from <A
+HREF="http://vinca.cnidr.org/software/software.html">freeWAIS</A> by
+Ulrich Pfeifer.  kidofwais.pl was derived from <A
+HREF="http://dewey.lib.ncsu.edu/staff/morgan/son-of-wais.html">son-of-wais.pl</A>
+by Michael Grady.
+
+<A name="getblock"><H3>Getblock</H3></A>
+
+Getblock is a program that retrieves the given block number from the
+BLOCKS database.  In addition to the block the <A
+href="http://www.expasy.ch/prosite/">PROSITE database</A>
+entry that the block was made from is included.  This tools use is in
+retrieving a block that was matched in a search. <P>
+
+Getblock was written by Jorja Henikoff
+and is available through the <A href="/blocks-bin/getblock.sh">web</A>. 
+
+<A name="blockmkr"><H3>Block Maker</H3></A>
+
+The block maker tool is a collection of the programs that are used in
+the creation of the blocks database.  The most notable tools are motif
+and gibbs which build blocks from the sequences with two different
+techniques.  This is to give some confidence to the results because
+the method that the blocks are generated can sometimes create
+different invalid blocks with questionable data.  This is explained in
+more detail in the <A href="help/bm/help.html">Block Maker help page</A>.  The
+NAR paper <A
+href="http://atlas.nlm.nih.gov:5700/htbin/ef/entrezmr?92093619">
+"Automated assembly of protein blocks for database searching"</A> also
+gives more information on this topic. <P>
+
+The core programs used in the block maker were written by Jorja
+Henikoff and are available for
+anonymous ftp at <A href="ftp://ftp.ncbi.nih.gov/repository/blocks">URL
+ftp://ftp.ncbi.nih.gov/repository/blocks/</A>.  The specific programs are listed in the
+above <A
+href="http://atlas.nlm.nih.gov:5700/htbin/ef/entrezmr?92093619">paper</A>.
+
+
+
+<P>
+<A HREF="/blocks">[Blocks home]</A>
+
+<HR>
+<A href="/blocks-bin/contact.pl">Contact us</A>
+Page last modified on <MODIFICATION_DATE>Oct 1998</MODIFICATION_DATE>
+</HTML>

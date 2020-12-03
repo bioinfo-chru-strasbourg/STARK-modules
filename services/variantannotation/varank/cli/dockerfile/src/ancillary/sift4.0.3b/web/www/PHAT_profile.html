@@ -1,0 +1,62 @@
+<basefont size = 4>
+<body bgcolor=white>
+<TITLE>Return profile for SWAT</TITLE>
+
+<H1><center><font size=+1> 
+Profile for SWAT</center></H1>
+</font>
+
+<FORM ENCTYPE="MULTIPART/FORM-DATA" METHOD="POST" ACTION="/sift-bin/PHAT_submission_profile.pl">
+This page is for users that want to run SWAT locally rather than submitting to our <A HREF="PHAT_submission.html">webpage</A>. 
+The advantage of doing this is running searches against large databases.<BR>
+<BR> 
+
+Given a transmembrane sequence and the substitution scoring matrices to be used on nontransmembrane and transmembrane regions, a profile is returned that is in the correct format for searches using SWAT (
+<A HREF="http://bozeman.mbt.washington.edu/">Phil Green, U.of Washington</A>
+).  Please contact Phil Green in order to obtain SWAT.
+<BR>
+<P>
+Select the matrix for nontransmembrane regions:   
+    <SELECT NAME="nontxmem_matrix" SIZE=1>
+<OPTION VALUE="BLOSUM62" SELECTED> BLOSUM 62
+<OPTION VALUE="BLOSUM55"> BLOSUM 55
+<OPTION VALUE="jones_250.bla"> JTT PAM 250
+</SELECT>
+<P>
+Select the matrix for transmembrane regions:
+<SELECT NAME="txmem_matrix" SIZE=1>
+<OPTION VALUE="PHAT_T75_B73.bla" SELECTED> PHAT 75/73 
+<OPTION VALUE="BLOSUM62"> BLOSUM 62
+<OPTION VALUE="BLOSUM55"> BLOSUM 55
+<OPTION VALUE="jones_170.bla"> JTT PAM 170 
+<OPTION VALUE="xmem23_170.bla"> JTT txmem 170
+</SELECT>
+<BR>
+<HR>
+Enter the name of the file containing your sequence in <A HREF="http://www.ncbi.nlm.nih.gov/BLAST/fasta.shtml">FASTA</A> format:<BR>
+<INPUT SIZE=50 NAME="queryfile" TYPE="file"><BR>
+-or-<BR>
+Enter the sequence in
+<A HREF="http://www.ncbi.nlm.nih.gov/BLAST/fasta.shtml">FASTA</A> format here:<BR>
+<TEXTAREA NAME="queryseq" ROWS=10 COLS=70></TEXTAREA>
+<BR>
+<P>
+<HR>
+<P>
+Enter the name of the file containing transmembrane regions in corresponding FASTA-like format (<A HREF="PHAT_help.html#sequence_submission"><i><b>Example</b></i></A>)     (<A HREF="transmembrane_prediction.html" TARGET="view_window">Transmembrane Prediction Websites</A>)<BR>
+<INPUT SIZE=50 NAME="querytxmemfile" TYPE="file"><BR>
+-or-<BR>
+Enter the corresponding transmembrane regions in FASTA-like format here (<A HREF="PHAT_help.html#sequence_submission"><b><i>Example</i></b></A>)  (<A HREF="transmembrane_prediction.html" TARGET="view_window">Transmembrane Prediction Websites</A>)<BR>
+<TEXTAREA NAME = "querytxmemseq" ROWS=10 COLS=70></TEXTAREA>
+<HR>
+<BR>
+
+<HR>
+<INPUT TYPE=submit>
+<INPUT TYPE=reset>
+<BR>
+
+<HR>
+Questions or comments?<BR>
+Contact <A HREF="/sift-bin/contact.pl">us</A>
+

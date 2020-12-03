@@ -1,0 +1,8 @@
+{
+  "code" : "variantannotation",
+  "name": "Variant Annotation",
+  "fullname": "Variant Annotation services",
+  "description": "Variant Annotation services, such as annotations tools and interfaces",
+  "release": "1.0",
+  "available": true
+}

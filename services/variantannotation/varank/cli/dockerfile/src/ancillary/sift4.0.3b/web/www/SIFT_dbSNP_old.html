@@ -1,0 +1,70 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>SIFT Homepage</title>
+<link rel="stylesheet" type="text/css" href="/www/css/main.css" />
+</head>
+<!-- Begin Wrapper -->
+   <div id="wrapper">
+    <!-- Begin Header -->
+         <div id="header">
+
+
+
+
+
+<body bgcolor=white>
+<TITLE>SIFT on dbSNP</TITLE>
+<H1>
+<img src="pics/sifter.gif" align=left width="15%">
+S<font color=red>I</font>F<font color=blue>T</font> on dbSNP
+
+<FORM ENCTYPE="MULTIPART/FORM-DATA" METHOD="POST" ACTION="/sift-bin/SIFT_dbSNP_submit.pl">
+</H1>
+<BR><b>SIFT Predictions on Nonsynonymous SNPs</b>:   SIFT was applied to all human nonsynonymous SNPs in <A HREF="http://ncbi.nlm.nih.gov/SNP/">dbSNP (build 129)</A>.  The sequence alignment used for prediction were taken from NCBI's <A HREF="http://www.ncbi.nlm.nih.gov/sutils/static/blinkhelp.html">precomputed BLAST searches</A> and was composed of either the best hit to other organisms or all BLAST hits.  Scoring is as described in 
+<i>Genome Research </i> <b>12:</b> 436-446.<BR>
+<BR>
+If we are unable to successfully retrieve your nsSNP from the database, please go to the <A HREF="/">SIFT homepage</A> to see your other options. 
+<!--You can also <A HREF=" ">download</A> all dbSNP predictions.-->
+</div>
+<BR>
+<div id="content">
+Enter your email address if you want the results through email : <BR>
+<i>Please check that your address is correct and your mailbox is not full.</i><BR>
+ <BR>
+<INPUT SIZE=50 NAME="address">
+</INPUT SIZE>
+<BR>
+<BR>
+<HR>
+<BR>
+<font color=blue>dbSNP rs ids</font><BR>
+One SNP per line, starting with "rs".<BR>
+<font size-=0.5> [<A HREF="snp_help.html">Help retrieving SNPs</A>]<BR>
+[<A HREF="snp_example.txt">Sample format</A>]<BR></font>
+<BR>
+Paste in rs id's<BR>
+<TEXTAREA NAME="SNP" ROWS=5 COLS=30></TEXTAREA>
+<BR>
+<BR>-or-<BR>
+<BR>
+Upload file containing rs id's<BR>
+<INPUT SIZE=50 NAME="SNP_file" TYPE="file">
+</TD>
+</TR>
+</TBODY></TABLE>
+<BR>
+<BR>
+<INPUT TYPE=submit>
+<INPUT TYPE=reset>
+</div>
+<div id="footer">
+[<A HREF="/">SIFT home page</A>]
+<A HREF="SIFT_help.html">SIFT help page</A>]
+<BR>
+<i>Questions or comments?<BR>
+Contact <A HREF="/sift-bin/contact.pl"> us </A><BR>
+Last updated: November 2008</i><BR>
+</div>
+</div>

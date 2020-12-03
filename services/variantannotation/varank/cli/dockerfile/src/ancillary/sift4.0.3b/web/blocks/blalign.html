@@ -1,0 +1,40 @@
+<HTML>
+<TITLE>Re-format Blocks as an Alignment</TITLE>
+<H1><IMG ALIGN=MIDDLE SRC="/blocks/icons/blocks.xbm">Re-format Blocks as an Alignment</H1>
+
+<FORM METHOD="POST" ACTION="/blocks-bin/blalign.pl">
+
+<P>
+
+You can make blocks from unaligned protein sequences with
+<A HREF="make_blocks.html">Block Maker</A>.<BR>
+<P>
+
+Enter your Blocks in 
+<A HREF="help/blocks_format.html">BLOCKS format</A>:<BR>
+<TEXTAREA NAME="blocks" ROWS=20 COLS=70></TEXTAREA>
+
+
+
+<P>
+<A HREF="help/blocks_format.html#fasta">Select an output alignment format</A>
+<SELECT NAME="style" SIZE="1">
+<OPTION VALUE="-f" SELECTED>Fasta
+<OPTION VALUE="-m" SELECTED>MSF
+<OPTION VALUE="-h" SELECTED>Stockholm with gaps
+<OPTION VALUE="-q" SELECTED>Stockholm without gaps
+</SELECT>
+
+
+
+<HR>
+<INPUT TYPE=submit VALUE="Re-format">
+<INPUT TYPE=reset>
+<BR>
+
+<HR>
+<A HREF="/blocks">Blocks home</A>
+<HR>
+<A href="/blocks-bin/contact.pl">Contact us</A><P>
+Page last modified on <MODIFICATION_DATE>August 2003</MODIFICATION_DATE>
+</HTML>

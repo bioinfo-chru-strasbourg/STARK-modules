@@ -1,0 +1,151 @@
+<HTML>
+<TITLE>Block Search</TITLE>
+<H1><IMG ALIGN=MIDDLE SRC="/blocks/icons/blocks.xbm"> Block Searcher</H1>
+<P>at the 
+<A HREF="http://www.fhcrc.org/">Fred Hutchinson Cancer Research Center</A> Blocks WWW server.
+<HR>
+Search your protein or DNA sequence against a
+<A HREF="help/about_blocks.html">Blocks Database</A>.
+<B> [<A HREF="help/help.html">Help</A>]</B>
+[<A HREF="help/blkprob-aa.html">Example of output</A>]
+<P>
+
+<FORM METHOD="POST" ACTION="/blocks-bin/blocks_search">
+
+<P>
+<LI>
+<B>Enter your email address if you want the 
+<A HREF="help/help.html#EM">results through email</A> :</B><BR>
+<INPUT SIZE=50 NAME="address">
+
+<P>
+<LI>
+ <B><A HREF="help/blocks_release.html">Select database to search</A>:</B>
+  <SELECT NAME="database" SIZE="1">
+  <OPTION VALUE="plus" SELECTED>Blocks Database
+  <OPTION VALUE="minus" SELECTED>Blocks Database without compositionally biased blocks
+  <OPTION VALUE="prints">Prints Database in Blocks format
+  </SELECT>
+<BR>We recommend searching both Blocks and Prints. Blocks has
+automatically-generated blocks, while Prints has hand-crafted blocks.
+
+<P>
+<LI>
+<B>Optionally select <A HREF="help/help.html#EX">cutoff expected value</A>:</B>
+<SELECT NAME="ex" SIZE="1">
+<OPTION VALUE="0.0001">0.0001
+<OPTION VALUE="0.01">0.01
+<OPTION VALUE="0.5">0.5
+<OPTION VALUE="1" SELECTED>1
+<OPTION VALUE="5">5
+<OPTION VALUE="10">10
+<OPTION VALUE="100">100
+</SELECT>
+
+<LI>
+<B>Optionally select <A HREF="help/help.html#OU">amount of output</A>:</B>
+<SELECT NAME="ou" SIZE="1">
+<OPTION VALUE="all" SELECTED>Summary with alignments
+<OPTION VALUE="sum">Summary only
+<OPTION VALUE="gff">GFF format
+<OPTION VALUE="old">Old style results
+<OPTION VALUE="raw">Raw results only
+</SELECT>
+
+<LI>
+<B>Optionally force query <A HREF="help/help.html#TY">sequence type</A>:</B>
+<SELECT NAME="ty" SIZE="1">
+<OPTION VALUE="auto" SELECTED>Determine automatically
+<OPTION VALUE="AA">Amino acid
+<OPTION VALUE="DNA">DNA
+</SELECT>
+
+<P>
+<LI>
+<B>Additional optional search parameters for a DNA query:</B>
+
+  <UL>
+  <LI>
+  <B><A HREF="help/help.html#ST">Strands to search</A>:</B>
+  <SELECT NAME="st" SIZE="1">
+  <OPTION VALUE="2" SELECTED>Both
+  <OPTION VALUE="1">Forward only
+  <OPTION VALUE="-1">Reverse only
+  </SELECT>
+
+  <LI>
+  <B><A HREF="help/help.html#GE">Genetic code</A>:</B>
+  <SELECT NAME="ge">
+  <OPTION VALUE="0" SELECTED>Standard
+  <OPTION VALUE="1">Vertebrate Mitochondrial
+  <OPTION VALUE="2">Yeast Mitochondrial
+  <OPTION VALUE="3">Mold Mitochondrial and Mycoplasma
+  <OPTION VALUE="4">Invertebrate Mitochondrial
+  <OPTION VALUE="5">Ciliate Nuclear
+  <OPTION VALUE="6">Echinoderm Mitochondrial
+  <OPTION VALUE="7">Euplotid Mitochondrial
+  <OPTION VALUE="8">Bacterial and Plant Plastid
+  <OPTION VALUE="9">Alternative Yeast Nuclear
+  <OPTION VALUE="10">Ascidian Mitochondrial
+  <OPTION VALUE="11">Flatworm Mitochondrial
+  <OPTION VALUE="12">Blepharisma Macronuclear
+  <OPTION VALUE="13">Chlorophycean Mitochondrial
+  <OPTION VALUE="14">Trematode Mitochondrial
+  <OPTION VALUE="15">Scenedesmus obliquus Mitochondrial
+  <OPTION VALUE="16">Thraustochytrium Mitochondrial
+  </SELECT>
+  </UL>
+
+<!--- WARNING!!! the query sequence MUST be last.  This is because of the 
+                 way the form parser works.  A more robust and bullet proof
+                 parser needs to be made. --->
+<P>
+<LI>
+<B>Enter your protein or DNA 
+<A HREF="help/help.html#SQ">query sequence</A> in 
+<A HREF="http://www.ncbi.nlm.nih.gov/BLAST/fasta.html">FASTA</A>,
+<A HREF="http://www.ebi.ac.uk/ebi_docs/embl_db/ebi/topembl.html">EMBL</A> or
+<A HREF="http://www.ncbi.nlm.nih.gov/Web/Genbank/index.html"> GENBANK</A> format:</B>
+<BR>
+<TEXTAREA NAME="sequence" ROWS=5 COLS=80></TEXTAREA>
+
+
+<HR>
+<INPUT TYPE=submit VALUE="Perform Search">
+<INPUT TYPE=reset VALUE="Reset & Clear">
+<P>
+Response time will vary depending on query sequence length and type
+and may take several minutes. Our system can process a maximum of about
+25 amino acids per second. This means a protein query 300 amino 
+acids in length will take at least 12 seconds while a DNA query 1100 
+nucleotides in length translated in 6 frames will take at least 1.5 minutes.
+Please be patient, or supply an email address.
+
+</FORM>
+
+<HR><BR>
+You can also search Blocks using different algorithms with
+<A HREF="/blocks/rpsblast.html">Reverse PSI-BLAST</A>, 
+<A HREF="/blocks/impala.html">IMPALA</A>, 
+<A HREF="http://dna.stanford.edu/ematrix/">Ematrix</A> or 
+<A HREF="http://dna.stanford.edu/identify/">Identify</A>.
+<BR>You can search other protein family collections with
+<A HREF="http://www.ebi.ac.uk/InterProScan/">InterPro</A>,
+<A HREF="http://www.ncbi.nlm.nih.gov/Structure/cdd/cdd.shtml">CD-Search</A> or
+<A HREF="http://dna.stanford.edu/eblocks/">eBLOCKS</A>.
+<P>
+<HR>
+<B>
+<A HREF="/blocks/">[Blocks Home]</A> 
+<A HREF="/blocks/rpsblast.html">[RPS-BLAST Searcher]</A>
+<A HREF="/blocks/impala.html">[IMPALA Searcher]</A>
+<A HREF="/blocks/make_blocks.html">[Block Maker]</A>
+<A HREF="/blocks-bin/getblock.sh">[Get Blocks]</A>
+<A HREF="/blocks-bin/LAMA_search.sh">[LAMA Searcher]</A>
+</B>
+
+<HR>
+<A href="/blocks-bin/contact.pl">Contact us</A><P>
+Page last modified <MODIFICATION_DATE>Mar 2006</MODIFICATION_DATE>
+
+</HTML>

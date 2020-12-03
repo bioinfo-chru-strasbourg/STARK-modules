@@ -1,0 +1,90 @@
+BLIMPS (BLocks IMProved Searcher)
+(C) Copyright 1993-1999, Fred Hutchinson Cancer Research Center
+
+README -- General information for BLIMPS
+
+
+Background:
+^^^^^^^^^^
+BLIMPS (BLocks IMProved Searcher) is a searching tool that scores a
+sequence against blocks or a block against sequences.  BLIMPS augments
+the block functions of PATMAT for UNIX, which is no longer supported
+by FHCRC. PATMAT for DOS is still available from FHCRC by
+anonymous ftp from the NCBI repository (ncbi.nlm.nih.gov/repository/blocks).
+
+
+Availability:
+^^^^^^^^^^^^
+BLIMPS is available for anonymous ftp from ncbi.nlm.nih.gov in the
+/repository/blocks/unix/blimps/ directory.  BLIMPS is distributed as a
+compressed tar file;  be sure to transfer the file in binary mode.
+
+You don't need to have your own copy of BLIMPS to search the
+Blocks Database;  BLIMPS is set up as part of the BLOCKS e-mail
+server.  Mail to blocks@muller.fhcrc.org with the subject line of
+"help" to find out more about the BLOCKS e-mail server.
+You can also search the Blocks Database via the World Wide Web,
+	http://blocks.fhcrc.org/
+
+The current release of the Blocks Database is available by anonymous
+ftp from ncbi.nlm.nih.gov in the /repository/blocks/unix/ directory.
+
+
+Papers:
+^^^^^^
+These are just the basic references to get you started.  
+See also:	 http://blocks.fhcrc.org/papers/
+
+For the BLOCKS e-mail and WWW servers see:
+Steven Henikoff & Jorja G. Henikoff, "Protein family classification
+based on searching a database of blocks", Genomics 19:97-107 (1994).
+
+For the BLIMPS searching algorithm see:
+J.C. Wallace and S. Henikoff, "PATMAT: a searching and extraction
+program for sequence, pattern and block queries and databases",
+CABIOS, 8:3, p. 249-254 (1992).
+
+For the Blocks Database see:
+Steven Henikoff & Jorja G. Henikoff, "Automated assembly of protein
+blocks for database searching", Nucleic Acids Research, 19:23, 
+p. 6565-6572. (1991)
+
+
+Ftp sources for code:
+^^^^^^^^^^^^^^^^^^^^
+BLIMPS:
+ncbi.nlm.nih.gov:/repository/blocks/unix/blimps/
+
+Skiplist package used in BLIMPS:
+The skiplist package was written by Dominic Giampaolo <nick@maxine.wpi.edu>. 
+homeboy.wpi.edu:/pub/skiplist.tar.Z
+Skiplist reference:
+William Pugh, "Skip lists: a probabilistic alternative to balanced trees.",
+Communications of the ACM.  vol.33, no.6.  pp. 668-76.  June 1990.
+<pugh@cs.umd.edu>
+
+
+BLAST header files used in BLIMPS:
+The following header files were written by the authors of BLAST:
+ncbi.nlm.nih.gov:/pub/blast/explode/include/aabet.h
+ncbi.nlm.nih.gov:/pub/blast/explode/include/alphabet.h
+ncbi.nlm.nih.gov:/pub/blast/explode/include/blastapp.h
+ncbi.nlm.nih.gov:/pub/blast/explode/include/gcode.h
+ncbi.nlm.nih.gov:/pub/blast/explode/include/ntbet.h
+ncbi.nlm.nih.gov:/pub/blast/explode/lib/gcode.c
+BLAST reference:
+Altschul, Stephen F., Warren Gish, Webb Miller, Eugene W. Myers, and
+David J. Lipman (1990).  A basic local alignment search tool.
+J. Mol. Biol. 215:403-410.
+
+Note that the original code in the skiplists and the BLAST header files
+has been modified for BLIMPS.
+
+BLIMPS was written by Bill Alford, who is currently a World Wide Web 
+developer at the Fred Hutchinson Cancer Research Center: balford@fhcrc.org
+
+----------------------------------------------------------------------
+For BLIMPS questions, please contact:
+Jorja Henikoff 					jorja@fhcrc.org
+Fred Hutchinson Cancer Research Center  	FAX: 206-667-5889
+1100 Fairview AV N, A1-162, PO Box 19024   	Seattle, WA 98109-1024
