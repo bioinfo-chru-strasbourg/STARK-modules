@@ -41,7 +41,7 @@ include "header.inc.php";
 ##########
 
 include "global_statistics.inc.php";
-include "activity.inc.php";
+#include "activity.inc.php";
 
 
 #echo $uri_igv;
