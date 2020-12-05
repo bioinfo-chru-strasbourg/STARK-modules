@@ -37,6 +37,20 @@ if ($_ENV["FOLDER_SERVICES"] != "") {
 	$folder_services="services";
 };
 
+# SERVICES folder
+if ($_ENV["SUBFOLDER_SERVICE_EDITH"] != "") {
+	$subfolder_service_edith=$_ENV["SUBFOLDER_SERVICE_EDITH"];
+} else {
+	$subfolder_service_edith="edith/edith/dashboard";
+};
+
+# SERVICES folder
+if ($_ENV["FOLDER_INDEXES"] != "") {
+	$folder_indexes=$_ENV["FOLDER_INDEXES"];
+} else {
+	$folder_indexes=$folder_services."/".$subfolder_service_edith;
+};
+
 
 # DOCKER_STARK_PREFIX
 if ($_ENV["DOCKER_STARK_PREFIX"] != "") {
@@ -58,39 +72,46 @@ $configuration=json_decode(implode("",file($configuration_file)), true);
 ### DOCKER
 # ensure /var/run/docker.sock is chmod o+rw
 
-$docker_containers_obj="";
-#$command="curl --unix-socket /var/run/docker.sock http://localhost/containers/json?all=1";
-$command="curl --unix-socket /var/run/docker.sock http://localhost/containers/json?all=1";
-#$command="curl -XGET --unix-socket /var/run/docker.sock -d '{\"all\":\"1\"}' -H 'Content-Type: application/json' http://localhost/containers/json";
-#$command="curl --unix-socket /var/run/docker.sock http://sockguard_sockguard_1/containers/json?all=1";
-#$command="curl --unix-socket /app/docker.sock http://localhost/containers/json?all=1";
+if (0) {
 
-$output_exec = shell_exec($command);
-$docker_containers_obj=json_decode($output_exec);
+	$docker_containers_obj="";
+	#$command="curl --unix-socket /var/run/docker.sock http://localhost/containers/json?all=1";
+	$command="curl --unix-socket /var/run/docker.sock http://localhost/containers/json?all=1";
+	#$command="curl -XGET --unix-socket /var/run/docker.sock -d '{\"all\":\"1\"}' -H 'Content-Type: application/json' http://localhost/containers/json";
+	#$command="curl --unix-socket /var/run/docker.sock http://sockguard_sockguard_1/containers/json?all=1";
+	#$command="curl --unix-socket /app/docker.sock http://localhost/containers/json?all=1";
 
-if (is_array($docker_containers_obj)) {
-	$docker_containers_connected=1;
-} else {
-	$docker_containers_connected=0;
-};
+	$output_exec = shell_exec($command);
+	$docker_containers_obj=json_decode($output_exec);
 
-// echo "<pre>";
-// print_r($docker_containers_obj);
-// echo "</pre>";
+	if (is_array($docker_containers_obj)) {
+		$docker_containers_connected=1;
+	} else {
+		$docker_containers_connected=0;
+	};
 
 
-foreach ($docker_containers_obj as $docker_containers_obj_id=>$docker_containers_obj_infos) {
 
-	# Container name
-	$container_name=$docker_containers_obj_infos->{"Names"}[0];
-	$container_name=ltrim($container_name, $container_name[0]);
-	
-	# docker_containers_obj_array
-	$docker_containers_obj_array[$container_name]["obj_id"]=$docker_containers_obj_id;
-	$docker_containers_obj_array[$container_name]["obj_infos"]=$docker_containers_obj_infos;
+	// echo "<pre>";
+	// print_r($docker_containers_obj);
+	// echo "</pre>";
 
-};
 
+
+
+	foreach ($docker_containers_obj as $docker_containers_obj_id=>$docker_containers_obj_infos) {
+
+		# Container name
+		$container_name=$docker_containers_obj_infos->{"Names"}[0];
+		$container_name=ltrim($container_name, $container_name[0]);
+		
+		# docker_containers_obj_array
+		$docker_containers_obj_array[$container_name]["obj_id"]=$docker_containers_obj_id;
+		$docker_containers_obj_array[$container_name]["obj_infos"]=$docker_containers_obj_infos;
+
+	};
+
+}
 
 
 ### MODULES

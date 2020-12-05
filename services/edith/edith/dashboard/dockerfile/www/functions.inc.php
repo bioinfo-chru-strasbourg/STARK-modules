@@ -270,6 +270,27 @@ function tags_extract($TAGS="") {
 };
 
 
+### Function executeAsyncShellCommand
+#####################################
+/**
+* Executes a console command (like execute the command via putty) in
+* a linux environment or windows from php without await for the result.
+* 
+* Useful for execute extense tasks.
+**/
+
+function executeAsyncShellCommand($comando = null){
+	if(!$comando){
+		throw new Exception("No command given");
+	}
+	// If windows, else
+	if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+		return system($comando." > NUL");
+	}else{
+		return shell_exec("/usr/bin/nohup ".$comando." >/dev/null 2>&1 &");
+	}
+ }
+
 
 
 

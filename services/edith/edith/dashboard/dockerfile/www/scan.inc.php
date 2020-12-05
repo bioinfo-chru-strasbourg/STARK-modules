@@ -8,43 +8,45 @@ $start_time = microtime(true);
 #$_SESSION=[];
 
 
+
+### INDEXES
+###########
+
+# Create indexes
+include "indexes.php";
+
+
+
+
 ### INPUTS statistics
 #####################
 
 
-$input_filter=array_keys($configuration["inputs"]["filter"]);
-#print_r($input_filter);
-if (empty($input_filter)) {
-	$input_filter=array("*/*/*");
-}
-$input_filter_brace="{".join(",",array_unique($input_filter))."}";
-
-#print_r($configuration);
-
+# scan (using index)
 if (!isset($_SESSION["inputs"])) {
-	
-	# scan
-	$runs_inputs=glob("$folder_inputs/$input_filter_brace",GLOB_BRACE);
-	$_SESSION["inputs"]["runs_inputs"]=$runs_inputs;
-	
-} else {
-
-	# cache
-	$runs_inputs=$_SESSION["inputs"]["runs_inputs"];
-
+	$_SESSION["inputs"]["runs_inputs"]=preg_grep("#.*#", array_unique(file("$folder_indexes/inputs.idx")));
 };
+
+
+# cache
+$runs_inputs=$_SESSION["inputs"]["runs_inputs"];
+
 
 # process
 foreach ($runs_inputs as $key => $input_path) {
-	$run_split=explode ( "/" , $input_path );
+
+	#echo "<br>$key => $input_path<br>";
+	$run_split=explode ( "/" , trim($input_path) );
 	$run_path_count=count($run_split);
 	$input=$run_split[$run_path_count-3];
 	$input_type=$run_split[$run_path_count-2];
 	$input_file=$run_split[$run_path_count-1];
 	$input_ext=pathinfo($input_path,PATHINFO_EXTENSION);
-	#echo "<br>$input | $input_type | $input_file | $input_ext";
+	#echo "<br>$input | $input_type | $input_path | $input_file | $input_ext";
 	$input_list[$input]++;
-	if ($input_type=="manifests" && is_file($input_path)) {
+
+	if ($input_type=="manifests") {
+			#echo "<br>MANIFESTS";
 		if ($input_ext=="genes") {
 			$genes[$input][$input_file]++;
 		} elseif ($input_ext=="transcripts") {
@@ -54,10 +56,12 @@ foreach ($runs_inputs as $key => $input_path) {
 		} else {
 			$designs[$input][$input_file]++;
 		};
-	} elseif ($input_type=="runs" && is_dir($input_path)) {
+		
+	} elseif ($input_type=="runs") {
 		$runs[$input][$input_file]++;
 		$total_runs_list[$input_file]++;
 	};
+
 };
 
 
@@ -65,84 +69,20 @@ foreach ($runs_inputs as $key => $input_path) {
 ### REPOSITORIES Statistics
 ###########################
 
-#echo "<pre>";
-#print_r($configuration);
 
-#print_r($repository_filter);
-$repository_filter=array_keys($configuration["repositories"]["filter"]);
-#print_r($repository_filter);
-if (empty($repository_filter)) {
-	$repository_filter=array("*/*/*/*");
-}
-#echo "stop<br><br>";
-#print_r($repository_filter);
-
-#echo "</pre>";
-
-#$repository_filter=array("*/*/*");
-$repository_filter_brace="{".join(",",array_unique($repository_filter))."}";
-#echo "repository_filter_brace=$repository_filter_brace";
-#echo "scan";
-
-
+# scan (using index)
 if (!isset($_SESSION["repositories"])) {
+	$_SESSION["repositories"]["runs_repositories"]=preg_grep("#^[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/STARKCopyComplete.txt$#", array_unique(file("$folder_indexes/repositories.idx")));
+}
 
-	# scan
-	
-	# find run (with copy complete)
-	$runs_repositories_folders=glob("$folder_repositories/$repository_filter_brace/STARKCopyComplete.txt",GLOB_BRACE|GLOB_NOSORT);
-	#print_r(array_multisort(array_map('filemtime', $runs_repositories_folders), SORT_NUMERIC, SORT_ASC, $runs_repositories_folders));
-
-	$run_folders=[];
-	$project_folders=[];
-	foreach ($runs_repositories_folders as $key=>$run_folder) {
-		$run_folders[$key]=dirname($run_folder);
-    	$project_folders[$key]=dirname(dirname($run_folder));
-	};
-	$run_folders_brace="{".join(",",array_unique($run_folders))."}";
-	$project_folders_brace="{".join(",",array_unique($project_folders))."}";
-	
-	
-	# fin samples (with copy complete)
-	#$runs_repositories=glob("$run_folders_brace/*/STARKCopyComplete.txt",GLOB_BRACE|GLOB_NOSORT);
-	$runs_repositories_tmp=glob("$project_folders_brace/*/*/STARKCopyComplete.txt",GLOB_BRACE|GLOB_NOSORT);
-	$runs_repositories=[];
-	foreach ($run_folders as $run_folder_filter) {
-		$runs_repositories_filter=preg_grep('#^'.$run_folder_filter.'#', $runs_repositories_tmp);
-		// echo "<br>COUNT="; echo count($runs_repositories_filter);
-		// echo "<br>"; print_r($runs_repositories_filter);
-		// echo "<br>";
-		$runs_repositories=array_merge($runs_repositories,$runs_repositories_filter);
-	};
-
-
-	#$runs_repositories=glob("$run_folders_brace/*/STARKCopyComplete.txt",GLOB_BRACE);
-	#arsort($runs_repositories);
-	#print_r(array_multisort(array_map('filemtime', $runs_repositories), SORT_NUMERIC, SORT_DESC, $runs_repositories));
-	#usort( $runs_repositories, function( $a, $b ) { return filemtime($a) - filemtime($b); } );
-
-	# find samples (without copycomplete for run) - solution deprecated
-	#$runs_repositories=glob("$folder_repositories/$repository_filter_brace/*/*/STARKCopyComplete.txt",GLOB_BRACE);
-
-	# cache
-	$_SESSION["repositories"]["runs_repositories"]=$runs_repositories;
-
-} else {
-	
-	# cache
-	$runs_repositories=$_SESSION["repositories"]["runs_repositories"];
-
-};
-
-
+# cache
+$runs_repositories=$_SESSION["repositories"]["runs_repositories"];
 
 
 # process
 foreach ($runs_repositories as $key => $sample_path) {
 
-	#print_r($sample_path); echo "<br>";
-
-	$sample_split=explode ( "/" , $sample_path );
+	$sample_split=explode ( "/" , trim($sample_path) );
 	$sample_path_count=count($sample_split);
 	#print $sample_path_count;
 	$repository=$sample_split[$sample_path_count-6];
@@ -151,7 +91,6 @@ foreach ($runs_repositories as $key => $sample_path) {
 	$run=$sample_split[$sample_path_count-3];
 	$sample=$sample_split[$sample_path_count-2];
 
-	#echo $sample;
 	$global[$repository]["groups"][$group]++;
 	$global[$repository]["projects"][$project]++;
 	$global[$repository]["runs"][$run]++;
@@ -168,6 +107,8 @@ foreach ($runs_repositories as $key => $sample_path) {
 };
 
 
+### DEFAULT REPOSITORY
+######################
 
 # Default Repository 
 if (isset($global["Repository"])) {
@@ -177,7 +118,7 @@ if (isset($global["Repository"])) {
 }
 
 
-# DEV
+### DEV
 // End the clock time in seconds 
 $end_time = microtime(true); 
 
