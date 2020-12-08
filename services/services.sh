@@ -256,7 +256,7 @@ if [ -z "$FOLDER_SERVICES" ]; then
 fi;
 
 mkdir -p $FOLDER_SERVICES
-chmod o+x $FOLDER_SERVICES  2>/dev/null
+chmod a+x $FOLDER_SERVICES  2>/dev/null
 
 (($VERBOSE)) && echo "#[INFO] STARK Module services modules folder '$FOLDER_SERVICES'"
 
@@ -454,7 +454,7 @@ for service_module in \
 					fi;
 					
 					# Files permissions
-					chmod o+r -R $FOLDER_SERVICES/$module_name/* 2>/dev/null
+					chmod o+rxw -R $FOLDER_SERVICES/$module_name/* 2>/dev/null
 
 					# DEBUG
 					(($DEBUG)) && cat $TMP_FOLDER/.env $TMP_FOLDER/.env.err
