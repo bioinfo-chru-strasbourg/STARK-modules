@@ -38,6 +38,8 @@ foreach ($TS_LIST as $TASK_KEY => $ONE_TASK) {
 		}
 
 		# INFO
+		#echo $urinner_api_info."$ONE_TASK_ID"."<br>";
+
 		$ONE_TASK_INFO_ARRAY=file($urinner_api_info."$ONE_TASK_ID");
 		$ONE_TASK_INFO_CONTENT=implode("\n",$ONE_TASK_INFO_ARRAY);
 		$ONE_TASK_INFO_CONTENT_HTML=implode("<br><br>",$ONE_TASK_INFO_ARRAY);
@@ -160,13 +162,6 @@ foreach ($TS_LIST as $TASK_KEY => $ONE_TASK) {
 
 };
 
-if ($DEBUG) {
-	echo "<pre>";
-	#print_r($full_task);
-	print_r($run_task);
-	echo "</pre>";
-};
-
 
 ############
 ### RUNS ###
@@ -181,15 +176,11 @@ $runs_infos=array();
 
 
 # RUN folders
-#$runs_inputs=glob($folder_inputs."/*/runs/*",GLOB_ONLYDIR|GLOB_BRACE);
-array_multisort(array_map('filemtime', $runs_inputs), SORT_NUMERIC, SORT_DESC, $runs_inputs);
+#array_multisort(array_map('filemtime', $inputs_runs), SORT_NUMERIC, SORT_DESC, $inputs_runs);
 
-#$runs_inputs=glob("inputs/*",GLOB_ONLYDIR);
-// foreach ($runs_inputs as $runs_inputs_key=>$run_path) {
-// 	$run_path_split=explode("/",$run_path);
-// 	$run=$run_path_split[count($run_path_split)-1];
-// 	$runs_infos[$run]["inputs"]["run_path"][$run_path]=$run_path;
-// };
+#print_r($runs);
+
+
 foreach ($runs as $run_folder=>$runs_list) {
 	foreach ($runs_list as $run_name=>$runs_number) {
 		#echo "$run_folder=>$run_name<br>";
@@ -213,68 +204,106 @@ $inputs_runs_pattern_brace="{".join(",",array_unique($inputs_runs_pattern))."}";
 
 #$runs_inputs_files=glob($folder_inputs."/*/runs/*/{RTAComplete.txt,SampleSheet.csv}",GLOB_BRACE);
 $runs_inputs_files=glob($folder_inputs."/$inputs_runs_pattern_brace/{RTAComplete.txt,SampleSheet.csv}",GLOB_BRACE);
-array_multisort(array_map('filemtime', $runs_inputs_files), SORT_NUMERIC, SORT_DESC, $runs_inputs_files);
+
+#print_r($runs_inputs_files);
+
+#print_r(preg_grep("#.*\[RTAComplete.txt\|SampleSheet.csv\]$#", $inputs_runs));
+#print_r(array_merge(preg_grep("#RTAComplete.txt$#", $inputs_runs),preg_grep("#SampleSheet.csv$#", $inputs_runs)));
+#print_r(preg_grep("#(RTAComplete.txt|SampleSheet.csv)$#", $inputs_runs));
+
+$runs_inputs_files=preg_grep("#(RTAComplete.txt|SampleSheet.csv)$#", $inputs_runs);
+
+#print_r($runs_inputs_files);
+
+#array_multisort(array_map('filemtime', $runs_inputs_files), SORT_NUMERIC, SORT_DESC, $runs_inputs_files);
+
+
 foreach ($runs_inputs_files as $runs_inputs_key=>$run_file_path) {
-	$run_path=dirname($run_file_path);
-	$run_file_path_split=explode("/",$run_file_path);
+
+	$run_path=dirname(trim($run_file_path));
+	$run_file_path_split=explode("/",trim($run_file_path));
 	$run=$run_file_path_split[count($run_file_path_split)-2];
 	$run_file=$run_file_path_split[count($run_file_path_split)-1];
 	$runs_infos[$run]["inputs"]["run_files"][$run_file]["file"]=$run_file_path;
+
+	#echo "$run_path | $run | $run_file <br>";
+
+	#print_r($_SESSION["data"]["content_file"]);
+
 	#echo $run_file;
-	if ($run_file=="SampleSheet.csv") {
-		#echo "<br>SampleSheet";
-		$run_file_path_array=file($run_file_path);
+	### READ FILE
+	if ($data_read_file) {
 
-		# find INFOS within log file
-		$run_file_path_array=file($run_file_path);
+		if ($run_file=="SampleSheet.csv") {
 
-		# Explode listener file infos
-		#$listener_infos=array();
-		$ini_file_content="";
-		foreach ($run_file_path_array as $run_file_path_array_key=>$run_file_path_array_info) {
+			#echo "SampleSheet read: $run_file_path<br>";
 
-			if (substr(trim($run_file_path_array_info),0,1)!="[") {
-				$ini_file_content.=rand(1,10000)."=\"".trim($run_file_path_array_info)."\"\n";
-			} else {
-				$ini_file_content.=trim($run_file_path_array_info)."\n";
+			# find INFOS within log file
+			if (!isset($_SESSION["data"]["content_file"][trim($run_file_path)])) {
+				$_SESSION["data"]["content_file"][trim($run_file_path)]=file(trim($run_file_path));
 			}
+			
 
-			# ADD
-			#$listener_infos[$runs_listener_log_file_array_info_matches[1]]=$runs_listener_log_file_array_info_matches[2];
-		};
-		#echo "<pre>$ini_file_content</pre>";
-		$ini_filename="/tmp/".rand(1,100000);
-		$ini_file = fopen($ini_filename, "w") or die("Unable to open file!");
-		fwrite($ini_file, $ini_file_content);
-		fclose($ini_file);
-		$ini_array = parse_ini_file($ini_filename, true);
-		unlink($ini_file);
-		$runs_infos[$run]["inputs"]["run_files"][$run_file]["file_array"]=$ini_array;
-		#echo "<pre>";
-		#print_r($ini_array["Data"]);
+			#$run_file_path_array=file(trim($run_file_path));
+			$run_file_path_array=$_SESSION["data"]["content_file"][trim($run_file_path)];
 
-		foreach ($ini_array["Data"] as $ini_array_key=>$ini_array_sample) {
-			$ini_array_sample_split=explode(",",$ini_array_sample);
-			#print_r($ini_array_sample_split);
-			if ($ini_array_sample_split[0] != "Sample_ID") {
-				if ($ini_array_sample_split[1]!="") {
-					$runs_infos[$run]["inputs"]["run_files"][$run_file]["samples"][$ini_array_sample_split[1]]=$ini_array_sample_split[1];
-					$runs_infos[$run]["inputs"]["run_files"][$run_file]["samples_infos"][$ini_array_sample_split[1]]=$ini_array_sample_split;
-				} else if ($ini_array_sample_split[0]!="") {
-					$runs_infos[$run]["inputs"]["run_files"][$run_file]["samples"][$ini_array_sample_split[0]]=$ini_array_sample_split[0];
-					$runs_infos[$run]["inputs"]["run_files"][$run_file]["samples_infos"][$ini_array_sample_split[0]]=$ini_array_sample_split;
+			#print_r($run_file_path_array);
+
+			# Explode listener file infos
+			#$listener_infos=array();
+			$ini_file_content="";
+			foreach ($run_file_path_array as $run_file_path_array_key=>$run_file_path_array_info) {
+
+				if (substr(trim($run_file_path_array_info),0,1)!="[") {
+					$ini_file_content.=rand(1,10000)."=\"".trim($run_file_path_array_info)."\"\n";
+				} else {
+					$ini_file_content.=trim($run_file_path_array_info)."\n";
+				}
+
+				# ADD
+				#$listener_infos[$runs_listener_log_file_array_info_matches[1]]=$runs_listener_log_file_array_info_matches[2];
+			};
+			#echo "<pre>$ini_file_content</pre>";
+			$ini_filename="/tmp/".rand(1,100000);
+			$ini_file = fopen($ini_filename, "w") or die("Unable to open file!");
+			fwrite($ini_file, $ini_file_content);
+			fclose($ini_file);
+			$ini_array = parse_ini_file($ini_filename, true);
+			unlink($ini_file);
+
+			$runs_infos[$run]["inputs"]["run_files"][$run_file]["file_array"]=$ini_array;
+			#echo "<pre>";
+			#print_r($ini_array["Data"]);
+
+			foreach ($ini_array["Data"] as $ini_array_key=>$ini_array_sample) {
+				$ini_array_sample_split=explode(",",$ini_array_sample);
+				#print_r($ini_array_sample_split);
+				if ($ini_array_sample_split[0] != "Sample_ID") {
+					if ($ini_array_sample_split[1]!="") {
+						$runs_infos[$run]["inputs"]["run_files"][$run_file]["samples"][$ini_array_sample_split[1]]=$ini_array_sample_split[1];
+						$runs_infos[$run]["inputs"]["run_files"][$run_file]["samples_infos"][$ini_array_sample_split[1]]=$ini_array_sample_split;
+					} else if ($ini_array_sample_split[0]!="") {
+						$runs_infos[$run]["inputs"]["run_files"][$run_file]["samples"][$ini_array_sample_split[0]]=$ini_array_sample_split[0];
+						$runs_infos[$run]["inputs"]["run_files"][$run_file]["samples_infos"][$ini_array_sample_split[0]]=$ini_array_sample_split;
+					}
 				}
 			}
+			#echo "</pre>";
 		}
-		#echo "</pre>";
+
 	}
+
 };
 
 #echo "<pre>"; print_r($runs_infos); echo "</pre>";
 
 # REPOSITORIES
+
+#print_r($runs_repositories);
+
+
 #$runs_repositories=glob($folder_repositories."/*/*/*/*/*",GLOB_ONLYDIR);
-array_multisort(array_map('filemtime', $runs_repositories), SORT_NUMERIC, SORT_DESC, $runs_repositories);
+#array_multisort(array_map('filemtime', $runs_repositories), SORT_NUMERIC, SORT_DESC, $runs_repositories);
 foreach ($runs_repositories as $runs_inputs_key=>$sample_path) {
 	$sample_path_split=explode("/",$sample_path);
 	$sample=basename(dirname($sample_path));
@@ -292,6 +321,7 @@ $LISTENER_LOG_PATTERN="{ID-*-NAME-*.log}";
 #$runs_listener_log=glob("analyses/stark-services/listener/$LISTENER_LOG_PATTERN",GLOB_BRACE);
 #$runs_listener_log=glob($folder_services."/".$STARK_LISTENER_SERVICE_FOLDER."/$LISTENER_LOG_PATTERN",GLOB_BRACE);
 
+#echo "folder_listener=$folder_listener<br>";
 
 $runs_listener_log=glob($folder_listener."/$LISTENER_LOG_PATTERN",GLOB_BRACE);
 array_multisort(array_map('filemtime', $runs_listener_log), SORT_NUMERIC, SORT_DESC, $runs_listener_log);
@@ -299,18 +329,24 @@ foreach ($runs_listener_log as $runs_listener_log_key=>$runs_listener_log_file) 
 	$runs_listener_log_file_split=explode("/",$runs_listener_log_file);
 	$run_listener_log=$runs_listener_log_file_split[count($runs_listener_log_file_split)-1];
 
-	# find INFOS within log file
-	$runs_listener_log_file_array=file($runs_listener_log_file);
+	#print_r("$runs_listener_log_key=>$runs_listener_log_file<br>");
 
-	# Explode listener file infos
-	$listener_infos=array();
-	foreach ($runs_listener_log_file_array as $runs_listener_log_file_array_key=>$runs_listener_log_file_array_info) {
-		#echo "<br>$runs_listener_log_file_array_info";
-		preg_match("/(.*): (.*)/i", $runs_listener_log_file_array_info,$runs_listener_log_file_array_info_matches);
-		#print_r($runs_listener_log_file_array_info_matches);
-		# ADD
-		$listener_infos[$runs_listener_log_file_array_info_matches[1]]=$runs_listener_log_file_array_info_matches[2];
-	};
+	if (1) {
+
+		# find INFOS within log file
+		$runs_listener_log_file_array=file($runs_listener_log_file);
+
+		# Explode listener file infos
+		$listener_infos=array();
+		foreach ($runs_listener_log_file_array as $runs_listener_log_file_array_key=>$runs_listener_log_file_array_info) {
+			#echo "<br>$runs_listener_log_file_array_info";
+			preg_match("/(.*): (.*)/i", $runs_listener_log_file_array_info,$runs_listener_log_file_array_info_matches);
+			#print_r($runs_listener_log_file_array_info_matches);
+			# ADD
+			$listener_infos[$runs_listener_log_file_array_info_matches[1]]=$runs_listener_log_file_array_info_matches[2];
+		};
+
+	}
 
 	# RUN
 	$run=$listener_infos["RUN"];
@@ -429,10 +465,16 @@ foreach ($runs_infos as $run=>$run_infos) {
 			$sequencing_message="No information";
 			break;
 		}
-
+		
 		$sequencing_message_plus="";
 		if (isset($runs_infos[$run]["inputs"]["run_files"]["RTAComplete.txt"])) {
-			$sequencing_message_plus.="<br>".implode(file($runs_infos[$run]["inputs"]["run_files"]["RTAComplete.txt"]["file"]))."";
+			if ($data_read_file) {
+				if (!isset($_SESSION["data"]["content_file"][trim($runs_infos[$run]["inputs"]["run_files"]["RTAComplete.txt"]["file"])])) {
+					$_SESSION["data"]["content_file"][trim($runs_infos[$run]["inputs"]["run_files"]["RTAComplete.txt"]["file"])]=implode(file(trim($runs_infos[$run]["inputs"]["run_files"]["RTAComplete.txt"]["file"])));
+				}
+				$sequencing_message_plus.="<br>".$_SESSION["data"]["content_file"][trim($runs_infos[$run]["inputs"]["run_files"]["RTAComplete.txt"]["file"])]."<br>";
+			}
+			
 		}
 		if (count($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"])) {
 			$sequencing_message_plus.="<br><a target='SampleSheet' href='".$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["file"]."'>SampleSheet</a>";
@@ -467,7 +509,6 @@ foreach ($runs_infos as $run=>$run_infos) {
 		// echo "RUN: $run<br>";
 		// echo "<pre>";
 		// print_r($run_infos["launcher"]);
-		// echo implode(file($run_infos["launcher"]["info"]));
 
 		$analysis_infos=array();
 		if (isset($run_task[$run]["task"])) {
