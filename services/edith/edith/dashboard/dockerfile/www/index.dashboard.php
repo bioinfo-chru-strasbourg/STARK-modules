@@ -43,7 +43,7 @@ include "header.inc.php";
 
 $data_read_file=false;
 
-include "global_statistics.inc.php";
+include "scan.inc.php";
 include "activity.inc.php";
 
 

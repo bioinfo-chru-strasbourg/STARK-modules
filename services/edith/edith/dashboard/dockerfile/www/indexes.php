@@ -44,9 +44,10 @@ include "config.inc.php";
 ###################
 
 
-
-$indexes_old=0;
+# Index delay
+$indexes_old=$configuration["parameters"]["data_indexes_delay"]+0;
 #$indexes_old=6;
+#echo "<br><br><br><br>indexes_old=$indexes_old";
 
 
 ### INDEX
@@ -90,11 +91,15 @@ if ( !is_file("$folder_indexes/runs.idx") || ($inputs_indexes_old >= $indexes_ol
 		# inputs runs filter list
 		$inputs_runs_filter_list=" $folder_inputs/".join(" $folder_inputs/",array_unique($inputs_runs_filter));
 
-		# inputs
+		# inputs runs command
 		$command="./indexes.sh '.' '$inputs_runs_filter_list' '$inputs_runs_files_patterns' '$inputs_runs_mindepth' '$inputs_runs_maxdepth' $folder_indexes/runs.idx $folder_indexes/runs.idx.tmp";
 
-		$output = executeAsyncShellCommand($command);
-		#$output = shell_exec($command);
+		# inputs runs exec
+		if ($indexes_old) {
+			$output = executeAsyncShellCommand($command);
+		} else {
+			$output = shell_exec($command);
+		}
 
 
 		### Manifests
@@ -113,11 +118,15 @@ if ( !is_file("$folder_indexes/runs.idx") || ($inputs_indexes_old >= $indexes_ol
 		# inputs manifests filter list
 		$inputs_manifests_filter_list=" $folder_inputs/".join(" $folder_inputs/",array_unique($inputs_manifests_filter));
 
-		# inputs
+		# inputs manifests command
 		$command="./indexes.sh '.' '$inputs_manifests_filter_list' '$inputs_manifests_files_patterns' '$inputs_manifests_mindepth' '$inputs_manifests_maxdepth' $folder_indexes/manifests.idx $folder_indexes/manifests.idx.tmp";
 		
-		$output = executeAsyncShellCommand($command);
-		#$output = shell_exec($command);
+		# inputs manifests exec
+		if ($indexes_old) {
+			$output = executeAsyncShellCommand($command);
+		} else {
+			$output = shell_exec($command);
+		}
 
 
 		### Repositories
@@ -128,19 +137,23 @@ if ( !is_file("$folder_indexes/runs.idx") || ($inputs_indexes_old >= $indexes_ol
 			$repositories_filter=array("*/*/*/*");
 		}
 
-		# inputs manifests parameters
-		$repositories_files_patterns=" -name *STARKCopyComplete.txt -o -name *stark.report.html -o -name *tag -o -name *vcf.gz -o -name *vcf -o -name *tsv -o -name *cram ";
-		$repositories_mindepth="1";
+		# repositories parameters
+		$repositories_files_patterns=" -name *STARKCopyComplete.txt -o -name *stark.report.html -o -name *stark.report.pdf -o -name *tag -o -name *vcf.gz -o -name *vcf -o -name *tsv -o -name *cram -o -name *bed ";
+		$repositories_mindepth="2";
 		$repositories_maxdepth="2";
 
-		# inputs manifests filter list
+		# repositories filter list
 		$repositories_filter_list=" $folder_repositories/".join(" $folder_repositories/",array_unique($repositories_filter));
 
-		# inputs
+		# repositories command
 		$command="./indexes.sh '.' '$repositories_filter_list' '$repositories_files_patterns' '$repositories_mindepth' '$repositories_maxdepth' $folder_indexes/repositories.idx $folder_indexes/repositories.idx.tmp";
-		#echo $command;
-		$output = executeAsyncShellCommand($command);
-		#$output = shell_exec($command);
+		
+		# repositories exec
+		if ($indexes_old) {
+			$output = executeAsyncShellCommand($command);
+		} else {
+			$output = shell_exec($command);
+		}
 
 
 	}
