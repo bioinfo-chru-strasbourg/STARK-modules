@@ -41,8 +41,7 @@ $count="  ";
 ### DATA
 ###########
 
-
-include "global_statistics.inc.php";
+include "scan.inc.php";
 
 
 
