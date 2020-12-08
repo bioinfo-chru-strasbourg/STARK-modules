@@ -45,7 +45,7 @@ $TS_SHOW=$_REQUEST["TS_SHOW"];
 
 $data_read_file=$read_file_content;
 
-#include "global_statistics.inc.php";
+include "scan.inc.php";
 include "activity.inc.php";
 
 

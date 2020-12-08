@@ -4,7 +4,7 @@
 ### INCLUDE
 #############
 
-include "scan.inc.php";
+
 
 
 
