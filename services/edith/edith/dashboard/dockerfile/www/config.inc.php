@@ -69,49 +69,19 @@ $configuration=json_decode(implode("",file($configuration_file)), true);
 #print_r($configuration);
 
 
-### DOCKER
-# ensure /var/run/docker.sock is chmod o+rw
 
-if (0) {
+### CACHE
+#$use_session_cache=false;
+$use_session_cache=$configuration["parameters"]["use_session_cache"];
+if (!$use_session_cache) {
+	#echo "<br><br><br><br><br><br>cache NOT used";
+	unset($_SESSION['data']);
+} else {
+	#echo "<br><br><br><br><br><br><br>cache used";
+};
 
-	$docker_containers_obj="";
-	#$command="curl --unix-socket /var/run/docker.sock http://localhost/containers/json?all=1";
-	$command="curl --unix-socket /var/run/docker.sock http://localhost/containers/json?all=1";
-	#$command="curl -XGET --unix-socket /var/run/docker.sock -d '{\"all\":\"1\"}' -H 'Content-Type: application/json' http://localhost/containers/json";
-	#$command="curl --unix-socket /var/run/docker.sock http://sockguard_sockguard_1/containers/json?all=1";
-	#$command="curl --unix-socket /app/docker.sock http://localhost/containers/json?all=1";
-
-	$output_exec = shell_exec($command);
-	$docker_containers_obj=json_decode($output_exec);
-
-	if (is_array($docker_containers_obj)) {
-		$docker_containers_connected=1;
-	} else {
-		$docker_containers_connected=0;
-	};
-
-
-
-	// echo "<pre>";
-	// print_r($docker_containers_obj);
-	// echo "</pre>";
-
-
-
-
-	foreach ($docker_containers_obj as $docker_containers_obj_id=>$docker_containers_obj_infos) {
-
-		# Container name
-		$container_name=$docker_containers_obj_infos->{"Names"}[0];
-		$container_name=ltrim($container_name, $container_name[0]);
-		
-		# docker_containers_obj_array
-		$docker_containers_obj_array[$container_name]["obj_id"]=$docker_containers_obj_id;
-		$docker_containers_obj_array[$container_name]["obj_infos"]=$docker_containers_obj_infos;
-
-	};
-
-}
+### Read file content
+$read_file_content=$configuration["parameters"]["read_file_content"];
 
 
 ### MODULES

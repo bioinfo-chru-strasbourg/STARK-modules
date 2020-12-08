@@ -146,11 +146,12 @@ function path_html($PATH="",$PATH_array=null) {
 
 
 
-function scanpath($patharray,$filesize) {
+function scanpath_old($patharray,$filesize) {
     $tree=[];
     if(count($patharray)===1) {
         $filename=array_pop($patharray);
         $tree = ['name'=>$filename, 'path'=>$filesize];
+        #$tree[$filename]=$filesize;
     } else {
         $pathpart = array_pop($patharray);
         $tree[$pathpart] = scanpath($patharray,$filesize);
@@ -158,16 +159,70 @@ function scanpath($patharray,$filesize) {
     return $tree;
 }
 
+
+
+function scanpath($patharray,$filesize) {
+    $tree=[];
+    if(count($patharray)===0) {
+        #$filename=array_pop($patharray);
+        #$tree = ['name'=>$filename, 'path'=>$filesize];
+        $tree[$patharray]=$filesize;
+    } else {
+        $pathpart = array_pop($patharray);
+        $tree[$pathpart] = scanpath($patharray,$filesize);
+    }
+    return $tree;
+}
+
+
 function path_to_tree($path_array) {
 	$filearray=[];
 	foreach($path_array as $fileentry) {
+        $fileentry=trim($fileentry);
 		#echo "fileentry=$fileentry<br>";
 		$patharray=array_reverse(explode('/',$fileentry));
 		#print_r($patharray); echo "<br>";
-		$thisarray = scanpath($patharray,$fileentry);
-		$filearray= array_merge_recursive($filearray,$thisarray);
+        $thisarray = scanpath($patharray,$fileentry);
+		$filearray= array_replace_recursive($filearray,$thisarray);
+        
+		#$filearray= array_merge_recursive($filearray,$thisarray);
 	}
 	return $filearray;
+}
+
+
+function paths_to_array_tree($array)
+{
+    rsort($array);
+
+    $result = array();
+
+    foreach ($array as $item) {
+
+        $item=trim($item);
+
+        $parts = explode('/', $item);
+        $current = &$result;
+
+        for ($i = 1, $max = count($parts); $i < $max; $i++) {
+
+            if (!isset($current[$parts[$i - 1]])) {
+                $current[$parts[$i - 1]] = array();
+            }
+
+            $current = &$current[$parts[$i - 1]];
+        }
+
+        $last = end($parts);
+
+        if (!isset($current[$last]) && $last) {
+            // Don't add a folder name as an element if that folder has items
+            #$current[end($parts)] = end($parts);
+            $current[end($parts)] = null;
+        }
+    }
+
+    return $result;
 }
 
 

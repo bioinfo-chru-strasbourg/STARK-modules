@@ -40,10 +40,11 @@ $PHP_SELF=$_REQUEST["PHP_SELF"];
 if ($SESSION=="unset") {
 	#echo session_id();
 	session_start();
-	session_unset();
-	session_destroy();
+	// session_unset();
+	// session_destroy();
 	#echo "unset";
 	#echo $_SERVER["PHP_SELF"];
+	unset($_SESSION['data']);
 	header("Location: ".$PHP_SELF."");
 } else {
 	#echo "nothing";

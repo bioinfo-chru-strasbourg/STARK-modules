@@ -1,12 +1,5 @@
 <?php
 
-# DEV
-// Start the clock time in seconds 
-$start_time = microtime(true); 
-
-# DEV
-#$_SESSION=[];
-
 
 
 ### INDEXES
@@ -16,53 +9,95 @@ $start_time = microtime(true);
 include "indexes.php";
 
 
-
-
 ### INPUTS statistics
 #####################
 
 
 # scan (using index)
-if (!isset($_SESSION["inputs"])) {
-	$_SESSION["inputs"]["runs_inputs"]=preg_grep("#.*#", array_unique(file("$folder_indexes/inputs.idx")));
+if (!isset($_SESSION["data"]["index"]["inputs"]["runs"])) {
+	$_SESSION["data"]["index"]["inputs"]["runs"]=preg_grep("#.*#", array_unique(file("$folder_indexes/runs.idx")));
 };
 
+# cache
+$inputs_runs=$_SESSION["data"]["index"]["inputs"]["runs"];
+
+# process
+foreach ($inputs_runs as $key => $input_run_file_path) {
+
+	#echo "<br>$key => $input_run_file_path<br>";
+	$input_run_file_path=trim($input_run_file_path);
+
+	$input_run_file_name=basename($input_run_file_path);
+	$input_run_path=dirname($input_run_file_path);
+	$input_run_name=basename($input_run_path);
+	$input_name=basename(dirname(dirname($input_run_path)));
+
+	#echo "<br>$input_run_file_name | $input_run_path | $input_run_name | $input_name ";
+
+	$runs[$input_name][$input_run_name][$input_run_file_path]=$input_run_file_name;
+	$total_runs_list[$input_run_name][$input_run_file_path]=$input_run_file_name;
+
+
+};
+
+#print_r($runs);
+
+
+# scan (using index)
+if (!isset($_SESSION["data"]["index"]["inputs"]["manifests"])) {
+	$_SESSION["data"]["index"]["inputs"]["manifests"]=preg_grep("#.*#", array_unique(file("$folder_indexes/manifests.idx")));
+};
 
 # cache
-$runs_inputs=$_SESSION["inputs"]["runs_inputs"];
+$inputs_manifests=$_SESSION["data"]["index"]["inputs"]["manifests"];
+#print_r($inputs_manifests);
 
 
 # process
-foreach ($runs_inputs as $key => $input_path) {
+foreach ($inputs_manifests as $key => $input_manifest_file_path) {
 
-	#echo "<br>$key => $input_path<br>";
-	$run_split=explode ( "/" , trim($input_path) );
-	$run_path_count=count($run_split);
-	$input=$run_split[$run_path_count-3];
-	$input_type=$run_split[$run_path_count-2];
-	$input_file=$run_split[$run_path_count-1];
-	$input_ext=pathinfo($input_path,PATHINFO_EXTENSION);
-	#echo "<br>$input | $input_type | $input_path | $input_file | $input_ext";
-	$input_list[$input]++;
+	#echo "<br>$key => $input_manifest_file_path<br>";
+	$input_manifest_file_path=trim($input_manifest_file_path);
 
-	if ($input_type=="manifests") {
-			#echo "<br>MANIFESTS";
-		if ($input_ext=="genes") {
-			$genes[$input][$input_file]++;
-		} elseif ($input_ext=="transcripts") {
-			$transcripts[$input][$input_file]++;
-		} elseif ($input_ext=="manifest" || $input_ext=="txt") {
-			$designs[$input][$input_file]++;
-		} else {
-			$designs[$input][$input_file]++;
-		};
-		
-	} elseif ($input_type=="runs") {
-		$runs[$input][$input_file]++;
-		$total_runs_list[$input_file]++;
-	};
+	$input_manifest_file_name=basename($input_manifest_file_path);
+	$input_manifest_file_ext=pathinfo($input_manifest_file_name,PATHINFO_EXTENSION);
+	$input_manifest_path=dirname($input_manifest_file_path);
+	$input_manifest_name=basename($input_manifest_path);
+	$input_name=basename(dirname(dirname($input_run_path)));
+
+	#echo "<br>$input_manifest_file_path | $input_manifest_file_name | $input_manifest_file_ext | $input_name <br><br>";
+
+	switch ($input_manifest_file_ext) {
+		case "genes":
+			$genes[$input_name][$input_manifest_file_path]=$input_manifest_file_name;
+			break;
+		case "transcripts":
+			$transcripts[$input_name][$input_manifest_file_path]=$input_manifest_file_name;
+			break;
+		default:
+			$designs[$input_name][$input_manifest_file_path]=$input_manifest_file_name;
+			break;
+	}
+
+
+	// if ($input_manifest_file_ext=="genes") {
+	// 	$genes[$input_name][$input_file]++;
+	// } elseif ($input_manifest_file_ext=="transcripts") {
+	// 	$transcripts[$input_name][$input_file]++;
+	// } elseif ($input_manifest_file_ext=="manifest" || $input_ext=="txt") {
+	// 	$designs[$input_name][$input_file]++;
+	// } else {
+	// 	$designs[$input_name][$input_file]++;
+	// };
+
 
 };
+
+// echo "<pre>Manifests and designs";
+// print_r($designs);
+// print_r($genes);
+// print_r($transcripts);
+// echo "</pre>";
 
 
 
@@ -71,26 +106,46 @@ foreach ($runs_inputs as $key => $input_path) {
 
 
 # scan (using index)
-if (!isset($_SESSION["repositories"])) {
-	$_SESSION["repositories"]["runs_repositories"]=preg_grep("#^[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/STARKCopyComplete.txt$#", array_unique(file("$folder_indexes/repositories.idx")));
+if (!isset($_SESSION["data"]["index"]["repositories"])) {
+	$_SESSION["data"]["index"]["repositories"]["runs_repositories"]=preg_grep("#^[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/STARKCopyComplete.txt$#", array_unique(file("$folder_indexes/repositories.idx")));
+	$_SESSION["data"]["index"]["repositories"]["runs_repositories_samples_files"]=preg_grep("#^[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/.*$#", array_unique(file("$folder_indexes/repositories.idx")));
+	#$_SESSION["data"]["index"]["repositories"]["runs_repositories"]=preg_grep("#^[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/STARKCopyComplete.txt$#", array_unique(file("$folder_indexes/repositories.idx")));
+	#$_SESSION["data"]["index"]["repositories"]["runs_repositories"]=preg_grep("#^[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/.*$#", array_unique(file("$folder_indexes/repositories.idx")));
+	#$_SESSION["data"]["index"]["repositories"]["runs_repositories"]= array_unique(file("$folder_indexes/repositories.idx"));
+	
 }
 
-# cache
-$runs_repositories=$_SESSION["repositories"]["runs_repositories"];
+#print_r($_SESSION["data"]["index"]["repositories"]["runs_repositories_samples_files"]);
 
+# cache
+$runs_repositories=$_SESSION["data"]["index"]["repositories"]["runs_repositories"];
+$runs_repositories_samples_files=$_SESSION["data"]["index"]["repositories"]["runs_repositories_samples_files"];
+
+
+
+// echo "<pre>";
+// print_r($runs_repositories);
+// #print_r(path_to_tree($runs_repositories));
+// #print_r(paths_to_array_tree($runs_repositories));
+// echo "</pre>";
 
 # process
-foreach ($runs_repositories as $key => $sample_path) {
+foreach ($runs_repositories as $key => $file_path) {
 
-	$sample_split=explode ( "/" , trim($sample_path) );
-	$sample_path_count=count($sample_split);
-	#print $sample_path_count;
-	$repository=$sample_split[$sample_path_count-6];
-	$group=$sample_split[$sample_path_count-5];
-	$project=$sample_split[$sample_path_count-4];
-	$run=$sample_split[$sample_path_count-3];
-	$sample=$sample_split[$sample_path_count-2];
+	$levels[6]="run";
+	$levels[7]="sample";
 
+	$file_path_split=explode ( "/" , trim($file_path) );
+	$file_path_level=count($file_path_split);
+
+	$repository=$file_path_split[1];
+	$group=$file_path_split[2];
+	$project=$file_path_split[3];
+	$run=$file_path_split[4];
+	$sample=$file_path_split[5];
+
+	#echo "$repository | $group | $project | $run | $sample <br><br>";
+	
 	$global[$repository]["groups"][$group]++;
 	$global[$repository]["projects"][$project]++;
 	$global[$repository]["runs"][$run]++;
@@ -118,15 +173,13 @@ if (isset($global["Repository"])) {
 }
 
 
-### DEV
-// End the clock time in seconds 
-$end_time = microtime(true); 
+## DEV
+// echo "<pre>";
+// print_r($inputs_runs);
+// print_r($inputs_manifests);
+// print_r($runs_repositories);
+// echo "</pre>";
 
-// Calculate the script execution time 
-$execution_time = ($end_time - $start_time); 
-  
-if ($DEBUG) {
-	echo "??? It takes ".$execution_time." seconds to execute the script";
-};
+
 
 ?>
