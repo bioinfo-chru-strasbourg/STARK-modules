@@ -224,7 +224,13 @@ if (count($samples_paths)<=$MAX_REPORTS) {
 	$samples_path_pattern_brace="{".join(",",array_unique($samples_path_pattern))."}";
 	#echo "samples_path_pattern_brace=$samples_path_pattern_brace";
 
-	$samples_files=array_unique(glob($samples_path_pattern_brace."/{*stark.report.html,*tag,*analysis.tag}",GLOB_BRACE));
+	#$samples_files=array_unique(glob($samples_path_pattern_brace."/{*stark.report.html,*tag,*analysis.tag}",GLOB_BRACE));
+
+	#print_r($samples_files);
+	#echo "<br><br>";
+
+	#print_r($runs_repositories_samples_files);
+	$samples_files=preg_grep("#(stark.report.html|tag)$#", $runs_repositories_samples_files);
 
 	#print_r($samples_files);
 	#echo "<br><br>";
@@ -235,6 +241,9 @@ if (count($samples_paths)<=$MAX_REPORTS) {
 
 	#echo "<br><br>";
 	foreach ($samples_files as $key=>$sample_file) {
+
+		$sample_file=trim($sample_file);
+
 		#echo "basename ".basename($sample_file)."<br>";
 		#switch (basename($sample_file)) {
 		switch (true) {
@@ -312,18 +321,35 @@ if (count($samples_paths)<=$MAX_REPORTS) {
 		# Deprecated
 		#$tags_file=glob ( "".$sample_path."/".$sample.".tag" )[0];
 		#$analysis_tags_file=glob ( "".$sample_path."/".$sample.".analysis.tag" )[0];
+		#print_r($_SESSION["data"]["file_content"]);
 
 		$tags_file=implode("",preg_grep('#'.$sample_path."/".$sample.".tag".'#', $tags_sample_files));
 		$analysis_tags_file=implode("",preg_grep('#'.$sample_path."/".$sample.".analysis.tag".'#', $tags_analysis_files));
 		
-		if ($tags_file != "") {
-			$myfile = fopen($tags_file, "r") or die("Unable to open file!");
-			$tags=tags_extract(trim(fread($myfile,filesize($tags_file))));
-		};
-		if ($analysis_tags_file != "") {
-			$myfile = fopen($analysis_tags_file, "r") or die("Unable to open file!");
-			$tags_analysis=tags_extract(trim(fread($myfile,filesize($analysis_tags_file))));
-			fclose($myfile);
+		#echo "$tags_file <br>";
+
+		$data_read_file=false;
+
+		if ($read_file_content) {
+
+			if ($tags_file != "") {
+				if (!isset($_SESSION["data"]["file_content"][$tags_file])) {
+					$myfile = fopen($tags_file, "r") or die("Unable to open file '$tags_file'!");
+					$_SESSION["data"]["file_content"][$tags_file]=trim(fread($myfile,filesize($tags_file)));
+					fclose($myfile);
+				};
+				$tags=tags_extract($_SESSION["data"]["file_content"][$tags_file]);
+			};
+			if ($analysis_tags_file != "") {
+				if (!isset($_SESSION["data"]["file_content"][$analysis_tags_file])) {
+					$myfile = fopen($analysis_tags_file, "r") or die("Unable to open file '$analysis_tags_file'!");
+					$_SESSION["data"]["file_content"][$analysis_tags_file]=trim(fread($myfile,filesize($analysis_tags_file)));
+					fclose($myfile);
+				};
+				$tags_analysis=tags_extract($_SESSION["data"]["file_content"][$analysis_tags_file]);
+				
+			};
+
 		};
 
 		if ($tags != "") {

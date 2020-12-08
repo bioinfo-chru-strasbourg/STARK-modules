@@ -7,6 +7,14 @@
 session_start();
 
 
+########
+# TIME #
+########
+
+// Start the clock time in seconds 
+$start_time = microtime(true); 
+
+
 #################
 ### VARIABLES ###
 #################
@@ -99,7 +107,9 @@ $HEADER_MENU= '
 			  <BR>
 			  <BR>
 			  <a href="session.php?SESSION=unset&PHP_SELF='.$_SERVER["REQUEST_URI"].'">Reload</a>
-			  <br><small><span style="color:gray">[clear data cache]</span></small>
+			  <br><small><span style="color:gray">[clear data session cache]</span></small>
+			  <br><small><span style="color:gray">['.($configuration["parameters"]["use_session_cache"]?"session cache used":"session cache not used").']</span></small>
+			 
 			  <BR><BR>
 		  </p>
 		
