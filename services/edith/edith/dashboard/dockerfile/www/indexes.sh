@@ -17,4 +17,5 @@ OUTPUT_TMP=$7
 [ "$OUTPUT_TMP" == "" ] && OUTPUT_TMP=$OUTPUT".tmp"
 
 # Command
+#echo "(cd $FOLDER; find $PATTERNS -mindepth $LEVEL_MIN -maxdepth $LEVEL_MAX $FILES_PATTERNS | sort -ru | xargs ls -t > $OUTPUT_TMP; cp -f $OUTPUT_TMP $OUTPUT; rm -f $OUTPUT_TMP)"
 (cd $FOLDER; find $PATTERNS -mindepth $LEVEL_MIN -maxdepth $LEVEL_MAX $FILES_PATTERNS | sort -ru | xargs ls -t > $OUTPUT_TMP; cp -f $OUTPUT_TMP $OUTPUT; rm -f $OUTPUT_TMP)
