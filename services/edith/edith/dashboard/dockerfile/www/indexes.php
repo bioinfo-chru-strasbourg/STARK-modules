@@ -45,15 +45,25 @@ include "config.inc.php";
 
 
 
-$indexes_old=60;
+$indexes_old=0;
 #$indexes_old=6;
 
 
 ### INDEX
-$inputs_indexes_filemtime=filemtime("$folder_indexes/inputs.idx");
+
+# inputs - runs
+$inputs_indexes_filemtime=filemtime("$folder_indexes/runs.idx");
 $now=time();
 $inputs_indexes_old=($now - $inputs_indexes_filemtime);
 #echo "$now - $inputs_indexes_filemtime = $inputs_indexes_old<br>";
+
+# inputs - manifests
+$inputs_indexes_filemtime=filemtime("$folder_indexes/manifests.idx");
+$now=time();
+$inputs_indexes_old=($now - $inputs_indexes_filemtime);
+#echo "$now - $inputs_indexes_filemtime = $inputs_indexes_old<br>";
+
+# outputs - repositories
 $repositories_indexes_filemtime=filemtime("$folder_indexes/repositories.idx");
 $now=time();
 $repositories_indexes_old=($now - $repositories_indexes_filemtime);
@@ -61,35 +71,77 @@ $repositories_indexes_old=($now - $repositories_indexes_filemtime);
 
 
 
-if ( !is_file("$folder_indexes/inputs.idx") || ($inputs_indexes_old >= $indexes_old) || !is_file("$folder_indexes/repositories.idx") || ($repositories_indexes_old >= $indexes_old) ) {
-	if (!is_file("$folder_indexes/inputs.idx.tmp") && !is_file("$folder_indexes/repositories.idx.tmp")) {
+if ( !is_file("$folder_indexes/runs.idx") || ($inputs_indexes_old >= $indexes_old) || !is_file("$folder_indexes/manifests.idx") || ($inputs_indexes_old >= $indexes_old) || !is_file("$folder_indexes/manifests.idx") || ($repositories_indexes_old >= $indexes_old) ) {
+	if (!is_file("$folder_indexes/runs.idx.tmp") && !is_file("$folder_indexes/manifests.idx.tmp") && !is_file("$folder_indexes/repositories.idx.tmp")) {
 
-		#echo "create indexes<br>";
+		### Runs
 
-		# inputs filter
-		$input_filter=array_keys($configuration["inputs"]["filter"]);
-		if (empty($input_filter)) {
-			$input_filter=array("*/*/*");
+		# inputs runs filter
+		$inputs_runs_filter=array_keys($configuration["inputs"]["runs"]["filter"]);
+		if (empty($inputs_runs_filter)) {
+			$inputs_runs_filter=array("*/runs/*");
 		}
-		$input_filter_list=" $folder_inputs/".join(" $folder_inputs/",array_unique($input_filter));
+
+		# inputs runs parameters
+		$inputs_runs_files_patterns=" -name SampleSheet.csv -o -name RTAComplete.txt -o -name *unParameters.xml ";
+		$inputs_runs_mindepth="1";
+		$inputs_runs_maxdepth="1";
+
+		# inputs runs filter list
+		$inputs_runs_filter_list=" $folder_inputs/".join(" $folder_inputs/",array_unique($inputs_runs_filter));
+
+		# inputs
+		$command="./indexes.sh '.' '$inputs_runs_filter_list' '$inputs_runs_files_patterns' '$inputs_runs_mindepth' '$inputs_runs_maxdepth' $folder_indexes/runs.idx $folder_indexes/runs.idx.tmp";
+
+		$output = executeAsyncShellCommand($command);
+		#$output = shell_exec($command);
+
+
+		### Manifests
+
+		# inputs manifests filter
+		$inputs_manifests_filter=array_keys($configuration["inputs"]["manifests"]["filter"]);
+		if (empty($inputs_manifests_filter)) {
+			$inputs_manifests_filter=array("*/manifests/*");
+		}
+
+		# inputs manifests parameters
+		$inputs_manifests_files_patterns="";
+		$inputs_manifests_mindepth="0";
+		$inputs_manifests_maxdepth="0";
+
+		# inputs manifests filter list
+		$inputs_manifests_filter_list=" $folder_inputs/".join(" $folder_inputs/",array_unique($inputs_manifests_filter));
+
+		# inputs
+		$command="./indexes.sh '.' '$inputs_manifests_filter_list' '$inputs_manifests_files_patterns' '$inputs_manifests_mindepth' '$inputs_manifests_maxdepth' $folder_indexes/manifests.idx $folder_indexes/manifests.idx.tmp";
+		
+		$output = executeAsyncShellCommand($command);
+		#$output = shell_exec($command);
+
+
+		### Repositories
 
 		# repositories filter
-		$repository_filter=array_keys($configuration["repositories"]["filter"]);
-		if (empty($repository_filter)) {
-			$repository_filter=array("*/*/*/*");
+		$repositories_filter=array_keys($configuration["repositories"]["filter"]);
+		if (empty($repositories_filter)) {
+			$repositories_filter=array("*/*/*/*");
 		}
-		$repository_filter_list=" $folder_repositories/".join(" $folder_repositories/",array_unique($repository_filter));
 
+		# inputs manifests parameters
+		$repositories_files_patterns=" -name *STARKCopyComplete.txt -o -name *stark.report.html -o -name *tag -o -name *vcf.gz -o -name *vcf -o -name *tsv -o -name *cram ";
+		$repositories_mindepth="1";
+		$repositories_maxdepth="2";
 
-		### INDEX
+		# inputs manifests filter list
+		$repositories_filter_list=" $folder_repositories/".join(" $folder_repositories/",array_unique($repositories_filter));
 
 		# inputs
-		$command="./indexes.sh '' '$input_filter_list' '0' '0' $folder_indexes/inputs.idx $folder_indexes/inputs.idx.tmp";
+		$command="./indexes.sh '.' '$repositories_filter_list' '$repositories_files_patterns' '$repositories_mindepth' '$repositories_maxdepth' $folder_indexes/repositories.idx $folder_indexes/repositories.idx.tmp";
+		#echo $command;
 		$output = executeAsyncShellCommand($command);
+		#$output = shell_exec($command);
 
-		# inputs
-		$command="./indexes.sh '' '$repository_filter_list' '0' '3' $folder_indexes/repositories.idx $folder_indexes/repositories.idx.tmp";
-		$output = executeAsyncShellCommand($command);
 
 	}
 }

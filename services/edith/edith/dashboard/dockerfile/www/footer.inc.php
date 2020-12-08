@@ -41,6 +41,22 @@ $FOOTER_LINKS='
 
 
 
+#########
+# DEBUG #
+#########
+
+// End the clock time in seconds 
+$end_time = microtime(true); 
+
+// Calculate the script execution time 
+$execution_time = ($end_time - $start_time); 
+  
+if ($DEBUG) {
+	echo "<br><br>It takes ".$execution_time." seconds to execute the script";
+};
+
+
+
 ##############
 ### FOOTER ###
 ##############
