@@ -304,8 +304,9 @@ foreach ($runs_inputs_files as $runs_inputs_key=>$run_file_path) {
 
 #$runs_repositories=glob($folder_repositories."/*/*/*/*/*",GLOB_ONLYDIR);
 #array_multisort(array_map('filemtime', $runs_repositories), SORT_NUMERIC, SORT_DESC, $runs_repositories);
-foreach ($runs_repositories as $runs_inputs_key=>$sample_path) {
-	$sample_path_split=explode("/",$sample_path);
+#foreach ($runs_repositories as $runs_inputs_key=>$sample_path) {
+foreach ($runs_repositories_corrected as $runs_inputs_key=>$sample_path) {
+		$sample_path_split=explode("/",$sample_path);
 	$sample=basename(dirname($sample_path));
 	#$run=$sample_path_split[count($sample_path_split)-2];
 	$run_path=dirname(dirname($sample_path));
