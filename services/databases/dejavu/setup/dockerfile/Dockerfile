@@ -96,12 +96,30 @@ ENV YUM_REMOVE=""
 
 
 
+############
+# VCFSTATS #
+############
 
-#####
-# R #
-#####
+# TOOL INFO
+ENV TOOL_NAME="vcfstats"
+ENV TOOL_VERSION="1.2"
+ENV TOOL_TARBALL="VcfStats-assembly-$TOOL_VERSION.jar"
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/biopet/vcfstats/releases/download/v$TOOL_VERSION/$TOOL_TARBALL"
+ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+ENV TOOL_JAR=$TOOL_TARBALL
+ENV TOOL_JAR_TARGET="VcfStats.jar"
+
+# TOOL INSTALLATION
+RUN mkdir -p $TOOLS/$TOOL_NAME/$TOOL_VERSION/bin && \
+	wget $TOOL_SOURCE_EXTERNAL -O $TOOLS/$TOOL_NAME/$TOOL_VERSION/bin/$TOOL_JAR_TARGET && \
+	ln -s $TOOL_VERSION $TOOLS/$TOOL_NAME/current;
 
 
+
+###########
+# RScript #
+###########
 
 ADD ./scripts/* $TOOL/toolbox/
 
