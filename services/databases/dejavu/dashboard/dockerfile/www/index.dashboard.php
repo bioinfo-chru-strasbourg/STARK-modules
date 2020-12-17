@@ -320,7 +320,7 @@ if (1) {
 						Statistics '.$link_download_stats.'
 						<br>
 						
-						Plungins '.$PLUGINS_LINKS["project"].'
+						Plugins '.$PLUGINS_LINKS["project"].'
 						<br>
 						Files '.$link_download.'
 							
