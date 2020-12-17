@@ -587,21 +587,31 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			# --multithreading --threads=$THREADS
 			# --norm_options='--multiallelics=-any,--rm-dup=exact'
 
-			echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
-				if ((\$\$($BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -h | grep '##INFO=<ID=ANN,' -c))); then \
-					$BCFTOOLS view -O v $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz | sed -e 's/\([;=[:space:]]\)ANN\([,;=[:space:]]\)/\1EFF\2/' | bcftools view -O z -o \$@.tmp.eff.vcf.gz; \
-					$TABIX \$@.tmp.eff.vcf.gz; \
-					$BCFTOOLS annotate -a \$@.tmp.eff.vcf.gz -c EFF $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -o \$@; \
-					rm \$@.tmp*; \
-				else \
-					$BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf; \
-				fi;
-			" >> $MK
+			# echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
+			# 	if ((\$\$($BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -h | grep '##INFO=<ID=ANN,' -c))); then \
+			# 		$BCFTOOLS view -O v $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz | sed -e 's/\([;=[:space:]]\)ANN\([,;=[:space:]]\)/\1EFF\2/' | bcftools view -O z -o \$@.tmp.eff.vcf.gz; \
+			# 		$TABIX \$@.tmp.eff.vcf.gz; \
+			# 		$BCFTOOLS annotate -a \$@.tmp.eff.vcf.gz -c EFF $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -o \$@; \
+			# 		rm \$@.tmp*; \
+			# 	else \
+			# 		$BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf; \
+			# 	fi;
+			# " >> $MK
+
+			# java -Xmx4G -jar /STARK/tools/snpeff/current/bin/snpEff.jar -i vcf -classic -formatEff  -o vcf hg19 annotated.vcf > annotated.eff4.vcf
 
 		else
 			echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
 				cp $TMP/$GROUP/$PROJECT/dejavu.simple.vcf $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf
 			" >> $MK
+		fi;
+
+
+		# snpEff
+		if [ "$SNPEFF" != "" ] && [ -e $SNPEFF ]; then
+			echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
+					$JAVA -Xmx4G -jar $SNPEFF -i vcf -classic -formatEff -o vcf $ASSEMBLY $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
+				" >> $MK
 		fi;
 
 		# echo "$TMP/$GROUP/$PROJECT/VCF_LIST: $VCFGZ_LIST
