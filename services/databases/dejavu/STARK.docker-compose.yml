@@ -69,6 +69,8 @@ services:
             # Repository folders
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:ro
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:ro
+            # DEV
+            - /Users/lebechea/BIOINFO/git/STARK-modules/services/databases/dejavu/setup/dockerfile/scripts/dejavu.generate.dev.sh:/tool/toolbox/dejavu.generate.dev.sh
         networks:
             - stark_stark
 
