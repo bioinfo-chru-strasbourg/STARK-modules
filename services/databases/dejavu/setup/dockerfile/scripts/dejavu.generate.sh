@@ -7,8 +7,8 @@
 
 SCRIPT_NAME="STARK_DEJAVU"
 SCRIPT_DESCRIPTION="STARK DEJAVU ANNOVAR databases generation"
-SCRIPT_RELEASE="0.12.0"
-SCRIPT_DATE="17/12/2020"
+SCRIPT_RELEASE="0.12.1"
+SCRIPT_DATE="06/01/2021"
 SCRIPT_AUTHOR="Antony Le Bechec"
 SCRIPT_COPYRIGHT="HUS"
 SCRIPT_LICENCE="GNU-AGPL"
@@ -19,7 +19,8 @@ RELEASE_NOTES=$RELEASE_NOTES"# 0.9.1b-07/09/2017: Add generation of ANNOVAR gene
 RELEASE_NOTES=$RELEASE_NOTES"# 0.9.2b-02/11/2018: Use BCFTOOLS instead of VCFTOOLS.\n";
 RELEASE_NOTES=$RELEASE_NOTES"# 0.10.0-12/08/2020: Many changes.\n";
 RELEASE_NOTES=$RELEASE_NOTES"# 0.11.0-29/09/2020: Add STARK module json files.\n";
-RELEASE_NOTES=$RELEASE_NOTES"# 0.11.0-17/12/2020: Add qample filter parameters.\n";
+RELEASE_NOTES=$RELEASE_NOTES"# 0.12.0-17/12/2020: Add sample filter parameters.\n";
+RELEASE_NOTES=$RELEASE_NOTES"# 0.12.1-06/01/2021: Add group project filter, annotation, calculation and nomen fields parameters, rebuld search goup/project folders.\n";
 
 # Script folder
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
