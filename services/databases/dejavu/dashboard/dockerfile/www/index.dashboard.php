@@ -263,7 +263,7 @@ if (1) {
 
 			# download links
 			$link_download="";
-			foreach (glob ($group_project."/*{tsv,vcf.gz}",GLOB_BRACE) as $key_file => $file) {
+			foreach (glob ($group_project."/*{tsv.gz,vcf.gz}",GLOB_BRACE) as $key_file => $file) {
 				$link_download.=' &nbsp;&nbsp;<a href="'.$file.'" download>'.basename($file).'</a>&nbsp;&nbsp; ';
 			};
 
