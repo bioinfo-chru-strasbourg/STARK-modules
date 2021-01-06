@@ -804,7 +804,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			if (($(cat $MK.$GROUP.$PROJECT.log $MK.$GROUP.$PROJECT.err | grep "\*\*\*" -c))); then
 				echo "#[ERROR] File '$DEJAVU/$RELEASE/dejavu.$GROUP.$PROJECT.txt' generation..."
 				(($DEBUG)) && cat $MK.$GROUP.$PROJECT.log $MK.$GROUP.$PROJECT.err | grep "\*\*\*" -B 80
-				exit 1
+				#exit 1
 			else
 			
 				# STATS
