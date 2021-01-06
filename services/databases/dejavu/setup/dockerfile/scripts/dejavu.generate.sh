@@ -7,8 +7,8 @@
 
 SCRIPT_NAME="STARK_DEJAVU"
 SCRIPT_DESCRIPTION="STARK DEJAVU ANNOVAR databases generation"
-SCRIPT_RELEASE="0.12.0"
-SCRIPT_DATE="17/12/2020"
+SCRIPT_RELEASE="0.12.1"
+SCRIPT_DATE="06/01/2021"
 SCRIPT_AUTHOR="Antony Le Bechec"
 SCRIPT_COPYRIGHT="HUS"
 SCRIPT_LICENCE="GNU-AGPL"
@@ -19,7 +19,8 @@ RELEASE_NOTES=$RELEASE_NOTES"# 0.9.1b-07/09/2017: Add generation of ANNOVAR gene
 RELEASE_NOTES=$RELEASE_NOTES"# 0.9.2b-02/11/2018: Use BCFTOOLS instead of VCFTOOLS.\n";
 RELEASE_NOTES=$RELEASE_NOTES"# 0.10.0-12/08/2020: Many changes.\n";
 RELEASE_NOTES=$RELEASE_NOTES"# 0.11.0-29/09/2020: Add STARK module json files.\n";
-RELEASE_NOTES=$RELEASE_NOTES"# 0.11.0-17/12/2020: Add qample filter parameters.\n";
+RELEASE_NOTES=$RELEASE_NOTES"# 0.12.0-17/12/2020: Add sample filter parameters.\n";
+RELEASE_NOTES=$RELEASE_NOTES"# 0.12.1-06/01/2021: Add group project filter, annotation, calculation and nomen fields parameters, rebuld search goup/project folders.\n";
 
 # Script folder
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -78,12 +79,19 @@ function usage {
 	echo "#                                               Default: 'HOWARD_NOMEN_FIELDS' STARK parameter";
 	echo "#                                               Example: 'hgvs', 'snpeff_hgvs'";
 	echo "# --sample_exclude                              Exclude sample pattern (regexp)";
-	echo "#                                               Format: '<group>/<project>/<sample_pattern>[,<group>/<project>/<sample_pattern>]'";
-	echo "#                                               Example: 'GENOME/GERMLINE/.*CORIEL.*' to exclude all *CORIEL* samples";
+	echo "#                                               Format: '<group>/<project>/<sample_pattern>[,<group>/<project>/<run>/<sample_pattern>]'";
+	echo "#                                               Example: 'GENOME/GERMLINE/.*/.*CORIEL.*' to exclude all *CORIEL* samples";
 	echo "#                                               Default: ''";
-	echo "# --sample_exclude_file (TODO)                  Exclude sample pattern (regexp) within a file";
+	echo "# --sample_exclude_file                         Exclude sample pattern (regexp) within a file";
 	echo "#                                               Format: same as --sample_exclude parameter";
 	echo "#                                               Default: <STARK_FOLDER_CONFIG>/dejavu/sample_exclude.conf'";
+	echo "# --group_project_filter                        Include only group/project/run pattern";
+	echo "#                                               Format: '<group>/<project>/<run>[,<group>/<project>/<run>]'";
+	echo "#                                               Example: 'GENOME/GERMLINE/19*' to include only run of year 2019 from group GENOME and project GERMLINE";
+	echo "#                                               Default: '*/*/*', all groups, projects and runs";
+	echo "# --group_project_filter_file                   Include only group/project/run pattern within a file";
+	echo "#                                               Format: same as --group_project_filter parameter";
+	echo "#                                               Default: <STARK_FOLDER_CONFIG>/dejavu/group_project_filter.conf'";
 	echo "# --tmp                                         Temporary folder";
 	echo "#                                               Default: default STARK Temporary folder";
 	echo "# --bcftools                                    BCFTools application binary";
@@ -109,7 +117,7 @@ header;
 # Getting parameters from the input
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ":" tells that the option has a required argument, "::" tells that the option has an optional argument, no ":" tells no argument
-ARGS=$(getopt -o "e:r:vdnh" --long "env:,app:,application:,app_folder:,application_folder:,repo_folder:,repository_folder:,dejavu_folder:,dejavu_release:,dejavu_annotation:,dejavu_calculation:,dejavu_nomen_fields:,sample_exclude:,sample_exclude_file:,tmp:,bcftools:,tabix:,bgzip:,annovar:,verbose,debug,release,help" -- "$@" 2> /dev/null)
+ARGS=$(getopt -o "e:r:vdnh" --long "env:,app:,application:,app_folder:,application_folder:,repo_folder:,repository_folder:,dejavu_folder:,dejavu_release:,dejavu_annotation:,dejavu_calculation:,dejavu_nomen_fields:,sample_exclude:,sample_exclude_file:,group_project_filter:,group_project_filter_file:,tmp:,bcftools:,tabix:,bgzip:,annovar:,verbose,debug,release,help" -- "$@" 2> /dev/null)
 
 eval set -- "$ARGS"
 while true
@@ -153,6 +161,14 @@ do
 			;;
 		--sample_exclude_file)
 			SAMPLE_EXCLUDE_FILE=$2;
+			shift 2
+			;;
+		--group_project_filter)
+			GROUP_PROJECT_FILTER=$(echo "$2" | tr "," " ");
+			shift 2
+			;;
+		--group_project_filter_file)
+			GROUP_PROJECT_FILTER_FILE=$2;
 			shift 2
 			;;
 		--tmp)
@@ -202,8 +218,9 @@ do
 done
 
 
-## PARALETERS
+## PARAMETERS
 ##############
+
 
 
 
@@ -314,6 +331,19 @@ if [ -e $SAMPLE_EXCLUDE_FILE ] && [ "$SAMPLE_EXCLUDE_FILE" != "" ]; then
 fi;
 
 
+# GROUP_PROJECT_FILTER
+if [ ! -e $GROUP_PROJECT_FILTER_FILE ] || [ "$GROUP_PROJECT_FILTER_FILE" == "" ]; then
+	GROUP_PROJECT_FILTER_FILE="$STARK_FOLDER_CONFIG/dejavu/group_project_filter.conf"
+fi
+# Load GROUP_PROJECT_FILTER patterns
+if [ -e $GROUP_PROJECT_FILTER_FILE ] && [ "$GROUP_PROJECT_FILTER_FILE" != "" ]; then
+	GROUP_PROJECT_FILTER=$GROUP_PROJECT_FILTER" "$(cat $GROUP_PROJECT_FILTER_FILE | grep -v "^[ \t]*#" | tr "\n" " ")
+fi;
+
+if [ "$GROUP_PROJECT_FILTER" == "" ] || [ "$GROUP_PROJECT_FILTER" == " " ]; then
+	GROUP_PROJECT_FILTER="*/*/*"
+fi;
+
 # DEJAVU FOLDER
 #mkdir -p $DEJAVU_FOLDER_LOG
 # mkdir -p $DEJAVU/$RELEASE/annovar
@@ -356,11 +386,28 @@ LOG=$DEJAVU_FOLDER_LOG/$RELEASE.log
 (($VERBOSE)) && echo "#[INFO] DEJAVU FOLDER: $DEJAVU_FOLDER"
 (($VERBOSE)) && echo "#[INFO] REPOSITORY FOLDER: "
 (($VERBOSE)) && for RF in $REPO_FOLDER; do echo "#[INFO]    "$RF; done
-(($VERBOSE)) && echo "#[INFO] SAMPLE EXCLUDE FILE: $SAMPLE_EXCLUDE_FILE"
+(($VERBOSE)) && echo "#[INFO] GROUP/PROJECT FILTER FILE:"
+(($VERBOSE)) && echo "#[INFO]    $GROUP_PROJECT_FILTER_FILE"
+(($VERBOSE)) && echo "#[INFO] GROUP/PROJECT FILTER:"
+(($VERBOSE)) && for SE in $GROUP_PROJECT_FILTER; do echo "#[INFO]    "$SE; done
+(($VERBOSE)) && echo "#[INFO] SAMPLE EXCLUDE FILE:"
+(($VERBOSE)) && echo "#[INFO]    $SAMPLE_EXCLUDE_FILE"
 (($VERBOSE)) && echo "#[INFO] SAMPLE EXCLUDE:"
 (($VERBOSE)) && for SE in $SAMPLE_EXCLUDE; do echo "#[INFO]    "$SE; done
 
+(($VERBOSE)) && echo "#[INFO] DEJAVU ANNOTATION: $DEJAVU_ANNOTATION"
+(($VERBOSE)) && echo "#[INFO] DEJAVU CALCULATION: $DEJAVU_CALCULATION"
+(($VERBOSE)) && echo "#[INFO] DEJAVU NOMEN FIELDS: $DEJAVU_NOMEN_FIELDS"
+
+(($VERBOSE)) && echo "#[INFO] THREADS: $THREADS"
+
+
 (($DEBUG)) && echo "#[INFO] TMP: $TMP"
+(($DEBUG)) && echo "#[INFO] BCFTOOLS: $BCFTOOLS"
+(($DEBUG)) && echo "#[INFO] BGZIP: $BGZIP"
+(($DEBUG)) && echo "#[INFO] TABIX: $TABIX"
+(($DEBUG)) && echo "#[INFO] VCFSTATS: $VCFSTATS"
+
 
 
 ### Find Group folders
@@ -386,20 +433,65 @@ GP_FOLDER_LIST=""
 
 # (cd $FOLDER; find $PATTERNS -mindepth $LEVEL_MIN -maxdepth $LEVEL_MAX $FILES_PATTERNS | sort -ru | xargs ls -t > $OUTPUT_TMP; cp -f $OUTPUT_TMP $OUTPUT; rm -f $OUTPUT_TMP)
 
+(($VERBOSE)) && echo "#"
+(($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project detection"
+
 
 
 if [ ! -z "$REPO_FOLDER" ]; then
-	#GP_FOLDER_LIST=$(find -L $REPO_FOLDER -maxdepth 2 -mindepth 2 -type d 2>/dev/null)
-	GP_FOLDER_LIST=$(ls $(ls $REPO_FOLDER/*/*/*/STARKCopyComplete.txt 2>/dev/null | xargs dirname | xargs dirname | sort -u | sed 's#$#/*/*/*'$VCF_PATTERN'#g') 2>/dev/null | xargs dirname | xargs dirname | xargs dirname | sort -u)
+
+	# Index method
+	if true; then
+
+		# Index file
+		INDEX=$TMP/index.idx
+
+		# TODO
+		GPR_FILTERS=$GROUP_PROJECT_FILTER		
+		#GPR_FILTERS="*/*/* */*/19*"
+
+
+		# Repository filter
+		REPOSITORIES_FILTER="";
+		for RF in $REPO_FOLDER; do
+			for GPR_FILTER in $GPR_FILTERS; do
+				REPOSITORIES_FILTER="$REPOSITORIES_FILTER $RF/$GPR_FILTER"
+			done;
+		done
+
+		#(($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project filter"
+		#(($VERBOSE)) && echo "#[INFO]    $REPOSITORIES_FILTER"
+
+		# Command param
+		LEVEL_MIN=2
+		LEVEL_MAX=2
+		FILES_PATTERNS=" -name *$VCF_PATTERN "
+		# Command
+		#CMD="find $REPOSITORIES_FILTER -mindepth $LEVEL_MIN -maxdepth $LEVEL_MAX $FILES_PATTERNS | sort -u > $INDEX"
+		#eval $CMD
+
+		if [ -z "$GP_FOLDER_LIST" ]; then
+			find $REPOSITORIES_FILTER -mindepth $LEVEL_MIN -maxdepth $LEVEL_MAX $FILES_PATTERNS | sort -u > $INDEX
+			GP_FOLDER_LIST=$(cat $INDEX | grep -v " " | xargs dirname | xargs dirname  | xargs dirname | sort -u)
+		else
+			GP_FOLDER_LIST=""
+		fi;
+
+	# ls method
+	else
+		if [ ! -z "$REPO_FOLDER" ]; then
+			#GP_FOLDER_LIST=$(find -L $REPO_FOLDER -maxdepth 2 -mindepth 2 -type d 2>/dev/null)
+			GP_FOLDER_LIST=$(ls $(ls $REPO_FOLDER/*/*/*/STARKCopyComplete.txt 2>/dev/null | xargs dirname | xargs dirname | sort -u | sed 's#$#/*/*/*'$VCF_PATTERN'#g') 2>/dev/null | xargs dirname | xargs dirname | xargs dirname | sort -u)
+		fi;
+	fi;
+
 fi;
 
 
-
-(($VERBOSE)) && echo "#"
-(($VERBOSE)) && echo "#[INFO] DEJAVU database repository detection"
-
-
 if [ -z "$GP_FOLDER_LIST" ]; then
+
+	(($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project detection from applications"
+
     for ENV_DEF in $(find -L $STARK_FOLDER_APPS -name '*.app' -type f | sed s#$STARK_FOLDER_APPS/## | sort -f -t'/' -k2.3 -k2.2 -k2.1) $(find -L $STARK_FOLDER_APPS -name '*.plugapp' -type f | sed s#$STARK_FOLDER_APPS/## | sort -f -t'/' -k2.3 -k2.2 -k2.1); do
     
     	# APP INFO
@@ -451,14 +543,16 @@ else
 
 fi;
 
-GP_FOLDER_LIST_UNIQ=$(echo -e $GP_FOLDER_LIST | sort -u)
 
+# Repository found
+
+GP_FOLDER_LIST_UNIQ=$(echo -e $GP_FOLDER_LIST | sort -u)
 GP_FOLDER_LIST_UNIQ_COUNT=$(echo $GP_FOLDER_LIST_UNIQ | wc -w)
 
-
-#(($VERBOSE)) && echo "#[INFO] DEJAVU repository number: $GP_FOLDER_LIST_UNIQ_COUNT"
-
+(($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project found [$GP_FOLDER_LIST_UNIQ_COUNT]:"
 #(($VERBOSE)) && echo $GP_FOLDER_LIST_UNIQ
+(($VERBOSE)) && for RF in $GP_FOLDER_LIST_UNIQ; do echo "#[INFO]    "$RF; done
+
 
 
 ### DEJAVU database copy file
@@ -468,6 +562,7 @@ GP_FOLDER_LIST_UNIQ_COUNT=$(echo $GP_FOLDER_LIST_UNIQ | wc -w)
 (($VERBOSE)) && echo "#[INFO] DEJAVU database file copy"
 
 (($DEBUG)) && echo "#[INFO] DEJAVU database file pattern '$VCF_PATTERN'"
+
 
 
 for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
@@ -482,7 +577,8 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 
 		SAMPLE_FILTER_GROUP=$(echo $SAMPLE_FILTER | awk -F/ '{print $1}')
 		SAMPLE_FILTER_PROJECT=$(echo $SAMPLE_FILTER | awk -F/ '{print $2}')
-		SAMPLE_FILTER_SAMPLE=$(echo $SAMPLE_FILTER | awk -F/ '{print $3}')
+		SAMPLE_FILTER_RUN=$(echo $SAMPLE_FILTER | awk -F/ '{print $3}')
+		SAMPLE_FILTER_SAMPLE=$(echo $SAMPLE_FILTER | awk -F/ '{print $4}')
 
 		if [[ $GROUP =~ $SAMPLE_FILTER_GROUP ]] && [[ $PROJECT =~ $SAMPLE_FILTER_PROJECT ]]; then
 			if [ "$SAMPLE_EXCLUDE_PARAM_GREP" == "" ]; then
@@ -490,7 +586,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			else
 				SEP="|"
 			fi;
-			SAMPLE_EXCLUDE_PARAM_GREP="$SAMPLE_EXCLUDE_PARAM_GREP$SEP$REPO/$GROUP/$PROJECT/.*/$SAMPLE_FILTER_SAMPLE"
+			SAMPLE_EXCLUDE_PARAM_GREP="$SAMPLE_EXCLUDE_PARAM_GREP$SEP$REPO/$GROUP/$PROJECT/$SAMPLE_FILTER_RUN/$SAMPLE_FILTER_SAMPLE"
 		fi;
 
 	done;
@@ -534,271 +630,286 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 	GROUP=$(basename $(dirname "$GP_FOLDER"))
 	PROJECT=$(basename "$GP_FOLDER")
 
+	NB_VCF=$(ls -l $TMP/$GROUP/$PROJECT/* 2>/dev/null | wc -l);
+	#echo "NBVCF: $NB_VCF"; exit 0;
+
 	#(($VERBOSE)) && echo "#"
 	#(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' process"
 
+	if (($NB_VCF)); then
 
-	if [ ! -s "$DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done" ]; then
+		if [ ! -s "$DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done" ]; then
 
-		# MK files
-		> $MK
-		echo "%.vcf.gz.tbi: %.vcf.gz
-			$TABIX $<
+			# MK files
+			> $MK
+			echo "%.vcf.gz.tbi: %.vcf.gz
+				$TABIX $<
 
-		" > $MK
+			" > $MK
 
-		VCFGZ_LIST=""
-		#for VCF in $(ls $TMP/$GROUP/$PROJECT/*); do
-		VCFGZ_NB=0
-		for VCF in $TMP/$GROUP/$PROJECT/*; do
-			#echo "VCF: "$VCF
-			if [ -s $VCF ] && (($(grep ^# -cv $VCF))); then
-				echo "$VCF.simple.vcf.gz: $VCF
+			VCFGZ_LIST=""
+			#for VCF in $(ls $TMP/$GROUP/$PROJECT/*); do
+			VCFGZ_NB=0
+			for VCF in $TMP/$GROUP/$PROJECT/*; do
+				#echo "VCF: "$VCF
+				if [ -s $VCF ] && (($(grep ^# -cv $VCF))); then
+					echo "$VCF.simple.vcf.gz: $VCF
+						mkdir $<.sort.
+						#$BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa $< | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +fixploidy  -- -f 2 | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS sort -T $<.sort. 2>/dev/null | $BCFTOOLS annotate -x FILTER,QUAL,ID,INFO -o \$@ -O z 2>/dev/null;
+						#$BCFTOOLS annotate -x FILTER,QUAL,ID,INFO $< | $BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +fixploidy  -- -f 2 | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS sort -T $<.sort. 2>/dev/null | $BCFTOOLS annotate -x FILTER,QUAL,ID,INFO -o \$@ -O z 2>/dev/null;
+						$BCFTOOLS annotate -x FILTER,QUAL,ID,INFO $< | $BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +fixploidy  -- -f 2 | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS sort -T $<.sort. -o \$@ -O z 2>/dev/null;
+						$TABIX \$@;
+						rm -f $<.sort.*
+					" >> $MK
+					VCFGZ_LIST="$VCFGZ_LIST $VCF.simple.vcf.gz"
+					((VCFGZ_NB++))
+					#| sed s/ID=PL,Number=G/ID=PL,Number=./gi ,^FORMAT/GT
+				fi;
+			done
+
+			#echo $VCFGZ_LIST > $TMP/$GROUP/$PROJECT/VCF_LIST
+			
+			# Minimum VCF
+			echo "$TMP/$GROUP/$PROJECT/dejavu.simple.vcf: $VCFGZ_LIST" >> $MK
+			if [ $VCFGZ_NB -gt 1 ]; then
+				echo "	$BCFTOOLS merge $TMP/$GROUP/$PROJECT/*.simple.vcf.gz | $BCFTOOLS norm -m -any | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
+			else
+				echo "	$BCFTOOLS norm -m -any $VCFGZ_LIST | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
+			fi;
+
+			# BCFTOOLS stats
+			echo "$TMP/$GROUP/$PROJECT/dejavu.stats.bcftools: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
+				$BCFTOOLS stats $TMP/$GROUP/$PROJECT/dejavu.simple.vcf > $TMP/$GROUP/$PROJECT/dejavu.stats.bcftools
+				$BCFTOOLS plugin counts $TMP/$GROUP/$PROJECT/dejavu.simple.vcf > $TMP/$GROUP/$PROJECT/dejavu.stats.bcftools.counts
+			" >> $MK
+
+			# VCFSTATS stats
+			if [ "$VCFSTATS" != "" ]; then
+				echo "$TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
+					mkdir -p $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats
+					java -jar $VCFSTATS --inputFile $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz --outputDir $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats --referenceFile $GENOMES/current/$ASSEMBLY.fa \$\$(bgzip -dc $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz |  perl -ne 'print \"\$\$1\n\" if /##INFO=<ID=(.*?),/' | awk '{print \"--infoTag \"\$\$1\":All\"}')
+				" >> $MK
+			fi;
+
+			# DejaVu
+			echo "$TMP/$GROUP/$PROJECT/dejavu.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
+				cp $TMP/$GROUP/$PROJECT/dejavu.simple.vcf $TMP/$GROUP/$PROJECT/dejavu.vcf
+			" >> $MK
+
+			# Annotation
+			if [ "$DEJAVU_ANNOTATION" != "" ]; then
+				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
+					+$HOWARD --input=$< --output=\$@.tmp.vcf --config=$HOWARD_CONFIG --config_annotation=$HOWARD_CONFIG_ANNOTATION --annotation=$DEJAVU_ANNOTATION --calculation=$DEJAVU_CALCULATION --nomen_fields=$DEJAVU_NOMEN_FIELDS --annovar_folder=$ANNOVAR --annovar_databases=$ANNOVAR_DATABASES --snpeff_jar=$SNPEFF --snpeff_databases=$SNPEFF_DATABASES --multithreading --threads=$THREADS --snpeff_threads=$THREADS --split=1000 --tmp=$TMP_FOLDER_TMP --env=$CONFIG_TOOLS
 					mkdir $<.sort.
-					$BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa $< | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +fixploidy  -- -f 2 | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS sort -T $<.sort. 2>/dev/null | $BCFTOOLS annotate -x FILTER,QUAL,ID,INFO -o \$@ -O z 2>/dev/null;
-					$TABIX \$@;
+					$BCFTOOLS sort -T $<.sort. \$@.tmp.vcf | $BCFTOOLS annotate -x INFO/AN,INFO/AC,INFO/AF  | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;
+					#rm \$@.tmp.vcf
+					rm \$@.tmp*
 					rm -f $<.sort.*
 				" >> $MK
-				VCFGZ_LIST="$VCFGZ_LIST $VCF.simple.vcf.gz"
-				((VCFGZ_NB++))
-				#| sed s/ID=PL,Number=G/ID=PL,Number=./gi ,^FORMAT/GT
+				# --multithreading --threads=$THREADS
+				# --norm_options='--multiallelics=-any,--rm-dup=exact'
+
+				# echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
+				# 	if ((\$\$($BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -h | grep '##INFO=<ID=ANN,' -c))); then \
+				# 		$BCFTOOLS view -O v $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz | sed -e 's/\([;=[:space:]]\)ANN\([,;=[:space:]]\)/\1EFF\2/' | bcftools view -O z -o \$@.tmp.eff.vcf.gz; \
+				# 		$TABIX \$@.tmp.eff.vcf.gz; \
+				# 		$BCFTOOLS annotate -a \$@.tmp.eff.vcf.gz -c EFF $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -o \$@; \
+				# 		rm \$@.tmp*; \
+				# 	else \
+				# 		$BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf; \
+				# 	fi;
+				# " >> $MK
+
+				# java -Xmx4G -jar /STARK/tools/snpeff/current/bin/snpEff.jar -i vcf -classic -formatEff  -o vcf hg19 annotated.vcf > annotated.eff4.vcf
+
+			else
+				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
+					cp $TMP/$GROUP/$PROJECT/dejavu.simple.vcf $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf
+				" >> $MK
 			fi;
-		done
 
-		#echo $VCFGZ_LIST > $TMP/$GROUP/$PROJECT/VCF_LIST
-		
-		# Minimum VCF
-		echo "$TMP/$GROUP/$PROJECT/dejavu.simple.vcf: $VCFGZ_LIST" >> $MK
-		if [ $VCFGZ_NB -gt 1 ]; then
-			echo "	$BCFTOOLS merge $TMP/$GROUP/$PROJECT/*.simple.vcf.gz | $BCFTOOLS norm -m -any | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
-		else
-			echo "	$BCFTOOLS norm -m -any $VCFGZ_LIST | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
-		fi;
 
-		# BCFTOOLS stats
-		echo "$TMP/$GROUP/$PROJECT/dejavu.stats.bcftools: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
-			$BCFTOOLS stats $TMP/$GROUP/$PROJECT/dejavu.simple.vcf > $TMP/$GROUP/$PROJECT/dejavu.stats.bcftools
-			$BCFTOOLS plugin counts $TMP/$GROUP/$PROJECT/dejavu.simple.vcf > $TMP/$GROUP/$PROJECT/dejavu.stats.bcftools.counts
-		" >> $MK
+			# snpEff
+			if [ "$SNPEFF" != "" ] && [ -e $SNPEFF ]; then
+				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
+						$JAVA -Xmx4G -jar $SNPEFF -i vcf -classic -formatEff -o vcf $ASSEMBLY $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
+					" >> $MK
+			fi;
 
-		# VCFSTATS stats
-		if [ "$VCFSTATS" != "" ]; then
-			echo "$TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
-				mkdir -p $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats
-				java -jar $VCFSTATS --inputFile $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz --outputDir $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats --referenceFile $GENOMES/current/$ASSEMBLY.fa \$\$(bgzip -dc $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz |  perl -ne 'print \"\$\$1\n\" if /##INFO=<ID=(.*?),/' | awk '{print \"--infoTag \"\$\$1\":All\"}')
-			" >> $MK
-		fi;
+			# echo "$TMP/$GROUP/$PROJECT/VCF_LIST: $VCFGZ_LIST
+			# ls $^ > $TMP/$GROUP/$PROJECT/VCF_LIST
 
-		# DejaVu
-		echo "$TMP/$GROUP/$PROJECT/dejavu.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
-			cp $TMP/$GROUP/$PROJECT/dejavu.simple.vcf $TMP/$GROUP/$PROJECT/dejavu.vcf
-		" >> $MK
-
-		# Annotation
-		if [ "$DEJAVU_ANNOTATION" != "" ]; then
-			echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
-				+$HOWARD --input=$< --output=\$@.tmp.vcf --config=$HOWARD_CONFIG --config_annotation=$HOWARD_CONFIG_ANNOTATION --annotation=$DEJAVU_ANNOTATION --calculation=$DEJAVU_CALCULATION --nomen_fields=$DEJAVU_NOMEN_FIELDS --annovar_folder=$ANNOVAR --annovar_databases=$ANNOVAR_DATABASES --snpeff_jar=$SNPEFF --snpeff_databases=$SNPEFF_DATABASES --multithreading --threads=$THREADS --snpeff_threads=$THREADS --split=1000 --tmp=$TMP_FOLDER_TMP --env=$CONFIG_TOOLS
-				mkdir $<.sort.
-				$BCFTOOLS sort -T $<.sort. \$@.tmp.vcf | $BCFTOOLS annotate -x INFO/AN,INFO/AC,INFO/AF  | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;
-				#rm \$@.tmp.vcf
-				rm \$@.tmp*
-				rm -f $<.sort.*
-			" >> $MK
-			# --multithreading --threads=$THREADS
-			# --norm_options='--multiallelics=-any,--rm-dup=exact'
-
-			# echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
-			# 	if ((\$\$($BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -h | grep '##INFO=<ID=ANN,' -c))); then \
-			# 		$BCFTOOLS view -O v $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz | sed -e 's/\([;=[:space:]]\)ANN\([,;=[:space:]]\)/\1EFF\2/' | bcftools view -O z -o \$@.tmp.eff.vcf.gz; \
-			# 		$TABIX \$@.tmp.eff.vcf.gz; \
-			# 		$BCFTOOLS annotate -a \$@.tmp.eff.vcf.gz -c EFF $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -o \$@; \
-			# 		rm \$@.tmp*; \
-			# 	else \
-			# 		$BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf; \
-			# 	fi;
 			# " >> $MK
 
-			# java -Xmx4G -jar /STARK/tools/snpeff/current/bin/snpEff.jar -i vcf -classic -formatEff  -o vcf hg19 annotated.vcf > annotated.eff4.vcf
+			echo "%.vcf.gz: %.vcf
+				$BGZIP -c $< > \$@
 
-		else
-			echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
-				cp $TMP/$GROUP/$PROJECT/dejavu.simple.vcf $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf
 			" >> $MK
-		fi;
+
+			echo "%.tsv.gz: %.tsv
+				$BGZIP -c $< > \$@
+
+			" >> $MK
 
 
-		# snpEff
-		if [ "$SNPEFF" != "" ] && [ -e $SNPEFF ]; then
-			echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
-					$JAVA -Xmx4G -jar $SNPEFF -i vcf -classic -formatEff -o vcf $ASSEMBLY $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
-				" >> $MK
-		fi;
+			echo "%.gz.tbi: %.gz
+				$TABIX $<
 
-		# echo "$TMP/$GROUP/$PROJECT/VCF_LIST: $VCFGZ_LIST
-		# ls $^ > $TMP/$GROUP/$PROJECT/VCF_LIST
+			" >> $MK
 
-		# " >> $MK
+			echo "%.tsv: %.vcf
+				+$HOWARD --input=$< --output=\$@ --env=$CONFIG_TOOLS --translation=TSV
 
-		echo "%.vcf.gz: %.vcf
-			$BGZIP -c $< > \$@
-
-		" >> $MK
-
-		echo "%.gz.tbi: %.gz
-			$TABIX $<
-
-		" >> $MK
-
-		echo "%.tsv: %.vcf
-			+$HOWARD --input=$< --output=\$@ --env=$CONFIG_TOOLS --translation=TSV
-
-		" >> $MK
+			" >> $MK
 
 
-		#echo "awk -F'\t' '{AF=\$\$6/($NB_VCF_FOUND*2)} {print \$\$1\"\\t\"\$\$2\"\\t\"\$\$3\"\\t\"\$\$4\"\\t\"AF}'"
-		#exit 0
+			#echo "awk -F'\t' '{AF=\$\$6/($NB_VCF_FOUND*2)} {print \$\$1\"\\t\"\$\$2\"\\t\"\$\$3\"\\t\"\$\$4\"\\t\"AF}'"
+			#exit 0
 
-		#echo "$DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.txt: $TMP/$GROUP/$PROJECT/dejavu.vcf
-		echo "$TMP/$GROUP/$PROJECT/dejavu.percent: $TMP/$GROUP/$PROJECT/dejavu.vcf
-			$BCFTOOLS query -f'%CHROM\t%POS\t%REF\t%ALT\t%AF\t%NS\t%AN\t%AC\t%AC_Hom\t%AC_Het\n' $< > \$@
+			#echo "$DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.txt: $TMP/$GROUP/$PROJECT/dejavu.vcf
+			echo "$TMP/$GROUP/$PROJECT/dejavu.percent: $TMP/$GROUP/$PROJECT/dejavu.vcf
+				$BCFTOOLS query -f'%CHROM\t%POS\t%REF\t%ALT\t%AF\t%NS\t%AN\t%AC\t%AC_Hom\t%AC_Het\n' $< > \$@
 
-		" >> $MK
-		#$BCFTOOLS query -f'%CHROM\t%POS\t%REF\t%ALT\t%AF\t%NS\t%AN\t%AC\t%AC_Hom\t%AF_Het\n' $< > \$@
-		echo "$TMP/$GROUP/$PROJECT/dejavu.annovar: $TMP/$GROUP/$PROJECT/dejavu.vcf
-			perl $ANNOVAR/convert2annovar.pl --format vcf4old  --allallele --outfile \$@.tmp $<
-			cat \$@.tmp | cut -f1-5 > \$@
-			rm -f \$@.tmp
+			" >> $MK
+			#$BCFTOOLS query -f'%CHROM\t%POS\t%REF\t%ALT\t%AF\t%NS\t%AN\t%AC\t%AC_Hom\t%AF_Het\n' $< > \$@
+			echo "$TMP/$GROUP/$PROJECT/dejavu.annovar: $TMP/$GROUP/$PROJECT/dejavu.vcf
+				perl $ANNOVAR/convert2annovar.pl --format vcf4old  --allallele --outfile \$@.tmp $<
+				cat \$@.tmp | cut -f1-5 > \$@
+				rm -f \$@.tmp
 
-		" >> $MK
+			" >> $MK
 
-		echo "$TMP/$GROUP/$PROJECT/dejavu.annovar.percent: $TMP/$GROUP/$PROJECT/dejavu.annovar $TMP/$GROUP/$PROJECT/dejavu.percent
-			paste $^ | cut -f1-5,10-15 > \$@
+			echo "$TMP/$GROUP/$PROJECT/dejavu.annovar.percent: $TMP/$GROUP/$PROJECT/dejavu.annovar $TMP/$GROUP/$PROJECT/dejavu.percent
+				paste $^ | cut -f1-5,10-15 > \$@
 
-		" >> $MK
-		
-		echo "$TMP/$GROUP/$PROJECT/dejavu.txt: $TMP/$GROUP/$PROJECT/dejavu.annovar.percent
-			#perl $ANNOVAR/index_annovar.sh $< --outfile \$@
-			perl $SCRIPT_DIR/index_annovar.pl $< --outfile \$@
-
-		" >> $MK
-
-		#cat $MK
-		#(($VERBOSE)) && echo "#[INFO] DEJAVU database generation process..."
-		make -j $THREADS -f $MK $TMP/$GROUP/$PROJECT/dejavu.txt $TMP/$GROUP/$PROJECT/dejavu.vcf $TMP/$GROUP/$PROJECT/dejavu.tsv $TMP/$GROUP/$PROJECT/dejavu.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.vcf.gz.tbi $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi $TMP/$GROUP/$PROJECT/dejavu.annotated.tsv $TMP/$GROUP/$PROJECT/dejavu.stats.bcftools $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz.tbi 1>>$MK.$GROUP.$PROJECT.log 2>>$MK.$GROUP.$PROJECT.err
-		# grep "\*\*\*" $MK.err
-		(($DEBUG)) && grep "\*\*\*" $MK.$GROUP.$PROJECT.log -B30
-		(($DEBUG)) && grep "\*\*\*" $MK.$GROUP.$PROJECT.err -B30
-		
-		# $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi 
-
-		# echo
-		if (($(cat $MK.$GROUP.$PROJECT.log $MK.$GROUP.$PROJECT.err | grep "\*\*\*" -c))); then
-			echo "#[ERROR] File '$DEJAVU/$RELEASE/dejavu.$GROUP.$PROJECT.txt' generation..."
-			(($DEBUG)) && cat $MK.$GROUP.$PROJECT.log $MK.$GROUP.$PROJECT.err | grep "\*\*\*" -B 80
-			exit 1
-		else
-		
-			# STATS
-			> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
-
-			# SAMPLES
-			NB_SAMPLES=$(echo $(grep "^#CHROM" $TMP/$GROUP/$PROJECT/dejavu.vcf | wc -w)" - 9" | bc)
-			NB_VARIANTS=$(grep -cv "^#" $TMP/$GROUP/$PROJECT/dejavu.vcf)
+			" >> $MK
 			
-			echo "### Number of samples: $NB_SAMPLES" >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
-			echo "### Number of variants: $NB_VARIANTS" >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
+			echo "$TMP/$GROUP/$PROJECT/dejavu.txt: $TMP/$GROUP/$PROJECT/dejavu.annovar.percent
+				#perl $ANNOVAR/index_annovar.sh $< --outfile \$@
+				perl $SCRIPT_DIR/index_annovar.pl $< --outfile \$@
+
+			" >> $MK
+
+			#cat $MK
+			#(($VERBOSE)) && echo "#[INFO] DEJAVU database generation process..."
+			#make -j $THREADS -f $MK $TMP/$GROUP/$PROJECT/dejavu.txt $TMP/$GROUP/$PROJECT/dejavu.vcf $TMP/$GROUP/$PROJECT/dejavu.tsv $TMP/$GROUP/$PROJECT/dejavu.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.vcf.gz.tbi $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi $TMP/$GROUP/$PROJECT/dejavu.annotated.tsv $TMP/$GROUP/$PROJECT/dejavu.stats.bcftools $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz.tbi 1>>$MK.$GROUP.$PROJECT.log 2>>$MK.$GROUP.$PROJECT.err
+			make -j $THREADS -f $MK $TMP/$GROUP/$PROJECT/dejavu.txt $TMP/$GROUP/$PROJECT/dejavu.vcf $TMP/$GROUP/$PROJECT/dejavu.tsv.gz $TMP/$GROUP/$PROJECT/dejavu.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.vcf.gz.tbi $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi $TMP/$GROUP/$PROJECT/dejavu.annotated.tsv.gz $TMP/$GROUP/$PROJECT/dejavu.stats.bcftools $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz.tbi 1>>$MK.$GROUP.$PROJECT.log 2>>$MK.$GROUP.$PROJECT.err
+			# grep "\*\*\*" $MK.err
+			(($DEBUG)) && grep "\*\*\*" $MK.$GROUP.$PROJECT.log -B30
+			(($DEBUG)) && grep "\*\*\*" $MK.$GROUP.$PROJECT.err -B30
 			
-			# VARIANTS
-			echo "### variants frequency" >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
-			# for p in $(seq 0 100); do
-			#for p in 0.001 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1; do awk -F"\t" -v p=$p '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print "# "SUM+0" variants out of "TOT" ("PERC"%) found more than "(p*100)"% in the set"}' $TMP/$GROUP/$PROJECT/dejavu.txt; done >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
-			for p in $(seq 1 100); do awk -F"\t" -v p=$( echo "scale=2; $p/100" | bc) '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print "# "SUM+0" variants out of "TOT" ("PERC"%) found more than "(p*100)"% in the set"}' $TMP/$GROUP/$PROJECT/dejavu.txt; done >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
-			#cat $TMP/$GROUP/$PROJECT/dejavu.stats.txt
+			# $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi 
 
-			# TSV
-			echo "$NB_SAMPLES" >> $TMP/$GROUP/$PROJECT/dejavu.stats.nb_samples
-			echo "$NB_VARIANTS" >> $TMP/$GROUP/$PROJECT/dejavu.stats.nb_variants
+			# echo
+			if (($(cat $MK.$GROUP.$PROJECT.log $MK.$GROUP.$PROJECT.err | grep "\*\*\*" -c))); then
+				echo "#[ERROR] File '$DEJAVU/$RELEASE/dejavu.$GROUP.$PROJECT.txt' generation..."
+				(($DEBUG)) && cat $MK.$GROUP.$PROJECT.log $MK.$GROUP.$PROJECT.err | grep "\*\*\*" -B 80
+				exit 1
+			else
+			
+				# STATS
+				> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
 
-			echo -e "#NB_variant\tTOT_variant\tPercent\tmore_than" > $TMP/$GROUP/$PROJECT/dejavu.stats.tsv
-			#for p in 0.001 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1; do awk -F"\t" -v p=$p '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print SUM+0"\t"TOT"\t"PERC"\t"(p*100)}' $TMP/$GROUP/$PROJECT/dejavu.txt; done > $TMP/$GROUP/$PROJECT/dejavu.stats.frequency.tsv
-			for p in $(seq 1 100); do awk -F"\t" -v p=$( echo "scale=2; $p/100" | bc) '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print SUM+0"\t"TOT"\t"PERC"\t"(p*100)}' $TMP/$GROUP/$PROJECT/dejavu.txt; done >> $TMP/$GROUP/$PROJECT/dejavu.stats.tsv
-			#cat $TMP/$GROUP/$PROJECT/dejavu.stats.tsv
+				# SAMPLES
+				NB_SAMPLES=$(echo $(grep "^#CHROM" $TMP/$GROUP/$PROJECT/dejavu.vcf | wc -w)" - 9" | bc)
+				NB_VARIANTS=$(grep -cv "^#" $TMP/$GROUP/$PROJECT/dejavu.vcf)
+				
+				echo "### Number of samples: $NB_SAMPLES" >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
+				echo "### Number of variants: $NB_VARIANTS" >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
+				
+				# VARIANTS
+				echo "### variants frequency" >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
+				# for p in $(seq 0 100); do
+				#for p in 0.001 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1; do awk -F"\t" -v p=$p '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print "# "SUM+0" variants out of "TOT" ("PERC"%) found more than "(p*100)"% in the set"}' $TMP/$GROUP/$PROJECT/dejavu.txt; done >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
+				for p in $(seq 1 100); do awk -F"\t" -v p=$( echo "scale=2; $p/100" | bc) '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print "# "SUM+0" variants out of "TOT" ("PERC"%) found more than "(p*100)"% in the set"}' $TMP/$GROUP/$PROJECT/dejavu.txt; done >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
+				#cat $TMP/$GROUP/$PROJECT/dejavu.stats.txt
+
+				# TSV
+				echo "$NB_SAMPLES" >> $TMP/$GROUP/$PROJECT/dejavu.stats.nb_samples
+				echo "$NB_VARIANTS" >> $TMP/$GROUP/$PROJECT/dejavu.stats.nb_variants
+
+				echo -e "#NB_variant\tTOT_variant\tPercent\tmore_than" > $TMP/$GROUP/$PROJECT/dejavu.stats.tsv
+				#for p in 0.001 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1; do awk -F"\t" -v p=$p '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print SUM+0"\t"TOT"\t"PERC"\t"(p*100)}' $TMP/$GROUP/$PROJECT/dejavu.txt; done > $TMP/$GROUP/$PROJECT/dejavu.stats.frequency.tsv
+				for p in $(seq 1 100); do awk -F"\t" -v p=$( echo "scale=2; $p/100" | bc) '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print SUM+0"\t"TOT"\t"PERC"\t"(p*100)}' $TMP/$GROUP/$PROJECT/dejavu.txt; done >> $TMP/$GROUP/$PROJECT/dejavu.stats.tsv
+				#cat $TMP/$GROUP/$PROJECT/dejavu.stats.tsv
 
 
 
-			# find assembly prefix
-			ASSEMBLY_PREFIX_VCF=$(grep "^##reference=" $TMP/$GROUP/$PROJECT/dejavu.vcf | cut -d= -f2 | xargs basename | sed 's/.fa$//' | sed 's/.fasta$//')
-			if [ "$ASSEMBLY_PREFIX_VCF" == "" ]; then
-				ASSEMBLY_PREFIX=$ASSEMBLY_PREFIX_DEFAULT
-			else 
-				ASSEMBLY_PREFIX=$ASSEMBLY_PREFIX_VCF
+				# find assembly prefix
+				ASSEMBLY_PREFIX_VCF=$(grep "^##reference=" $TMP/$GROUP/$PROJECT/dejavu.vcf | cut -d= -f2 | xargs basename | sed 's/.fa$//' | sed 's/.fasta$//')
+				if [ "$ASSEMBLY_PREFIX_VCF" == "" ]; then
+					ASSEMBLY_PREFIX=$ASSEMBLY_PREFIX_DEFAULT
+				else 
+					ASSEMBLY_PREFIX=$ASSEMBLY_PREFIX_VCF
+				fi;
+				ASSEMBLY_PREFIX_ANNOVAR=$ASSEMBLY_PREFIX"_"
+				
+				# SUFFIX
+				SUFFIX_ANNOVAR=$SUFFIX
+				
+				PATTERN=$ASSEMBLY_PREFIX_ANNOVAR"dejavu."$GROUP.$PROJECT$SUFFIX_ANNOVAR
+				mkdir -p $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/
+
+				cp $TMP/$GROUP/$PROJECT/dejavu.txt $DEJAVU_FOLDER_ANNOVAR/$PATTERN.txt
+				cp $TMP/$GROUP/$PROJECT/dejavu.txt.idx $DEJAVU_FOLDER_ANNOVAR/$PATTERN.txt.idx
+
+				#cp $TMP/$GROUP/$PROJECT/dejavu.vcf $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/minimal.vcf
+				cp $TMP/$GROUP/$PROJECT/dejavu.tsv.gz $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/minimal.tsv.gz
+				cp $TMP/$GROUP/$PROJECT/dejavu.vcf.gz $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/minimal.vcf.gz
+				cp $TMP/$GROUP/$PROJECT/dejavu.vcf.gz.tbi $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/minimal.vcf.gz.tbi
+				#cp $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.vcf
+				cp $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.vcf.gz
+				cp $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.vcf.gz.tbi
+				cp $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.eff.vcf.gz
+				cp $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz.tbi $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.eff.vcf.gz.tbi
+				cp $TMP/$GROUP/$PROJECT/dejavu.annotated.tsv.gz $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.tsv.gz
+
+				mkdir -p $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/$DEJAVU_SUBFOLDER_STATS
+				cp -R $TMP/$GROUP/$PROJECT/dejavu.stats* $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/$DEJAVU_SUBFOLDER_STATS/
+
+				(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' generated with $NB_SAMPLES samples and $NB_VARIANTS variants"
+				
+
+				# end
+				#(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' generated for release $RELEASE"
+				echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' generated for release $RELEASE" > $DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done
+				echo "#[INFO] release=$RELEASE" >> $DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done
+				echo "#[INFO] samples=$NB_SAMPLES" >> $DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done
+				echo "#[INFO] variants=$NB_VARIANTS" >> $DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done
+				(($VERBOSE)) && echo "$RELEASE" > $DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.release
+				
+
+				# STARK module json
+
+				# Database definition
+				if [ ! -s $DEJAVU/STARK.database ]; then
+					echo '
+
+						{
+							"code": "dejavu",
+							"name": "DejaVu",
+							"fullname": "STARK DejaVu databases",
+							"website": "",
+							"description": "STARK DejaVu databases is a compilation of all samples variants for each group/project, useful to calculate population frequencies"
+						}
+				
+					' > $DEJAVU/STARK.database
+				fi;
+
+				# CLeaning
+				rm -rf $TMP/$GROUP/$PROJECT
+
+
 			fi;
-			ASSEMBLY_PREFIX_ANNOVAR=$ASSEMBLY_PREFIX"_"
-			
-			# SUFFIX
-			SUFFIX_ANNOVAR=$SUFFIX
-			
-			PATTERN=$ASSEMBLY_PREFIX_ANNOVAR"dejavu."$GROUP.$PROJECT$SUFFIX_ANNOVAR
-			mkdir -p $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/
-
-			cp $TMP/$GROUP/$PROJECT/dejavu.txt $DEJAVU_FOLDER_ANNOVAR/$PATTERN.txt
-			cp $TMP/$GROUP/$PROJECT/dejavu.txt.idx $DEJAVU_FOLDER_ANNOVAR/$PATTERN.txt.idx
-
-			cp $TMP/$GROUP/$PROJECT/dejavu.vcf $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/minimal.vcf
-			cp $TMP/$GROUP/$PROJECT/dejavu.tsv $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/minimal.tsv
-			cp $TMP/$GROUP/$PROJECT/dejavu.vcf.gz $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/minimal.vcf.gz
-			cp $TMP/$GROUP/$PROJECT/dejavu.vcf.gz.tbi $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/minimal.vcf.gz.tbi
-			cp $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.vcf
-			cp $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.vcf.gz
-			cp $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.vcf.gz.tbi
-			cp $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.eff.vcf.gz
-			cp $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz.tbi $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.eff.vcf.gz.tbi
-			cp $TMP/$GROUP/$PROJECT/dejavu.annotated.tsv $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.tsv
-
-			mkdir -p $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/$DEJAVU_SUBFOLDER_STATS
-			cp -R $TMP/$GROUP/$PROJECT/dejavu.stats* $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/$DEJAVU_SUBFOLDER_STATS/
-
-			(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' generated with $NB_SAMPLES samples and $NB_VARIANTS variants"
-			
-
-			# end
-			#(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' generated for release $RELEASE"
-			echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' generated for release $RELEASE" > $DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done
-			echo "#[INFO] release=$RELEASE" >> $DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done
-			echo "#[INFO] samples=$NB_SAMPLES" >> $DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done
-			echo "#[INFO] variants=$NB_VARIANTS" >> $DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done
-			(($VERBOSE)) && echo "$RELEASE" > $DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.release
-			
-
-			# STARK module json
-
-			# Database definition
-			if [ ! -s $DEJAVU/STARK.database ]; then
-				echo '
-
-					{
-						"code": "dejavu",
-						"name": "DejaVu",
-						"fullname": "STARK DejaVu databases",
-						"website": "",
-						"description": "STARK DejaVu databases is a compilation of all samples variants for each group/project, useful to calculate population frequencies"
-					}
-			
-				' > $DEJAVU/STARK.database
-			fi;
-
-			# CLeaning
-			rm -rf $TMP/$GROUP/$PROJECT
-
-
+		
 		fi;
 
-	# else
+	else
 
-	# 	(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' already generated"
+		(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' without VCF files"
 
 	fi;
-	#fi;
+
 done
 
 
