@@ -745,10 +745,10 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 							echo '##fileformat=VCFv4.1' > \$@.tmp; \
 							echo '#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	$SAMPLE_NAME' >> \$@.tmp; \
 							$BGZIP -c \$@.tmp > \$@; \
-							rm -f \$@.tmp; \
+							rm -rf \$@.tmp; \
 						fi;
 						$TABIX \$@;
-						rm -f $<.sort.*
+						rm -rf $<.sort.*
 					" >> $MK
 					VCFGZ_LIST="$VCFGZ_LIST $VCF.simple.vcf.gz"
 					((VCFGZ_NB++))
@@ -792,8 +792,8 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 					mkdir $<.sort.
 					$BCFTOOLS sort -T $<.sort. \$@.tmp.vcf | $BCFTOOLS annotate -x INFO/AN,INFO/AC,INFO/AF  | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;
 					#rm \$@.tmp.vcf
-					rm \$@.tmp*
-					rm -f $<.sort.*
+					rm -rf \$@.tmp*
+					rm -rf $<.sort.*
 				" >> $MK
 				# --multithreading --threads=$THREADS
 				# --norm_options='--multiallelics=-any,--rm-dup=exact'
@@ -864,7 +864,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			echo "$TMP/$GROUP/$PROJECT/dejavu.annovar: $TMP/$GROUP/$PROJECT/dejavu.vcf
 				perl $ANNOVAR/convert2annovar.pl --format vcf4old  --allallele --outfile \$@.tmp $<
 				cat \$@.tmp | cut -f1-5 > \$@
-				rm -f \$@.tmp
+				rm -rf \$@.tmp
 
 			" >> $MK
 
