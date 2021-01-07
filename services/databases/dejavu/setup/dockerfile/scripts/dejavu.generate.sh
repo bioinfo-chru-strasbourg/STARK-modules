@@ -85,11 +85,20 @@ function usage {
 	echo "# --sample_exclude_file                         Exclude sample pattern (regexp) within a file";
 	echo "#                                               Format: same as --sample_exclude parameter";
 	echo "#                                               Default: <STARK_FOLDER_CONFIG>/dejavu/sample_exclude.conf'";
-	echo "# --group_project_filter                        Include only group/project/run pattern";
+	echo "# --group_project_list                          Include only group/project list (shell like)";
+	echo "#                                               These folders must be well structured as group/project within repository folders";
+	echo "#                                               Format: '<group>/<project>[,<group>/<project>]'";
+	echo "#                                               Example: 'GENOME/*' to include only run from group GENOME and all project";
+	echo "#                                               Default: '' (empty), filter will be used";
+	echo "# --group_project_list_file                     Include only group/project/run list (shell like) within a file";
+	echo "#                                               Format: same as --group_project_list parameter";
+	echo "#                                               Default: <STARK_FOLDER_CONFIG>/dejavu/group_project_list.conf'";
+	echo "# --group_project_filter                        Include only group/project/run pattern (shell like)";
+	echo "#                                               These patterns will be used to detect well structured folders, as group/project, within repository folders";
 	echo "#                                               Format: '<group>/<project>/<run>[,<group>/<project>/<run>]'";
-	echo "#                                               Example: 'GENOME/GERMLINE/19*' to include only run of year 2019 from group GENOME and project GERMLINE";
+	echo "#                                               Example: 'GENOME/*/19*' to include only run of year 2019 from group GENOME and all project";
 	echo "#                                               Default: '*/*/*', all groups, projects and runs";
-	echo "# --group_project_filter_file                   Include only group/project/run pattern within a file";
+	echo "# --group_project_filter_file                   Include only group/project/run pattern (shell like) within a file";
 	echo "#                                               Format: same as --group_project_filter parameter";
 	echo "#                                               Default: <STARK_FOLDER_CONFIG>/dejavu/group_project_filter.conf'";
 	echo "# --tmp                                         Temporary folder";
@@ -117,7 +126,7 @@ header;
 # Getting parameters from the input
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ":" tells that the option has a required argument, "::" tells that the option has an optional argument, no ":" tells no argument
-ARGS=$(getopt -o "e:r:vdnh" --long "env:,app:,application:,app_folder:,application_folder:,repo_folder:,repository_folder:,dejavu_folder:,dejavu_release:,dejavu_annotation:,dejavu_calculation:,dejavu_nomen_fields:,sample_exclude:,sample_exclude_file:,group_project_filter:,group_project_filter_file:,tmp:,bcftools:,tabix:,bgzip:,annovar:,verbose,debug,release,help" -- "$@" 2> /dev/null)
+ARGS=$(getopt -o "e:r:vdnh" --long "env:,app:,application:,app_folder:,application_folder:,repo_folder:,repository_folder:,dejavu_folder:,dejavu_release:,dejavu_annotation:,dejavu_calculation:,dejavu_nomen_fields:,sample_exclude:,sample_exclude_file:,group_project_list:,group_project_list_file:,group_project_filter:,group_project_filter_file:,tmp:,bcftools:,tabix:,bgzip:,annovar:,verbose,debug,release,help" -- "$@" 2> /dev/null)
 
 eval set -- "$ARGS"
 while true
@@ -161,6 +170,14 @@ do
 			;;
 		--sample_exclude_file)
 			SAMPLE_EXCLUDE_FILE=$2;
+			shift 2
+			;;
+		--group_project_list)
+			GROUP_PROJECT_LIST=$(echo "$2" | tr "," " ");
+			shift 2
+			;;
+		--group_project_list_file)
+			GROUP_PROJECT_LIST_FILE=$2;
 			shift 2
 			;;
 		--group_project_filter)
@@ -331,6 +348,21 @@ if [ -e $SAMPLE_EXCLUDE_FILE ] && [ "$SAMPLE_EXCLUDE_FILE" != "" ]; then
 fi;
 
 
+
+# GROUP_PROJECT_LIST
+if [ ! -e $GROUP_PROJECT_LIST_FILE ] || [ "$GROUP_PROJECT_LIST_FILE" == "" ]; then
+	GROUP_PROJECT_LIST_FILE="$STARK_FOLDER_CONFIG/dejavu/group_project_list.conf"
+fi
+# Load GROUP_PROJECT_LIST patterns
+if [ -e $GROUP_PROJECT_LIST_FILE ] && [ "$GROUP_PROJECT_LIST_FILE" != "" ]; then
+	GROUP_PROJECT_LIST=$GROUP_PROJECT_LIST" "$(cat $GROUP_PROJECT_LIST_FILE | grep -v "^[ \t]*#" | tr "\n" " ")
+fi;
+
+if [ "$GROUP_PROJECT_LIST" == "" ] || [ "$GROUP_PROJECT_LIST" == " " ]; then
+	GROUP_PROJECT_LIST=""
+fi;
+
+
 # GROUP_PROJECT_FILTER
 if [ ! -e $GROUP_PROJECT_FILTER_FILE ] || [ "$GROUP_PROJECT_FILTER_FILE" == "" ]; then
 	GROUP_PROJECT_FILTER_FILE="$STARK_FOLDER_CONFIG/dejavu/group_project_filter.conf"
@@ -384,12 +416,20 @@ LOG=$DEJAVU_FOLDER_LOG/$RELEASE.log
 (($VERBOSE)) && echo "#[INFO] RELEASE: $RELEASE"
 (($VERBOSE)) && echo "#[INFO] STARK FOLDER APPLICATIONS: $STARK_FOLDER_APPS"
 (($VERBOSE)) && echo "#[INFO] DEJAVU FOLDER: $DEJAVU_FOLDER"
+
 (($VERBOSE)) && echo "#[INFO] REPOSITORY FOLDER: "
 (($VERBOSE)) && for RF in $REPO_FOLDER; do echo "#[INFO]    "$RF; done
+
+(($VERBOSE)) && echo "#[INFO] GROUP/PROJECT LIST FILE:"
+(($VERBOSE)) && echo "#[INFO]    $GROUP_PROJECT_LIST_FILE"
+(($VERBOSE)) && echo "#[INFO] GROUP/PROJECT LIST:"
+(($VERBOSE)) && for GPL in $GROUP_PROJECT_LIST; do echo "#[INFO]    "$GPL; done
+
 (($VERBOSE)) && echo "#[INFO] GROUP/PROJECT FILTER FILE:"
 (($VERBOSE)) && echo "#[INFO]    $GROUP_PROJECT_FILTER_FILE"
 (($VERBOSE)) && echo "#[INFO] GROUP/PROJECT FILTER:"
-(($VERBOSE)) && for SE in $GROUP_PROJECT_FILTER; do echo "#[INFO]    "$SE; done
+(($VERBOSE)) && for GPF in $GROUP_PROJECT_FILTER; do echo "#[INFO]    "$GPF; done
+
 (($VERBOSE)) && echo "#[INFO] SAMPLE EXCLUDE FILE:"
 (($VERBOSE)) && echo "#[INFO]    $SAMPLE_EXCLUDE_FILE"
 (($VERBOSE)) && echo "#[INFO] SAMPLE EXCLUDE:"
@@ -413,6 +453,7 @@ LOG=$DEJAVU_FOLDER_LOG/$RELEASE.log
 ### Find Group folders
 ########################
 
+
 GP_FOLDER_LIST=""
 
 
@@ -434,55 +475,77 @@ GP_FOLDER_LIST=""
 # (cd $FOLDER; find $PATTERNS -mindepth $LEVEL_MIN -maxdepth $LEVEL_MAX $FILES_PATTERNS | sort -ru | xargs ls -t > $OUTPUT_TMP; cp -f $OUTPUT_TMP $OUTPUT; rm -f $OUTPUT_TMP)
 
 (($VERBOSE)) && echo "#"
-(($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project detection"
+#(($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project detection"
+echo "#[INFO] DEJAVU database repository/group/project detection"
 
 
 
 if [ ! -z "$REPO_FOLDER" ]; then
 
-	# Index method
-	if true; then
+	#GP_FOLDER_LIST=$GROUP_PROJECT_LIST
 
-		# Index file
-		INDEX=$TMP/index.idx
-
-		# TODO
-		GPR_FILTERS=$GROUP_PROJECT_FILTER		
-		#GPR_FILTERS="*/*/* */*/19*"
-
-
-		# Repository filter
-		REPOSITORIES_FILTER="";
+	# Group Project List
+	if [ ! -z "$GROUP_PROJECT_LIST" ]; then
+		(($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project detection from GROUP/PROJECT list"
+		GP_FOLDER_LIST="";
 		for RF in $REPO_FOLDER; do
-			for GPR_FILTER in $GPR_FILTERS; do
-				REPOSITORIES_FILTER="$REPOSITORIES_FILTER $RF/$GPR_FILTER"
+			for GPR_LIST in $GROUP_PROJECT_LIST; do
+				GP_FOLDER_LIST="$GP_FOLDER_LIST	$RF/$GPR_LIST"
 			done;
 		done
+	fi;
 
-		#(($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project filter"
-		#(($VERBOSE)) && echo "#[INFO]    $REPOSITORIES_FILTER"
+	#echo "GP_FOLDER_LIST=$GP_FOLDER_LIST";
 
-		# Command param
-		LEVEL_MIN=2
-		LEVEL_MAX=2
-		FILES_PATTERNS=" -name *$VCF_PATTERN "
-		# Command
-		#CMD="find $REPOSITORIES_FILTER -mindepth $LEVEL_MIN -maxdepth $LEVEL_MAX $FILES_PATTERNS | sort -u > $INDEX"
-		#eval $CMD
+	if [ -z "$GP_FOLDER_LIST" ]; then
 
-		if [ -z "$GP_FOLDER_LIST" ]; then
-			find $REPOSITORIES_FILTER -mindepth $LEVEL_MIN -maxdepth $LEVEL_MAX $FILES_PATTERNS | sort -u > $INDEX
-			GP_FOLDER_LIST=$(cat $INDEX | grep -v " " | xargs dirname | xargs dirname  | xargs dirname | sort -u)
+		(($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project detection from GROUP/PROJECT filter"
+
+		# Index method
+		if true; then
+
+			# Index file
+			INDEX=$TMP/index.idx
+
+			# TODO
+			GPR_FILTERS=$GROUP_PROJECT_FILTER		
+			#GPR_FILTERS="*/*/* */*/19*"
+
+
+			# Repository filter
+			REPOSITORIES_FILTER="";
+			for RF in $REPO_FOLDER; do
+				for GPR_FILTER in $GPR_FILTERS; do
+					REPOSITORIES_FILTER="$REPOSITORIES_FILTER $RF/$GPR_FILTER"
+				done;
+			done
+
+			#(($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project filter"
+			#(($VERBOSE)) && echo "#[INFO]    $REPOSITORIES_FILTER"
+
+			# Command param
+			LEVEL_MIN=2
+			LEVEL_MAX=2
+			FILES_PATTERNS=" -name *$VCF_PATTERN "
+			# Command
+			#CMD="find $REPOSITORIES_FILTER -mindepth $LEVEL_MIN -maxdepth $LEVEL_MAX $FILES_PATTERNS | sort -u > $INDEX"
+			#eval $CMD
+
+			if [ -z "$GP_FOLDER_LIST" ]; then
+				find $REPOSITORIES_FILTER -mindepth $LEVEL_MIN -maxdepth $LEVEL_MAX $FILES_PATTERNS | sort -u > $INDEX
+				GP_FOLDER_LIST=$(cat $INDEX | grep -v " " | xargs dirname | xargs dirname  | xargs dirname | sort -u)
+			else
+				GP_FOLDER_LIST=""
+			fi;
+
+		# ls method
 		else
-			GP_FOLDER_LIST=""
+			if [ ! -z "$REPO_FOLDER" ]; then
+				#GP_FOLDER_LIST=$(find -L $REPO_FOLDER -maxdepth 2 -mindepth 2 -type d 2>/dev/null)
+				GP_FOLDER_LIST=$(ls $(ls $REPO_FOLDER/*/*/*/STARKCopyComplete.txt 2>/dev/null | xargs dirname | xargs dirname | sort -u | sed 's#$#/*/*/*'$VCF_PATTERN'#g') 2>/dev/null | xargs dirname | xargs dirname | xargs dirname | sort -u)
+			fi;
 		fi;
 
-	# ls method
-	else
-		if [ ! -z "$REPO_FOLDER" ]; then
-			#GP_FOLDER_LIST=$(find -L $REPO_FOLDER -maxdepth 2 -mindepth 2 -type d 2>/dev/null)
-			GP_FOLDER_LIST=$(ls $(ls $REPO_FOLDER/*/*/*/STARKCopyComplete.txt 2>/dev/null | xargs dirname | xargs dirname | sort -u | sed 's#$#/*/*/*'$VCF_PATTERN'#g') 2>/dev/null | xargs dirname | xargs dirname | xargs dirname | sort -u)
-		fi;
 	fi;
 
 fi;
@@ -546,8 +609,19 @@ fi;
 
 # Repository found
 
-GP_FOLDER_LIST_UNIQ=$(echo -e $GP_FOLDER_LIST | sort -u)
+#GP_FOLDER_LIST_UNIQ=$(echo -e $GP_FOLDER_LIST | sort -u)
+GP_FOLDER_LIST_UNIQ=$(ls -d $GP_FOLDER_LIST 2>/dev/null | grep -v " " | sort -u)
+#GP_FOLDER_LIST_UNIQ="${GP_FOLDER_LIST_UNIQ// /\\ }"
 GP_FOLDER_LIST_UNIQ_COUNT=$(echo $GP_FOLDER_LIST_UNIQ | wc -w)
+
+# echo "GP_FOLDER_LIST=$GP_FOLDER_LIST";
+# echo "GP_FOLDER_LIST_UNIQ=$GP_FOLDER_LIST_UNIQ";
+# echo -e $GP_FOLDER_LIST | sed "s/ /\\ /g"
+
+
+#(($VERBOSE)) && for RF in echo -e $GP_FOLDER_LIST; do echo "#[INFOO]    "$RF; done
+
+
 
 (($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project found [$GP_FOLDER_LIST_UNIQ_COUNT]:"
 #(($VERBOSE)) && echo $GP_FOLDER_LIST_UNIQ
@@ -559,7 +633,8 @@ GP_FOLDER_LIST_UNIQ_COUNT=$(echo $GP_FOLDER_LIST_UNIQ | wc -w)
 ##############################
 
 (($VERBOSE)) && echo "#"
-(($VERBOSE)) && echo "#[INFO] DEJAVU database file copy"
+#(($VERBOSE)) && echo "#[INFO] DEJAVU database file copy"
+echo "#[INFO] DEJAVU database file copy"
 
 (($DEBUG)) && echo "#[INFO] DEJAVU database file pattern '$VCF_PATTERN'"
 
@@ -570,6 +645,9 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 	REPO=$(dirname $(dirname $GP_FOLDER))
 	GROUP=$(basename $(dirname $GP_FOLDER))
 	PROJECT=$(basename $GP_FOLDER)
+
+#echo "$REPO/$GROUP/$PROJECT"
+#continue
 
 	# Filter
 	SAMPLE_EXCLUDE_PARAM_GREP=""
@@ -598,7 +676,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 
 
 	# NB VARIANT
-	NB_VCF=$(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN | grep -vE $SAMPLE_EXCLUDE_PARAM_GREP 2>/dev/null | wc -l)
+	NB_VCF=$(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN 2>/dev/null | grep -vE $SAMPLE_EXCLUDE_PARAM_GREP 2>/dev/null | wc -l)
 
 	(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' repository '$REPO' $NB_VCF VCF found"
 
@@ -613,7 +691,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 		#cp -f $(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN) $TMP/$GROUP/$PROJECT/ 2>/dev/null
 		cp -f $(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN | grep -vE $SAMPLE_EXCLUDE_PARAM_GREP) $TMP/$GROUP/$PROJECT/ 2>/dev/null
 		NB_VCF_FOUND=$(ls $TMP/$GROUP/$PROJECT/*.vcf.gz | wc -w)
-		(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' $NB_VCF_FOUND VCF considered files (some files may be found multiple times)"
+		(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' $NB_VCF_FOUND VCF considered files (some files/samples may be found multiple times)"
 		
 	fi;
 
@@ -622,7 +700,8 @@ done;
 ### Database generation process
 
 (($VERBOSE)) && echo "#"
-(($VERBOSE)) && echo "#[INFO] DEJAVU database generation process"
+#(($VERBOSE)) && echo "#[INFO] DEJAVU database generation process"
+echo "#[INFO] DEJAVU database generation process"
 
 for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 
@@ -651,13 +730,19 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			#for VCF in $(ls $TMP/$GROUP/$PROJECT/*); do
 			VCFGZ_NB=0
 			for VCF in $TMP/$GROUP/$PROJECT/*; do
+				SAMPLE_NAME=$(basename $VCF | cut -d. -f1)
 				#echo "VCF: "$VCF
 				if [ -s $VCF ] && (($(grep ^# -cv $VCF))); then
 					echo "$VCF.simple.vcf.gz: $VCF
 						mkdir $<.sort.
-						#$BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa $< | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +fixploidy  -- -f 2 | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS sort -T $<.sort. 2>/dev/null | $BCFTOOLS annotate -x FILTER,QUAL,ID,INFO -o \$@ -O z 2>/dev/null;
-						#$BCFTOOLS annotate -x FILTER,QUAL,ID,INFO $< | $BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +fixploidy  -- -f 2 | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS sort -T $<.sort. 2>/dev/null | $BCFTOOLS annotate -x FILTER,QUAL,ID,INFO -o \$@ -O z 2>/dev/null;
-						$BCFTOOLS annotate -x FILTER,QUAL,ID,INFO $< | $BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +fixploidy  -- -f 2 | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS sort -T $<.sort. -o \$@ -O z 2>/dev/null;
+						if $BCFTOOLS annotate -x FILTER,QUAL,ID,INFO $< 1>/dev/null 2>/dev/null; then \
+							$BCFTOOLS annotate -x FILTER,QUAL,ID,INFO $< | $BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +fixploidy  -- -f 2 | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS sort -T $<.sort. -o \$@ -O z 2>/dev/null; \
+						else \
+							echo '##fileformat=VCFv4.1' > \$@.tmp; \
+							echo '#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	$SAMPLE_NAME' >> \$@.tmp; \
+							$BGZIP -c \$@.tmp > \$@; \
+							rm -f \$@.tmp; \
+						fi;
 						$TABIX \$@;
 						rm -f $<.sort.*
 					" >> $MK
@@ -672,7 +757,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			# Minimum VCF
 			echo "$TMP/$GROUP/$PROJECT/dejavu.simple.vcf: $VCFGZ_LIST" >> $MK
 			if [ $VCFGZ_NB -gt 1 ]; then
-				echo "	$BCFTOOLS merge $TMP/$GROUP/$PROJECT/*.simple.vcf.gz | $BCFTOOLS norm -m -any | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
+				echo "	$BCFTOOLS merge --force-samples $TMP/$GROUP/$PROJECT/*.simple.vcf.gz | $BCFTOOLS norm -m -any | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
 			else
 				echo "	$BCFTOOLS norm -m -any $VCFGZ_LIST | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
 			fi;
