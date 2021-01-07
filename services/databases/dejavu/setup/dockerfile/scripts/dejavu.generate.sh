@@ -490,7 +490,7 @@ if [ ! -z "$REPO_FOLDER" ]; then
 		GP_FOLDER_LIST="";
 		for RF in $REPO_FOLDER; do
 			for GPR_LIST in $GROUP_PROJECT_LIST; do
-				GP_FOLDER_LIST="$GP_FOLDER_LIST	$RF/$GPR_LIST"
+				GP_FOLDER_LIST="$GP_FOLDER_LIST	$RF/$GPR_LIST/"
 			done;
 		done
 	fi;
