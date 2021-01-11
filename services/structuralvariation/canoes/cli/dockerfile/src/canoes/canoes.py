@@ -200,7 +200,9 @@ def get_sample_id_from_samplesheet(samplesheetPath):
 	with open(samplesheetPath, "r") as f:
 		for l in f:
 			if not inDataTable:
-				if l.startswith("Sample_ID,Sample_Name,"):
+				#modif JB
+				#if l.startswith("Sample_ID,Sample_Name,"):
+				if l.startswith("Sample_ID,"):
 					inDataTable = True
 					sampleIDIndex = l.strip().split(",").index("Sample_ID")
 			else:
@@ -297,6 +299,8 @@ def copyAllResults(output, exclude):
 	sample_list = []
 	sample_list = get_sample_id_from_samplesheet(find_any_samplesheet(output))
 	results = osj("/app",os.path.basename(os.path.normpath(output)))
+	if os.path.exists(osj(output,".snakemake/")):
+		shutil.rmtree(osj(output,".snakemake/"))
 	if not sample_list:
 		# command = 'find '+output+'/*/CANOES/*.canoes.annotsv.tsv'
 		command = 'find '+osj(results,"*/CANOES/*.canoes.annotsv.tsv")
@@ -313,8 +317,6 @@ def copyAllResults(output, exclude):
 				shutil.copytree(osj(results,"logs/"),osj(output,sample,"CANOES/logs"))
 	# if os.path.exists(osj(output,"CANOES/")):
 		# shutil.rmtree(osj(output,"CANOES/"))
-	if os.path.exists(osj(output,".snakemake/")):
-		shutil.rmtree(osj(output,".snakemake/"))
 	# if os.path.exists(osj(output,"logs/")):
 		# shutil.rmtree(osj(output,"logs/"))
 	# if os.path.exists(output+"/Rplots.pdf"):
