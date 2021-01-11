@@ -63,7 +63,7 @@ RUN mkdir /tools; \
 	ln -s VaRank_1.4.3 current; \
 	cd current/ExtAnn; \
 	rm -f OMIMannotations.tsv.gz; \
-	ln -s /STARK/databases/OMIMannotations/current/OMIMannotations.tsv.gz ./OMIMannotations.tsv.gz
+	ln -s /STARK/databases/OMIMannotations/current/OMIMannotations.tsv.gz /tools/varank/current/ExtAnn/OMIMannotations.tsv.gz
 
 ARG VARANK=/tools/varank/current/
 ENV VARANK $VARANK
