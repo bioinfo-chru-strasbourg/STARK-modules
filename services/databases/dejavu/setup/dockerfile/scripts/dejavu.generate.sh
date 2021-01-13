@@ -78,6 +78,9 @@ function usage {
 	echo "# --dejavu_nomen_fields                         Output VCF DejaVu NOMEN field";
 	echo "#                                               Default: 'HOWARD_NOMEN_FIELDS' STARK parameter";
 	echo "#                                               Example: 'hgvs', 'snpeff_hgvs'";
+	echo "# --dejavu_vcfstats                             Output VCFStats";
+	echo "#                                               Default: no VCFStats output";
+	echo "#                                               Example: 'hgvs', 'snpeff_hgvs'";
 	echo "# --sample_exclude                              Exclude sample pattern (regexp)";
 	echo "#                                               Format: '<group>/<project>/<sample_pattern>[,<group>/<project>/<run>/<sample_pattern>]'";
 	echo "#                                               Example: 'GENOME/GERMLINE/.*/.*CORIEL.*' to exclude all *CORIEL* samples";
@@ -111,6 +114,8 @@ function usage {
 	echo "#                                               Default: default STARK configuration or 'bgzip'";
 	echo "# --annovar                                     ANNOVAR application binary folder";
 	echo "#                                               Default: default STARK configuration or ''";
+	echo "# --vcfstats                                    VCFStats application jar";
+	echo "#                                               Default: default STARK configuration or '' or detected with wheris command";
 	echo "# --verbose                                     VERBOSE";
 	echo "# --debug                                       DEBUG";
 	echo "# --release                                     RELEASE";
@@ -126,7 +131,7 @@ header;
 # Getting parameters from the input
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ":" tells that the option has a required argument, "::" tells that the option has an optional argument, no ":" tells no argument
-ARGS=$(getopt -o "e:r:vdnh" --long "env:,app:,application:,app_folder:,application_folder:,repo_folder:,repository_folder:,dejavu_folder:,dejavu_release:,dejavu_annotation:,dejavu_calculation:,dejavu_nomen_fields:,sample_exclude:,sample_exclude_file:,group_project_list:,group_project_list_file:,group_project_filter:,group_project_filter_file:,tmp:,bcftools:,tabix:,bgzip:,annovar:,verbose,debug,release,help" -- "$@" 2> /dev/null)
+ARGS=$(getopt -o "e:r:vdnh" --long "env:,app:,application:,app_folder:,application_folder:,repo_folder:,repository_folder:,dejavu_folder:,dejavu_release:,dejavu_annotation:,dejavu_calculation:,dejavu_nomen_fields:,dejavu_vcfstats,sample_exclude:,sample_exclude_file:,group_project_list:,group_project_list_file:,group_project_filter:,group_project_filter_file:,tmp:,bcftools:,tabix:,bgzip:,annovar:,vcfstats:,verbose,debug,release,help" -- "$@" 2> /dev/null)
 
 eval set -- "$ARGS"
 while true
@@ -163,6 +168,10 @@ do
 		--dejavu_nomen_fields)
 			DEJAVU_NOMEN_FIELDS="$2";
 			shift 2
+			;;
+		--dejavu_vcfstats)
+			DEJAVU_VCFSTATS=1
+			shift 1
 			;;
 		--sample_exclude)
 			SAMPLE_EXCLUDE=$(echo "$2" | tr "," " ");
@@ -206,6 +215,10 @@ do
 			;;
 		--annovar)
 			ANNOVAR="$2";
+			shift 2
+			;;
+		--vcfstats)
+			VCFSTATS="$2";
 			shift 2
 			;;
 		-v|--verbose)
@@ -438,6 +451,7 @@ LOG=$DEJAVU_FOLDER_LOG/$RELEASE.log
 (($VERBOSE)) && echo "#[INFO] DEJAVU ANNOTATION: $DEJAVU_ANNOTATION"
 (($VERBOSE)) && echo "#[INFO] DEJAVU CALCULATION: $DEJAVU_CALCULATION"
 (($VERBOSE)) && echo "#[INFO] DEJAVU NOMEN FIELDS: $DEJAVU_NOMEN_FIELDS"
+(($VERBOSE)) && echo "#[INFO] DEJAVU VCFSTATS: "$( (($DEJAVU_VCFSTATS)) && echo "Yes" || echo "No")
 
 (($VERBOSE)) && echo "#[INFO] THREADS: $THREADS"
 
@@ -779,10 +793,16 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			" >> $MK
 
 			# VCFSTATS stats
-			if [ "$VCFSTATS" != "" ]; then
+			if (($DEJAVU_VCFSTATS )) && [ "$VCFSTATS" != "" ]; then
 				echo "$TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats.tar.gz: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
 					mkdir -p $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats
-					java -jar $VCFSTATS --inputFile $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz --outputDir $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats --referenceFile $GENOMES/current/$ASSEMBLY.fa \$\$(bgzip -dc $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz |  perl -ne 'print \"\$\$1\n\" if /##INFO=<ID=(.*?),/' | awk '{print \"--infoTag \"\$\$1\":All\"}')
+					java -jar $VCFSTATS --inputFile $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz --outputDir $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats --referenceFile $GENOMES/current/$ASSEMBLY.fa -t $THREADS \$\$(bgzip -dc $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz |  perl -ne 'print \"\$\$1\n\" if /##INFO=<ID=(.*?),/' | awk '{print \"--infoTag \"\$\$1\":All\"}')
+					tar -zvcf $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats.tar.gz $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats
+					rm -rf $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats
+				" >> $MK
+			else
+				echo "$TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats.tar.gz: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
+					mkdir -p $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats
 					tar -zvcf $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats.tar.gz $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats
 					rm -rf $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats
 				" >> $MK
@@ -802,7 +822,8 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 					$BCFTOOLS sort -T $<.sort.1. \$@.tmp.tmp.vcf > \$@.tmp.tmp.tmp.vcf
 					$BGZIP -c \$@.tmp.tmp.tmp.vcf > \$@.tmp.tmp.tmp.vcf.gz
 					$TABIX \$@.tmp.tmp.tmp.vcf.gz
-					$BCFTOOLS merge $< \$@.tmp.tmp.tmp.vcf.gz | $BCFTOOLS sort -T $<.sort.2. > \$@.tmp.vcf
+					$BCFTOOLS merge $< \$@.tmp.tmp.tmp.vcf.gz | $BCFTOOLS sort -T $<.sort.2. > \$@.tmp.ann.vcf
+					+$HOWARD --input=\$@.tmp.ann.vcf --output=\$@.tmp.vcf --config=$HOWARD_CONFIG --config_annotation=$HOWARD_CONFIG_ANNOTATION --calculation=$DEJAVU_CALCULATION --nomen_fields=$DEJAVU_NOMEN_FIELDS --annovar_folder=$ANNOVAR --annovar_databases=$ANNOVAR_DATABASES --snpeff_jar=$SNPEFF --snpeff_databases=$SNPEFF_DATABASES --multithreading --threads=$THREADS --snpeff_threads=$THREADS --split=$HOWARD_split --tmp=$TMP_FOLDER_TMP --env=$CONFIG_TOOLS
 					#
 					#+$HOWARD --input=$< --output=\$@.tmp.vcf --config=$HOWARD_CONFIG --config_annotation=$HOWARD_CONFIG_ANNOTATION --annotation=$DEJAVU_ANNOTATION --calculation=$DEJAVU_CALCULATION --nomen_fields=$DEJAVU_NOMEN_FIELDS --annovar_folder=$ANNOVAR --annovar_databases=$ANNOVAR_DATABASES --snpeff_jar=$SNPEFF --snpeff_databases=$SNPEFF_DATABASES --multithreading --threads=$THREADS --snpeff_threads=$THREADS --split=$HOWARD_split --tmp=$TMP_FOLDER_TMP --env=$CONFIG_TOOLS
 					mkdir $<.sort.
@@ -811,22 +832,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 					rm -rf \$@.tmp*
 					rm -rf $<.sort.*
 				" >> $MK
-				# --multithreading --threads=$THREADS
-				# --norm_options='--multiallelics=-any,--rm-dup=exact'
-
-				# echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
-				# 	if ((\$\$($BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -h | grep '##INFO=<ID=ANN,' -c))); then \
-				# 		$BCFTOOLS view -O v $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz | sed -e 's/\([;=[:space:]]\)ANN\([,;=[:space:]]\)/\1EFF\2/' | bcftools view -O z -o \$@.tmp.eff.vcf.gz; \
-				# 		$TABIX \$@.tmp.eff.vcf.gz; \
-				# 		$BCFTOOLS annotate -a \$@.tmp.eff.vcf.gz -c EFF $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -o \$@; \
-				# 		rm \$@.tmp*; \
-				# 	else \
-				# 		$BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf; \
-				# 	fi;
-				# " >> $MK
-
-				# java -Xmx4G -jar /STARK/tools/snpeff/current/bin/snpEff.jar -i vcf -classic -formatEff  -o vcf hg19 annotated.vcf > annotated.eff4.vcf
-
+				
 			else
 				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
 					cp $TMP/$GROUP/$PROJECT/dejavu.simple.vcf $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf
@@ -837,7 +843,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			# snpEff
 			if [ "$SNPEFF" != "" ] && [ -e $SNPEFF ]; then
 				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
-						$JAVA -Xmx4G -jar $SNPEFF -i vcf -classic -formatEff -o vcf $ASSEMBLY $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -dataDir $SNPEFF_DATABASES > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
+						$JAVA -Xmx4G -jar $SNPEFF -i vcf -classic -formatEff -o vcf $ASSEMBLY $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -stats $TMP/$GROUP/$PROJECT/dejavu.stats.snpeff.html -dataDir $SNPEFF_DATABASES > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
 					" >> $MK
 			fi;
 
