@@ -278,7 +278,8 @@ fi;
 
 
 # REPO_FOLDER
-REPO_FOLDER=$(echo $REPO_FOLDER | tr "," " ")
+REPO_FOLDER=$(echo $REPO_FOLDER | tr "," " " | tr " " "\n" | sort -u)
+
 
 # FOLDER DEJAVU
 if [ -z "$DEJAVU_FOLDER" ]; then
@@ -628,14 +629,6 @@ GP_FOLDER_LIST_UNIQ=$(ls -d $GP_FOLDER_LIST 2>/dev/null | grep -v " " | sort -u)
 #GP_FOLDER_LIST_UNIQ="${GP_FOLDER_LIST_UNIQ// /\\ }"
 GP_FOLDER_LIST_UNIQ_COUNT=$(echo $GP_FOLDER_LIST_UNIQ | wc -w)
 
-# echo "GP_FOLDER_LIST=$GP_FOLDER_LIST";
-# echo "GP_FOLDER_LIST_UNIQ=$GP_FOLDER_LIST_UNIQ";
-# echo -e $GP_FOLDER_LIST | sed "s/ /\\ /g"
-
-
-#(($VERBOSE)) && for RF in echo -e $GP_FOLDER_LIST; do echo "#[INFOO]    "$RF; done
-
-
 
 (($VERBOSE)) && echo "#[INFO] DEJAVU database repository/group/project found [$GP_FOLDER_LIST_UNIQ_COUNT]:"
 #(($VERBOSE)) && echo $GP_FOLDER_LIST_UNIQ
@@ -643,16 +636,18 @@ GP_FOLDER_LIST_UNIQ_COUNT=$(echo $GP_FOLDER_LIST_UNIQ | wc -w)
 
 
 
+
 ### DEJAVU database copy file
 ##############################
 
-(($VERBOSE)) && echo "#"
+#(($VERBOSE)) && echo "#"
 #(($VERBOSE)) && echo "#[INFO] DEJAVU database file copy"
-echo "#[INFO] DEJAVU database file copy"
-
-(($DEBUG)) && echo "#[INFO] DEJAVU database file pattern '$VCF_PATTERN'"
+#echo "#[INFO] DEJAVU database file copy"
 
 
+
+
+if false; then
 
 for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 
@@ -715,17 +710,125 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 
 done;
 
+fi;
+
 ### Database generation process
 
-(($VERBOSE)) && echo "#"
+#(($VERBOSE)) && echo "#"
 #(($VERBOSE)) && echo "#[INFO] DEJAVU database generation process"
-echo "#[INFO] DEJAVU database generation process"
+#echo "#[INFO] DEJAVU database generation process"
 
+#echo "GP_FOLDER_LIST_UNIQ=$GP_FOLDER_LIST_UNIQ"
+
+
+GP_LIST=""
 for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
-
-	REPO=$(dirname $(dirname "$GP_FOLDER"))
+	#echo $GP_FOLDER
 	GROUP=$(basename $(dirname "$GP_FOLDER"))
 	PROJECT=$(basename "$GP_FOLDER")
+	#echo "GROUP=$GROUP PROJECT=$PROJECT"
+	GP_LIST="$GP_LIST $GROUP/$PROJECT"
+done;
+
+GP_LIST_UNIQ=$(echo $GP_LIST | tr " " "\n" | sort -u)
+#GP_FOLDER_LIST_UNIQ="${GP_FOLDER_LIST_UNIQ// /\\ }"
+GP_LIST_UNIQ_COUNT=$(echo $GP_LIST_UNIQ | wc -w)
+
+
+(($VERBOSE)) && echo "#"
+(($VERBOSE)) && echo "#[INFO] DEJAVU database group/project found [$GP_LIST_UNIQ_COUNT]:"
+#(($VERBOSE)) && echo $GP_FOLDER_LIST_UNIQ
+(($VERBOSE)) && for GP in $GP_LIST_UNIQ; do echo "#[INFO]    "$GP; done
+
+
+(($VERBOSE)) && echo "#"
+(($VERBOSE)) && echo "#[INFO] DEJAVU database VCF file pattern '$VCF_PATTERN'"
+
+
+# (($VERBOSE)) && echo "#"
+# (($VERBOSE)) && echo "#[INFO] DEJAVU database 'GROUP/PROJECT' process"
+
+
+#for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
+#for GP_FOLDER in $(find -L $TMP -mindepth 2 -maxdepth 2 -type d); do
+for GP_FOLDER in $GP_LIST_UNIQ; do
+
+
+	(($VERBOSE)) && echo "#"
+
+	#REPO=$(dirname $(dirname "$GP_FOLDER"))
+	GROUP=$(basename $(dirname "$GP_FOLDER"))
+	PROJECT=$(basename "$GP_FOLDER")
+
+	(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' process..."
+
+	#(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' file copy..."
+
+
+	for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
+
+		REPO=$(dirname $(dirname $GP_FOLDER))
+		GROUP_FOLDER=$(basename $(dirname $GP_FOLDER))
+		PROJECT_FOLDER=$(basename $GP_FOLDER)
+
+		if [ "$GROUP" == "$GROUP_FOLDER" ] && [ "$PROJECT" == "$PROJECT_FOLDER" ]; then
+
+			# Filter
+			SAMPLE_EXCLUDE_PARAM_GREP=""
+			for SAMPLE_FILTER in $SAMPLE_EXCLUDE; do
+
+				SAMPLE_FILTER_GROUP=$(echo $SAMPLE_FILTER | awk -F/ '{print $1}')
+				SAMPLE_FILTER_PROJECT=$(echo $SAMPLE_FILTER | awk -F/ '{print $2}')
+				SAMPLE_FILTER_RUN=$(echo $SAMPLE_FILTER | awk -F/ '{print $3}')
+				SAMPLE_FILTER_SAMPLE=$(echo $SAMPLE_FILTER | awk -F/ '{print $4}')
+
+				if [[ $GROUP =~ $SAMPLE_FILTER_GROUP ]] && [[ $PROJECT =~ $SAMPLE_FILTER_PROJECT ]]; then
+					if [ "$SAMPLE_EXCLUDE_PARAM_GREP" == "" ]; then
+						SEP=""
+					else
+						SEP="|"
+					fi;
+					SAMPLE_EXCLUDE_PARAM_GREP="$SAMPLE_EXCLUDE_PARAM_GREP$SEP$REPO/$GROUP/$PROJECT/$SAMPLE_FILTER_RUN/$SAMPLE_FILTER_SAMPLE"
+				fi;
+
+			done;
+
+			# No filter
+			if [ "$SAMPLE_EXCLUDE_PARAM_GREP" == "" ]; then
+				SAMPLE_EXCLUDE_PARAM_GREP="ALLSAMPLEARESELECTED"
+			fi;
+
+
+			# NB VARIANT
+			#NB_VCF=$(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN 2>/dev/null | grep -vE $SAMPLE_EXCLUDE_PARAM_GREP 2>/dev/null | wc -l)
+			VCF_LIST=$(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN 2>/dev/null | grep -vE $SAMPLE_EXCLUDE_PARAM_GREP 2>/dev/null)
+			NB_VCF=$(echo $VCF_LIST | wc -w)
+
+			(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' repository '$REPO' $NB_VCF VCF files found"
+
+			# If at least 1 vcf
+			if [ $NB_VCF -gt 0 ]; then
+				
+				> $MK.$GROUP.$PROJECT.log
+				> $MK.$GROUP.$PROJECT.err
+
+				# TMP folder creation
+				mkdir -p $TMP/$GROUP/$PROJECT
+				#cp -f $(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN) $TMP/$GROUP/$PROJECT/ 2>/dev/null
+				#cp -f $(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN | grep -vE $SAMPLE_EXCLUDE_PARAM_GREP) $TMP/$GROUP/$PROJECT/ 2>/dev/null
+				cp -f $VCF_LIST $TMP/$GROUP/$PROJECT/ 2>/dev/null
+				
+			fi;
+
+		fi;
+
+	done;
+
+	NB_VCF_FOUND=$(ls $TMP/$GROUP/$PROJECT/*.vcf.gz 2>/dev/null | wc -w)
+	(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' $NB_VCF_FOUND VCF files copied (some files/samples may be found multiple times)"
+
+
+	#(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' generation process..."
 
 	NB_VCF=$(ls -l $TMP/$GROUP/$PROJECT/* 2>/dev/null | wc -l);
 	#echo "NBVCF: $NB_VCF"; exit 0;
@@ -781,7 +884,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			# Minimum VCF
 			echo "$TMP/$GROUP/$PROJECT/dejavu.simple.vcf: $VCFGZ_LIST" >> $MK
 			if [ $VCFGZ_NB -gt 1 ]; then
-				echo "	$BCFTOOLS merge --force-samples $TMP/$GROUP/$PROJECT/*.simple.vcf.gz | $BCFTOOLS norm -m -any | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
+				echo "	$BCFTOOLS merge --force-samples $TMP/$GROUP/$PROJECT/*.simple.vcf.gz | $BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
 			else
 				echo "	$BCFTOOLS norm -m -any $VCFGZ_LIST | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
 			fi;
@@ -924,6 +1027,8 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 				# SAMPLES
 				NB_SAMPLES=$(echo $(grep "^#CHROM" $TMP/$GROUP/$PROJECT/dejavu.vcf | wc -w)" - 9" | bc)
 				NB_VARIANTS=$(grep -cv "^#" $TMP/$GROUP/$PROJECT/dejavu.vcf)
+				#NB_SAMPLES=$(echo $($BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz | grep "^#CHROM" | wc -w)" - 9" | bc)
+				#NB_VARIANTS=$($BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz | grep -cv "^#")
 				
 				echo "### Number of samples: $NB_SAMPLES" >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
 				echo "### Number of variants: $NB_VARIANTS" >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
@@ -1007,9 +1112,6 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 					' > $DEJAVU/STARK.database
 				fi;
 
-				# CLeaning
-				rm -rf $TMP/$GROUP/$PROJECT
-
 
 			fi;
 		
@@ -1020,6 +1122,9 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 		(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' without VCF files"
 
 	fi;
+
+	# CLeaning
+	rm -rf $TMP/$GROUP/$PROJECT
 
 done
 
