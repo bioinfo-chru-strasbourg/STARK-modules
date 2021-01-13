@@ -843,7 +843,7 @@ for GP_FOLDER in $GP_FOLDER_LIST_UNIQ; do
 			# snpEff
 			if [ "$SNPEFF" != "" ] && [ -e $SNPEFF ]; then
 				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
-						$JAVA -Xmx4G -jar $SNPEFF -i vcf -classic -formatEff -o vcf $ASSEMBLY $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -stats $TMP/$GROUP/$PROJECT/dejavu.stats.snpeff.html -dataDir $SNPEFF_DATABASES > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
+						$JAVA -Xmx4G -jar $SNPEFF -i vcf -classic -formatEff -o vcf $ASSEMBLY $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -t -stats $TMP/$GROUP/$PROJECT/dejavu.stats.snpeff.html -dataDir $SNPEFF_DATABASES > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
 					" >> $MK
 			fi;
 
