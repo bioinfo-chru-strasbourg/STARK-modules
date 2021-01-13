@@ -93,6 +93,46 @@ def get_sample_list_from_samplesheet(samplesheetPath):
 			sampleList[i] = sampleList[i].replace(" ", "_")
 	return sampleList
 
+# def getDescriptionFromSample(sample, runDir):
+	# samplesheetPath = find_any_samplesheet(runDir)
+	# assert samplesheetPath != "NO_SAMPLESHEET_FOUND", \
+			# "[ERROR] find_any_samplesheet() couldn't find any samplesheet. Check if the --fromResultDir argument is set correctly."
+	# inDataTable = False
+	# description = []
+	# with open(samplesheetPath, "r") as f:
+			# for l in f:
+				# if not inDataTable:
+					# if l.startswith("Sample_ID,Sample_Name,"):
+						# inDataTable = True
+						# DescriptionIndex = l.strip().split(",").index("Description")
+				# else:
+					# if sample in l:
+						# description.append(l.strip().split(",")[DescriptionIndex])
+	# return description
+
+# def getPool(description, sexTag):
+	# if re.search("APP#[A-Z0-9]*.[A-Z0-9]*#POOL", description) and sexTag in description:
+		# return True
+	# else:
+		# return False
+
+def is_pool(runDir, sample, sexTag):
+	"""
+	checks if sample is a pool of samples of given sex according to sample tag file
+	"""
+	isPool = False
+	correctSex = False
+	with open(osj(runDir, sample, sample+".tag"), "r") as f:
+		for l in f: 
+			if "#POOL" in l:
+				isPool = True
+			if sexTag in l:
+				correctSex = True
+	if isPool and correctSex:
+		return True
+	else:
+		return False
+
 def main(args):
 	dockerOutputDir = "/app/res"
 	# dockerOutputDir = osj(args.runDir,"res")
@@ -115,10 +155,10 @@ def main(args):
 			bam = osj(args.runDir, s, "STARK", s+".bwamem.bam")
 			# tagFile = osj(args.runDir, s, s+".tag")
 			vcfList.append(vcf)
-			if re.match("(POOL_[A-Z0-9]*_M_[0-9]*)", s):
+			if is_pool(args.runDir, s, "SEX#M"):
 				assert poolMStr == "init", "[ERROR] More than one sample is named POOL_([A-Z]*)_M_([0-9]*) in the samplesheet"
 				poolMStr = "POOL_M:"+vcf+":"+bam
-			if re.match("(POOL_[A-Z0-9]*_F_[0-9]*)", s):
+			if is_pool(args.runDir, s, "SEX#F"):
 				assert poolFStr == "init", "[ERROR] More than one sample is named POOL_([A-Z]*)_F_([0-9]*) in the samplesheet"
 				poolFStr = "POOL_F:"+vcf+":"+bam
 				bed = osj(args.runDir, s, "STARK", s+".bed")
