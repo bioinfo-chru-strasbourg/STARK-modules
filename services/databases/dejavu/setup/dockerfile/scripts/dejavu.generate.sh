@@ -804,7 +804,7 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 			VCF_LIST=$(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN 2>/dev/null | grep -vE $SAMPLE_EXCLUDE_PARAM_GREP 2>/dev/null)
 			NB_VCF=$(echo $VCF_LIST | wc -w)
 
-			(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' repository '$REPO' $NB_VCF VCF files found"
+			(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' $NB_VCF VCF files found in repository '$REPO'"
 
 			# If at least 1 vcf
 			if [ $NB_VCF -gt 0 ]; then
@@ -816,7 +816,8 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 				mkdir -p $TMP/$GROUP/$PROJECT
 				#cp -f $(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN) $TMP/$GROUP/$PROJECT/ 2>/dev/null
 				#cp -f $(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN | grep -vE $SAMPLE_EXCLUDE_PARAM_GREP) $TMP/$GROUP/$PROJECT/ 2>/dev/null
-				cp -f $VCF_LIST $TMP/$GROUP/$PROJECT/ 2>/dev/null
+				#cp -f $VCF_LIST $TMP/$GROUP/$PROJECT/ 2>/dev/null
+				cp -su $VCF_LIST $TMP/$GROUP/$PROJECT/ 2>/dev/null
 				
 			fi;
 
@@ -842,11 +843,23 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 
 			# MK files
 			> $MK
+
+			# TABIX
 			echo "%.vcf.gz.tbi: %.vcf.gz
 				$TABIX $<
 
 			" > $MK
 
+			# EMPTY
+			echo "%.empty.vcf:
+				# Header
+				echo '##fileformat=VCFv4.1' > \$@;
+				# Head first line
+				echo '#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO' >> \$@;
+
+			" > $MK
+
+			# VCF fix and simplify
 			VCFGZ_LIST=""
 			#for VCF in $(ls $TMP/$GROUP/$PROJECT/*); do
 			VCFGZ_NB=0
@@ -854,19 +867,24 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 				SAMPLE_NAME=$(basename $VCF | cut -d. -f1)
 				#echo "VCF: "$VCF
 				if [ -s $VCF ] && (($(grep ^# -cv $VCF))); then
-					echo "$VCF.simple.vcf.gz: $VCF
+					echo "$VCF.simple.vcf.gz: $VCF $VCF.empty.vcf
 						mkdir $<.sort.
-						#$JAVA -jar $PICARD FixVcfHeader -I $< -O $<.tmp.fixed.vcf;
-						#cp $< $<.tmp.fixed.vcf;
-						#zcat $<.tmp.fixed.vcf | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g > $<.tmp.fixed2.vcf;
-						zcat $< | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g | $BCFTOOLS sort -T $<.sort2. > $<.tmp.fixed2.vcf;
+						if ! $JAVA -jar $PICARD FixVcfHeader -I $< -O $<.tmp.fixed.vcf; then \
+							cp $VCF.empty.vcf $<.tmp.fixed.vcf; \
+						else \
+							echo '#[ERROR] VCF  not well-formed for $VCF' ; \
+						fi;
+						if ! cat $<.tmp.fixed.vcf | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g | $BCFTOOLS sort -T $<.sort2. > $<.tmp.fixed2.vcf; then \
+							cp $VCF.empty.vcf $<.tmp.fixed2.vcf; \
+						else \
+							echo '#[ERROR] VCF not well-formed for $VCF' ; \
+						fi;
 						$BGZIP -c $<.tmp.fixed2.vcf > $<.tmp.fixed.vcf.gz;
 						$TABIX $<.tmp.fixed.vcf.gz
 						if $BCFTOOLS annotate -x FILTER,QUAL,ID,INFO $<.tmp.fixed.vcf.gz 1>/dev/null 2>/dev/null; then \
 							$BCFTOOLS annotate -x FILTER,QUAL,ID,INFO $<.tmp.fixed.vcf.gz | $BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +fixploidy  -- -f 2 | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS sort -T $<.sort. -o \$@ -O z 2>/dev/null; \
 						else \
-							echo '##fileformat=VCFv4.1' > \$@.tmp; \
-							echo '#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	$SAMPLE_NAME' >> \$@.tmp; \
+							cp $VCF.empty.vcf \$@.tmp; \
 							$BGZIP -c \$@.tmp > \$@; \
 							rm -rf \$@.tmp; \
 						fi;
@@ -878,6 +896,10 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 					#| sed s/ID=PL,Number=G/ID=PL,Number=./gi ,^FORMAT/GT
 				fi;
 			done
+
+							#echo '#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	$SAMPLE_NAME' >> $<.tmp.fixed2.vcf; \
+							#echo '##fileformat=VCFv4.1' > $<.tmp.fixed2.vcf; \
+							#echo '#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO' >> $<.tmp.fixed2.vcf; \
 
 			#echo $VCFGZ_LIST > $TMP/$GROUP/$PROJECT/VCF_LIST
 			
