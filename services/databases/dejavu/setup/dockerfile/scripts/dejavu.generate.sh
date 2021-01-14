@@ -941,7 +941,7 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 			# Annotation
 			HOWARD_split=$(echo " ( 10000 / sqrt($NB_VCF+1) ) + 1 " | bc)	# Prevent high memory 
 			if [ "$DEJAVU_ANNOTATION" != "" ]; then
-				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz.tbi
+				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz.tbi
 					$BCFTOOLS view $< | cut -f1-8 > $<.reduced.vcf
 					+$HOWARD --input=$<.reduced.vcf --output=\$@.tmp.tmp.vcf --config=$HOWARD_CONFIG --config_annotation=$HOWARD_CONFIG_ANNOTATION --annotation=$DEJAVU_ANNOTATION --calculation=$DEJAVU_CALCULATION --nomen_fields=$DEJAVU_NOMEN_FIELDS --annovar_folder=$ANNOVAR --annovar_databases=$ANNOVAR_DATABASES --snpeff_jar=$SNPEFF --snpeff_databases=$SNPEFF_DATABASES --multithreading --threads=$THREADS --snpeff_threads=$THREADS --tmp=$TMP_FOLDER_TMP --env=$CONFIG_TOOLS
 					$BCFTOOLS sort -T $<.sort.1. \$@.tmp.tmp.vcf > \$@.tmp.tmp.tmp.vcf
@@ -959,18 +959,29 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 				" >> $MK
 				
 			else
-				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
+				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
 					cp $TMP/$GROUP/$PROJECT/dejavu.simple.vcf $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf
 				" >> $MK
 			fi;
 
 
-			# snpEff
+			# snpEff classic
 			if [ "$SNPEFF" != "" ] && [ -e $SNPEFF ]; then
-				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
-						$JAVA -Xmx4G -jar $SNPEFF -i vcf -classic -formatEff -o vcf $ASSEMBLY $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz -t -stats $TMP/$GROUP/$PROJECT/dejavu.stats.snpeff.html -dataDir $SNPEFF_DATABASES > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
+				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz.tbi
+						$JAVA -Xmx4G -jar $SNPEFF -i vcf -classic -formatEff -o vcf $ASSEMBLY $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz -t -stats $TMP/$GROUP/$PROJECT/dejavu.stats.snpeff.html -dataDir $SNPEFF_DATABASES > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
+					" >> $MK
+			else
+				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
+						$BCFTOOLS view $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
 					" >> $MK
 			fi;
+
+			# Annotated
+			echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz.tbi $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz.tbi
+				$BCFTOOLS concat $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz --allow-overlaps --threads $THREADS > $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf
+			" >> $MK
+
+
 
 			# echo "$TMP/$GROUP/$PROJECT/VCF_LIST: $VCFGZ_LIST
 			# ls $^ > $TMP/$GROUP/$PROJECT/VCF_LIST
