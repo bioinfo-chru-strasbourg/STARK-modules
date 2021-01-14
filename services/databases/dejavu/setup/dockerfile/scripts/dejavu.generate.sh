@@ -859,7 +859,7 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 						#$JAVA -jar $PICARD FixVcfHeader -I $< -O $<.tmp.fixed.vcf;
 						#cp $< $<.tmp.fixed.vcf;
 						#zcat $<.tmp.fixed.vcf | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g > $<.tmp.fixed2.vcf;
-						zcat $< | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g > $<.tmp.fixed2.vcf;
+						zcat $< | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g | $BCFTOOLS sort -T $<.sort2. > $<.tmp.fixed2.vcf;
 						$BGZIP -c $<.tmp.fixed2.vcf > $<.tmp.fixed.vcf.gz;
 						$TABIX $<.tmp.fixed.vcf.gz
 						if $BCFTOOLS annotate -x FILTER,QUAL,ID,INFO $<.tmp.fixed.vcf.gz 1>/dev/null 2>/dev/null; then \
