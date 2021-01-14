@@ -13,6 +13,7 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import doctest
 import glob
 import hashlib
 import json
@@ -128,7 +129,13 @@ def find_any_samplesheet(runDir, fromResDir = False):
 			return ss
 	return "NO_SAMPLESHEET_FOUND"
 
-def checkTags(tag, sampleTagsList, analysisTagsList):
+def deprecated_checkTags(tag, sampleTagsList, analysisTagsList):
+	"""
+	Deprecated because:
+	- not removing "!" at the beginning of tags
+	- "in" instead of ==
+	- no separation of tags
+	"""
 	if tag.startswith("!"):
 		for t in sampleTagsList:
 			if not tag in t:
@@ -145,6 +152,32 @@ def checkTags(tag, sampleTagsList, analysisTagsList):
 			if tag in t:
 				return True
 		return False
+		
+def checkTags(tag, sampleTagsList, analysisTagsList):
+	"""
+	>>> checkTags("!POOL", ['SEX#F!PLUGAPP#POOL!', 'SEX#F!', 'SEX#M!PLUGAPP#POOL!', 'SEX#M!', 'SEX#F!'], ['APP#DIAG.DI', 'APP#DIAG.DI', 'APP#DIAG.DI', 'APP#DIAG.DI', 'APP#DIAG.DI'])
+	False
+	>>> checkTags("POOL", ['SEX#F!PLUGAPP#POOL!', 'SEX#F!', 'SEX#M!PLUGAPP#POOL!', 'SEX#M!', 'SEX#F!'], ['APP#DIAG.DI', 'APP#DIAG.DI', 'APP#DIAG.DI', 'APP#DIAG.DI', 'APP#DIAG.DI'])
+	True
+	
+	The above works with python's doctest library. See here https://docs.python.org/3/library/doctest.html
+	"""
+	tagsToCheck = [] #fusion of all tags and types from sampleTagsList and analysisTagsList
+	for tagsList in (sampleTagsList, analysisTagsList):
+		for t in tagsList:
+			if t.endswith("!"):
+				t = t[:-1] #remove the ending "!" to avoid having an empty value in tagsToCheck
+			for v in re.split("[!#]", t): #split by tag and by separator
+				tagsToCheck.append(v)
+	#resolution
+	if tag.startswith("!"):
+		tag = tag[1:]
+		if tag in tagsToCheck:
+			return False
+	else:
+		if tag not in tagsToCheck:
+			return False
+	return True
 
 def getAnalysisTagsFromSampleList(sampleList,run):
 	analysisTagsList = []
@@ -198,6 +231,7 @@ def checkTriggers(jconfig, serviceName, run):
 				return True
 			else: 
 				return False
+		
 		elif key == "file":
 			listNotFile = []
 			listFile = []
@@ -222,6 +256,7 @@ def checkTriggers(jconfig, serviceName, run):
 				return True
 			else:
 				return False
+		
 		elif key == "tags":
 			listTag = []
 			for tag in jconfig[key]:
@@ -231,34 +266,54 @@ def checkTriggers(jconfig, serviceName, run):
 				return True
 			else:
 				return False
-		elif key == "group" or key == "project":
-			# print(run)
-			if not sampleProject:
-				sampleProject = get_sample_project_from_samplesheet(find_any_samplesheet(run))
-				# print(sampleProject)
+		
+		elif key in("group", "project"):
 			if key == "group":
-				listNotGroup = []
-				listGroup = []
-				for group in jconfig[key]:
-					if group.startswith("!"):
-						listNotGroup.append(not checkGroup(group[1:], sampleProject))
-					else:
-						listGroup.append(checkGroup(group, sampleProject))
-				# print(listNotGroup)
-				# print(listGroup)
-				if any(listGroup) and all(listNotGroup):
-					return True
-				else:
-					return False
+				runGroup = os.path.abspath(run).split("/")[-2]
 			elif key == "project":
-				listProject = []
-				for project in jconfig[key]:
-					listProject.append(checkProjects(project, sampleProject))
-				# print(listProject)
-				if any(listProject):
-					return True
+				runGroup = os.path.abspath(run).split("/")[-1]
+			notGroupList = []
+			groupList = []
+			for g in jconfig[key]:
+				if g.startswith("!"):
+					notGroupList.append(g[:-1])
 				else:
-					return False
+					groupList.append(g)
+			if runGroup in notGroupList:
+				return False
+			elif runGroup in groupList:
+				return True
+			else:
+				return False
+				
+		# elif key == "group" or key == "project":
+			# # print(run)
+			# if not sampleProject:
+				# sampleProject = get_sample_project_from_samplesheet(find_any_samplesheet(run))
+				# # print(sampleProject)
+			# if key == "group":
+				# listNotGroup = []
+				# listGroup = []
+				# for group in jconfig[key]:
+					# if group.startswith("!"):
+						# listNotGroup.append(not checkGroup(group[1:], sampleProject))
+					# else:
+						# listGroup.append(checkGroup(group, sampleProject))
+				# # print(listNotGroup)
+				# # print(listGroup)
+				# if any(listGroup) and all(listNotGroup):
+					# return True
+				# else:
+					# return False
+			# elif key == "project":
+				# listProject = []
+				# for project in jconfig[key]:
+					# listProject.append(checkProjects(project, sampleProject))
+				# # print(listProject)
+				# if any(listProject):
+					# return True
+				# else:
+					# return False
 
 def getDataFromJson(jsonFile):
 	with open(jsonFile,'r') as jsonAnalysisFile:
@@ -319,6 +374,7 @@ def myoptions():
 	return parser.parse_args()
 
 if __name__ == "__main__":
+	doctest.testmod()
 	args = myoptions()
 	groupInputList = args.listInput.split(",")
 	main(groupInputList, args.serviceName, args.jsonFile, args.days, args.delay, args.containersFile, args.configFile)
