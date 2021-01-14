@@ -978,7 +978,6 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 
 			# Annotated
 			echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz.tbi $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz.tbi
-				#$BCFTOOLS concat $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz --allow-overlaps --threads $THREADS > $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf
 				$BCFTOOLS annotate -a $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz -c EFF $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz --threads $THREADS --single-overlaps -k > $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf
 			" >> $MK
 
