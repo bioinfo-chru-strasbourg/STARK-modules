@@ -269,9 +269,9 @@ def checkTriggers(jconfig, serviceName, run):
 		
 		elif key in("group", "project"):
 			if key == "group":
-				runGroup = os.path.abspath(run).split("/")[-2]
+				runGroup = os.path.abspath(run).split("/")[-3]
 			elif key == "project":
-				runGroup = os.path.abspath(run).split("/")[-1]
+				runGroup = os.path.abspath(run).split("/")[-2]
 			notGroupList = []
 			groupList = []
 			for g in jconfig[key]:
