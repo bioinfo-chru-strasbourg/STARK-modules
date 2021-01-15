@@ -869,15 +869,18 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 				if [ -s $VCF ] && (($(grep ^# -cv $VCF))); then
 					echo "$VCF.simple.vcf.gz: $VCF $VCF.empty.vcf
 						mkdir $<.sort.
-						if ! $JAVA -jar $PICARD FixVcfHeader -I $< -O $<.tmp.fixed.vcf; then \
-							cp $VCF.empty.vcf $<.tmp.fixed.vcf; \
+						# if $JAVA -jar $PICARD FixVcfHeader -I $< -O $<.tmp.fixed.vcf; then \
+						# 	echo '#[INFO] VCF well-formed for $< (FixVcfHeader)' ; \
+						# else \
+						# 	echo '#[ERROR] VCF not well-formed for $< (FixVcfHeader)' ; \
+						# 	cp $VCF.empty.vcf $<.tmp.fixed.vcf; \
+						# fi;
+						ln -s $< $<.tmp.fixed.vcf;
+						if cat $<.tmp.fixed.vcf | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g | $BCFTOOLS sort -T $<.sort2. > $<.tmp.fixed2.vcf; then \
+							echo '#[INFO] VCF well-formed for $VCF (sedBCFToolsSort)' ; \
 						else \
-							echo '#[ERROR] VCF  not well-formed for $VCF' ; \
-						fi;
-						if ! cat $<.tmp.fixed.vcf | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g | $BCFTOOLS sort -T $<.sort2. > $<.tmp.fixed2.vcf; then \
+							echo '#[ERROR] VCF not well-formed for $VCF (sedBCFToolsSort)' ; \
 							cp $VCF.empty.vcf $<.tmp.fixed2.vcf; \
-						else \
-							echo '#[ERROR] VCF not well-formed for $VCF' ; \
 						fi;
 						$BGZIP -c $<.tmp.fixed2.vcf > $<.tmp.fixed.vcf.gz;
 						$TABIX $<.tmp.fixed.vcf.gz
