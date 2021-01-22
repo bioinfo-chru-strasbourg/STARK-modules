@@ -56,65 +56,78 @@ function usage {
 	echo "# --application=<STRING|FILE>                   APP name or APP file configuration of the APPLICATION.";
 	echo "#                                               Must be in the STARK APPS folder if relative path";
 	echo "#                                               Default: 'default.app'";
-	echo "# --app_folder|--application_folder             STARK Application folder";
+	echo "# --app_folder|--application_folder=<FOLDER>    STARK Application folder";
 	echo "#                                               Used to detect STARK Repository folders";
 	echo "#                                               Default: default STARK Application folder";
-	echo "# -r|--repo_folder|--repository_folder          STARK Repository folders";
+	echo "# -r|--repo_folder|--repository_folder=<LIST>   STARK Repository folders";
 	echo "#                                               List of STARK Repository folders containing group and project results";
 	echo "#                                               Format: 'folder1[,folder2...]'";
 	echo "#                                               Default: default STARK Repository folder";
-	echo "# --dejavu_folder                               Output DejaVu folder";
+	echo "# --dejavu_folder=<FOLDER>                      Output DejaVu folder";
 	echo "#                                               Default: '.'";
-	echo "# --dejavu_release                              Output DejaVu release";
+	echo "# --dejavu_release=<STRING>                     Output DejaVu release";
 	echo "#                                               Default: 'date +%Y%m%d-%H%M%S'";
-	echo "# --dejavu_annotation                           Output VCF DejaVu annotation";
+	# echo "# --dejavu_release_latest                       Define DejaVu release as latest (symlink, previous removed)";
+	# echo "#                                               Default: no";
+	echo "# --dejavu_release_symlink=<LIST>               Create symlink to DejaVu release (symlink, previous removed)";
+	echo "#                                               Format: 'symlink1[,symlink2]'";
+	echo "#                                               Example: 'latest,current'";
+	echo "#                                               Default: ''";
+	echo "# --dejavu_previous_release=<STRING>            Previous DejaVu release";
+	echo "#                                               In order to detect changes (new vcf files), usually 'latest' release ";
+	echo "#                                               Default: '' (full generation of DejaVu)";
+	echo "# --dejavu_previous_copy_mode=<STRING>          Previous DejaVu release copy mode";
+	echo "#                                               Previous DejaVu will be copied (presistence) or linked (low disk space)";
+	echo "#                                               Options: 'symlink', 'copy'";
+	echo "#                                               Default: 'symlink'";
+	echo "# --dejavu_annotation=<LIST>                    Output VCF DejaVu annotation";
 	echo "#                                               Default: 'HOWARD_ANNOTATION_REPORT' STARK parameter";
 	echo "#                                               Example: 'ALL,snpeff' for all annotations";
 	echo "#                                               Tip: use 'none' for no annotation, 'ALL,snpeff,snpeff_hgvs' for ALL annotation";
-	echo "# --dejavu_calculation                          Output VCF DejaVu calculation";
+	echo "# --dejavu_calculation=<LIST>                   Output VCF DejaVu calculation";
 	echo "#                                               Default: 'HOWARD_CALCULATION_REPORT' STARK parameter";
 	echo "#                                               Example: 'VAF,VAF_STATS,DP_STATS,VARTYPE,NOMEN'";
 	echo "#                                               Tip: use 'none' for no calculation";
-	echo "# --dejavu_nomen_fields                         Output VCF DejaVu NOMEN field";
+	echo "# --dejavu_nomen_fields=<LIST>                  Output VCF DejaVu NOMEN field";
 	echo "#                                               Default: 'HOWARD_NOMEN_FIELDS' STARK parameter";
 	echo "#                                               Example: 'hgvs', 'snpeff_hgvs'";
-	echo "# --dejavu_vcfstats                             Output VCFStats";
+	echo "# --dejavu_vcfstats=<STRING>                    Output VCFStats";
 	echo "#                                               Default: no VCFStats output";
 	echo "#                                               Example: 'hgvs', 'snpeff_hgvs'";
-	echo "# --sample_exclude                              Exclude sample pattern (regexp)";
+	echo "# --sample_exclude=<LIST>                       Exclude sample pattern (regexp)";
 	echo "#                                               Format: '<group>/<project>/<sample_pattern>[,<group>/<project>/<run>/<sample_pattern>]'";
 	echo "#                                               Example: 'GENOME/GERMLINE/.*/.*CORIEL.*' to exclude all *CORIEL* samples";
 	echo "#                                               Default: ''";
-	echo "# --sample_exclude_file                         Exclude sample pattern (regexp) within a file";
+	echo "# --sample_exclude_file=<FILE>                  Exclude sample pattern (regexp) within a file";
 	echo "#                                               Format: same as --sample_exclude parameter";
 	echo "#                                               Default: <STARK_FOLDER_CONFIG>/dejavu/sample_exclude.conf'";
-	echo "# --group_project_list                          Include only group/project list (shell like)";
+	echo "# --group_project_list=<LIST>                   Include only group/project list (shell like)";
 	echo "#                                               These folders must be well structured as group/project within repository folders";
 	echo "#                                               Format: '<group>/<project>[,<group>/<project>]'";
 	echo "#                                               Example: 'GENOME/*' to include only run from group GENOME and all project";
 	echo "#                                               Default: '' (empty), filter will be used";
-	echo "# --group_project_list_file                     Include only group/project/run list (shell like) within a file";
+	echo "# --group_project_list_file=<FILE>              Include only group/project/run list (shell like) within a file";
 	echo "#                                               Format: same as --group_project_list parameter";
 	echo "#                                               Default: <STARK_FOLDER_CONFIG>/dejavu/group_project_list.conf'";
-	echo "# --group_project_filter                        Include only group/project/run pattern (shell like)";
+	echo "# --group_project_filter=<LIST>                 Include only group/project/run pattern (shell like)";
 	echo "#                                               These patterns will be used to detect well structured folders, as group/project, within repository folders";
 	echo "#                                               Format: '<group>/<project>/<run>[,<group>/<project>/<run>]'";
 	echo "#                                               Example: 'GENOME/*/19*' to include only run of year 2019 from group GENOME and all project";
 	echo "#                                               Default: '*/*/*', all groups, projects and runs";
-	echo "# --group_project_filter_file                   Include only group/project/run pattern (shell like) within a file";
+	echo "# --group_project_filter_file=<FILE>            Include only group/project/run pattern (shell like) within a file";
 	echo "#                                               Format: same as --group_project_filter parameter";
 	echo "#                                               Default: <STARK_FOLDER_CONFIG>/dejavu/group_project_filter.conf'";
-	echo "# --tmp                                         Temporary folder";
+	echo "# --tmp=<FOLDER>                                Temporary folder";
 	echo "#                                               Default: default STARK Temporary folder";
-	echo "# --bcftools                                    BCFTools application binary";
+	echo "# --bcftools=<FILE>                             BCFTools application binary";
 	echo "#                                               Default: default STARK configuration or 'bcftools'";
-	echo "# --tabix                                       TABix application binary";
+	echo "# --tabix=<FILE>                                TABix application binary";
 	echo "#                                               Default: default STARK configuration or 'tabix'";
-	echo "# --bgzip                                       BGZip application binary";
+	echo "# --bgzip=<FILE>                                BGZip application binary";
 	echo "#                                               Default: default STARK configuration or 'bgzip'";
-	echo "# --annovar                                     ANNOVAR application binary folder";
+	echo "# --annovar=<FILE>                              ANNOVAR application binary folder";
 	echo "#                                               Default: default STARK configuration or ''";
-	echo "# --vcfstats                                    VCFStats application jar";
+	echo "# --vcfstats=<FILE>                             VCFStats application jar";
 	echo "#                                               Default: default STARK configuration or '' or detected with wheris command";
 	echo "# --verbose                                     VERBOSE";
 	echo "# --debug                                       DEBUG";
@@ -131,7 +144,7 @@ header;
 # Getting parameters from the input
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ":" tells that the option has a required argument, "::" tells that the option has an optional argument, no ":" tells no argument
-ARGS=$(getopt -o "e:r:vdnh" --long "env:,app:,application:,app_folder:,application_folder:,repo_folder:,repository_folder:,dejavu_folder:,dejavu_release:,dejavu_annotation:,dejavu_calculation:,dejavu_nomen_fields:,dejavu_vcfstats,sample_exclude:,sample_exclude_file:,group_project_list:,group_project_list_file:,group_project_filter:,group_project_filter_file:,tmp:,bcftools:,tabix:,bgzip:,annovar:,vcfstats:,verbose,debug,release,help" -- "$@" 2> /dev/null)
+ARGS=$(getopt -o "e:r:vdnh" --long "env:,app:,application:,app_folder:,application_folder:,repo_folder:,repository_folder:,dejavu_folder:,dejavu_release:,dejavu_release_latest,dejavu_release_symlink:,dejavu_previous_release:,dejavu_previous_copy_mode:,dejavu_annotation:,dejavu_calculation:,dejavu_nomen_fields:,dejavu_vcfstats,sample_exclude:,sample_exclude_file:,group_project_list:,group_project_list_file:,group_project_filter:,group_project_filter_file:,tmp:,bcftools:,tabix:,bgzip:,annovar:,vcfstats:,verbose,debug,release,help" -- "$@" 2> /dev/null)
 
 eval set -- "$ARGS"
 while true
@@ -155,6 +168,22 @@ do
 			;;
 		--dejavu_release)
 			RELEASE="$2";
+			shift 2
+			;;
+		--dejavu_release_latest)
+			RELEASE_LATEST=1
+			shift 1
+			;;
+		--dejavu_release_symlink)
+			RELEASE_SYMLINK=$(echo "$2" | tr "," " ");
+			shift 2
+			;;
+		--dejavu_previous_release)
+			PREVIOUS_RELEASE="$2";
+			shift 2
+			;;
+		--dejavu_previous_copy_mode)
+			PREVIOUS_COPY_MODE="$2";
 			shift 2
 			;;
 		--dejavu_annotation)
@@ -329,6 +358,13 @@ fi;
 if [ -z "$RELEASE" ]; then
 	RELEASE=$(date +%Y%m%d-%H%M%S)
 fi;
+
+
+if [ -z "$PREVIOUS_COPY_MODE" ]; then
+	PREVIOUS_COPY_MODE="symlink"
+fi;
+
+
 
 
 
@@ -817,7 +853,7 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 				#cp -f $(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN) $TMP/$GROUP/$PROJECT/ 2>/dev/null
 				#cp -f $(find -L $GP_FOLDER/*/*/ -maxdepth 1 -name '*'$VCF_PATTERN -a ! -name '*.*-*'$VCF_PATTERN | grep -vE $SAMPLE_EXCLUDE_PARAM_GREP) $TMP/$GROUP/$PROJECT/ 2>/dev/null
 				#cp -f $VCF_LIST $TMP/$GROUP/$PROJECT/ 2>/dev/null
-				cp -su $VCF_LIST $TMP/$GROUP/$PROJECT/ 2>/dev/null
+				cp -sup $VCF_LIST $TMP/$GROUP/$PROJECT/ 2>/dev/null
 				
 			fi;
 
@@ -825,13 +861,16 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 
 	done;
 
+
+
 	NB_VCF_FOUND=$(ls $TMP/$GROUP/$PROJECT/*.vcf.gz 2>/dev/null | wc -w)
 	(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' $NB_VCF_FOUND VCF files copied (some files/samples may be found multiple times)"
 
 
 	#(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' generation process..."
 
-	NB_VCF=$(ls -l $TMP/$GROUP/$PROJECT/* 2>/dev/null | wc -l);
+	#NB_VCF=$(ls -l $TMP/$GROUP/$PROJECT/* 2>/dev/null | wc -l);
+	NB_VCF=$NB_VCF_FOUND;
 	#echo "NBVCF: $NB_VCF"; exit 0;
 
 	#(($VERBOSE)) && echo "#"
@@ -839,7 +878,83 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 
 	if (($NB_VCF)); then
 
-		if [ ! -s "$DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done" ]; then
+		# DEV
+
+		# CHECKSUM
+		CHECKSUM_FILE=$TMP/$GROUP/$PROJECT/dejavu.checksum
+		stat -c '%n %y %s' $TMP/$GROUP/$PROJECT/*.vcf.gz | while read line; do
+			basename "$line"
+		done | sha1sum | cut -d\  -f1 > $CHECKSUM_FILE
+		CHECKSUM=$(cat $CHECKSUM_FILE)
+
+		# stat -c '%n %y %s' $TMP/$GROUP/$PROJECT/*.vcf.gz | while read line; do
+		# 	basename "$line"
+		# done 
+		
+		CHECKSUM_DONE=0
+
+		if [ "$PREVIOUS_RELEASE" != "" ] && [ -e $DEJAVU/$PREVIOUS_RELEASE/vcf/$GROUP/$PROJECT/checksum ]; then
+
+			PREVIOUS_CHECKSUM_FILE=$DEJAVU/$PREVIOUS_RELEASE/vcf/$GROUP/$PROJECT/checksum
+			CHECKSUM_PREVIOUS=$(cat $PREVIOUS_CHECKSUM_FILE)
+
+			#stat -c "%y %s %n" $TMP/$GROUP/$PROJECT/*.vcf.gz 
+			#stat -c "%y %s %n" $TMP/$GROUP/$PROJECT/*.vcf.gz | sha1sum
+
+			#stat -c "%y %s %n" $TMP/$GROUP/$PROJECT/*.vcf.gz > $TMP/$GROUP/$PROJECT/checksum
+			#echo $TMP/$GROUP/$PROJECT/checksum
+			#cat $TMP/$GROUP/$PROJECT/checksum | sha1sum
+
+			#CHECKSUM=$(stat -c "%y %s %n" $TMP/$GROUP/$PROJECT/*.vcf.gz | sha1sum)
+			(($DEBUG)) && echo "PREVIOUS_RELEASE=$PREVIOUS_RELEASE"
+			(($DEBUG)) && echo "PREVIOUS_COPY_MODE=$PREVIOUS_COPY_MODE"
+			(($DEBUG)) && echo "CHECKSUM=$CHECKSUM"
+			(($DEBUG)) && echo "CHECKSUM_PREVIOUS=$CHECKSUM_PREVIOUS"
+			(($DEBUG)) && echo "PREVIOUS_COPY_MODE=$PREVIOUS_COPY_MODE"
+
+			if [ "$CHECKSUM" == "$CHECKSUM_PREVIOUS" ]; then
+				(($DEBUG)) && echo "[INFO] same checksum"
+
+
+				
+
+				SYMLINK_ERR=0
+				if [ "$PREVIOUS_COPY_MODE" == "symlink" ]; then
+					mkdir -p $DEJAVU/$RELEASE/vcf/$GROUP
+					if ! ln -s ../../../$(realpath $DEJAVU/$PREVIOUS_RELEASE/vcf/$GROUP/$PROJECT | rev | awk -F/ '{print $4}' | rev )/vcf/$GROUP/$PROJECT/ $DEJAVU/$RELEASE/vcf/$GROUP/$PROJECT; then
+						SYMLINK_ERR=1
+						PREVIOUS_COPY_MODE="copy"
+					fi;
+					
+				fi;
+
+				if [ "$PREVIOUS_COPY_MODE" == "copy" ]; then
+					mkdir -p $DEJAVU/$RELEASE/vcf/$GROUP/$PROJECT
+					cp -rp $DEJAVU/$PREVIOUS_RELEASE/vcf/$GROUP/$PROJECT/* $DEJAVU/$RELEASE/vcf/$GROUP/$PROJECT/
+				fi;
+
+				CHECKSUM_DONE=1
+				
+				(($VERBOSE)) && echo "#[INFO] DEJAVU database '$GROUP/$PROJECT' from previous release '$PREVIOUS_RELEASE' ('$PREVIOUS_COPY_MODE' copy mode)"
+
+			fi;
+
+
+			#RELEASE_PREVIOUS=latest
+			# Softlink
+			#ln -s ../../../$(realpath $DEJAVU/$RELEASE_PREVIOUS/vcf/$GROUP/$PROJECT | rev | awk -F/ '{print $4}' | rev )/vcf/$GROUP/$PROJECT $DEJAVU/$RELEASE/vcf/$GROUP/$PROJECT
+			# Copy
+			#cp -r $DEJAVU/$RELEASE_PREVIOUS/vcf/$GROUP/$PROJECT/* $DEJAVU/$RELEASE/vcf/$GROUP/$PROJECT/
+
+		fi;
+
+
+		#continue;
+
+
+
+
+		if [ ! -s "$DEJAVU_FOLDER_LOG/dejavu.$GROUP.$PROJECT.done" ] && ! (($CHECKSUM_DONE)); then
 
 			# MK files
 			> $MK
@@ -882,13 +997,13 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 							echo '#[ERROR] VCF not well-formed for $VCF (sedBCFToolsSort)' ; \
 							cp $VCF.empty.vcf $<.tmp.fixed2.vcf; \
 						fi;
-						$BGZIP -c $<.tmp.fixed2.vcf > $<.tmp.fixed.vcf.gz;
+						$BGZIP -c $<.tmp.fixed2.vcf -l 0 > $<.tmp.fixed.vcf.gz;
 						$TABIX $<.tmp.fixed.vcf.gz
 						if $BCFTOOLS annotate -x FILTER,QUAL,ID,INFO $<.tmp.fixed.vcf.gz 1>/dev/null 2>/dev/null; then \
 							$BCFTOOLS annotate -x FILTER,QUAL,ID,INFO $<.tmp.fixed.vcf.gz | $BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +fixploidy  -- -f 2 | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS sort -T $<.sort. -o \$@ -O z 2>/dev/null; \
 						else \
 							cp $VCF.empty.vcf \$@.tmp; \
-							$BGZIP -c \$@.tmp > \$@; \
+							$BGZIP -c \$@.tmp -l 0 > \$@; \
 							rm -rf \$@.tmp; \
 						fi;
 						$TABIX \$@;
@@ -924,7 +1039,7 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 			if (($DEJAVU_VCFSTATS )) && [ "$VCFSTATS" != "" ]; then
 				echo "$TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats.tar.gz: $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi
 					mkdir -p $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats
-					java -jar $VCFSTATS --inputFile $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz --outputDir $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats --referenceFile $GENOMES/current/$ASSEMBLY.fa -t $THREADS \$\$(bgzip -dc $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz |  perl -ne 'print \"\$\$1\n\" if /##INFO=<ID=(.*?),/' | awk '{print \"--infoTag \"\$\$1\":All\"}')
+					java -jar $VCFSTATS --inputFile $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz --outputDir $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats --referenceFile $GENOMES/current/$ASSEMBLY.fa -t $THREADS \$\$($BGZIP -dc $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz |  perl -ne 'print \"\$\$1\n\" if /##INFO=<ID=(.*?),/' | awk '{print \"--infoTag \"\$\$1\":All\"}')
 					tar -zvcf $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats.tar.gz $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats
 					rm -rf $TMP/$GROUP/$PROJECT/dejavu.stats.vcfstats
 				" >> $MK
@@ -948,7 +1063,7 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 					$BCFTOOLS view $< | cut -f1-8 > $<.reduced.vcf
 					+$HOWARD --input=$<.reduced.vcf --output=\$@.tmp.tmp.vcf --config=$HOWARD_CONFIG --config_annotation=$HOWARD_CONFIG_ANNOTATION --annotation=$DEJAVU_ANNOTATION --calculation=$DEJAVU_CALCULATION --nomen_fields=$DEJAVU_NOMEN_FIELDS --annovar_folder=$ANNOVAR --annovar_databases=$ANNOVAR_DATABASES --snpeff_jar=$SNPEFF --snpeff_databases=$SNPEFF_DATABASES --multithreading --threads=$THREADS --snpeff_threads=$THREADS --tmp=$TMP_FOLDER_TMP --env=$CONFIG_TOOLS
 					$BCFTOOLS sort -T $<.sort.1. \$@.tmp.tmp.vcf > \$@.tmp.tmp.tmp.vcf
-					$BGZIP -c \$@.tmp.tmp.tmp.vcf > \$@.tmp.tmp.tmp.vcf.gz
+					$BGZIP -c \$@.tmp.tmp.tmp.vcf -l 0 > \$@.tmp.tmp.tmp.vcf.gz
 					$TABIX \$@.tmp.tmp.tmp.vcf.gz
 					$BCFTOOLS merge $< \$@.tmp.tmp.tmp.vcf.gz | $BCFTOOLS sort -T $<.sort.2. > \$@.tmp.ann.vcf
 					+$HOWARD --input=\$@.tmp.ann.vcf --output=\$@.tmp.vcf --config=$HOWARD_CONFIG --config_annotation=$HOWARD_CONFIG_ANNOTATION --calculation=$DEJAVU_CALCULATION --nomen_fields=$DEJAVU_NOMEN_FIELDS --annovar_folder=$ANNOVAR --annovar_databases=$ANNOVAR_DATABASES --snpeff_jar=$SNPEFF --snpeff_databases=$SNPEFF_DATABASES --multithreading --threads=$THREADS --snpeff_threads=$THREADS --split=$HOWARD_split --tmp=$TMP_FOLDER_TMP --env=$CONFIG_TOOLS
@@ -980,6 +1095,7 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 			fi;
 
 			# Annotated
+			# TODO: check if EFF exists
 			echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz.tbi $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz.tbi
 				$BCFTOOLS annotate -a $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz -c EFF $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz --threads $THREADS --single-overlaps -k > $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf
 			" >> $MK
@@ -1116,6 +1232,8 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 				cp $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz.tbi $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.eff.vcf.gz.tbi
 				cp $TMP/$GROUP/$PROJECT/dejavu.annotated.tsv.gz $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/annotated.tsv.gz
 
+				cp $TMP/$GROUP/$PROJECT/dejavu.checksum $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/checksum
+				
 				mkdir -p $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/$DEJAVU_SUBFOLDER_STATS
 				cp -R $TMP/$GROUP/$PROJECT/dejavu.stats* $DEJAVU_FOLDER_VCF/$GROUP/$PROJECT/$DEJAVU_SUBFOLDER_STATS/
 
@@ -1183,9 +1301,15 @@ echo '
 
 
 # Latest symlink
-rm -f $DEJAVU/latest
-ln -s $RELEASE/ $DEJAVU/latest
+if (($RELEASE_LATEST)); then
+	rm -f $DEJAVU/latest
+	ln -s $RELEASE/ $DEJAVU/latest
+fi;
 
+for SL in $RELEASE_SYMLINK; do
+	rm -f $DEJAVU/$SL
+	ln -s $RELEASE/ $DEJAVU/$SL
+done;
 
 
 (($VERBOSE)) && echo "#"
