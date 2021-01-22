@@ -17,6 +17,7 @@ RUN yum -y update && yum -y install  epel-release && yum -y group install 'Devel
 					bzip2 bzip2-devel \
 					zlib2 zlib2-devel \
 					xz xz-devel \
+					glibc.i686 \
 					unzip wget make \
 					git libjpeg-turbo-devel \
 					openssl-devel libffi-devel \
@@ -76,9 +77,11 @@ RUN mkdir /tools/alamut_batch; \
 	rm -rf download.php?product=Alamut-batch-standalone\&platform=\&OS=Linux\&version=1.11; \
 	ln -s alamut-batch-standalone-1.11 current; \
 	cd current; \
-	mv ancillary ancillary.original;
+	mv ancillary ancillary.original; \
+	mkdir ancillary;
 
-COPY src/ancillary /tools/alamut_batch/current/
+COPY src/ancillary/ /tools/alamut_batch/current/ancillary/
+RUN chmod -R 777 /tools/alamut_batch/current/ancillary/
 ARG ALAMUT=/tools/alamut_batch/current/
 ENV ALAMUT $ALAMUT
 
