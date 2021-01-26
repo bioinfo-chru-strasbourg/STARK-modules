@@ -30,6 +30,8 @@ services:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_SERVICES}:rw
             # GEMINI
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_PARAM_GEMENI_DATABASES_FOLDER_HOST}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_PARAM_GEMENI_DATABASES_FOLDER_INNER}:rw
+        networks: 
+            - stark_stark
 
     # cli
     stark-module-databases-submodule-gemini-service-cli:
@@ -66,7 +68,7 @@ services:
         # ports: 
         #     - 4309:8088
         networks: 
-            - ${DOCKER_STARK_MAIN_NETWORK}
+            - stark_stark
 
     # # web
     # stark-module-databases-submodule-gemini-service-cli-web:
@@ -136,7 +138,7 @@ services:
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_GEMENI_DATABASES_FOLDER_HOST}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_GEMENI_DATABASES_FOLDER_INNER}:rw
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_GEMENI_DB_FOLDER_HOST}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_GEMENI_DB_FOLDER_INNER}:rw
             # DEV
-            - /Users/lebechea/BIOINFO/git/STARK-modules/services/databases/gemini/dashboard/dockerfile/www:/app
+            #- /Users/lebechea/BIOINFO/git/STARK-modules/services/databases/gemini/dashboard/dockerfile/www:/app
         networks:
             - stark_stark
 
