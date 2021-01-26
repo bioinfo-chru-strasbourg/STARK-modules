@@ -245,13 +245,16 @@ if (1) {
 			};
 		};
 
+
+
 		#echo $folder_databases."/".$folder_databases_subfolder_gemini."/".$default_release."<br>";
 
-	foreach (glob ($folder_databases."/".$folder_databases_subfolder_gemini."/".$default_release."/db/{*,*/*,*/*/*}.db", GLOB_BRACE ) as $key => $db) {
+	foreach (glob ($folder_databases."/".$folder_databases_subfolder_gemini."/".$default_release."/{*,*/*,*/*/*}.db", GLOB_BRACE ) as $key => $db) {
 
 			# group/project
 			$db_filename=basename($db);
-			#$group=basename(dirname($db));
+			$project=basename(dirname($db));
+			$group=basename(dirname(dirname($db)));
 
 
 			# DB
@@ -311,7 +314,8 @@ if (1) {
 								<span class="mbr-iconfont mbri-database" style="color: rgb(20, 157, 204); fill: rgb(20, 157, 204);"></span>
 							</div>
 							<h3 class="card-title media-body py-3 mbr-fonts-style display-7">
-								'.$db_filename.'
+								'.$group.'/'.$project.'
+								
 							</h3>
 						</div>
 					</a>
@@ -319,15 +323,7 @@ if (1) {
 					<div class="card-box">
 						<br>
 						<p class="mbr-text mbr-fonts-style display-7">
-						<b>'.$nb_variants.'</b> variants within <b>'.$nb_samples.'</b> samples
-						<br>
-						Statistics '.$link_download_stats.'
-						<br>
-						
-						Plugins '.$PLUGINS_LINKS["project"].'
-						<br>
-						Files '.$link_download.'
-							
+							'.$db_filename.'
 						</p>
 						
 					</div>
