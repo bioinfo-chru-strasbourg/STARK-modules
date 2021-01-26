@@ -9,7 +9,7 @@
 
 # Databases JSON
 
-foreach (glob ($folder_databases."/*/STARK.database" ) as $key => $stark_database) {
+foreach (glob ($folder_databases."/".$folder_databases_subfolder_gemini."/STARK.database" ) as $key => $stark_database) {
 
 	# Folders
 	$stark_database_folder=dirname($stark_database);

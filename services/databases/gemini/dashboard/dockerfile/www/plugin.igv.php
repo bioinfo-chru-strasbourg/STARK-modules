@@ -115,8 +115,8 @@ echo '
 if ($uri_igv == "") {
 	if ($_ENV["URI_IGV"] != "") {
 		$uri_igv=$_ENV["URI_IGV"];
-	} elseif ($modules_obj_array["GENOMEBROWSER"]->{"services"}->{"IGV"}->{"href"}!="") {
-		$uri_igv=$modules_obj_array["GENOMEBROWSER"]->{"services"}->{"IGV"}->{"href"};
+	} elseif ($modules_obj_array["genomebrowser"]->{"services"}->{"igv"}->{"href"}!="") {
+		$uri_igv=$modules_obj_array["genomebrowser"]->{"services"}->{"igv"}->{"href"};
 	} else {
 		$uri_igv="";
 	};
@@ -128,8 +128,8 @@ if ($uri_igv == "") {
 if ($uri_das == "") {
 	if ($_ENV["URI_DAS"] != "") {
 		$uri_das=$_ENV["URI_DAS"];
-	} elseif ($modules_obj_array["STARK"]->{"services"}->{"DAS"}->{"href"}!="") {
-		$uri_das=$modules_obj_array["STARK"]->{"services"}->{"DAS"}->{"href"};
+	} elseif ($modules_obj_array["stark"]->{"services"}->{"das"}->{"href"}!="") {
+		$uri_das=$modules_obj_array["stark"]->{"services"}->{"das"}->{"href"};
 	} else {
 		$uri_das="";
 	};
@@ -157,7 +157,10 @@ $IGV_JSON_ID=$DATE.".".rand ( 1 , 1000000 );
 $IGV_JSON_FILENAME="$IGV_JSON_ID.json";
 
 # JSON FILE
-$IGV_JSON_FILE="".$folder_services."/GENOMEBROWSER/IGV/$IGV_JSON_FILENAME";
+#$IGV_JSON_FILE="".$folder_services."/GENOMEBROWSER/IGV/$IGV_JSON_FILENAME";
+$IGV_JSON_FILE=$folder_igv."/".$IGV_JSON_FILENAME;
+
+
 
 if ($DEBUG) {
 	echo "<br>$IGV_JSON_FILE";
@@ -198,9 +201,11 @@ foreach ($SAMPLE_PATH as $key_sample => $ONE_SAMPLE_PATH) {
 
 	# Search files
 	$design=array();
-	$design_root=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/*{bed,genes}",GLOB_BRACE);
+	#$design_root=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/*{bed,genes}",GLOB_BRACE);
+	$design_root=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/*{bed}",GLOB_BRACE);
 	if ($CHECK_SUBFOLDER_DATA) {
-		$design_data=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/$RESULTS_SUBFOLDER_DATA/*{bed,genes}",GLOB_BRACE);
+		#$design_data=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/$RESULTS_SUBFOLDER_DATA/*{bed,genes}",GLOB_BRACE);
+		$design_data=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/$RESULTS_SUBFOLDER_DATA/*{bed}",GLOB_BRACE);
 	} else {
 		$design_data=array();
 	};
@@ -394,7 +399,10 @@ fclose($myfile);
 ####################
 
 # FINAL URL
-$FINAL_URL="$uri_igv?file=$uri_das/services/GENOMEBROWSER/IGV/$IGV_JSON_FILENAME";
+#$FINAL_URL="$uri_igv?file=$uri_das/services/GENOMEBROWSER/IGV/$IGV_JSON_FILENAME";
+$FINAL_URL="$uri_igv?file=$uri_das/$folder_igv/$IGV_JSON_FILENAME";
+
+
 
 # DEV
 if ($DEBUG) {
