@@ -16,6 +16,22 @@
 export SLEEP=86400
 
 
+# Other parameters
+# APPLICATION=/STARK/config/databases/dejavu/listener/dejavu.app
+# DEJAVU_SUBFOLDER=dejavu
+# DEJAVU_FOLDER=/STARK/databases/dejavu
+# REPO_FOLDER=/STARK/output/repository,/STARK/output/depository,/STARK/output/archives
+# SAMPLE_EXCLUDE_FILE=/STARK/config/databases/dejavu/listener/sample_exclude.conf
+# GROUP_PROJECT_LIST_FILE=/STARK/config/databases/dejavu/listener/group_project_list.conf
+# GROUP_PROJECT_FILTER_FILE=/STARK/config/databases/dejavu/listener/group_project_filter.conf
+# RELEASE_SYMLINK=latest
+# PREVIOUS_RELEASE=latest
+# PREVIOUS_COPY_MODE=symlink
+
+
+
+
+
 # STARK PARAMETERS
 ####################
 # No need to use export for variables of STARK application (processed within script)
