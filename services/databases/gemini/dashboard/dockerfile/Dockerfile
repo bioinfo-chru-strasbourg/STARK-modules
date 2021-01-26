@@ -12,7 +12,7 @@ RUN apt-get update -y && \
 	apt-get clean -y && apt-get autoclean -y && apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN mkdir /STARK/tools/gemini/latest && \
+RUN mkdir -p /STARK/tools/gemini/latest && \
     cd /STARK/tools/gemini/latest && \
     wget https://raw.github.com/arq5x/gemini/master/gemini/scripts/gemini_install.py && \
     python gemini_install.py /STARK/tools/gemini/latest /STARK/tools/gemini/latest/data --nodata && \

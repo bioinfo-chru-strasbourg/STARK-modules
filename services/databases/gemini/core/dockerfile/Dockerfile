@@ -1,13 +1,10 @@
 # Dockerfile
-FROM stark/stark:0.9.18.2
+FROM quay.io/biocontainers/gemini:0.30.2--py27h6395249_2
 
-RUN yum -y install python27 git wget gcc gcc-c++ zlib-devel --nogpgcheck  
+RUN mkdir -p /app/config /app/gemini_data && \
+    ln -s /app/config/ /usr/local/share/gemini && \
+    ln -s /app/gemini_data/ /usr/local/share/gemini/gemini_data
 
-# PHP Extensions
-RUN mkdir -p /STARK/tools/gemini/latest && \
-    cd /STARK/tools/gemini/latest && \
-    wget https://raw.github.com/arq5x/gemini/master/gemini/scripts/gemini_install.py && \
-    python gemini_install.py /STARK/tools/gemini/latest /STARK/tools/gemini/latest/data --nodata
+ADD config/* /app/config/
 
-ENV PATH=$PATH:/gemini/bin
-
+ENTRYPOINT [ "gemini" ]
