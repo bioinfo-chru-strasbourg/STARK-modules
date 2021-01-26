@@ -12,13 +12,13 @@ RUN apt-get update -y && \
 	apt-get clean -y && apt-get autoclean -y && apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN mkdir /gemini && \
-    cd /gemini && \
+RUN mkdir /STARK/tools/gemini/latest && \
+    cd /STARK/tools/gemini/latest && \
     wget https://raw.github.com/arq5x/gemini/master/gemini/scripts/gemini_install.py && \
-    python gemini_install.py /gemini /gemini/data --nodata && \
-    chmod a+x -R /gemini/*
+    python gemini_install.py /STARK/tools/gemini/latest /STARK/tools/gemini/latest/data --nodata && \
+    chmod a+x -R /STARK/tools/gemini/latest/*
 
-ENV PATH=$PATH:/gemini/bin
+ENV PATH=$PATH:/STARK/tools/gemini/latest/bin
 
 # PHP Extensions
 RUN docker-php-ext-install -j$(nproc) opcache pdo_mysql

@@ -906,17 +906,14 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 			#cat $TMP/$GROUP/$PROJECT/checksum | sha1sum
 
 			#CHECKSUM=$(stat -c "%y %s %n" $TMP/$GROUP/$PROJECT/*.vcf.gz | sha1sum)
-			(($DEBUG)) && echo "PREVIOUS_RELEASE=$PREVIOUS_RELEASE"
-			(($DEBUG)) && echo "PREVIOUS_COPY_MODE=$PREVIOUS_COPY_MODE"
-			(($DEBUG)) && echo "CHECKSUM=$CHECKSUM"
-			(($DEBUG)) && echo "CHECKSUM_PREVIOUS=$CHECKSUM_PREVIOUS"
-			(($DEBUG)) && echo "PREVIOUS_COPY_MODE=$PREVIOUS_COPY_MODE"
+			(($DEBUG)) && echo "[INFO] PREVIOUS_RELEASE=$PREVIOUS_RELEASE"
+			(($DEBUG)) && echo "[INFO] PREVIOUS_COPY_MODE=$PREVIOUS_COPY_MODE"
+			(($DEBUG)) && echo "[INFO] CHECKSUM=$CHECKSUM"
+			(($DEBUG)) && echo "[INFO] CHECKSUM_PREVIOUS=$CHECKSUM_PREVIOUS"
+			(($DEBUG)) && echo "[INFO] PREVIOUS_COPY_MODE=$PREVIOUS_COPY_MODE"
 
 			if [ "$CHECKSUM" == "$CHECKSUM_PREVIOUS" ]; then
 				(($DEBUG)) && echo "[INFO] same checksum"
-
-
-				
 
 				SYMLINK_ERR=0
 				if [ "$PREVIOUS_COPY_MODE" == "symlink" ]; then
