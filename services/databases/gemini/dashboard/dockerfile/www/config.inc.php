@@ -79,9 +79,8 @@ if ($_ENV["FOLDER_DATABASES_SUBFOLDER_DEJAVU"] != "") {
 if ($_ENV["FOLDER_DATABASES_SUBFOLDER_GEMINI"] != "") {
 	$folder_databases_subfolder_gemini=$_ENV["FOLDER_DATABASES_SUBFOLDER_GEMINI"];
 } else {
-	$folder_databases_subfolder_gemini="gemini";
+	$folder_databases_subfolder_gemini="gemini_db";
 };
-
 
 
 # IGV
