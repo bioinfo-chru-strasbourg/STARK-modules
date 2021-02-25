@@ -49,20 +49,20 @@ def launcher():
 
 def launch_universal_sync18(pattern):
 	varank_processing_vcf_files = glob.glob(os.path.join(os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES'], os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_MODULE_NAME'], os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_SUBMODULE_NAME'], 'Archives', '*', '*', 'VCF', '*', '*.final.vcf*'))
+
+	stark_archives_all_vcf_files = glob.glob(os.path.join(os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_ARCHIVES'], '*', '*', '*', '*/*.final.vcf.gz'))
+	for stark_archives_all_vcf_file in stark_archives_all_vcf_files:
+		platform = stark_archives_all_vcf_file.split('/')[4]
+		application = stark_archives_all_vcf_file.split('/')[5]
+		run = stark_archives_all_vcf_file.split('/')[6]
+		varank_processing_run_vcf_folder = os.path.join(os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES'], os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_MODULE_NAME'], os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_SUBMODULE_NAME'], 'Archives', platform, application, 'VCF', run)
+		if not os.path.isdir(varank_processing_run_vcf_folder):
+			os.makedirs(varank_processing_run_vcf_folder)
+		subprocess.run(['rsync', '-rp', stark_archives_all_vcf_file, varank_processing_run_vcf_folder])
+
 	for all_vcf in reversed(pattern):
 		if all_vcf == '*/*.final.vcf.gz':
-			stark_archives_all_vcf_files = glob.glob(
-				os.path.join(os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_ARCHIVES'], '*', '*', '*', all_vcf))
-			for stark_archives_all_vcf_file in stark_archives_all_vcf_files:
-				platform = stark_archives_all_vcf_file.split('/')[4]
-				application = stark_archives_all_vcf_file.split('/')[5]
-				run = stark_archives_all_vcf_file.split('/')[6]
-				varank_processing_run_vcf_folder = os.path.join(os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES'], os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_MODULE_NAME'], os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_SUBMODULE_NAME'], 'Archives', platform, application, 'VCF', run)
-				if not os.path.isdir(varank_processing_run_vcf_folder):
-					os.makedirs(varank_processing_run_vcf_folder)
-				subprocess.run(['rsync', '-rp', stark_archives_all_vcf_file, varank_processing_run_vcf_folder])
 			pattern.remove(all_vcf)
-
 		else:
 			all_other_vcf_files = glob.glob(os.path.join(os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_ARCHIVES'], '*', '*', '*', all_vcf))
 			for all_other_vcf_file in all_other_vcf_files:
@@ -81,13 +81,15 @@ def launch_universal_sync18(pattern):
 
 def vcf_synchronizer(pattern, run_repository, varank_processing_run_vcf_folder, varank_processing_folder):
 	varank_processing_vcf_files = glob.glob(os.path.join(varank_processing_folder, 'VCF', '*', '*.final.vcf*'))
+
+	stark_vcf_files = glob.glob(os.path.join(run_repository, '*/*.final.vcf.gz'))
+	for stark_vcf_file in stark_vcf_files:
+		if not os.path.isdir(varank_processing_run_vcf_folder):
+			os.makedirs(varank_processing_run_vcf_folder)
+		subprocess.run(['rsync', '-rp', stark_vcf_file, varank_processing_run_vcf_folder])
+
 	for vcf in reversed(pattern):
 		if vcf == '*/*.final.vcf.gz':
-			stark_vcf_files = glob.glob(os.path.join(run_repository, vcf))
-			for stark_vcf_file in stark_vcf_files:
-				if not os.path.isdir(varank_processing_run_vcf_folder):
-					os.makedirs(varank_processing_run_vcf_folder)
-				subprocess.run(['rsync', '-rp', stark_vcf_file, varank_processing_run_vcf_folder])
 			pattern.remove(vcf)
 		else:
 			other_vcf_files = glob.glob(os.path.join(run_repository, vcf))
@@ -103,6 +105,7 @@ def vcf_synchronizer(pattern, run_repository, varank_processing_run_vcf_folder, 
 
 def varank_processing_folder_initializer(varank_processing_tsv_folder, varank_processing_folder):
 	varank_processing_vcf_files_run_vcf_folder = glob.glob(os.path.join(varank_processing_folder, 'VCF', '*', '*.final.vcf*'))
+	varank_processing_run_vcf_folder = glob.glob(os.path.join(varank_processing_folder, 'VCF', '*'))
 	varank_processing_vcf_files_vcf_folder = glob.glob(os.path.join(varank_processing_folder, 'VCF', '*.final.vcf*'))
 	varank_processing_vcf_files_main_folder = glob.glob(os.path.join(varank_processing_folder, '*.final.vcf*'))
 	other_varank_processing_vcf_files = varank_processing_vcf_files_main_folder + varank_processing_vcf_files_vcf_folder
@@ -121,12 +124,17 @@ def varank_processing_folder_initializer(varank_processing_tsv_folder, varank_pr
 						print('[' + datetime.now().strftime('%y%y%m%d-%H%M%S') + '] VARANK: Deleted sample ' + line[0] + ' from run ' + line[1] + ' for this VaRank analysis')
 
 	if len(varank_processing_vcf_files_run_vcf_folder) != 0:
-		for varank_processing_vcf_file in varank_processing_vcf_files_run_vcf_folder:
-			subprocess.run(['rsync', '-rp', varank_processing_vcf_file, varank_processing_folder])
+		varank_processing_run_vcf_folder = sorted(varank_processing_run_vcf_folder)
+		for varank_processing_run in varank_processing_run_vcf_folder:
+			varank_processing_vcf_file_list = glob.glob(os.path.join(varank_processing_run, '*.final.vcf*'))
+			for varank_processing_vcf_file in varank_processing_vcf_file_list:
+				subprocess.run(['rsync', '-rp', varank_processing_vcf_file, varank_processing_folder])
 
 	elif len(other_varank_processing_vcf_files) != 0:
-		os.mkdir(os.path.join(varank_processing_folder, 'VCF'), 0o777)
-		os.mkdir(os.path.join(varank_processing_folder, 'VCF', 'DEFAULT'), 0o777)
+		if not os.path.isdir(os.path.join(varank_processing_folder, 'VCF')):
+			os.mkdir(os.path.join(varank_processing_folder, 'VCF'), 0o777)
+		if not os.path.isdir(os.path.join(varank_processing_folder, 'VCF', 'DEFAULT')):
+			os.mkdir(os.path.join(varank_processing_folder, 'VCF', 'DEFAULT'), 0o777)
 		varank_processing_vcf_default_folder = os.path.join(varank_processing_folder, 'VCF', 'DEFAULT')
 
 		for other_varank_processing_vcf_file in other_varank_processing_vcf_files:
@@ -873,7 +881,7 @@ def configfile_checker(configfiles_folder, args):
 						family_list.append(id)
 
 				if re.match(r'-extann:|#-extann:', line):
-					extann_files = line.split("\"")
+					extann_files = line.split('"')
 					for extann_file in reversed(extann_files):
 						if not extann_file.startswith('/'):
 							extann_files.remove(extann_file)
@@ -916,77 +924,77 @@ def configfile_checker(configfiles_folder, args):
 								exit()
 
 						if len(extann_file_list) == 0:
-							line = '#-extann:\t\t\"\"'
+							line = '#-extann:\t\t""'
 						else:
-							line = '-extann:\t\t\"' + " ".join(extann_file_list) + '\"'
+							line = '-extann:\t\t"' + " ".join(extann_file_list) + '"'
 						write_file.write(line + '\n')
 						writted = True
 
-				# if re.match(r'#-proxyUser:|-proxyUser:', line):
-					# if re.search('\".*\"', line):
-						# line = re.sub('\".*\"', '\"\"', line)
-					# if re.match(r'^-', line):
-						# line = re.sub('-', '#-', line)
-					# write_file.write(line + '\n')
-					# writted = True
-
-				# if re.match(r'#-proxyPasswd:|-proxyPasswd:', line):
-					# if re.search('\".*\"', line):
-						# line = re.sub('\".*\"', '\"\"', line)
-					# if re.match(r'^-', line):
-						# line = re.sub('-', '#-', line)
-					# write_file.write(line + '\n')
-					# writted = True
-
-				# if re.match(r'#-proxyServer:|-proxyServer:', line):
-					# if re.search('\".*\"', line):
-						# line = re.sub('\".*\"', '\"\"', line)
-					# if re.match(r'^-', line):
-						# line = re.sub('-', '#-', line)
-					# write_file.write(line + '\n')
-					# writted = True
-
-				# if re.match(r'#-proxyPort:|-proxyPort:', line):
-					# if re.search('\".*\"', line):
-						# line = re.sub('\".*\"', '\"\"', line)
-					# if re.match(r'^-', line):
-						# line = re.sub('-', '#-', line)
-					# write_file.write(line + '\n')
-					# writted = True
-
 				if re.match(r'#-proxyUser:', line):
-					if re.search(r'\"[a-zA-Z0-9]+\"', line):
-						line = re.sub('\"\[a-zA-Z0-9]+"', '\"' + os.environ['PROXY_USER'] + '\"', line)
+					if re.search(r'"[a-zA-Z0-9]+"', line):
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_USER'] + '"', line)
 					else:
-						line = re.sub('\"\"', '\"' + os.environ['PROXY_USER'] + '\"', line)
+						line = re.sub('""', '"' + os.environ['PROXY_USER'] + '"', line)
 					line = re.sub('#', '', line)
 					write_file.write(line + '\n')
 					writted = True
 				
 				if re.match(r'#-proxyPasswd:', line):
-					if re.search(r'\"[a-zA-Z0-9]+\"', line):
-						line = re.sub('\"[a-zA-Z0-9]+\"', '\"' + os.environ['PROXY_PASSWD'] + '\"', line)
+					if re.search(r'"[a-zA-Z0-9]+"', line):
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_PASSWD'] + '"', line)
 					else:
-						line = re.sub('\"\"', '\"' + os.environ['PROXY_PASSWD'] + '\"', line)
+						line = re.sub('""', '"' + os.environ['PROXY_PASSWD'] + '"', line)
 					line = re.sub('#', '', line)
 					write_file.write(line + '\n')
 					writted = True
 				
 				if re.match(r'#-proxyServer:', line):
-					if re.search(r'\"[a-zA-Z0-9]+\"', line):
-						line = re.sub('\"[a-zA-Z0-9]+\"', '\"' + os.environ['PROXY_SERVER'] + '\"', line)
+					if re.search(r'"[a-zA-Z0-9]+"', line):
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_SERVER'] + '"', line)
 					else:
-						line = re.sub('\"\"', '\"' + os.environ['PROXY_SERVER'] + '\"', line)
+						line = re.sub('""', '"' + os.environ['PROXY_SERVER'] + '"', line)
 					line = re.sub('#', '', line)
 					write_file.write(line + '\n')
 					writted = True
 				
 				if re.match(r'#-proxyPort:', line):
-					if re.search(r'\"[a-zA-Z0-9]+\"', line):
-						line = re.sub('\"[a-zA-Z0-9]+\"', '\"' + os.environ['PROXY_PORT'] + '\"', line)
+					if re.search(r'"[a-zA-Z0-9]+"', line):
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_PORT'] + '"', line)
 					else:
-						line = re.sub('\"\"', '\"' + os.environ['PROXY_PORT'] + '\"', line)
+						line = re.sub('""', '"' + os.environ['PROXY_PORT'] + '"', line)
 					line = re.sub('#', '', line)
+					write_file.write(line + '\n')
+					writted = True
+					
+				if re.match(r'-proxyUser:', line):
+					if re.search(r'"[a-zA-Z0-9]+"', line):
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_USER'] + '"', line)
+					else:
+						line = re.sub('""', '"' + os.environ['PROXY_USER'] + '"', line)
+					write_file.write(line + '\n')
+					writted = True
+				
+				if re.match(r'-proxyPasswd:', line):
+					if re.search(r'"[a-zA-Z0-9]+"', line):
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_PASSWD'] + '"', line)
+					else:
+						line = re.sub('""', '"' + os.environ['PROXY_PASSWD'] + '"', line)
+					write_file.write(line + '\n')
+					writted = True
+				
+				if re.match(r'-proxyServer:', line):
+					if re.search(r'"[a-zA-Z0-9]+"', line):
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_SERVER'] + '"', line)
+					else:
+						line = re.sub('""', '"' + os.environ['PROXY_SERVER'] + '"', line)
+					write_file.write(line + '\n')
+					writted = True
+				
+				if re.match(r'-proxyPort:', line):
+					if re.search(r'"[a-zA-Z0-9]+"', line):
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_PORT'] + '"', line)
+					else:
+						line = re.sub('""', '"' + os.environ['PROXY_PORT'] + '"', line)
 					write_file.write(line + '\n')
 					writted = True
 
