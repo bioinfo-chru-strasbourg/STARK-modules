@@ -1,13 +1,22 @@
-FROM centos:7
-MAINTAINER Victor Grentzinger <victor.grentzinger@gmail.com>
-
 ##########################################################################
 # Dockerfile Version:   1.0
-# Software:             canoes
+# Software:             CANOES
 # Software Version:     1.0
 # Software Website:     http://www.columbia.edu/~ys2411/canoes/CANOES.R
 # Description:          Dockerfile to build CANOES container image
 ##########################################################################
+
+
+########
+# FROM #
+########
+
+FROM centos:7
+LABEL maintainer="GRENTZINGER Victor <victor.grentzinger@gmail.com>" \
+	Software="CANOES" \
+	Version="1.0" \
+	Description="CANOES"
+
 
 ENV SRC=/src
 RUN yum -y install  epel-release  && \

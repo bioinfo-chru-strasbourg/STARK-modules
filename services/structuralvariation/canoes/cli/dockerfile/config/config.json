@@ -4,5 +4,5 @@
 	"java":"/home1/TOOLS/tools/java/1.8.0_65/bin/java",
 	"annotsv":"/home1/TOOLS/tools/AnnotSV/AnnotSV_2.1",
 	"R":"/home1/TOOLS/tools/anaconda/miniconda2/bin/R",
-	"genome":"/home1/TOOLS/genomes/hg19/hg19.fa"
+	"genome":"/STARK/detabases/genomes/current/hg19.fa"
 }

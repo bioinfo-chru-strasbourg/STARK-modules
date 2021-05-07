@@ -72,7 +72,10 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 		samplesheetPath = samplesheet.replace("/STARK/output/repository", repository)
 		bedPath = bed.replace("/STARK/output/repository", repository)
 		containerName = serviceName+"-NAME-"+os.path.basename(run)
-		cmd = "docker run --rm --name="+containerName+" -v "+runPath+":"+runPath+" "+montage+" "+image+" "+launchCommand+" -r "+runPath+" -l "+bedPath+" -s "+samplesheetPath+" -o "+runPath
+		#cmd = "docker run --rm --name="+containerName+" -v "+runPath+":"+runPath+" "+montage+" "+image+" "+launchCommand+" -r "+runPath+" -l "+bedPath+" -s "+samplesheetPath
+		cmd = "docker run --name="+containerName+" "+montage+" "+image+" "+launchCommand+" -r "+runPath+" -l "+bedPath+" -s "+samplesheetPath
+
+		print("#[INFO] "+cmd)
 		subprocess.call(cmd, shell = True)
 	else:
 		samplesheet = find_any_samplesheet(run)
@@ -80,6 +83,7 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 			"[ERROR] find_any_samplesheet() couldn t find any samplesheet in run"+run+"."
 		bed = findAnyBed(run)
 		containerName = serviceName+"-NAME-"+os.path.basename(run)
-		cmd = "docker run --rm --name="+containerName+" -v "+run+":"+run+" "+montage+" "+image+" "+launchCommand+" -r "+run+" -l "+bed+" -s "+samplesheet+" -o "+run
+		cmd = "docker run --name="+containerName+" -v "+run+":"+run+" "+montage+" "+image+" "+launchCommand+" -r "+run+" -l "+bed+" -s "+samplesheet
+		print("#[INFO] "+cmd)
 		subprocess.call(cmd, shell = True)
-		createContainerFile(containersFile, run, containerName)
+	createContainerFile(containersFile, run, containerName)

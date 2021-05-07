@@ -182,7 +182,7 @@ def checkTags(tag, sampleTagsList, analysisTagsList):
 def getAnalysisTagsFromSampleList(sampleList,run):
 	analysisTagsList = []
 	for s in sampleList:
-		with open (osj(run,s,s+".analysis.tag"), "r") as tagsFile:
+		with open (osj(run,s,"STARK",s+".analysis.tag"), "r") as tagsFile:
 			for l in tagsFile:
 				analysisTagsList.append(l.strip())
 	return analysisTagsList
@@ -190,7 +190,7 @@ def getAnalysisTagsFromSampleList(sampleList,run):
 def getSampleTagsFromSampleList(sampleList,run):
 	sampleTagsList = []
 	for s in sampleList:
-		with open (osj(run,s,s+".tag"), "r") as tagsFile:
+		with open (osj(run,s,"STARK",s+".tag"), "r") as tagsFile:
 			for l in tagsFile:
 				sampleTagsList.append(l.strip())
 	return sampleTagsList
@@ -202,7 +202,8 @@ def getSampleListFromRunPath(run):
 	sampleList = []
 	for patient in glob.glob(osj(run,"*/")):
 		pName = os.path.basename(os.path.normpath(patient))
-		if os.path.exists(osj(patient, "STARK", pName+".SampleSheet.csv")) or os.path.exists(osj(patient, pName+".SampleSheet.csv")):
+		# if os.path.exists(osj(patient, "STARK", pName+".SampleSheet.csv")) or os.path.exists(osj(patient, pName+".SampleSheet.csv")):
+		if os.path.exists(osj(patient, "STARKCopyComplete.txt")) or os.path.exists(osj(patient, pName+".SampleSheet.csv")):
 			sampleList.append(pName)
 	return sampleList
 
