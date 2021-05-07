@@ -1,21 +1,50 @@
+
 {
 	"services": {
 		"CANOES": {
 			"infos": {
 				"name": "CANOES",
 				"description": "CANOES analysis",
-				"triggers-description": "(STARKCopyComplete.txt AND !CANOESComplete.txt AND !CANOESRunning.txt AND #CANOES)"
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (CANOESRunning.txt AND CANOESComplete.txt) AND (#CANOES OR GROUP DIAG) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
 			},
 			"triggers": {
-				"AND":
-				{
-					"file": ["STARKCopyComplete.txt", "!CANOESComplete.txt", "!CANOESRunning.txt"],
-					"OR_1": {
-						"group": ["DIAG", "!HUSDIAGGEN"],
-						"tags": ["#CANOES"]
+				"AND_1":{
+					"file":[
+						"STARKCopyComplete.txt",
+						"!CANOESRunning.txt",
+						"!CANOESComplete.txt"
+					],
+					"OR_1":{
+						"tags":[
+							"CANOES"
+						],
+						"group":[
+							"DIAG",
+							"HUSDIAGGEN"
+						]
+					},
+					"OR_2":{
+						"tags":[
+							"!POOL"
+						],
+						"AND_2":{
+							"tags":[
+								"POOL"
+							],
+							"OR_3":{
+								"file":[
+									"POOLRunning.txt"
+								],
+								"file":[
+									"POOLComplete.txt"
+								]
+							}
+						}
 					}
 				}
 			}
 		}
 	}
 }
+
+

@@ -143,7 +143,7 @@ def write_json(output,bed,bam,sample,sex,ana,exclude,gatk,bedtools,annotsv,java,
 	else:
 		print("[ERROR] - please defie path to genome.fa: -g --genome <PATH> (EXIT)",file=sys.stderr)
 		sys.exit()
-	data['analysis']["output"] = output
+	data['analysis']["output"] = osj("/app",os.path.basename(os.path.normpath(output)))
 	data['analysis']["repository"] = os.path.abspath(output)
 	data['analysis']["bed"] = os.path.abspath(bed)
 	if window:
@@ -249,9 +249,7 @@ def cleanList(str):
 def cleanString(lst):
 	return ",".join([ x.strip() for x in lst ])
 
-def canoes(config,output,jobs,dryrun,dag,run):
-	if run == "":
-		run = output
+def canoes(config,output,jobs,dryrun,dag):
 	if not jobs:
 		jobs = str(int(nbCPUs()[0]) -1)
 	snk_opt = ""
@@ -264,12 +262,12 @@ def canoes(config,output,jobs,dryrun,dag,run):
 	systemcall(command)
 	coverageTsvFile = osj(output,"CANOES/all.canoes.coverage.tsv")
 	if os.path.exists(coverageTsvFile):
-		generateGraphs(coverageTsvFile, output, run)
+		generateGraphs(coverageTsvFile, output)
 
-def generateGraphs(coverageTsvFile, output, run):
+def generateGraphs(coverageTsvFile, output):
 	createStatsFiles(coverageTsvFile)
-	scriptR = writePlotScript(coverageTsvFile, output)
-	command = "R CMD BATCH "+scriptR+" "+osj(run,"logs/R_plotting.log")
+	writePlotScript(coverageTsvFile, output)
+	command = "R CMD BATCH "+osj(output,"CANOES/script_plot.R")+" "+osj(output,"logs/R_plotting.log")
 	systemcall(command)
 
 def createStatsFiles(coverageTsvFile):
@@ -295,59 +293,43 @@ def writePlotScript(coverageTsvFile, output):
 		f.write('PlotCoverage2(paste(sample.names[i]),\"'+os.path.dirname(coverageTsvFile)+'/all.canoes.stats2.tsv\",paste(\"'+output+'/\",sample.names[i],\"/CANOES/\",sample.names[i],\".canoes.barplot.coverage.pdf\", sep=\"\"))\n')
 		f.write("}\n")
 		f.close()
-	return osj(output,"CANOES/script_plot.R")
 
-def copyRunResults(run, output, exclude, depository, samplesheet):
+def copyAllResults(output, exclude, depository, samplesheet):
 	sample_list = []
 	if not samplesheet:
 		sample_list = get_sample_id_from_samplesheet(find_any_samplesheet(output))
 	else:
 		sample_list = get_sample_id_from_samplesheet(samplesheet)
+	results = osj("/app",os.path.basename(os.path.normpath(output)))
 	if os.path.exists(osj(output,".snakemake/")):
 		shutil.rmtree(osj(output,".snakemake/"))
 	if not sample_list:
-		command = 'find '+osj(output,"*/CANOES/*.canoes.annotsv.tsv")
+		command = 'find '+osj(results,"*/CANOES/*.canoes.annotsv.tsv")
 		tsv_list = systemcall(command)
 		for sample in tsv_list:
 			sample_list.append(os.path.basename(sample)[:-19])
 	for sample in sample_list:
 		if isValidSample(sample, cleanList(exclude)):
-			if not os.path.isdir(osj(run,sample,"CANOES/")):
-				createDir(osj(run,sample,"CANOES/"))
-			shutil.copy2(osj(output,"CANOES/all.canoes.annotsv.sorted.tsv"),osj(run,sample,"CANOES/"))
-			shutil.copy2(osj(output,sample,"CANOES",sample+".canoes.annotsv.tsv"),osj(run,sample,"CANOES/"))
-			if not os.path.exists(osj(run,sample,"CANOES/logs")):
-				shutil.copytree(osj(output,"logs/"),osj(run,sample,"CANOES/logs"))
-			if depository != run:
-				if not os.path.exists(osj(depository,sample,"CANOES/")):
-					createDir(osj(depository,sample,"CANOES/"))
-				shutil.copy2(osj(output,"CANOES/all.canoes.annotsv.sorted.tsv"),osj(depository,sample,"CANOES/"))
-				shutil.copy2(osj(output,sample,"CANOES",sample+".canoes.annotsv.tsv"),osj(depository,sample,"CANOES/"))
-				if not os.path.exists(osj(depository,sample,"CANOES/logs")):
-					shutil.copytree(osj(output,"logs/"),osj(depository,sample,"CANOES/logs"))
+			if not os.path.isdir(osj(output,sample,"CANOES/")):
+				createDir(osj(output,sample,"CANOES/"))
+			if not os.path.exists(osj(depository,sample,"CANOES/")):
+				createDir(osj(depository,sample,"CANOES/"))
+			shutil.copy2(osj(results,"CANOES/all.canoes.annotsv.sorted.tsv"),osj(output,sample,"CANOES/"))
+			shutil.copy2(osj(results,"CANOES/all.canoes.annotsv.sorted.tsv"),osj(depository,sample,"CANOES/"))
+			shutil.copy2(osj(results,sample,"CANOES",sample+".canoes.annotsv.tsv"),osj(output,sample,"CANOES/"))
+			shutil.copy2(osj(results,sample,"CANOES",sample+".canoes.annotsv.tsv"),osj(depository,sample,"CANOES/"))
+			if not os.path.exists(osj(output,sample,"CANOES/logs")):
+				shutil.copytree(osj(results,"logs/"),osj(output,sample,"CANOES/logs"))
+			if not os.path.exists(osj(depository,sample,"CANOES/logs")):
+				shutil.copytree(osj(results,"logs/"),osj(depository,sample,"CANOES/logs"))
 
-def copySampleResults(output, results, exclude, sample):
-	if os.path.exists(osj(results,".snakemake/")):
-		shutil.rmtree(osj(results,".snakemake/"))
-	for s in sample.split(","):
-		if isValidSample(s, cleanList(exclude)):
-			if not os.path.isdir(osj(output,s,"CANOES/")):
-				createDir(osj(output,s,"CANOES/"))
-			shutil.copy2(osj(results,"CANOES/all.canoes.annotsv.sorted.tsv"),osj(output,s,"CANOES/"))
-			shutil.copy2(osj(results,s,"CANOES",s+".canoes.annotsv.tsv"),osj(output,s,"CANOES/"))
-			if not os.path.exists(osj(output,s,"CANOES/logs")):
-				shutil.copytree(osj(results,"logs/"),osj(output,s,"CANOES/logs"))
-
-def runDepositoryGenerator(run):
-	if 'DOCKER_MODULE_STRUCTURALVARIATION_SUBMODULE_CANOES_FOLDER_REPOSITORY' and 'DOCKER_MODULE_STRUCTURALVARIATION_SUBMODULE_CANOES_FOLDER_DEPOSITORY' in dict(os.environ).keys():
-		if (run).endswith('/'):
-			runRepository = run[-1]
-		else:
-			runRepository = run
-		runDepository = re.sub(os.environ['DOCKER_MODULE_STRUCTURALVARIATION_SUBMODULE_CANOES_FOLDER_REPOSITORY'], os.environ['DOCKER_MODULE_STRUCTURALVARIATION_SUBMODULE_CANOES_FOLDER_DEPOSITORY'], runRepository)
-		return runDepository
+def runDepositoryGenerator(output):
+	if (output).endswith('/'):
+		runRepository = output[-1]
 	else:
-		return run
+		runRepository = output
+	runDepository = re.sub(os.environ['DOCKER_MODULE_STRUCTURALVARIATION_SUBMODULE_CANOES_FOLDER_REPOSITORY'], os.environ['DOCKER_MODULE_STRUCTURALVARIATION_SUBMODULE_CANOES_FOLDER_DEPOSITORY'], runRepository)
+	return runDepository
 
 def createCompleteFile(output):
 	file = open(osj(output,"CANOESComplete.txt"), "w+")
@@ -358,18 +340,18 @@ def createCompleteFile(output):
 
 def main_sample(args):
 	createDir(args.output)
-	createDir('/app/res')
-	configfile = '/app/res/analysis.json'
-	write_json("/app/res",args.bed,args.bam,args.sample,args.sex,args.ana,args.exclude,args.gatk,args.bedtools,args.annotsv,args.java,args.R,args.genome,args.window,args.version)
-	canoes(configfile,"/app/res",args.jobs,args.dryrun,args.dag,"")
-	copySampleResults(args.output, "/app/res", args.exclude, args.sample)
+	depository = runDepositoryGenerator(args.output)
+	configfile = args.output+'/analysis.json'
+	write_json(args.output,args.bed,args.bam,args.sample,args.sex,args.ana,args.exclude,args.gatk,args.bedtools,args.annotsv,args.java,args.R,args.genome,args.window,args.version)
+	canoes(configfile,args.output,args.jobs,args.dryrun,args.dag)
+	copyAllResults(args.output, args.exclude, depository)
 	createCompleteFile(args.output)
 	if args.rep:
 		systemcall("cp -r "+args.output+"/* "+args.rep)
 
 def main_run(args):
 	createDir(args.output)
-	depository = runDepositoryGenerator(args.run)
+	depository = runDepositoryGenerator(args.output)
 	configfile = args.output+'/analysis.json'
 	run    = Run(args.run,args.samplesheet,args.bed)
 	bed    = run.bed
@@ -377,14 +359,9 @@ def main_run(args):
 	sample = cleanString(run.sample)
 	sex    = cleanString(run.sex)
 	write_json(args.output,bed,bam,sample,sex,args.ana,args.exclude,args.gatk,args.bedtools,args.annotsv,args.java,args.R,args.genome,args.window,args.version)
-	canoes(configfile,args.output,args.jobs,args.dryrun,args.dag,args.run)
-	copyRunResults(args.run, args.output, args.exclude, depository, args.samplesheet)
-	print("[#INFO]", depository)
-	print("[#INFO]", args.run)
-	print("[#INFO]", args.output)
-	print("[#INFO]", args.exclude)
-	print("[#INFO]", args.samplesheet)
-	createCompleteFile(args.run)
+	canoes(configfile,args.output,args.jobs,args.dryrun,args.dag)
+	copyAllResults(args.output, args.exclude, depository, args.samplesheet)
+	createCompleteFile(args.output)
 	if args.rep:
 		createDir(args.rep)
 		systemcall("cp -r "+args.output+"/* "+args.rep)
@@ -405,7 +382,6 @@ def main():
 	group0.add_argument("-l","--bed",type=str,help="the bed file",dest="bed",required=True)
 	group0.add_argument("-e","--ana",type=str,help="list of analysis to run (A:autosomal, F:sex F, M:sex M) - Default: \"A,F,M\"",dest="ana",default="A,M,F")
 	group0.add_argument("-c","--exclude",type=str,help="list of patern to exclude - Default: \"POOL_,BlcADN,blanc,BlcPCR,blcPCR,Z_NTC\"",dest="exclude",default="POOL_,BlcADN,blanc,BlcPCR,blcPCR,Z_NTC")
-	# group0.add_argument("-f","--excludetags",type=str,help="list of tags to exclude - Default: \"CQI#,PLUGAPP#POOL,APP#Group.Project#POOL\"",dest="excludeTags",default="CQI#*,PLUGAPP#POOL,APP#*.*#POOL")
 	group0.add_argument("-w","--window",type=int,help="cut bed region in windows of n bp",dest="window")
 	group0.add_argument("-v","--version",type=int,help="CANOES version - 1(default) or 2 available",default=1,dest="version")
 	group0.add_argument("-o","--output",type=str,help="output folder",dest="output",required=True)
@@ -432,10 +408,9 @@ def main():
 	group0.add_argument("-l","--bed",type=str,help="the bed file",dest="bed")
 	group0.add_argument("-e","--ana",type=str,help="list of analysis to run (A:autosomal, F:sex F, M:sex M) - Default: \"A,F,M\"",dest="ana",default="A,M,F")
 	group0.add_argument("-c","--exclude",type=str,help="list of patern to exclude - Default: \"POOL_,BlcADN,blanc,BlcPCR,blcPCR,Z_NTC\"",dest="exclude",default="POOL_,BlcADN,blanc,BlcPCR,blcPCR,Z_NTC")
-	# group0.add_argument("-f","--excludetags",type=str,help="list of tags to exclude - Default: \"CQI#,PLUGAPP#POOL,APP#Group.Project#POOL\"",dest="excludeTags",default="CQI#*,PLUGAPP#POOL,APP#*.*#POOL")
 	group0.add_argument("-w","--window",type=int,help="cut bed region in windows of n bp",dest="window")
 	group0.add_argument("-v","--version",type=int,help="CANOES version - 1(default) or 2 available",default=1,dest="version")
-	group0.add_argument("-o","--output",type=str,help="output folder",dest="output",default="/app/res")
+	group0.add_argument("-o","--output",type=str,help="output folder",dest="output",required=True)
 	group0.add_argument("-u", "--repository", help="Repository folder", type=str, dest='rep')
 
 	group1 = parser_b.add_argument_group('Ressources')
