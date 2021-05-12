@@ -33,7 +33,7 @@ function release () {
 
 # Usage
 function usage {
-        echo "#USAGE: $(basename $0) --run =<RUN>|--genes=<GENES1,GENES2,...>|--json=<JSON>|--genome=<GENOME>|--archives=<ARCHIVES> [options...]";
+        echo "#USAGE: $(basename $0) --run =<RUN>|--genes=<GENES1,GENES2,...>|--json=<JSON>|--genome=<GENOME> [options...]";
 		#echo "# -c/--cqi              CQI option";
         echo "# -r/--run              RUN option";
         echo "# -g/--genes            GENES option";
@@ -42,7 +42,6 @@ function usage {
 		#echo "# -s/--set              SETS option";
 		echo "# -j/--json             JSON option";
         echo "# -o/--genome           GENOME option";
-		echo "# -a/--archives         ARCHIVES option";
 		echo "# -v/--verbose          VERBOSE option";
         echo "# -d/--debug            DEBUG option";
         echo "# -n/--release          RELEASE option";
@@ -57,7 +56,7 @@ header;
 # Getting parameters from the input
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ":" tells that the option has a required argument, "::" tells that the option has an optional argument, no ":" tells no argument
-ARGS=$(getopt -o "r:c:g:a:j:o:vdnh" --long "run:,cqi:,genes:,archives:,json:,genome:,verbose,debug,release,help" -- "$@" 2> /dev/null)
+ARGS=$(getopt -o "r:c:g:a:q:s:j:o:vdnh" --long "run:,cqi:,genes:,vaf:,cqigz:,set:,json:,genome:,verbose,debug,release,help" -- "$@" 2> /dev/null)
 if [ $? -ne 0 ]; then
         :
 fi;
@@ -80,18 +79,26 @@ do
                         BED="$2"
                         shift 2
                         ;;
-                -a|--archives)
-                        ARCHIVES="$2"
+                -a|--vaf)
+                        VAF="$2"
                         shift 2
                         ;;
-		-j|--json)
+                -q|--cqigz)
+                        CQI_VCF="$2"
+                        shift 2
+                        ;;
+				-s|--set)
+                        SETS="$2"
+                        shift 2
+						;;
+				-j|--json)
                         JSON="$2"
                         shift 2
-			;;
-		-o|--genome)
+						;;
+				-o|--genome)
                         GENOME="$2"
                         shift 2
-			;;
+						;;
                 -v|--verbose)
                         VERBOSE=1
                         shift 1
@@ -133,7 +140,6 @@ echo "GENES=$BED"
 #echo "VAF=$VAF"
 #echo "CQI_VCF=$CQI_VCF"
 #echo "SETS=$SETS"
-echo "ARCHIVES=$ARCHIVES"
 echo "JSON=$JSON"
 echo "GENOME=$GENOME"
 echo -e "\n"
@@ -188,10 +194,10 @@ fi;
 if [ ! -f $RUN/CQIComplete.txt ]; then
 	for SAMPLE in $(find $RUN -mindepth 1 -maxdepth 1 -type d); do
 		CQI_SAMPLE=$(basename "$SAMPLE")
-		if grep -q "CQI" $SAMPLE/STARK/$CQI_SAMPLE.tag 2>/dev/null; then
+		if grep -q "CQI" $SAMPLE/$CQI_SAMPLE.tag 2>/dev/null; then
 			echo "[#INFO] SAMPLE as CQI: $CQI_SAMPLE"
-			#TAG_FILE=$(grep "CQI" $SAMPLE/$CQI_SAMPLE.tag | sed -e 's/.*CQI#\(.*\)*/\1/')
-			TAG_FILE=$(find $SAMPLE -name "$CQI_SAMPLE.tag" -exec grep "CQI" {} \; -quit | sed -e 's/.*CQI#\(.*\)*/\1/')
+			#TAG_FILE=$(grep "CQI" $SAMPLE/$CQI_SAMPLE.tag | cut -d '#' -f2-)
+			TAG_FILE=$(grep "CQI" $SAMPLE/$CQI_SAMPLE.tag | sed -e 's/.*CQI#\(.*\)*/\1/')
 			IFS='#' read -ra FULL_TAG <<< "$(echo $TAG_FILE | cut -d '!' -f1)"
 			for TAG in "${FULL_TAG[@]}"; do
 				echo "[#INFO] TAG=$TAG"
@@ -528,11 +534,9 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 				rm -f $CQI/ANNEX/*.gz*
 				rm -f $CQI/CQI_VCF* $CQI/SAMPLE* $CQI/ANNEX/*.vcf.gz $CQI/ANNEX/*/CQI_VCF* $CQI/ANNEX/*/SAMPLE_VCF* $CQI/ANNEX/*/final*.vcf 
 				
-				### Copy to depository if not archives
-				if [[ ! -v ARCHIVES ]]; then
-					mkdir -p /STARK/output/depository/$(dirname $(echo $CQI | cut -d '/' -f5-))
-					rsync -av $CQI /STARK/output/depository/$(dirname $(echo $CQI | cut -d '/' -f5-))
-				fi;
+				### Copy to depository
+				mkdir -p /STARK/output/depository/$(dirname $(echo $CQI | cut -d '/' -f5-))
+				rsync -av $CQI /STARK/output/depository/$(dirname $(echo $CQI | cut -d '/' -f5-))
 			done; #IF multiple tag CQI for one sample
 			#GENES=""
 			 #/home1/BAS/lamouchj/CQI/bin/concordance*.txt

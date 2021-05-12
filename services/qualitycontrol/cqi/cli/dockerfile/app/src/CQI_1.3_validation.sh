@@ -42,7 +42,7 @@ function usage {
 		#echo "# -s/--set              SETS option";
 		echo "# -j/--json             JSON option";
         echo "# -o/--genome           GENOME option";
-		echo "# -a/--archives         ARCHIVES option";
+	echo "# -a/--archives         ARCHIVES option";
 		echo "# -v/--verbose          VERBOSE option";
         echo "# -d/--debug            DEBUG option";
         echo "# -n/--release          RELEASE option";
@@ -133,7 +133,7 @@ echo "GENES=$BED"
 #echo "VAF=$VAF"
 #echo "CQI_VCF=$CQI_VCF"
 #echo "SETS=$SETS"
-echo "ARCHIVES=$ARCHIVES"
+echo "ARCHIVES=$ARCHIVEs"
 echo "JSON=$JSON"
 echo "GENOME=$GENOME"
 echo -e "\n"
@@ -188,10 +188,10 @@ fi;
 if [ ! -f $RUN/CQIComplete.txt ]; then
 	for SAMPLE in $(find $RUN -mindepth 1 -maxdepth 1 -type d); do
 		CQI_SAMPLE=$(basename "$SAMPLE")
-		if grep -q "CQI" $SAMPLE/STARK/$CQI_SAMPLE.tag 2>/dev/null; then
+		if grep -q "CQI" $SAMPLE/$CQI_SAMPLE.tag 2>/dev/null; then
 			echo "[#INFO] SAMPLE as CQI: $CQI_SAMPLE"
-			#TAG_FILE=$(grep "CQI" $SAMPLE/$CQI_SAMPLE.tag | sed -e 's/.*CQI#\(.*\)*/\1/')
-			TAG_FILE=$(find $SAMPLE -name "$CQI_SAMPLE.tag" -exec grep "CQI" {} \; -quit | sed -e 's/.*CQI#\(.*\)*/\1/')
+			#TAG_FILE=$(grep "CQI" $SAMPLE/$CQI_SAMPLE.tag | cut -d '#' -f2-)
+			TAG_FILE=$(grep "CQI" $SAMPLE/$CQI_SAMPLE.tag | sed -e 's/.*CQI#\(.*\)*/\1/')
 			IFS='#' read -ra FULL_TAG <<< "$(echo $TAG_FILE | cut -d '!' -f1)"
 			for TAG in "${FULL_TAG[@]}"; do
 				echo "[#INFO] TAG=$TAG"
