@@ -19,6 +19,7 @@ def create_container_file(containersFile, run, containerName):
 		write_file.write('EXEC_DATE: ' + datetime.now().strftime('%d%m%Y-%H%M%S') + '\n')
 		write_file.write('ID: ' + containerName + '\n')
 	os.chmod(os.path.join(containersFile, containerName + '.log'), 0o777)
+	os.chmod(containersFile, 0o777)
 
 
 def create_running_file(run, serviceName):
@@ -27,69 +28,111 @@ def create_running_file(run, serviceName):
 	os.chmod(os.path.join(run, serviceName + 'Running.txt'), 0o777)
 
 
-def find_family_tag(run):
-	family_list = []
-	family_dict = {}
-	member_dict = {}
-	flipped_family_dict = {}
-	sample_folder_list = glob.glob(os.path.join(run, '*', ''))
+# def find_family_tag(run):
+	# family_list = []
+	# family_dict = {}
+	# member_dict = {}
+	# flipped_family_dict = {}
+	# sample_folder_list = glob.glob(os.path.join(run, '*', ''))
 
-	for sample_folder in sample_folder_list:
-		sample_folder = sample_folder[:-1]
-		if sample_folder.endswith('logs') or sample_folder.endswith('CANOES'):
-			break
-		tag_file = os.path.join(sample_folder, os.path.basename(sample_folder) + '.tag')
-		with open(tag_file, 'r') as read_file:
-			for tags in read_file:
-				tags = tags.strip()
-				tags = tags.split('!')
-				for tag in tags:
-					if tag.startswith('FAMILY#'):
-						family_tag = tag.split('#')
-						family_dict[os.path.basename(sample_folder)] = family_tag[1]
-					if tag.startswith('MEMBER#'):
-						family_member = tag.split('#')
-						member_dict[os.path.basename(sample_folder)] = family_member[1]
+	# for sample_folder in sample_folder_list:
+		# sample_folder = sample_folder[:-1]
+		# if sample_folder.endswith('logs') or sample_folder.endswith('CANOES'):
+			# break
+		# tag_file = os.path.join(sample_folder, os.path.basename(sample_folder) + '.tag')
+		# with open(tag_file, 'r') as read_file:
+			# for tags in read_file:
+				# tags = tags.strip()
+				# tags = tags.split('!')
+				# for tag in tags:
+					# if tag.startswith('FAMILY#'):
+						# family_tag = tag.split('#')
+						# family_dict[os.path.basename(sample_folder)] = family_tag[1]
+					# if tag.startswith('MEMBER#'):
+						# family_member = tag.split('#')
+						# member_dict[os.path.basename(sample_folder)] = family_member[1]
 
-	for family_key in family_dict:
-		family_value = family_dict[family_key]
-		if family_value not in flipped_family_dict:
-			flipped_family_dict[family_value] = [family_key]
+	# for family_key in family_dict:
+		# family_value = family_dict[family_key]
+		# if family_value not in flipped_family_dict:
+			# flipped_family_dict[family_value] = [family_key]
+		# else:
+			# flipped_family_dict[family_value].append(family_key)
+
+	# for flipped_family_key in flipped_family_dict:
+		# family = '['
+		# for member in flipped_family_dict[flipped_family_key]:
+			# family = family + member + ','
+		# family = family[:-1] + ']'
+		# family_list.append(family)
+
+	# return ' '.join(family_list)
+
+
+def getDescriptionFromSample(sample, runDir):
+	samplesheetPath = find_any_samplesheet(runDir)
+	assert samplesheetPath != "NO_SAMPLESHEET_FOUND", \
+			"[ERROR] find_any_samplesheet() couldn't find any samplesheet. Check if the --fromResultDir argument is set correctly."
+	inDataTable = False
+	description = []
+	with open(samplesheetPath, "r") as f:
+			for l in f:
+				if not inDataTable:
+					if l.startswith("Sample_ID,"):
+						inDataTable = True
+						DescriptionIndex = l.strip().split(",").index("Description")
+				else:
+					if sample in l:
+						description.append(l.strip().split(",")[DescriptionIndex])
+	return description
+
+def find_any_samplesheet(runDir, fromResDir = False):
+	"""
+	Adapted from runmetrics.py
+	
+	1) look up recursively all files named SampleSheet.csv in the runDir
+	2) check if file path follows an expected samplesheet name and location
+		(the latter depends on if we're in a STARK result or repository dir,
+		defined by the bool fromResDir)
+	3) first correct file path is returned
+	"""
+	p = subprocess.Popen("find -L "+runDir+" -maxdepth 3 -name *SampleSheet.csv", stdout=subprocess.PIPE, shell=True)
+	out = p.stdout.readlines()
+	for ss in out:
+		ss = ss.decode("utf-8").strip()
+		if fromResDir:
+			r = re.match(runDir.rstrip("/")+"/(.*)/(.*).SampleSheet.csv", ss)
 		else:
-			flipped_family_dict[family_value].append(family_key)
-
-	for flipped_family_key in flipped_family_dict:
-		family = '['
-		for member in flipped_family_dict[flipped_family_key]:
-			family = family + member + ','
-		family = family[:-1] + ']'
-		family_list.append(family)
-
-	return ' '.join(family_list)
+			r = re.match(runDir.rstrip("/")+"/(.*)/STARK/(.*).SampleSheet.csv", ss)
+		if r is None:
+			continue
+		elif r.group(1) == r.group(2): #checks if (.*) == (.*)
+			return ss
+	return "NO_SAMPLESHEET_FOUND"
 
 
 def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile, repository):
 	original_umask = os.umask(0o000)
 	create_running_file(run, serviceName)
 	container_name = serviceName + '_' + os.path.basename(os.path.dirname(run)) + '_' + os.path.basename(run)
-	family_tag = find_family_tag(run)
+	# family_tag = find_family_tag(run)
 	create_container_file(containersFile, run, container_name)
 	if os.path.isfile(os.path.join(run, 'POOLComplete.txt')):
-		if family_tag == '':
-			cmd = 'docker run --rm --name=' + container_name + ' ' + montage + ' ' + image + ' -r ' + run + ' -p */POOL/*.final.vcf.gz'
-			print(cmd)
-			subprocess.call(cmd, shell=True)
-		else:
-			cmd = 'docker run --rm --name=' + container_name + ' ' + montage + ' ' + image + ' -r ' + run + ' -fam ' + family_tag + ' -p */POOL/*.final.vcf.gz'
-			print(cmd)
-			subprocess.call(cmd, shell=True)
+		# if family_tag == '':
+		cmd = 'docker run --rm --name=' + container_name + ' ' + montage + ' ' + image + ' -r ' + run + ' -p */POOL/*.final.vcf.gz'
+		print(cmd)
+		subprocess.call(cmd, shell=True)
+		# else:
+			# cmd = 'docker run --rm --name=' + container_name + ' ' + montage + ' ' + image + ' -r ' + run + ' -fam ' + family_tag + ' -p */POOL/*.final.vcf.gz'
+			# print(cmd)
+			# subprocess.call(cmd, shell=True)
 	if not os.path.isfile(os.path.join(run, 'POOLComplete.txt')):
-		if family_tag == '':
-			cmd = 'docker run --rm --name=' + container_name + ' ' + montage + ' ' + image + ' -r ' + run
-			print(cmd)
-			subprocess.call(cmd, shell=True)
-		else:
-			cmd = 'docker run --rm --name=' + container_name + ' ' + montage + ' ' + image + ' -r ' + run + ' -fam ' + family_tag
-			print(cmd)
-			subprocess.call(cmd, shell=True)
+		# if family_tag == '':
+		cmd = 'docker run --rm --name=' + container_name + ' ' + montage + ' ' + image + ' -r ' + run
+		print(cmd)
+		subprocess.call(cmd, shell=True)
+		# else:
+			# cmd = 'docker run --rm --name=' + container_name + ' ' + montage + ' ' + image + ' -r ' + run + ' -fam ' + family_tag
+			# print(cmd)
+			# subprocess.call(cmd, shell=True)
 	os.umask(original_umask)
