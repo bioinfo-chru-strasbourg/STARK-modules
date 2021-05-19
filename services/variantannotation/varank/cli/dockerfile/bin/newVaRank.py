@@ -383,14 +383,14 @@ def run_varank_results_provider(varank_processing_tsv_folder, run_depository, ru
 	varank_logfile_depository = os.path.join(run_depository, 'VaRank.log')
 	varank_logfile_repository = os.path.join(run_repository, 'VaRank.log')
 
-	varank_renamed_logfile_depository = os.path.join(run_depository, 'varank.V' + datetime.now().strftime('%y%y%m%d-%H%M%S') + '.VaRank.log')
-	varank_renamed_logfile_repository = os.path.join(run_repository, 'varank.V' + datetime.now().strftime('%y%y%m%d-%H%M%S') + '.VaRank.log')
+	varank_renamed_logfile_depository = os.path.join(run_depository, 'VARANK.' + datetime.now().strftime('%y%m%d-%H%M%S') + '.VaRank.log')
+	varank_renamed_logfile_repository = os.path.join(run_repository, 'VARANK.' + datetime.now().strftime('%y%m%d-%H%M%S') + '.VaRank.log')
 
 	non_redundant_file_depository = os.path.join(run_depository, 'Non_Redondant.tsv')
 	non_redundant_file_repository = os.path.join(run_repository, 'Non_Redondant.tsv')
 
-	non_redundant_renamed_file_depository = os.path.join(run_depository, 'varank.V' + datetime.now().strftime('%y%y%m%d-%H%M%S') + '.Non_Redondant.tsv')
-	non_redundant_renamed_file_repository = os.path.join(run_repository, 'varank.V' + datetime.now().strftime('%y%y%m%d-%H%M%S') + '.Non_Redondant.tsv')
+	non_redundant_renamed_file_depository = os.path.join(run_depository, 'VARANK.' + datetime.now().strftime('%y%m%d-%H%M%S') + '.Non_Redondant.tsv')
+	non_redundant_renamed_file_repository = os.path.join(run_repository, 'VARANK.' + datetime.now().strftime('%y%m%d-%H%M%S') + '.Non_Redondant.tsv')
 
 	subprocess.run(['rsync', '-rp', varank_processing_folder_logfile, run_repository])
 	subprocess.run(['rsync', '-rp', varank_processing_folder_logfile, run_depository])
