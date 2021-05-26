@@ -335,13 +335,13 @@ def getRunName(starkComplete):
 
 def getStarkCopyComplete(groupInput, days):
 	starkCompleteList = []
-	p = subprocess.Popen("find "+groupInput+"/*/STARKCopyComplete.txt -mtime -"+str(days)+" 2>/dev/null", stdout=subprocess.PIPE, shell=True)
+	p = subprocess.Popen("find "+groupInput+"/*/STARKCopyComplete.txt -maxdepth 5 -mtime -"+str(days)+" 2>/dev/null", stdout=subprocess.PIPE, shell=True)
 	out = p.stdout.readlines()
 	if not out:
-		p = subprocess.Popen("find "+groupInput+"/*/*/STARKCopyComplete.txt -mtime -"+str(days)+" 2>/dev/null", stdout=subprocess.PIPE, shell=True)
+		p = subprocess.Popen("find "+groupInput+"/*/*/STARKCopyComplete.txt -maxdepth 5 -mtime -"+str(days)+" 2>/dev/null", stdout=subprocess.PIPE, shell=True)
 		out = p.stdout.readlines()
 		if not out:
-			p = subprocess.Popen("find "+groupInput+"/*/*/*/STARKCopyComplete.txt -mtime -"+str(days)+" 2>/dev/null", stdout=subprocess.PIPE, shell=True)
+			p = subprocess.Popen("find "+groupInput+"/*/*/*/STARKCopyComplete.txt -maxdepth 5 -mtime -"+str(days)+" 2>/dev/null", stdout=subprocess.PIPE, shell=True)
 			out = p.stdout.readlines()
 	for complete in out:
 		complete = complete.decode("utf-8").strip()
@@ -353,10 +353,20 @@ def main(groupInputList, serviceName, jsonFile, days, delay, containersFile, con
 		for groupInput in groupInputList:
 			starkCompleteList = getStarkCopyComplete(groupInput, days)
 			for starkComplete in starkCompleteList:
-				run = getRunName(starkComplete)
-				if verifyTriggers(run, serviceName, jsonFile):
-					print("Launching "+serviceName+" analysis for run "+run)
-					launch(run, serviceName, containersFile, os.getenv('MICROSERVICE_MONTAGE'), os.getenv('MICROSERVICE_IMAGE'), os.getenv('MICROSERVICE_LAUNCH'), configFile, os.getenv('MICROSERVICE_REPOSITORY'))
+				###25/01/2021 Prod Hotfix
+				runDir = os.path.dirname(starkComplete)
+				p = subprocess.Popen("find "+runDir+"/* -type d -maxdepth 1", stdout=subprocess.PIPE, shell=True)
+				out = p.stdout.readlines()
+				if any([os.path.basename(path.rstrip()) == "STARK" for path in out]):
+					###
+					run = getRunName(starkComplete)
+					if verifyTriggers(run, serviceName, jsonFile):
+						print("[INFO] Launching "+serviceName+" analysis for run "+run)
+						launch(run, serviceName, containersFile, os.getenv('MICROSERVICE_MONTAGE'), os.getenv('MICROSERVICE_IMAGE'), os.getenv('MICROSERVICE_LAUNCH'), configFile, os.getenv('MICROSERVICE_REPOSITORY'))
+				###
+				else:
+					print("[INFO] Run "+starkComplete+" ignored as no STARK directory was found")
+				###
 		time.sleep(60.0*delay)
 
 def myoptions():
