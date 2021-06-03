@@ -40,8 +40,8 @@ export BGZIP_DESCRIPTION="Compressing VCF files"
 export BGZIP_REF=$HTSLIB_REF
 
 # BCFTOOLS
-export BCFTOOLS=$NGS_TOOLS/bcftools/1.11/bin/bcftools           # BIN
-export BCFTOOLS_VERSION=1.11                                    # VER
+export BCFTOOLS=$NGS_TOOLS/bcftools/1.12/bin/bcftools           # BIN
+export BCFTOOLS_VERSION=1.12                                    # VER
 export BCFTOOLS_DESCRIPTION="Reading/writing BCF2/VCF/gVCF files and calling/filtering/summarising SNP and short indel sequence variants"
 export BCFTOOLS_REF="http://www.htslib.org/"
 
