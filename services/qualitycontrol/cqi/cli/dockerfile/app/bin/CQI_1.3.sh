@@ -34,12 +34,8 @@ function release () {
 # Usage
 function usage {
         echo "#USAGE: $(basename $0) --run =<RUN>|--genes=<GENES1,GENES2,...>|--json=<JSON>|--genome=<GENOME>|--archives=<ARCHIVES> [options...]";
-		#echo "# -c/--cqi              CQI option";
         echo "# -r/--run              RUN option";
         echo "# -g/--genes            GENES option";
-		#echo "# -a/--vaf              VAF option";
-		#echo "# -q --cqigz            CQI_VCF option";
-		#echo "# -s/--set              SETS option";
 		echo "# -j/--json             JSON option";
         echo "# -o/--genome           GENOME option";
 		echo "# -a/--archives         ARCHIVES option";
@@ -57,7 +53,7 @@ header;
 # Getting parameters from the input
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ":" tells that the option has a required argument, "::" tells that the option has an optional argument, no ":" tells no argument
-ARGS=$(getopt -o "r:c:g:a:j:o:vdnh" --long "run:,cqi:,genes:,archives:,json:,genome:,verbose,debug,release,help" -- "$@" 2> /dev/null)
+ARGS=$(getopt -o "r:c:g:a:j:o:vdnh" --long "run:,genes:,archives:,json:,genome:,verbose,debug,release,help" -- "$@" 2> /dev/null)
 if [ $? -ne 0 ]; then
         :
 fi;
@@ -72,10 +68,6 @@ do
                         RUN="$2"
                         shift 2
                         ;;
-                -c|--cqi)
-                        CQI_SAMPLE="$2"
-                        shift 2
-                        ;;
                 -g|--genes)
                         BED="$2"
                         shift 2
@@ -84,14 +76,14 @@ do
                         ARCHIVES="$2"
                         shift 2
                         ;;
-		-j|--json)
+				-j|--json)
                         JSON="$2"
                         shift 2
-			;;
-		-o|--genome)
+						;;
+				-o|--genome)
                         GENOME="$2"
                         shift 2
-			;;
+						;;
                 -v|--verbose)
                         VERBOSE=1
                         shift 1
@@ -127,12 +119,8 @@ fi;
 
 echo -e "\n"
 echo "Parameters provided: $PARAM"
-#echo "CQI_SAMPLE=$CQI_SAMPLE"
 echo "RUN=$RUN"
 echo "GENES=$BED"
-#echo "VAF=$VAF"
-#echo "CQI_VCF=$CQI_VCF"
-#echo "SETS=$SETS"
 echo "ARCHIVES=$ARCHIVES"
 echo "JSON=$JSON"
 echo "GENOME=$GENOME"
@@ -188,7 +176,8 @@ fi;
 if [ ! -f $RUN/CQIComplete.txt ]; then
 	for SAMPLE in $(find $RUN -mindepth 1 -maxdepth 1 -type d); do
 		CQI_SAMPLE=$(basename "$SAMPLE")
-		if grep -q "CQI" $SAMPLE/STARK/$CQI_SAMPLE.tag 2>/dev/null; then
+		#STARK folder dont forget to rehad
+		if grep -q "CQI" $SAMPLE/$CQI_SAMPLE.tag 2>/dev/null; then
 			echo "[#INFO] SAMPLE as CQI: $CQI_SAMPLE"
 			#TAG_FILE=$(grep "CQI" $SAMPLE/$CQI_SAMPLE.tag | sed -e 's/.*CQI#\(.*\)*/\1/')
 			TAG_FILE=$(find $SAMPLE -name "$CQI_SAMPLE.tag" -exec grep "CQI" {} \; -quit | sed -e 's/.*CQI#\(.*\)*/\1/')
@@ -222,6 +211,7 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 					#Modif 1er Octobre
 					#CQI=$RUN/$CQI_SAMPLE/CQI_$TAG
 					CQI=$RUN/$CQI_SAMPLE/CQI/$TAG
+					
 					mkdir -p $CQI
 					
 					RES=$(find $RUN/$CQI_SAMPLE -name $CQI_SAMPLE.final.vcf.gz -print -quit)
@@ -275,7 +265,12 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 						continue 
 					fi;
 				fi;
-				echo "BED=$BED"
+
+				#LOG file generation
+				touch $CQI/analysis.$DATEFILE.report.log
+				LOG=$CQI/analysis.$DATEFILE.report.log
+
+				echo "[#INFO] BED: $BED"
 				
 				#Interval file
 				#Non regression
@@ -285,9 +280,26 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 				else 
 					#CQI interval files
 					if [ ! -z "$BED" ]; then
-						if [[ "$BED" == *" "* ]]; then
-							cat $BED | bedtools merge -i stdin > $CQI/intervals.genes
-							GENES=$CQI/intervals.genes
+						if [[ "$BED" == *","* ]]; then
+							BED_TRUE=${BED//,/" "}
+
+							#Copy and sort .genes
+							cp $BED_TRUE $CQI
+						
+							declare -a GENESFILE=($(ls $CQI/*.genes*))
+							for VAL in "${GENESFILE[@]}"; do
+								echo "[#INFO] Sort $(basename $VAL)"
+								sort -k1,1V -k2,2n $VAL > $VAL.sorted
+							done;
+
+							echo -e "[#INFO] $(ls $CQI/*.sorted) | bedtools merge -i stdin  > $CQI/tmp_CQI.$DATEFILE.intervals.genes.bed"
+							cat $CQI/*.sorted | bedtools merge -i stdin > $CQI/tmp_CQI.$DATEFILE.intervals.genes.bed 2>>$LOG
+							sort -k1,1V $CQI/tmp_CQI.$DATEFILE.intervals.genes.bed > $CQI/CQI.$DATEFILE.intervals.genes.bed 2>>$LOG
+							GENES=$CQI/CQI.$DATEFILE.intervals.genes.bed
+							if [ ! -s "$GENES" ]; then
+								echo "[ERROR] Gene file generated is empty $GENES"
+								exit 2
+							fi;
 						else
 							GENES=$BED
 						fi;
@@ -302,12 +314,12 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 					else
 						GENES=$(find $RUN/$CQI_SAMPLE -name "$CQI_SAMPLE.bed" ! -name "*list*" -print -quit)
 					fi;
-					echo "[#INFO Filter interval on: $GENES]"
+					echo "[#INFO] Filter interval on: $GENES"
 					#GENES=$CQI/intervals.genes
 				fi;
 				
-				touch $CQI/analysis.$DATEFILE.report.log
-				LOG=$CQI/analysis.$DATEFILE.report.log
+				#touch $CQI/analysis.$DATEFILE.report.log
+				#LOG=$CQI/analysis.$DATEFILE.report.log
 				
 				#NONREGRESSION
 				#SAMPLE_VCF=($($CQI_SAMPLE | tr -d '[],'))
@@ -315,8 +327,8 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 				
 				#Variable set in Listener, depending on CQI sample 
 				
-				echo "SAMPLE_VCF=$SAMPLE_VCF"
-				echo "CQI_VCF=$CQI_VCF"
+				#echo "SAMPLE_VCF=$SAMPLE_VCF"
+				#echo "CQI_VCF=$CQI_VCF"
 				
 				#With bedtools intersect
 				#No bed leeds to exit the script, Options filter on VAF, taking all variants with a float value min/max VAF conf bcftools options
@@ -371,8 +383,8 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 					#mv $CQI/INDEL/*.recode.vcf $CQI/INDEL/$(basename -s .recode.vcf $VCF)
 					
 					#Given that VCF ref and VCF produce by STARK have the same process, it doesn't matter if a few sample are consider INDEL or SNV ( it appears only in nonreg sample cuz of old vcf I guess)
-					bcftools view --types snps -O v -o $CQI/SNV/$(basename -- $VCF) $VCF.gz
-					bcftools view --exclude-types snps -O v -o $CQI/INDEL/$(basename -- $VCF) $VCF.gz
+					bcftools view --types snps -O v -o $CQI/SNV/$(basename -- $VCF) $VCF.gz 2>>$LOG
+					bcftools view --exclude-types snps -O v -o $CQI/INDEL/$(basename -- $VCF) $VCF.gz 2>>$LOG
 				done;
 				
 				#SNV / INDELS folder
@@ -387,9 +399,9 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 					CQI_VCF=$FOLDER/$(basename -- $CQI_VCF_OR)
 					SAMPLE_VCF=$FOLDER/$(basename -- $SAMPLE_VCF_OR)
 				
-					echo "SAMPLE_VCF=$SAMPLE_VCF"
-					echo "CQI_VCF=$CQI_VCF"
-					echo "OUTPUT=$OUTPUT"
+					#echo "SAMPLE_VCF=$SAMPLE_VCF"
+					#echo "CQI_VCF=$CQI_VCF"
+					#echo "OUTPUT=$OUTPUT"
 					
 					echo "##########################" >> $OUTPUT
 					echo "### CQI vcf comparison " >> $OUTPUT
@@ -418,7 +430,7 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 					
 					#variables
 					if [[ $(basename -- $FOLDER) == "INDEL" ]]; then
-						echo "[#INFO] NORM INDEL"
+						echo "[#INFO] Normalization INDEL..."
 						bcftools norm -f $GENOME $FOLDER/SAMPLE_VCF_sorted.vcf.gz -O z -o $FOLDER/SAMPLE_VCF_sorted_norm.vcf.gz 2>>$LOG
 						tabix -f $FOLDER/SAMPLE_VCF_sorted_norm.vcf.gz 2>>$LOG
 						
@@ -439,7 +451,11 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 					gunzip -c $SAMPLE_VCF > $FOLDER/final_SAMPLE_VCF.vcf 2>>$LOG
 					gunzip -c $CQI_VCF > $FOLDER/final_CQI_VCF.vcf  2>>$LOG
 					
-					
+					###############
+					## METRICS
+					###############
+
+
 					#### output for sample detail  expected without bed filtering
 					#NB_EXPECTED=$(zcat ${LINE} | grep -v "^#" | wc -l)
 					
@@ -451,6 +467,7 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 					NB_MISSING=$(($NB_EXPECTED-$NB_POSITIVE))
 					NB_NOISE=$(($NB_FOUND-$NB_POSITIVE))
 					
+					
 					## calcul of SENSITIVITY for the sample
 					if [ $NB_EXPECTED -eq 0 ]; then 
 						SEN=0
@@ -459,12 +476,24 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 					fi;
 					
 				
-					# calcul of SPECIFICITY for the sample
+					# calcul of VPP for the sample = Positive predictive value
 					# ALL
 					if [ $NB_FOUND -eq 0 ]; then 
+						VPP=0;
+					else
+						VPP=$(echo "scale=4; ($NB_POSITIVE/$NB_FOUND)*100" | bc | sed s/00$// | awk '{printf "%.2f\n", $0}')
+					fi;
+
+					#Specificity, the true one
+					#Nombre de bases du bed - les variants unique, a voir pour les délétions car on perd des bases de la longueur du bed total
+					#TRUE_BED=$(find $RUN/$CQI_SAMPLE -name $CQI_SAMPLE.bed -print -quit)
+					NB_TOTAL=$(cat $GENES | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}')
+
+					if [ $NB_TOTAL -eq 0 ]; then
 						SPE=0;
 					else
-						SPE=$(echo "scale=4; ($NB_POSITIVE/$NB_FOUND)*100" | bc | sed s/00$// | awk '{printf "%.2f\n", $0}')
+						#   Metrics                          
+						SPE=$(echo "scale=4; ($NB_TOTAL-$NB_EXPECTED)/($NB_TOTAL-$NB_EXPECTED+$NB_NOISE)*100" | bc | sed s/00$// | awk '{printf "%.2f\n", $0}')
 					fi;
 					
 					echo "#################" >> $OUTPUT 
@@ -479,7 +508,8 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 					echo -e "# MISSING:     $NB_MISSING" >> $OUTPUT
 					echo -e "# NOISE:       $NB_NOISE" >> $OUTPUT
 					echo -e "# SENSITIVITY: $SEN%" >> $OUTPUT
-					echo -e "# SPECIFICITY: $SPE%" >> $OUTPUT
+					echo -e "# PPV:         $VPP%    Positive Predictive Value" >> $OUTPUT #VPP
+					echo -e "# SPECIFICITY: $SPE%" >> $OUTPUT #SPE
 					echo -e "#" >> $OUTPUT
 					
 					#Files used by RTG-tools
@@ -510,22 +540,46 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 				#mv $CQI/INTERVALS $CQI/ANNEX
 				
 				#Missing variants
-				bgzip -c $CQI/ANNEX/SNV/bcftools_isec_$DATEFILE/0000.vcf > $CQI/ANNEX/SNV.missing.vcf.gz && tabix -p vcf $CQI/ANNEX/SNV.missing.vcf.gz
-				bgzip -c $CQI/ANNEX/INDEL/bcftools_isec_$DATEFILE/0000.vcf > $CQI/ANNEX/INDEL.missing.vcf.gz && tabix -p vcf $CQI/ANNEX/INDEL.missing.vcf.gz 
-				
-				#If all variants were founded or no variants expected to be found
-				if [ $(grep -v "^#" $CQI/ANNEX/SNV/bcftools_isec_$DATEFILE/0000.vcf | wc -l) -eq 0 ]; then
-					cat $CQI/ANNEX/INDEL/bcftools_isec_$DATEFILE/0000.vcf > $CQI/analysis.$DATEFILE.report.missing.vcf
-				
-				elif [ $(grep -v "^#" $CQI/ANNEX/INDEL/bcftools_isec_$DATEFILE/0000.vcf | wc -l) -eq 0 ]; then
-					cat $CQI/ANNEX/SNV/bcftools_isec_$DATEFILE/0000.vcf > $CQI/analysis.$DATEFILE.report.missing.vcf
-				else
-					bcftools concat -a $CQI/ANNEX/SNV.missing.vcf.gz $CQI/ANNEX/INDEL.missing.vcf.gz -O v -o $CQI/analysis.$DATEFILE.report.missing.vcf
-				fi;
-				
+                bgzip -c $CQI/ANNEX/SNV/bcftools_isec_$DATEFILE/0000.vcf > $CQI/ANNEX/SNV.missing.vcf.gz && tabix -p vcf $CQI/ANNEX/SNV.missing.vcf.gz
+                bgzip -c $CQI/ANNEX/INDEL/bcftools_isec_$DATEFILE/0000.vcf > $CQI/ANNEX/INDEL.missing.vcf.gz && tabix -p vcf $CQI/ANNEX/INDEL.missing.vcf.gz
+                #For variants found
+                bgzip -c $CQI/ANNEX/SNV/bcftools_isec_$DATEFILE/0002.vcf > $CQI/ANNEX/SNV.found.vcf.gz && tabix -p vcf $CQI/ANNEX/SNV.found.vcf.gz
+                bgzip -c $CQI/ANNEX/INDEL/bcftools_isec_$DATEFILE/0002.vcf > $CQI/ANNEX/INDEL.found.vcf.gz && tabix -p vcf $CQI/ANNEX/INDEL.found.vcf.gz
+                
+				declare -a StringArray=("$CQI/ANNEX/SNV.missing.vcf.gz" "$CQI/ANNEX/SNV.found.vcf.gz")
+                for VALUE in "${StringArray[@]}"; do
+                    echo -e "[#INFO] Process $VALUE"
+                    if [[ $VALUE == *"found"* ]]; then
+                        WORD="found"
+                        FILE="found.vcf.gz"
+                    else
+                 	    WORD="missing"
+                        FILE="missing.vcf.gz"
+					fi;
+                        
+                    #Process for variants found and miss
+                    if [ $(zcat $CQI/ANNEX/SNV.$FILE | grep -v "^#" | wc -l) -eq 0 ]; then
+                            zcat $CQI/ANNEX/INDEL.$FILE > $CQI/analysis.$DATEFILE.report.$WORD.vcf
+                    elif [ $(zcat $CQI/ANNEX/INDEL.$FILE | grep -v "^#" | wc -l) -eq 0 ]; then
+                            zcat $CQI/ANNEX/SNV.$FILE > $CQI/analysis.$DATEFILE.report.$WORD.vcf
+                    else
+                        bcftools concat -a $CQI/ANNEX/SNV.$FILE $CQI/ANNEX/INDEL.$FILE -O v -o $CQI/analysis.$DATEFILE.report.$WORD.vcf 2>>$LOG
+                        if [ ! -s $CQI/analysis.$DATEFILE.report.$WORD.vcf ]; then
+                            zcat $CQI/ANNEX/SNV.$FILE > $CQI/tmp.analysis.$DATEFILE.report.$WORD.vcf && zcat $CQI/ANNEX/INDEL.$FILE | grep -v "^#" >> $CQI/tmp.analysis.$DATEFILE.report.$WORD.vcf
+			    #mv $CQI/analysis.$DATEFILE.report.$WORD.vcf $CQI/tmp.analysis.$DATEFILE.report.$WORD.vcf
+                            grep "^#" $CQI/tmp.analysis.$DATEFILE.report.$WORD.vcf > $CQI/analysis.$DATEFILE.report.$WORD.vcf && sort -k1,1V -k2,2n $CQI/tmp.analysis$DATEFILE.report.$WORD.vcf >> $CQI/analysis.$DATEFILE.report.$WORD.vcf && echo "WARNING BCFTOOLS CONCAT ISSUES, merge vcf manual "$FILE$WORD" vcf" >> $LOG 2>>$LOG
+                        fi;
+                    fi;  
+                done;
+
+				#Facilitate IGV searching / From VCF to Bed-like
+				awk 'x==1 {print $0} /#CHROM/ {x=1}' $CQI/analysis.$DATEFILE.report.missing.vcf | cut -f1-2 > $CQI/analysis.$DATEFILE.report.igv.bed 2>>$LOG
+
+
 				chmod -R 777 $CQI
 				#remove intermediate vcf
-				rm -f $CQI/ANNEX/*.gz*
+				mv $CQI/CQI* $CQI/ANNEX
+				rm -f $CQI/ANNEX/*.gz* $CQI/tmp* $CQI/*.sorted $CQI/*.genes
 				rm -f $CQI/CQI_VCF* $CQI/SAMPLE* $CQI/ANNEX/*.vcf.gz $CQI/ANNEX/*/CQI_VCF* $CQI/ANNEX/*/SAMPLE_VCF* $CQI/ANNEX/*/final*.vcf 
 				
 				### Copy to depository if not archives
@@ -534,8 +588,6 @@ if [ ! -f $RUN/CQIComplete.txt ]; then
 					rsync -av $CQI /STARK/output/depository/$(dirname $(echo $CQI | cut -d '/' -f5-))
 				fi;
 			done; #IF multiple tag CQI for one sample
-			#GENES=""
-			 #/home1/BAS/lamouchj/CQI/bin/concordance*.txt
 		else #SAMPLE which are not CQI 
 			continue
 		fi;
@@ -544,60 +596,6 @@ else #CQIComplete.txt
 	echo "[#INFO] CQI already done"
 fi;
 
-#NONREGRESSION bilan globale TODO trouble with name of GLOB
-if [ "$REG" = true ]; then
-	GLOB=$RUN/validation_$(echo $(basename -- $RUN) | cut -d '_' -f 3-6).txt 
-	for SAMPLE in $(find $RUN -name "CQI" -type d); do 
-		printf "\n" >> $GLOB
-		echo "#####################################" >> $GLOB
-		echo "####    SAMPLE: $(basename -- $(dirname "$SAMPLE"))" >> $GLOB
-		echo "#####################################" >> $GLOB
-		printf "\n" >> $GLOB
-		cat $SAMPLE/SNV/VCF_comparison.txt >> $GLOB
-		printf "\n" >> $GLOB
-		echo "### MISSING SNV VARIANTS" >> $GLOB
-		cat $SAMPLE/SNV/bcftools_isec/0000.vcf | grep -v "^#" >> $GLOB 
-		printf "\n" >> $GLOB
-		cat $SAMPLE/INDEL/VCF_comparison.txt >> $GLOB
-		printf "\n" >> $GLOB
-		echo "### MISSING INDEL VARIANTS" >> $GLOB
-		cat $SAMPLE/INDEL/bcftools_isec/0000.vcf | grep -v "^#" >> $GLOB
-		
-	done;
-		### CALCUL for APP
-	if [ $SUM_NB_EXPECTED -eq 0 ]; then 
-		SEN=0;
-	else
-		SEN=$(echo "scale=4; ($SUM_NB_POSITIVE/$SUM_NB_EXPECTED)*100" | bc | sed s/00$// | awk '{printf "%.2f\n", $0}')
-	fi;
-	
-	# ALL
-	if [ $SUM_NB_FOUND -eq 0 ]; then 
-		SPE=0;
-	else
-		SPE=$(echo "scale=4; ($SUM_NB_POSITIVE/$SUM_NB_FOUND)*100" | bc | sed s/00$// | awk '{printf "%.2f\n", $0}');
-	fi;
-				
-	### output for APP detail
-	echo -e "\n" >> $GLOB
-	echo -e "######################################" >> $GLOB
-	echo -e "### VALIDATION STARK $SCRIPT_RELEASE" >> $GLOB
-	echo -e "### SET $(basename -- $SETS) [$(cat $RUN/list_vcf_ref.txt | wc -l) SAMPLES]" >> $GLOB
-	echo -e "### APP $(echo $(basename -- $RUN) | cut -d '_' -f6)" >> $GLOB
-	echo -e "######################################" >> $GLOB
-	echo -e "# EXPECTED:    $SUM_NB_EXPECTED" >> $GLOB
-	echo -e "#              ALL " >> $GLOB
-	echo -e "# FOUND:       $SUM_NB_FOUND" >> $GLOB
-	echo -e "# POSITIVE:    $SUM_NB_POSITIVE" >> $GLOB
-	echo -e "# MISSING:     $SUM_NB_MISSING" >> $GLOB
-	echo -e "# NOISE:       $SUM_NB_NOISE" >> $GLOB
-	echo -e "# SENSITIVITY: $SEN%" >> $GLOB
-	echo -e "# SPECIFICITY: $SPE% " >> $GLOB
-	echo -e "######################################" >> $GLOB
-fi;
-
 #STARK_FOLDER
 touch $RUN/CQIComplete.txt && chmod 777 $RUN/CQIComplete.txt && echo -e "$DATE" >> $RUN/CQIComplete.txt
 rm -f $RUN/CQIRunning.txt
-
-
