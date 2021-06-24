@@ -66,7 +66,7 @@ def createRunningFile(run, serviceName):
 	file.write("# ["+datetime.now().strftime("%d/%m/%Y %H:%M:%S")+"] "+os.path.basename(run)+" running with "+serviceName+"\n")
 	file.close()
 
-def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile, repository):
+def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile):
 	createRunningFile(run, serviceName)
 	samplesheet = find_any_samplesheet(run)
 	assert samplesheet != "NO_SAMPLESHEET_FOUND",\
@@ -74,7 +74,6 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 	bed = findAnyBed(run)
 	md5 = getMd5(run)
 	containerName = serviceName+"-"+md5+"-NAME-"+os.path.basename(run)
-	#cmd = "docker run --rm --name="+containerName+" -v "+run+":"+run+" "+montage+" "+image+" "+launchCommand+" --run="+run+"'"
-	cmd = "docker run --rm --name="+containerName+" "+montage+" "+image+" "+launchCommand+" --run="+run+"'"
+	cmd = "docker run --rm --name="+containerName+" -v "+run+":"+run+" "+montage+" "+image+" "+launchCommand+" --run="+run+"'"
 	subprocess.call(cmd, shell = True)
 	createContainerFile(containersFile, run, containerName)
