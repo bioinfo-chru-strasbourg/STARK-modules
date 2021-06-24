@@ -75,8 +75,10 @@ def get_sample_project_from_samplesheet(samplesheetPath):
 	
 	Returns a python list containing all tags from samplesheet.
 	"""
-	assert samplesheetPath != "NO_SAMPLESHEET_FOUND", \
-			"[ERROR] find_any_samplesheet() couldn't find any samplesheet. Check if the --fromResultDir argument is set correctly."
+	if samplesheetPath == "NO_SAMPLESHEET_FOUND":
+		return []
+	# assert samplesheetPath != "NO_SAMPLESHEET_FOUND", \
+			# "[ERROR] find_any_samplesheet() couldn't find any samplesheet. Check if the --fromResultDir argument is set correctly."
 	assert_file_exists_and_is_readable(samplesheetPath)
 	inDataTable = False
 	sampleProject = []
@@ -112,7 +114,7 @@ def find_any_samplesheet(runDir, fromResDir = False):
 		defined by the bool fromResDir)
 	3) first correct file path is returned
 	"""
-	p = subprocess.Popen("find -L "+runDir+" -maxdepth 3 -name *SampleSheet.csv", stdout=subprocess.PIPE, shell=True)
+	p = subprocess.Popen("find -L "+runDir+" -maxdepth 4 -name *SampleSheet.csv", stdout=subprocess.PIPE, shell=True)
 	out = p.stdout.readlines()
 	for ss in out:
 		ss = ss.decode("utf-8").strip()
@@ -127,23 +129,22 @@ def find_any_samplesheet(runDir, fromResDir = False):
 	return "NO_SAMPLESHEET_FOUND"
 
 def checkTags(tag, sampleTagsList, analysisTagsList):
-	for serviceTag in tag:
-		if serviceTag.startswith("!"):
-			for t in sampleTagsList:
-				if not serviceTag in t:
-					return True
-			for t in analysisTagsList:
-				if not serviceTag in t:
-					return True
-			return False
-		else:
-			for t in sampleTagsList:
-				if serviceTag in t:
-					return True
-			for t in analysisTagsList:
-				if serviceTag in t:
-					return True
-			return False
+	if tag.startswith("!"):
+		for t in sampleTagsList:
+			if not tag in t:
+				return True
+		for t in analysisTagsList:
+			if not tag in t:
+				return True
+		return False
+	else:
+		for t in sampleTagsList:
+			if tag in t:
+				return True
+		for t in analysisTagsList:
+			if tag in t:
+				return True
+		return False
 
 def getAnalysisTagsFromSampleList(sampleList,run):
 	analysisTagsList = []
@@ -231,6 +232,7 @@ def checkTriggers(jconfig, serviceName, run):
 			else:
 				return False
 		elif key == "group" or key == "project":
+			print(run)
 			if not sampleProject:
 				sampleProject = get_sample_project_from_samplesheet(find_any_samplesheet(run))
 				# print(sampleProject)
@@ -298,7 +300,7 @@ def main(groupInputList, serviceName, jsonFile, days, delay, containersFile, con
 				run = getRunName(starkComplete)
 				if verifyTriggers(run, serviceName, jsonFile):
 					print("Launching "+serviceName+" analysis for run "+run)
-					launch(run, serviceName, containersFile, os.getenv('MICROSERVICE_MONTAGE'), os.getenv('MICROSERVICE_IMAGE'), os.getenv('MICROSERVICE_LAUNCH'), configFile)
+					launch(run, serviceName, containersFile, os.getenv('MICROSERVICE_MONTAGE'), os.getenv('MICROSERVICE_IMAGE'), os.getenv('MICROSERVICE_LAUNCH'), configFile, os.getenv('MICROSERVICE_REPOSITORY'))
 		time.sleep(60.0*delay)
 
 def myoptions():

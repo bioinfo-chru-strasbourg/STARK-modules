@@ -1,0 +1,17 @@
+{
+  "submodules": {
+    "nonregression": {
+      "description": "SubModule NONREGRESSION including CLI service",
+      "services": {
+        "cli": {
+          "code": "cli",
+          "name": "NON REGRESSION cli",
+          "type": "CLI",
+          "description": "A NONREGRESSION CLI.",
+          "release": "1.0",
+          "available": true
+        },
+      }
+    }
+  }
+}
