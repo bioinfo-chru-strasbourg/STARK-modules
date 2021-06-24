@@ -1,0 +1,60 @@
+INFO:04/16/2021 10:46:14 PM  START Nonregression
+INFO:04/19/2021 10:18:00 AM  START Nonregression
+INFO:04/19/2021 10:18:55 AM  START Nonregression
+INFO:04/19/2021 10:22:28 AM  START Nonregression
+/bin/sh: lolcat: command not found
+/bin/sh: lolcat: command not found
+/bin/bash: figlet: command not found
+/bin/bash: lolcat: command not found
+/bin/sh: lolcat: command not found
+/bin/sh: lolcat: command not found
+/bin/bash: figlet: command not found
+/bin/bash: lolcat: command not found
+/bin/sh: lolcat: command not found
+/bin/sh: lolcat: command not found
+/bin/sh: lolcat: command not found
+/bin/sh: lolcat: command not found
+ls: cannot access /STARK/tools: No such file or directory
+ls: cannot access /STARK/tools: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+/bin/sh: lolcat: command not found
+/bin/sh: lolcat: command not found
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
+bash: docker_VALIDATION_SETS_JB.sh: No such file or directory
