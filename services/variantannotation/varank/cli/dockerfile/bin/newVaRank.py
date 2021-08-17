@@ -2,7 +2,6 @@
 # !/bin/sh
 # !/usr/tcl/bin
 # -*- coding: utf-8 -*-
-
 ###############################
 ##							 ##
 ##		VARANK ANALYSIS		 ##
@@ -80,16 +79,14 @@ def launch_universal_sync18(pattern):
 
 
 def vcf_synchronizer(pattern, run_repository, varank_processing_run_vcf_folder, varank_processing_folder):
-	varank_processing_vcf_files = glob.glob(os.path.join(varank_processing_folder, 'VCF', '*', '*.final.vcf*'))
-
-	stark_vcf_files = glob.glob(os.path.join(run_repository, '*/*.final.vcf.gz'))
+	stark_vcf_files = glob.glob(os.path.join(run_repository, pattern[0]))
 	for stark_vcf_file in stark_vcf_files:
 		if not os.path.isdir(varank_processing_run_vcf_folder):
 			os.makedirs(varank_processing_run_vcf_folder)
 		subprocess.run(['rsync', '-rp', stark_vcf_file, varank_processing_run_vcf_folder])
 
 	for vcf in reversed(pattern):
-		if vcf == '*/*.final.vcf.gz':
+		if vcf == pattern[0]:
 			pattern.remove(vcf)
 		else:
 			other_vcf_files = glob.glob(os.path.join(run_repository, vcf))
@@ -99,6 +96,7 @@ def vcf_synchronizer(pattern, run_repository, varank_processing_run_vcf_folder, 
 				subprocess.run(['rsync', '-rp', other_vcf_file, varank_processing_run_vcf_folder])
 			pattern.remove(vcf)
 
+	varank_processing_vcf_files = glob.glob(os.path.join(varank_processing_folder, 'VCF', '*', '*.final.vcf*'))
 	for varank_processing_vcf_file in varank_processing_vcf_files:
 		os.chmod(varank_processing_vcf_file, 0o777)
 
@@ -145,6 +143,7 @@ def varank_processing_folder_initializer(varank_processing_tsv_folder, varank_pr
 			subprocess.run(['rsync', '-rp', varank_processing_vcf_file_default_folder, varank_processing_folder])
 
 	if os.path.isdir(varank_processing_tsv_folder):
+		with open(os.path.join(varank_processing_tsv_folder,'TSVDeleting.txt'), mode='a'): pass
 		shutil.rmtree(varank_processing_tsv_folder)
 		print('[' + datetime.now().strftime('%y%y%m%d-%H%M%S') +
 			  '] VARANK: Cleaning old TSV folder from ' + varank_processing_folder)
@@ -278,7 +277,7 @@ def configfile_family_manager(args, run_platform_application):
 	configfile_checker(configfiles_folder, args)
 
 
-def varank_processing_folder_configfile_manager(run_platform_application, varank_processing_folder):
+def varank_processing_folder_configfile_manager(run_platform_application, varank_processing_folder, args):
 	if run_platform_application == 'default':
 		configfile_shelter = os.path.join(os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_CONFIG'], os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_MODULE_NAME'], os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_SUBMODULE_NAME'], 'configfiles', 'configfile.default')
 		used_configfile = os.path.join(varank_processing_folder, 'configfile.default')
@@ -294,7 +293,7 @@ def varank_processing_folder_configfile_manager(run_platform_application, varank
 		subprocess.run(['rsync', '-rp', configfile_shelter, varank_processing_folder])
 		os.rename(used_configfile, renamed_used_configfile)
 		print('[' + datetime.now().strftime('%y%y%m%d-%H%M%S') + '] VARANK: Configfile in ' + varank_processing_folder + ' was synced from configfile shelter')
-	elif os.path.isfile(configfile_shelter) and os.path.isfile(renamed_used_configfile):
+	elif os.path.isfile(configfile_shelter) and os.path.isfile(renamed_used_configfile) and not args.varank_folder:
 		subprocess.run(['rsync', '-rp', configfile_shelter, varank_processing_folder])
 		os.rename(used_configfile, renamed_used_configfile)
 		print('[' + datetime.now().strftime('%y%y%m%d-%H%M%S') + '] VARANK: Configfile in ' + varank_processing_folder + ' was updated from configfile shelter')
@@ -322,6 +321,8 @@ def varank_processing_folder_cleaner(varank_processing_tsv_folder, varank_proces
 	for file in tsv_files:
 		os.chmod(file, 0o777)
 		shutil.move(file, varank_processing_tsv_folder)
+
+	with open(os.path.join(varank_processing_tsv_folder,'TSVCopyComplete.txt'), mode='a'): pass
 
 	for file in vcf_files:
 		os.remove(file)
@@ -354,7 +355,7 @@ def generate_non_redundant(varank_processing_tsv_folder, platform_application):
 						write_file.write(line)
 						
 	with open(all_variants_ranking_by_var_concat, 'r'):
-		df = pandas.read_csv(all_variants_ranking_by_var_concat, sep='\t', header=[0], low_memory=False)
+		df = pandas.read_csv(all_variants_ranking_by_var_concat, sep='\t', header=[0], low_memory=False, keep_default_na=False)
 		if len(non_redundant_unwanted_columns) == 0:
 			df = df.drop(non_redundant_unwanted_columns_default, axis=1)
 		else:
@@ -375,7 +376,7 @@ def generate_non_redundant(varank_processing_tsv_folder, platform_application):
 	print('[' + datetime.now().strftime('%y%y%m%d-%H%M%S') + '] VARANK: Non-redondant file was generated')
 
 
-def run_varank_results_provider(varank_processing_tsv_folder, run_depository, run_repository, varank_processing_folder):
+def run_varank_results_provider(varank_processing_tsv_folder, run_depository, run_repository, varank_processing_folder, run_platform, run_application):
 	varank_processing_folder_tsv_files = glob.glob(os.path.join(varank_processing_tsv_folder, '*'))
 	run_repository_sample_folder_list = glob.glob(os.path.join(run_repository, '*', ''))
 
@@ -421,16 +422,12 @@ def run_varank_results_provider(varank_processing_tsv_folder, run_depository, ru
 	os.rename(non_redundant_file_repository, non_redundant_renamed_file_repository)
 
 	varank_complete_file = os.path.join(run_repository, 'VARANKComplete.txt')
-	with open(varank_complete_file, 'w'):
-		pass
+	os.rename(os.path.join(run_repository, 'VARANKRunning.txt'), varank_complete_file)
 	os.chmod(varank_complete_file, 0o777)
+
 	varank_copy_complete_file = os.path.join(run_depository, 'VARANKCopyComplete.txt')
-	with open(varank_copy_complete_file, 'w'):
-		pass
-	os.chmod(varank_copy_complete_file, 0o777)
-	varank_running = os.path.join(run_repository, 'VARANKRunning.txt')
-	if os.path.isfile(varank_running):
-		os.remove(varank_running)
+	subprocess.run(['rsync', '-rp', varank_complete_file, run_depository])
+	os.rename(os.path.join(run_depository, 'VARANKComplete.txt'), varank_copy_complete_file)
 
 
 def launch_run_analysis(args):
@@ -442,6 +439,9 @@ def launch_run_analysis(args):
 		run_depository = run_depository[:-1]
 
 	pattern = pattern_generator(args)
+	varank_running_file = os.path.join(run_repository, 'VARANKRunning.txt')
+	with open(varank_running_file, 'w') as write_file:
+		write_file.write("VaRank is running !")
 
 	path_checker(args, run_depository)
 	pattern_checker(pattern, run_repository, args)
@@ -451,7 +451,7 @@ def launch_run_analysis(args):
 	run_platform_application = run_platform + '.' + run_application
 	varank_processing_folder = os.path.join(os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES'], os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_MODULE_NAME'], os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_SUBMODULE_NAME'], 'Archives', run_platform, run_application)
 	varank_processing_tsv_folder = os.path.join(varank_processing_folder, 'TSV')
-	varank_processing_run_vcf_folder = os.path.join(varank_processing_folder, 'VCF', os.path.basename(args.run))
+	varank_processing_run_vcf_folder = os.path.join(varank_processing_folder, 'VCF', os.path.basename(run_repository))
 	results = run_repository
 
 	# Steps to produce results
@@ -460,12 +460,12 @@ def launch_run_analysis(args):
 	varank_processing_folder_initializer(varank_processing_tsv_folder, varank_processing_folder)
 	if args.family:
 		configfile_family_manager(args, run_platform_application)
-	varank_processing_folder_configfile_manager(run_platform_application, varank_processing_folder)
+	varank_processing_folder_configfile_manager(run_platform_application, varank_processing_folder, args)
 	varank_launcher(varank_processing_folder)
 	logfile_checker(varank_processing_folder, args, run_depository, run_repository)
 	varank_processing_folder_cleaner(varank_processing_tsv_folder, varank_processing_folder, args)
 	generate_non_redundant(varank_processing_tsv_folder, run_platform_application)
-	run_varank_results_provider(varank_processing_tsv_folder, run_depository, run_repository, varank_processing_folder)
+	run_varank_results_provider(varank_processing_tsv_folder, run_depository, run_repository, varank_processing_folder, run_platform, run_application)
 	print('[' + datetime.now().strftime('%y%y%m%d-%H%M%S') + '] VARANK: Your analysis ended well, you can check results in ' + results)
 
 
@@ -512,7 +512,7 @@ def launch_folder_analysis(args):
 
 		# Steps to produce results
 		varank_processing_folder_initializer(varank_processing_tsv_folder, varank_processing_folder)
-		varank_processing_folder_configfile_manager(folder_platform_application, varank_processing_folder)
+		varank_processing_folder_configfile_manager(folder_platform_application, varank_processing_folder, args)
 		varank_launcher(varank_processing_folder)
 		logfile_checker(varank_processing_folder, args, 'None', 'None')
 		varank_processing_folder_cleaner(varank_processing_tsv_folder, varank_processing_folder, args)
@@ -521,11 +521,10 @@ def launch_folder_analysis(args):
 
 def run_path_generator(args):
 	if (args.run).endswith('/'):
-		run_repository = args.run[-1]
+		run_repository = args.run[:-1]
 	else:
 		run_repository = args.run
 	run_depository = re.sub(os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_REPOSITORY'], os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_DEPOSITORY'], run_repository)
-
 	return run_depository, run_repository
 
 
@@ -535,18 +534,18 @@ def pattern_generator(args):
 	check = False
 
 	if args.pattern is None:
-		pattern.append('*/*.final.vcf.gz')
+		pattern.append('*/STARK/*.reports/*.final.vcf.gz')
 		return pattern
 	else:
 		for element in args.pattern:
-			if element == '*/*.final.vcf.gz':
+			if element == '*/STARK/*.reports/*.final.vcf.gz':
 				check = True
-				pattern.insert(0, '*/*.final.vcf.gz')
+				pattern.insert(0, '*/STARK/*.reports/*.final.vcf.gz')
 			else:
 				pattern.append(element)
 
 		if check is not True:
-			pattern.insert(0, '*/*.final.vcf.gz')
+			pattern.insert(0, '*/STARK/*.reports/*.final.vcf.gz')
 
 		return pattern
 
@@ -641,6 +640,11 @@ def pattern_checker(pattern, run_repository, args):
 	if args.run:
 		check1 = False
 		check2 = False
+		
+	print(run_repository)
+	if run_repository.endswith("/"):
+		run_repository = run_repository[:-1]
+		print(run_repository)
 
 	for element in pattern:
 		vcf_files = glob.glob(os.path.join(run_repository, element))
