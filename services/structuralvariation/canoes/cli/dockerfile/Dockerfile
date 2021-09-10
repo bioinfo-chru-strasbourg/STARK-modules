@@ -109,6 +109,7 @@ RUN wget https://lbgi.fr/AnnotSV/Sources/AnnotSV_2.1.tar.gz && \
 		rm -rf AnnotSV_2.1/Annotations && \
 		mv AnnotSV_2.1/* $SRC/AnnotSV/2.1 && \
 		rm -rf AnnotSV_2.1;
+		rm -rf $SRC/AnnotSV/2.1/Annotations/Genes-based/OMIM/*
 RUN mkdir -p $SRC/AnnotSV/2.1
 ENV ANNOTSV=$SRC/AnnotSV/2.1
 
