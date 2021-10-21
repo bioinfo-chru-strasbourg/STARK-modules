@@ -760,7 +760,7 @@ function find_hgvs ($hgvs_list,$gene_symbol="",$user_groups="",$customNM_infos="
 				$customNM_array_V=$customNM_infos[$group_ref][$gene_symbol]; # ARRAY!!!
 				foreach ($hgvs_full_split as $anhgvs) {
 					if ($anhgvs!="") {
-						foreach ($customNM_array_V as $customNM_V=>$customNM_infos) {
+						foreach ($customNM_array_V as $customNM_V=>$customNM_infos_V) {
 							#print "$anhgvs $customNM_V<BR>";
 							if (preg_match("/$customNM_V/i",$anhgvs)) {
 								$sep=($customHGVS!="")?",":"";
