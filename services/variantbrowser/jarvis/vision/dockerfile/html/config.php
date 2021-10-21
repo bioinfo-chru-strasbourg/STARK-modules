@@ -14,8 +14,8 @@ $NGS_comment="$NGS_name is an efficient software tool functionally annotating ge
 $VISION_name="VISION";
 $VISION_description="Vcf vIewer and Simplified prioritizatION";
 
-$VISION_release="V1.0.2b";
-$VISION_release_date="03/12/2019";
+$VISION_release="V1.0.3";
+$VISION_release_date="28/04/2021";
 $VISION_comment="$VISION_name is an simplyfied interface providing genetic variants proritization and visualization in VCF format";
 
 

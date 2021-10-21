@@ -1,13 +1,13 @@
 FROM centos:7
 
 # Update
-RUN yum update -y && yum install -y epel-release && yum install -y python python-pip docker git make gcc g++ && yum clean all
+RUN yum update -y && yum install -y epel-release && yum install -y python3 python-pip3 docker git make gcc g++ && yum clean all
 #RUN yum install -y python-pip
 #RUN yum install -y docker
 
 
 # Install app dependencies
-RUN pip install Flask
+RUN pip3 install Flask
 
 
 # Task Spooler
@@ -28,4 +28,4 @@ RUN yum erase -y git make gcc g++ && yum clean all ;
 
 
 EXPOSE  8000
-CMD ["python", "/src/API.py", "-p 8000"]
+CMD ["python3", "/src/API.py", "-p 8000"]

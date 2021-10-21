@@ -211,6 +211,7 @@ if ($project_id=="") {
 
 $annotation_list=$_REQUEST["annotation_list"];
 # Mandatory list
+#$annotation_list_mandatory=array("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "FilterScore", "FilterFlag", "FilterComment", "geneSymbol", "location", "outcome", "GQ", "BQ", "DP", "AD", "VF", "AF", "FA", "dbSNP", "dbSNPNonFlagged");
 $annotation_list_mandatory=array("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "FilterScore", "FilterFlag", "FilterComment", "geneSymbol", "location", "outcome", "GQ", "BQ", "DP", "AD", "VF", "AF", "FA", "dbSNP", "dbSNPNonFlagged");
 #$annotation_list_mandatory=array("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "FilterScore", "FilterFlag", "geneSymbol", "location", "outcome", "GQ", "BQ", "DP", "AD", "VF", "AF", "FA", "dbSNP", "dbSNPNonFlagged");
 # Default list (combinason of a list of annotation and the madatory lists
@@ -515,110 +516,105 @@ $output_exec = shell_exec($command);
 #print "<pre>$output_exec</pre><BR>";
 
 
-$vcf_header.="
-
-    <TABLE  border=0  width='100%' style='margin:0px;' >
-                    <TR>
-                    
-                        <TD width='20px'>&nbsp;</TD>
-                        <TD colspan=1 height='40px;' valign='middle'>
-                            <B>VCF file</B> ".(($t_filename!="")?"[loaded: $t_message $t_filename] [<a href='$t' download>VCF</a>]  [<a href='$t.tsv' download>TSV</a>]":"[$t_message]")."
-                        </TD>
-                        <TD width='20px'>&nbsp;</TD>
-                    </TR>
-                    <TR>
-                    
-                        <TD width='20px'>&nbsp;</TD>
-                        <TD colspan=1 height='40px;' valign='middle'>
-
-                            <TABLE>
-                                <TR><TD colspan=3>Upload a VCF file</TD><TD width='20px'>&nbsp;</TD>
-                                    <TD><input type='file' name='vcf' class='tbox search' data-original-title=''/>
-                                            <input type='hidden' value='$t' name='vcf_loaded' data-original-title=''/>
-                                        <input type='hidden' value='$t_filename' name='vcf_loaded_filename' data-original-title=''/>
-                                    </TD>
-                                </TR>
-                            </TABLE>
-
-                        </TD>
-                        <TD width='20px'>&nbsp;</TD>
-                    </TR>
-    </TABLE>
-
-
-    ";
 
 $filter_form="
-                <TABLE width='100%' border=0 >
-                <TR><TD><TABLE width='100%' border=0 class=''>
-                    <TR><TD>
+                
+<div style='text-align: left; table-border:0; clear:left;' class='' >
 
-                <div style='text-align: left; table-border:1; clear:left;' class='' >
-                <form action='?' method='post' class='form-inline' enctype='multipart/form-data' name='main' id='main'>
-                <INPUT type='hidden' name='action_todo' value='$action_todo'>
-                <INPUT type='hidden' name='sample' value='$input_sample'>
-                <INPUT type='hidden' name='run' value='$input_run'>
-                <INPUT type='hidden' name='q' value='$q'>
+    <form action='?' method='post' class='form-inline' enctype='multipart/form-data' name='main' id='main'>
+        
+        <INPUT type='hidden' name='action_todo' value='$action_todo'>
+        <INPUT type='hidden' name='sample' value='$input_sample'>
+        <INPUT type='hidden' name='run' value='$input_run'>
+        <INPUT type='hidden' name='q' value='$q'>
 
-                $vcf_header
+        <TABLE  border=0  width='' style='margin:0px;' >
+            <TR>
+            
+                <TD width='20px'>&nbsp;</TD>
 
-                <TABLE  border=0  width='100%' >
-                    <TR>
-                        <TD width='20px'>&nbsp;</TD>
-                        <TD colspan=1 height='40px;' valign='middle' width=''>
-                            <B>Prioritization/Filters</B>
-                            [<SPAN onclick=\"javascript:var newWin = window.open('filters.php','popup','menubar=yes, status=no, scrollbars=yes, menubar=yes, width=800, height=600, visible=yes');document.getElementById('main').action='filters.php';document.getElementById('main').target='popup';document.getElementById('main').submit();newWin.focus();document.getElementById('main').action='$action_default';document.getElementById('main').target='_self'; return false;\" style='cursor:pointer;'>details</SPAN>]
-                        </TD>
-                        <TD width='20px'>&nbsp;</TD>
-
-                    </TR>
-
-                    <TR>
-
-                        <TD width='20px;'>&nbsp;</TD>
-                        <TD valign='top' halign='center' width=''>
-                            <TABLE width=''>
-                                <TR><TD colspan=2>
-                                    <!--<SELECT name='filters[]' multiple size=".(count($filter_array)>5?5:count($filter_array))." style='width:$select_width;'>-->
-                                    <SELECT name='filters[]'  size=1 style='width:$select_width;'>
-                                        $filter_select
-                                    </SELECT>
-
-                                    
-                                </TD>
-                                    <TD halign=''>
-                                        &nbsp;&nbsp;&nbsp;<INPUT type='checkbox' name='hardfiltering' ".( $hardfiltering ? "checked" : "")." title=\" (hide 'FILTERED' variants)\"> Hard Filtering</INPUT>
-                                    </TD>
-                                </TR>
-                                
-                            </TABLE>
-                        </TD>
-                        <TD width='20px;'>&nbsp;</TD>
-                    </TR>
-                    <TR>
-                        <TD width='20px;'>&nbsp;</TD>
-                        <TD>
-                            <br>
-                            <INPUT TYPE='submit' value='Process' name='process' class='btn button search btn size-medium bg-blue text-white shadow hover-moveup' style='margin-right: 5px;' data-original-title=''/>
-                        </TD>
-                        <TD width='20px;'>&nbsp;</TD>
-                         
-                    </TR>
-
-                </TABLE>
-
-                </div>
-                </form>
-
+                <TD>
+                    <BR>
+                    <B>VCF file</B> 
+                    <BR>
+                    <BR>
                 </TD>
-                    </TR>
-                </TABLE>
 
+                <TD width='20px'>&nbsp;</TD>
+
+                <TD>
+                    <input type='file' name='vcf' class='tbox search' data-original-title=''/>
+                    <input type='hidden' value='$t' name='vcf_loaded' data-original-title=''/>
+                    <input type='hidden' value='$t_filename' name='vcf_loaded_filename' data-original-title=''/>
                 </TD>
-                    </TR>
-                </TABLE>
 
-                ";
+                <TD width='20px'>&nbsp;</TD>
+
+                <TD>
+                    ".(($t_filename!="")?"[loaded: $t_message $t_filename] [<a href='$t' download>VCF</a>]  [<a href='$t.tsv' download>TSV</a>]":"[$t_message]")."
+                </TD>
+
+                <TD width='20px'>&nbsp;</TD>
+
+            </TR>
+
+            <TR>
+                <TD width='20px'>&nbsp;</TD>
+
+                <TD>
+                    <B>Prioritization</B>
+                </TD>
+
+                <TD width='20px'>&nbsp;</TD>
+
+                <TD>
+                    <SELECT name='filters[]' size=1>
+                        $filter_select
+                    </SELECT>
+                </TD>
+
+                <TD width='20px'>&nbsp;</TD>
+
+                <TD>
+                    [<SPAN onclick=\"javascript:var newWin = window.open('filters.php','popup','menubar=yes, status=no, scrollbars=yes, menubar=yes, width=800, height=600, visible=yes');document.getElementById('main').action='filters.php';document.getElementById('main').target='popup';document.getElementById('main').submit();newWin.focus();document.getElementById('main').action='$action_default';document.getElementById('main').target='_self'; return false;\" style='cursor:pointer;'>details</SPAN>]
+                </TD>
+
+                <TD width='20px'>&nbsp;</TD>
+
+            </TR>
+
+
+            <TR>
+                <TD width='20px'>&nbsp;</TD>
+
+                <TD>
+                    
+                </TD>
+
+                <TD width='20px'>&nbsp;</TD>
+
+                <TD>
+                    <BR>
+                    <INPUT TYPE='submit' value='Process' name='process' class='btn button search btn size-medium bg-blue text-white shadow hover-moveup' style='margin-right: 5px;' data-original-title=''/>
+                </TD>
+
+                <TD width='20px'>&nbsp;</TD>
+
+                <TD>
+                    
+                </TD>
+
+                <TD width='20px'>&nbsp;</TD>
+
+            </TR>
+            
+        </TABLE>
+
+    </form>
+
+</div>
+
+";
 
 
 $text.=$filter_form."";
@@ -694,7 +690,8 @@ if ( file_exists($t) && filesize($t) != 0 && $process) {
     $calculation=" --calculation='VAF,NOMEN,VARTYPE' " ;
 
     #$fields_default="location,outcome,CLINVAR,COSMIC,ALL";
-    $fields_default="location,outcome,CLINVAR,COSMIC,snpeff_impact,snpeff_annotation,dbSNP,popfreq,INTERVAR,interpro_domain,Polyphen2_HDIV_pred,Polyphen2_HVAR_pred,SIFT_pred,gnomAD";
+    $fields_default="location,outcome,CLINVAR,COSMIC,ALL";
+    #$fields_default="location,outcome,CLINVAR,COSMIC,snpeff_impact,snpeff_annotation,dbSNP,popfreq,INTERVAR,interpro_domain,Polyphen2_HDIV_pred,Polyphen2_HVAR_pred,SIFT_pred,gnomAD";
 
     #$fields=" --fields='NOMEN,VAF,VAF_average,PZFlag,location,outcome'  ";
     #$fields=" --fields='NOMEN,VAF,VAF_average,PZFlag,location,outcome,ANN'  ";
@@ -866,7 +863,7 @@ if ( file_exists($t) && filesize($t) != 0 && $process) {
 
       foreach ($data as $key => $value) {
         
-        
+        #print_r($value);
 
         if ($value['#CHROM']!="") {
 
@@ -890,6 +887,9 @@ if ( file_exists($t) && filesize($t) != 0 && $process) {
 
             # Validation
             $columns_fields_array["V"]["type"]='checkbox';
+            $columns_fields_array["V"]["checkedTemplate"]='validated';
+            $columns_fields_array["V"]["uncheckedTemplate"]='';
+            #$columns_fields_array["V"]["label"]='CBVAL';   
             $columns_fields_array["V"]["width"]='50';
             $fixedColumnsLeft_array["V"]=1;
 
@@ -939,12 +939,14 @@ if ( file_exists($t) && filesize($t) != 0 && $process) {
                 #$field=preg_replace("/[-#]/", array("","_"), $key2);
                 #$field="_".preg_replace("/[-#.+]/", "", $key2);
                 #$field=preg_replace("/[^a-zA-Z0-9]/", "_", $key2);
+                $field_original_name=$key2;
                 $field=preg_replace("/[^a-zA-Z0-9]/", "", $key2);
                 if (is_numeric($field[0])) {
                     $field="_".$field;
                 };
                 #$field_value=$value2;
-                $field_value=preg_replace("/[']/", "", $value2);
+                $field_value=preg_replace("/[']/", "", preg_replace("/,/", ", ", $value2));
+                #$field_value=preg_replace("/[']/", "", $value2);
                 #$field_value=preg_replace("/[,]/", " ", $field_value);
             
                 $field_type=$VCF_header_Type_translate[$vcf_header_array["ALL"][$field]["Type"]];
@@ -956,18 +958,36 @@ if ( file_exists($t) && filesize($t) != 0 && $process) {
                     $maxwidthcol=$maxwidthcol_default;
                 } 
 
+
+    #$field_value="<span onclick=\"alert(\'www.google.fr\');\">$field_value</span>";
+    #$field_value_trim=substr($field_value,0,100);
+    #$field_value="<span title=\"$field_value\">$field_value_trim</span>";
+                $max_cell_length=200;
+                if (strlen($field_value)>$max_cell_length) {
+                #if (true) {
+                    $field_value_trim=substr($field_value,0,$max_cell_length);
+                    $field_value="<span title=\"$field_value\">$field_value_trim...</span>";
+                    #$field_value="truc";
+                };
+
+
                 #echo "<pre>$key2 => $value2</pre>";
 
-                    preg_match('/PZFlag(.*)/', $key2, $matches_PZFlag, PREG_OFFSET_CAPTURE);
-                    preg_match('/PZComment(.*)/', $key2, $matches_PZComment, PREG_OFFSET_CAPTURE);
-                    if (count($matches_PZFlag)>0 & $key2!="PZFlag-default" & $key2!="PZFlag") {
-                        $PZFlag_ALL.=$field.": '".$field_value."', ";
-                        $columns_fields_array_PZFlag[$field]["type"]='text';
-                        #$fixedColumnsLeft_array[$field]=1;
-                    // } elseif (count($matches_PZComment)>0 & $key2!="PZComment-default" & $key2!="PZComment") {
-                    //     $PZComment_ALL.=$field.": '".$field_value."', ";
-                    //     $columns_fields_array_PZComment[$field]["type"]='text';
-                    //     #$fixedColumnsLeft_array[$field]=1;
+                    if (0) {
+                        preg_match('/PZFlag(.*)/', $key2, $matches_PZFlag, PREG_OFFSET_CAPTURE);
+                        preg_match('/PZComment(.*)/', $key2, $matches_PZComment, PREG_OFFSET_CAPTURE);
+                        if (count($matches_PZFlag)>0 & $key2!="PZFlag-default" & $key2!="PZFlag") {
+                            $PZFlag_ALL.=$field.": '".$field_value."', ";
+                            $columns_fields_array_PZFlag[$field]["type"]='text';
+                            #$fixedColumnsLeft_array[$field]=1;
+                        // } elseif (count($matches_PZComment)>0 & $key2!="PZComment-default" & $key2!="PZComment") {
+                        //     $PZComment_ALL.=$field.": '".$field_value."', ";
+                        //     $columns_fields_array_PZComment[$field]["type"]='text';
+                        //     #$fixedColumnsLeft_array[$field]=1;
+                        } else {
+                            $fields_rest.=$field.": '".$field_value."', ";
+                            $columns_fields_array_rest[$field]["type"]=$field_type;
+                        };
                     } else {
                         $fields_rest.=$field.": '".$field_value."', ";
                         $columns_fields_array_rest[$field]["type"]=$field_type;
@@ -979,7 +999,15 @@ if ( file_exists($t) && filesize($t) != 0 && $process) {
                     };
                     
                     $columns_fields_array_rest[$field]["readOnly"]='true';
-
+                    #$columns_fields_array_rest[$field]["height"]=10;
+                    $columns_fields_array_rest[$field]["renderer"]='html';
+                    $columns_fields_array_rest[$field]["comment"]='commentaire';
+                    $columns_fields_array_rest[$field]["wordWrap"]='true';
+                    $columns_fields_array_rest[$field]["noWordWrapClassName"]='is-noWrapCell';
+                    $columns_fields_array_rest[$field]["title"]=$field_original_name;
+                    $columns_fields_array_rest[$field]["trimDropdown"]=true;
+                    
+ 
                     #$columns_fields_array[$field]["editor"]='false'; # editor: false
 
                 };
@@ -1064,7 +1092,8 @@ $columns_fields_list="";
 $colHeaders_fields_list="";
 foreach ($columns_fields_array as $data => $value) {
     # code...
-    $columns_fields_list_array="data: '$data'";
+    #$columns_fields_list_array="data: '$data', renderer: 'html'";
+    $columns_fields_list_array="data: '$data' ";
     
     foreach ($value as $key => $value2) {
         $columns_fields_list_array.=", $key: '$value2'";
@@ -1092,23 +1121,6 @@ $fixedColumnsLeft=count($fixedColumnsLeft_array);
     $dataObject_variants=implode(",", $dataObject_array);
     # print "<pre>$dataObject_variants</pre>";
 
-
-    $test_download='
-    <div style="text-align: left; table-border:1; " class="">
-    <table border="0" width="100%" class="  filter">
-                <tbody><tr>
-                <td width="20px"></td>
-                <td>
-                <br>
-                Download Prioritized Files
-                [<a href="'."$t.prioritized.vcf".'" download>VCF</a>]
-                [<a href="'."$t.prioritized.tsv".'" download>TSV</a>]
-                <br><br></td></tr>
-                </tbody>
-    </table>
-    </div>
-    <br>
-    ';
 
 
     $text.=$test_download;
@@ -1138,10 +1150,6 @@ $fixedColumnsLeft=count($fixedColumnsLeft_array);
 
 };#if
 
-    $text.= "
-            </div>
-     </div>
-    ";
 
 
 
@@ -1176,6 +1184,11 @@ $colHeaders="[
 
 #exit(0);
 
+#$header=$text;
+
+
+$text="";
+
 
 ?>
 
@@ -1185,28 +1198,36 @@ $colHeaders="[
 #green {
     width: 100%;
     min-width: 500px;
-    height: 20%;
-    min-height: 350px;
+    height: 10%;
+    min-height: 200px;
     border: 0px solid white;
     /* float: left; */
-    margin: 5px;
-    padding: 5px;
+    margin: 0px;
+    padding: 0px;
     background-color: white;
 }
 #red {
     width: 100%;
-    height: 95%;
+    height: 96%;
     border: 0px solid white;   
-    margin: 5px; 
+    margin: 0px; 
     /*float: left;*/
 }
 #blue {
-    width: 310px;
-    height: 50px;
+    width: 100%;
+    height: 100%;
     border: 0px solid blue;
     margin: 5px;
     clear: both;
     padding: 5px;
+}
+#full {
+    width: 100%;
+    height: 100%;
+    border: 0px solid blue;
+    margin: 0px;
+    clear: both;
+    padding: 0px;
 }
 #hidden {
     display: none;
@@ -1221,42 +1242,82 @@ $colHeaders="[
 
 <body>
 
+    
+    
+        <?php
+            if ( file_exists($t) && filesize($t) != 0 && $process=="Process") {
+        ?>
+
+            <div id="full">
+            
+                <button id="back" class="btn size-medium bg-blue text-white " style="margin-right: 5px; margin-left: 0px; " onclick="window.location = '?';">Back</button>
+                <button id="export-tsv" class="btn size-medium bg-blue text-white " style="margin-right: 5px; margin-left: 0px; ">TSV</button>
+                Variant exploration: sort, filter, validate, comment & export [<?php echo $t_filename; ?>]
+
+            <div id="hot"></div>
+
+         <?php
+            } else {
+
+        ?>
+
+            <div id="blue">
+
+                <div id="blue">
+                <?php print $header; ?>
+                <hr>
+                <?php print $filter_form; ?> 
+                
+                <div id="export-buttons" class="visible" style="position: relative; ">
+                </div>
+
+             </div>
+
+        <?php
+
+            };
+        ?>
+   
+    
+
+
+
+<!--
+
 
     <div id="green">
 
+        
         <?php print $header; ?>
         <hr>
         <?php print $filter_form; ?> 
-
+        
         <div id="export-buttons" class="visible" style="position: relative; ">
             
-            <!--<button id="export-string" class="btn size-medium bg-green text-white shadow hover-moveup">Export to string (see the browser console)</button>-->
         </div>
 
     </div>
 
     <div id="red">
-            <?php
-                if ($process=="Process") {
-            ?>
+        <?php
+            if ( file_exists($t) && filesize($t) != 0 && $process=="Process") {
+        ?>
 
             <button id="export-csv" class="btn size-medium bg-blue text-white " style="margin-right: 5px; margin-left: 0px; ">TSV</button>
-                    Variant exploration: sort, filter, validate, comment & export<br>
-                <?php }; ?>
-          <div id="hot"></div>
+                Variant exploration: sort, filter, validate, comment & export<br>
+            <div id="hot">
+            
+            
+            </div>
+
+         <?php
+            };
+        ?>
     </div>
 
-    <!--
-    <div id="blue">
-        
-         
-    </div>
-    -->
-
-<div id="#hidden">
 
 
-
+-->
 
 
 <script>
@@ -1285,14 +1346,24 @@ var hotElement = document.querySelector('#hot');
 var hotElementContainer = hotElement.parentNode;
 var hotSettings = {
   data: dataObject,
+  fillHandle: true,
+  //overflow: auto,
+  //autoRowSize: {syncLimit: 10},
+  //RowSize: 10,
+  trimRows: true,
   columns: <?php print $columns ?>,
   stretchH: 'all',
   //width: '800',
+  colWidths: 100,
+  autoWrapCol: true,
   autoWrapRow: true,
+  autoRowSize: true,
   height: '100%',
   //height: 800,
-  maxRows: 1000,
+  maxRows: 2000,
   rowHeaders: true,
+  rowHeights: '10px',
+  search: true,
   colHeaders: <?php echo $colHeaders; ?>,
   mergeCells: true,
   contextMenu: true,
@@ -1306,14 +1377,18 @@ var hotSettings = {
     samplingRatio: 23
   },
   manualRowResize: true,
-  manualColumnResize: true,
   manualRowMove: true,
+  manualColumnResize: true,
   manualColumnMove: true,
+  manualColumnFreeze: true,
   filters: true,
   dropdownMenu: true,
+  dragToScroll: true,
   fixedRowsTop: 0,
   fixedRowsBottom: 0,
   fixedColumnsLeft: <?php echo $fixedColumnsLeft; ?>,
+  noWordWrapClassName: 'is-noWrapCell',
+  undo: true,
   multiColumnSorting: {
     indicator: true
   },
@@ -1331,8 +1406,9 @@ var hotSettings = {
   licenseKey: 'non-commercial-and-evaluation'
 };
 var hot = new Handsontable(hotElement, hotSettings);
-document.getElementById("export-csv").addEventListener("click", function(event) { hot.getPlugin("exportFile").downloadFile("csv", {
-    filename: "CSV",
+document.getElementById("export-tsv").addEventListener("click", function(event) { hot.getPlugin("exportFile").downloadFile("csv", {
+    filename: "<?php echo $t_filename; ?>_export_[YYYY][MM][DD]",
+    fileExtension: "tsv",
     columnDelimiter: "\t",
     exportHiddenColumns: true,
     columnHeaders: true
