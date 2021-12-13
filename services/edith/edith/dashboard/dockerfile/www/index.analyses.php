@@ -43,7 +43,8 @@
 
 	# DOCKER_STARK_SERVICE_LAUNCHER_FOLDER_LOG
 	$DOCKER_STARK_SERVICE_LAUNCHER_FOLDER_LOG=$_ENV["DOCKER_STARK_SERVICE_LAUNCHER_FOLDER_LOG"];
-	if ($DOCKER_STARK_SERVICE_LAUNCHER_FOLDER_LOG=="") { $DOCKER_STARK_SERVICE_LAUNCHER_FOLDER_LOG="analyses/stark-services/launcher"; };
+	#if ($DOCKER_STARK_SERVICE_LAUNCHER_FOLDER_LOG=="") { $DOCKER_STARK_SERVICE_LAUNCHER_FOLDER_LOG="analyses/stark-services/launcher"; };
+	if ($DOCKER_STARK_SERVICE_LAUNCHER_FOLDER_LOG=="") { $DOCKER_STARK_SERVICE_LAUNCHER_FOLDER_LOG="services/stark/stark/api"; };
 
 
 	# DOCKER_STARK_SERVICE_LAUNCHER_PORT_INNER
@@ -53,12 +54,14 @@
 
 	# DOCKER_STARK_INNER_FOLDER_ANALYSES
 	$DOCKER_STARK_INNER_FOLDER_ANALYSES=$_ENV["DOCKER_STARK_INNER_FOLDER_ANALYSES"];
-	if ($DOCKER_STARK_INNER_FOLDER_ANALYSES=="") { $DOCKER_STARK_INNER_FOLDER_ANALYSES="/STARK/analyses"; };
+	#if ($DOCKER_STARK_INNER_FOLDER_ANALYSES=="") { $DOCKER_STARK_INNER_FOLDER_ANALYSES="/STARK/analyses"; };
+	if ($DOCKER_STARK_INNER_FOLDER_ANALYSES=="") { $DOCKER_STARK_INNER_FOLDER_ANALYSES="/STARK/services"; };
 
 
 	# DOCKER_STARK_SERVICE_DATA_SUBFOLDER_SERVICES_LAUNCHER
 	$DOCKER_STARK_SERVICE_DATA_SUBFOLDER_SERVICES_LAUNCHER=$_ENV["DOCKER_STARK_SERVICE_DATA_SUBFOLDER_SERVICES_LAUNCHER"];
-	if ($DOCKER_STARK_SERVICE_DATA_SUBFOLDER_SERVICES_LAUNCHER=="") { $DOCKER_STARK_SERVICE_DATA_SUBFOLDER_SERVICES_LAUNCHER="stark-services/launcher"; };
+	#if ($DOCKER_STARK_SERVICE_DATA_SUBFOLDER_SERVICES_LAUNCHER=="") { $DOCKER_STARK_SERVICE_DATA_SUBFOLDER_SERVICES_LAUNCHER="stark-services/launcher"; };
+	if ($DOCKER_STARK_SERVICE_DATA_SUBFOLDER_SERVICES_LAUNCHER=="") { $DOCKER_STARK_SERVICE_DATA_SUBFOLDER_SERVICES_LAUNCHER="stark/stark/api"; };
 
 
 
@@ -234,7 +237,7 @@
 
 
 	$APPS=array();
-	$APPS_FILE_ARRAY=file("apps.conf");
+	$APPS_FILE_ARRAY=file("config/apps.conf");
 
 	foreach ($APPS_FILE_ARRAY as $key => $APPS_INFOS) {
 		$APPS_INFOS_SPLIT=explode("\t",$APPS_INFOS);
@@ -315,7 +318,7 @@
 
 	$VARIABLE="application";
 	$LABEL="Application";
-	$COMMENT="";
+	$COMMENT="STARK Application";
 
 	if ($ANALYSIS) {
 		$INPUT=$_POST[$VARIABLE];
@@ -345,7 +348,7 @@
 
 	$VARIABLE="reads";
 	$LABEL="Reads 1";
-	$COMMENT="";
+	$COMMENT="Either FASTQ, BAM, CRAM or RUN tarball";
 
 	if ($ANALYSIS) {
 		$INPUT=$_FILES[$VARIABLE]["name"];
@@ -369,7 +372,7 @@
 
 	$VARIABLE="reads2";
 	$LABEL="Reads 2";
-	$COMMENT="";
+	$COMMENT="Complementary Reads 2 FASTQ (only if Reads 1 as FASTQ format)";
 
 	if ($ANALYSIS) {
 		$INPUT=$_FILES[$VARIABLE]["name"];
@@ -392,7 +395,7 @@
 
 	$VARIABLE="design";
 	$LABEL="Target Design";
-	$COMMENT="";
+	$COMMENT="Design in BED or Illumina Manifest format";
 
 	if ($ANALYSIS) {
 		$INPUT=$_FILES[$VARIABLE]["name"];
@@ -415,7 +418,7 @@
 
 	$VARIABLE="genes";
 	$LABEL="Genes Panels";
-	$COMMENT="";
+	$COMMENT="Panels of genes in BED format";
 
 	if ($ANALYSIS) {
 		$INPUT_array=$_FILES[$VARIABLE]["name"];
@@ -457,7 +460,7 @@
 
 
 	if ($ANALYSIS) {
-
+		
 		# JSON
 		$JSON=json_encode($JSON_array)."\n";
 
@@ -468,7 +471,7 @@
 		$JSON_analysis_array['analysis']=$JSON_file_STARK;
 
 		$JSON_analysis=json_encode($JSON_analysis_array);
-
+		
 		# CMD="curl -s -X POST -H 'Content-Type: application/json' -d '{\"run\":\"$IFA\"}' $LAUNCHER"
 
 		$CURL_OPTIONS=array(
@@ -537,6 +540,7 @@
 
 	foreach ($FORM_array as $VARIABLE => $VARIABLE_array) {
 		$LABEL=$VARIABLE_array["LABEL"];
+		$COMMENT=$VARIABLE_array["COMMENT"];
 		$INPUT=""; #$VARIABLE_array["INPUT"];
 
 		if ($ANALYSIS) {
@@ -549,11 +553,14 @@
 
 
 		echo '<tr class="table-heads">
-				<td class="head-item mbr-fonts-style display-7">
-					'.$LABEL.'
+				<td class="head-item mbr-fonts-style display-7" title="'.$COMMENT.'">
+					<B>'.$LABEL.'</B>
 				</td>
 				<td class="head-item mbr-fonts-style display-7">
 					'.$INPUT.'
+				</td>
+				<td class="head-item mbr-fonts-style display-7">
+					<small><I>'.$COMMENT.'</I></small>
 				</td>
 			</tr>
 		';
@@ -579,13 +586,6 @@
 
 	<br>
    	';
-
-
-
-
-
-
-
 
 
 

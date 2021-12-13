@@ -82,6 +82,7 @@ if ($INPUT_SAMPLE!="*" || $INPUT_ANALYSIS!="*") {
 	$PATH=$HOME."/*/*/*/".$INPUT_ANALYSIS."/".$INPUT_SAMPLE;
 }
 
+
 # DEFAULT PATH
 if ($PATH=="") {
 	$PATH=$HOME;
@@ -100,14 +101,17 @@ $PATH_FULL_PREG=str_replace("*",".*",$PATH_FULL);
 $samples_paths_corrected=preg_grep("#$PATH_FULL_PREG#", $runs_repositories_corrected);
 #$samples_paths=$samples_paths_corrected; #preg_grep("#$PATH_FULL_PREG#", $runs_repositories_corrected);
 
-
-
+// echo "PATH=$PATH";
+// echo "PATH_FULL_PREG=$PATH_FULL_PREG";
+// echo "<pre>"; print_r($runs_repositories_corrected); echo "</pre>";
 
 $samples_paths=null;
 foreach ($samples_paths_corrected as $key=>$path) {
-	$samples_paths[$key]=$runs_repositories[$key];
+	#$samples_paths[$key]=$runs_repositories[$key];
+	$samples_paths[$key]=$runs_repositories_corrected[$key];
 }
 
+// echo "<pre>"; print_r($samples_paths); echo "</pre>";
 
 
 
@@ -274,14 +278,17 @@ if (count($samples_paths)<=0) {
 } else {
 
 	$samples_path_pattern=null;
+	#echo "<pre>"; print_r($samples_paths); echo "</pre>";
+
 	foreach ($samples_paths as $key=>$samples_path) {
 		#dirname($samples_path);
 		$samples_path_pattern[]=dirname($samples_path);
 		#$samples_path_pattern[]=dirname($samples_paths_original[$key]);
 	};
+	#echo "<pre>"; print_r($samples_path_pattern); echo "</pre>";
 	#$samples_path_pattern_brace="{".join(",",array_unique($samples_path_pattern))."}";
 	$samples_path_pattern_brace="(".join("|",array_unique($samples_path_pattern)).")";
-	// echo "<br>samples_path_pattern_brace=$samples_path_pattern_brace";
+	#echo "<br>samples_path_pattern_brace=$samples_path_pattern_brace";
 	#echo "<br>samples_path_pattern_brace2=$samples_path_pattern_brace2";
 
 	#$samples_files=array_unique(glob($samples_path_pattern_brace."/{*stark.report.html,*tag,*analysis.tag}",GLOB_BRACE));
@@ -289,12 +296,14 @@ if (count($samples_paths)<=0) {
 	#print_r($samples_files);
 	#echo "<br><br>";
 
-	#print_r($runs_repositories_samples_files);
+	#echo "<pre>"; print_r($runs_repositories_samples_files); echo "</pre>";
 	#$samples_files=preg_grep("#(stark.report.html|tag)$#", $runs_repositories_samples_files);
 	#$samples_files=preg_grep("#$samples_path_pattern_brace/.*(stark.report.html|tag)$#", $runs_repositories_samples_files);
+	#$samples_files=preg_grep("#$samples_path_pattern_brace/.*(stark.report.html|stark.report.pdf|tag)$#", $runs_repositories_samples_files);
 	$samples_files=preg_grep("#$samples_path_pattern_brace/.*(stark.report.html|stark.report.pdf|tag)$#", $runs_repositories_samples_files);
 
-	#print_r($samples_files);
+	#echo "samples_path_pattern_brace=$samples_path_pattern_brace";
+	#echo "<pre>"; print_r($samples_files);echo "</pre>"; 
 	#echo "<br><br>";
 
 	$reports=null;
@@ -326,6 +335,10 @@ if (count($samples_paths)<=0) {
 		}
 	};
 
+	#echo "<pre>"; print_r($tags_sample_files);echo "</pre>"; 
+
+
+	# RESULTS_SUBFOLDER_DATA
 
 
 	foreach ($reports as $key => $report_html) {
@@ -361,38 +374,60 @@ if (count($samples_paths)<=0) {
 		$repository_path=$root.'/'.$repository;
 
 		# TSV
-		$report_tsv="$sample_path/$sample.final.tsv";
+		// $report_tsv="$sample_path/$sample.final.tsv";
+		// $report_tsv_link="";
+		// #if (isset($runs_repositories_samples_files[$report_tsv])) {
+		// if (in_array($report_tsv,$runs_repositories_samples_files)) {
+		// 		$report_tsv_link='<a href="'.$report_tsv.'" download title="'.basename($report_tsv).'">TSV</a>&nbsp;';
+		// }
 		$report_tsv_link="";
-		#if (isset($runs_repositories_samples_files[$report_tsv])) {
-		if (in_array($report_tsv,$runs_repositories_samples_files)) {
-				$report_tsv_link='<a href="'.$report_tsv.'" download title="'.basename($report_tsv).'">TSV</a>&nbsp;';
+		$report_tsv_pattern="$sample_path/$sample.*.tsv";
+		$report_tsv_array=preg_grep("#$report_tsv_pattern$#", $runs_repositories_samples_files);
+		foreach ($report_tsv_array as $report_tsv) {
+			$report_tsv_link.='<a href="'.$report_tsv.'" download title="'.basename($report_tsv).'">TSV</a>&nbsp;';
 		}
 		
 		# VCF
-		$report_vcf_gz="$sample_path/$sample.final.vcf.gz";
+		// $report_vcf_gz="$sample_path/$sample.final.vcf.gz";
+		// $report_vcf_link="";
+		// #if (isset($runs_repositories_samples_files[$report_vcf])) {
+		// if (in_array($report_vcf_gz,$runs_repositories_samples_files)) {
+		// 	$report_vcf_link='<a href="'.$report_vcf_gz.'" download title="'.basename($report_vcf_gz).'">VCF</a>&nbsp;';
+		// }
 		$report_vcf_link="";
-		#if (isset($runs_repositories_samples_files[$report_vcf])) {
-		if (in_array($report_vcf_gz,$runs_repositories_samples_files)) {
-			$report_vcf_link='<a href="'.$report_vcf.'" download title="'.basename($report_vcf).'">VCF</a>&nbsp;';
+		$report_vcf_pattern="$sample_path/$sample.*.vcf.gz";
+		$report_vcf_array=preg_grep("#$report_vcf_pattern$#", $runs_repositories_samples_files);
+		foreach ($report_vcf_array as $report_vcf) {
+			$report_vcf_link.='<a href="'.$report_vcf.'" download title="'.basename($report_vcf).'">VCF</a>&nbsp;';
 		}
 
-		# BED
-		$report_bed="$sample_path/$sample.bed";
+		# DESIGN BED
 		$report_bed_link="";
-		#if (isset($runs_repositories_samples_files[$report_bed])) {
+		$report_bed="$sample_path/$sample.bed";
 		if (in_array($report_bed,$runs_repositories_samples_files)) {
-				$report_bed_link='<a href="'.$report_bed.'" download title="'.basename($report_bed).'">Design</a>&nbsp;';
+				$report_bed_link.='<a href="'.$report_bed.'" download title="'.basename($report_bed).'">Design</a>&nbsp;';
+		}
+		$report_bed_pattern="$sample_path/$sample.*Design.bed";
+		$report_bed_array=preg_grep("#$report_bed_pattern$#", $runs_repositories_samples_files);
+		foreach ($report_bed_array as $report_bed) {
+			$report_bed_link.='<a href="'.$report_bed.'" download title="'.basename($report_bed).'">Design</a>&nbsp;';
 		}
 
-		# BED
-		$report_genes_pattern="$sample_path/.*genes.bed";
-		$report_genes_array=preg_grep("#$report_genes_pattern$#", $runs_repositories_samples_files);
-		#print_r($report_genes_array);
+		# PANEL BED
 		$report_genes_link="";
-		#if (isset($runs_repositories_samples_files[$report_bed])) {
-		foreach ($report_genes_array as $report_genes) {
+		$report_genes="$sample_path/$sample.genes.bed";
+		if (in_array($report_genes,$runs_repositories_samples_files)) {
 				$report_genes_link.='<a href="'.$report_genes.'" download title="'.basename($report_genes).'">Panel</a>&nbsp;';
 		}
+		$report_genes="$sample_path/$sample.genes";
+		if (in_array($report_genes,$runs_repositories_samples_files)) {
+				$report_genes_link.='<a href="'.$report_genes.'" download title="'.basename($report_genes).'">Panel</a>&nbsp;';
+		}
+		$report_genes_pattern="$sample_path/$sample.*Panel.*genes.bed";
+		$report_genes_array=preg_grep("#$report_genes_pattern$#", $runs_repositories_samples_files);
+		foreach ($report_genes_array as $report_genes) {
+			$report_genes_link.='<a href="'.$report_genes.'" download title="'.basename($report_genes).'">Panel</a>&nbsp;';
+		};
 
 
 		# Find infos
@@ -425,14 +460,6 @@ if (count($samples_paths)<=0) {
 		$level_path["repository"]=$repository_path;
 
 
-
-// echo "<pre>";
-
-// print_r($_SERVER);
-
-// echo "</pre>";
-
-
 		# TAGS
 
 		# Deprecated
@@ -444,8 +471,12 @@ if (count($samples_paths)<=0) {
 		$analysis_tags_file=implode("",preg_grep('#'.$sample_path."/".$sample.".analysis.tag".'#', $tags_analysis_files));
 		
 		#echo "$tags_file <br>";
-
+		#echo "read_file_content=$read_file_content <br>";
+		#$read_file_content=1;
 		$data_read_file=false;
+
+		$tags="";
+		$tags_analysis="";
 
 		if ($read_file_content) {
 
@@ -475,6 +506,9 @@ if (count($samples_paths)<=0) {
 		if ($tags_analysis != "") {
 			$tags_analysis="<br><small><span style='color:gray'>$tags_analysis</span></small>";
 		};
+
+		#echo "<pre>"; print_r($plugins_obj); echo "</pre>";
+
 
 		# PLUGINS
 		$PLUGINS_LINKS=array();

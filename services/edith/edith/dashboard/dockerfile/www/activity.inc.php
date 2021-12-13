@@ -213,7 +213,7 @@ $runs_inputs_files=glob($folder_inputs."/$inputs_runs_pattern_brace/{RTAComplete
 
 $runs_inputs_files=preg_grep("#(RTAComplete.txt|SampleSheet.csv)$#", $inputs_runs);
 
-#print_r($runs_inputs_files);
+#echo "<pre>"; print_r($runs_inputs_files); echo "</pre>";
 
 #array_multisort(array_map('filemtime', $runs_inputs_files), SORT_NUMERIC, SORT_DESC, $runs_inputs_files);
 
@@ -255,9 +255,10 @@ foreach ($runs_inputs_files as $runs_inputs_key=>$run_file_path) {
 			foreach ($run_file_path_array as $run_file_path_array_key=>$run_file_path_array_info) {
 
 				if (substr(trim($run_file_path_array_info),0,1)!="[") {
-					$ini_file_content.=rand(1,10000)."=\"".trim($run_file_path_array_info)."\"\n";
+					$ini_file_content.=rand(1,10000)."=\"".trim(str_replace(array("(",")"),array("_","_"),$run_file_path_array_info))."\"\n";
 				} else {
 					$ini_file_content.=trim($run_file_path_array_info)."\n";
+					#$ini_file_content.=trim(str_replace(array("(",")"),array("_","_"),$run_file_path_array_info))."\n";
 				}
 
 				# ADD
@@ -274,10 +275,41 @@ foreach ($runs_inputs_files as $runs_inputs_key=>$run_file_path) {
 			$runs_infos[$run]["inputs"]["run_files"][$run_file]["file_array"]=$ini_array;
 			#echo "<pre>";
 			#print_r($ini_array["Data"]);
+			#print_r($ini_array["Manifests"]);
+			#print_r($ini_array["Header"]);
 
+
+			$ini_array_section_array=array();
+			foreach ($ini_array as $ini_array_key=>$ini_array_section) {
+				foreach ($ini_array_section as $ini_array_section_key=>$ini_array_section_data) {
+					#echo "ini_array_section_data=$ini_array_section_data<br>";
+					$ini_array_section_data_split=explode(",",$ini_array_section_data);
+					$ini_array_section_array[$ini_array_key][$ini_array_section_data_split[0]]=$ini_array_section_data_split[1];
+				};
+			}
+			
+
+			# HEADER
+			// $ini_array_header=array();
+			// foreach ($ini_array["Header"] as $ini_array_key=>$ini_array_sample) {
+			// 	$ini_array_sample_split=explode(",",$ini_array_sample);
+			// 	$ini_array_header[$ini_array_sample_split[0]]=$ini_array_sample_split[1];
+			// 	// if ($ini_array_sample_split[0] == "Investigator Name") {
+			// 	// 	$investigator_name=$ini_array_sample_split[1];
+			// 	// };
+			// 	// if ($ini_array_sample_split[0] == "Investigator Name") {
+			// 	// 	$investigator_name=$ini_array_sample_split[1];
+			// 	// };
+			// };
+			// print_r($ini_array_header);
+
+			# DATA
 			foreach ($ini_array["Data"] as $ini_array_key=>$ini_array_sample) {
 				$ini_array_sample_split=explode(",",$ini_array_sample);
+
+				$ini_array_section_array["Data"][$ini_array_sample_split[0]]=$ini_array_sample;
 				#print_r($ini_array_sample_split);
+				#echo "$run_file $ini_array_sample_split[0] $ini_array_sample_split[1]<br>";
 				if ($ini_array_sample_split[0] != "Sample_ID") {
 					if ($ini_array_sample_split[1]!="") {
 						$runs_infos[$run]["inputs"]["run_files"][$run_file]["samples"][$ini_array_sample_split[1]]=$ini_array_sample_split[1];
@@ -288,6 +320,8 @@ foreach ($runs_inputs_files as $runs_inputs_key=>$run_file_path) {
 					}
 				}
 			}
+			#print_r($ini_array_section_array);
+			$runs_infos[$run]["inputs"]["run_files"][$run_file]["SampleSheet"]=$ini_array_section_array;
 			#echo "</pre>";
 		}
 
@@ -479,7 +513,27 @@ foreach ($runs_infos as $run=>$run_infos) {
 		}
 		if (count($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"])) {
 			$sequencing_message_plus.="<br><a target='SampleSheet' href='".$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["file"]."'>SampleSheet</a>";
-			$sequencing_message_plus.="<br><span style='color:gray'>".implode("&nbsp;&nbsp;&nbsp; ",array_keys($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"]))."</span>";
+			$sequencing_message_plus.="<br>";
+			#echo "<pre>"; print_r($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]); echo "</pre>";
+			if ($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Header"]["Investigator Name"] != "") {
+				$sequencing_message_plus.="<br>&#8285 <small><span title='Investigator Name'>".$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Header"]["Investigator Name"]."</span></small>";
+			};
+			if ($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Header"]["Experiment Name"] != "") {
+				$sequencing_message_plus.="<br>&#8285 <small><span title='Experiment Name'>".$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Header"]["Experiment Name"]."</span></small>";
+			};
+			if ($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Header"]["Date"] != "") {
+				$sequencing_message_plus.="<br>&#8285 <small><span title='Date'>".$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Header"]["Date"]."</span></small>";
+			};
+			if (implode("bp ",array_keys($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Reads"])) != "") {
+				$sequencing_message_plus.="<br>&#8285 <small><span title='Reads length'>".implode("bp ",array_keys($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Reads"]))."</span></small>";
+			};
+			if ($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Header"]["Description"] != "") {
+				$sequencing_message_plus.="<br>&#8285 <small><span title='Description'>".$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Header"]["Description"]."</span></small>";
+			};
+			if (implode(" ",$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Manifests"]) != "") {
+				$sequencing_message_plus.="<br>&#8285 <small><span title='Manifests'>".implode(" ",$runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["SampleSheet"]["Manifests"])."</span></small>";
+			};
+			$sequencing_message_plus.="<br><br><small><span style='color:gray' title='Samples'>".implode("&nbsp;&nbsp;&nbsp; ",array_keys($runs_infos[$run]["inputs"]["run_files"]["SampleSheet.csv"]["samples"]))."</span></small>";
 		}
 
 		// echo "<pre>";

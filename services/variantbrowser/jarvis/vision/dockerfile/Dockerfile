@@ -75,7 +75,7 @@ ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
 
 # INSTALL (add webtatic for php55)
 RUN yum install -y wget && \
-	wget $TARBALL_LOCATION/$TARBALL && \
+	wget --no-check-certificate $TARBALL_LOCATION/$TARBALL && \
     tar xf $TARBALL && \
     rm -rf $TARBALL && \
     mkdir -p $TOOLS/$TOOL_NAME/$TOOL_VERSION/ && \

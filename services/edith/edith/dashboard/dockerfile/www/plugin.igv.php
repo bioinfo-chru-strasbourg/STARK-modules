@@ -98,6 +98,8 @@ echo '
 <link rel="stylesheet" href="assets/theme/css/style.css">
 <link rel="stylesheet" href="assets/gallery/style.css">
 <link rel="stylesheet" href="assets/mobirise/css/mbr-additional.css" type="text/css">
+
+
 <style>
 	.div-wrapper {
 		overflow: auto;
@@ -249,6 +251,7 @@ foreach ($SAMPLE_PATH as $key_sample => $ONE_SAMPLE_PATH) {
 			  "sourceType": "file",
 			  "format": "'.$design_format.'",
 			  "order": '.$TRACKS_JSON_KEY.',
+			  "displayMode": "COLLAPSE",
 			  "height": "40",
 			  "type": "annotation"
 			}
@@ -262,9 +265,11 @@ foreach ($SAMPLE_PATH as $key_sample => $ONE_SAMPLE_PATH) {
 
 	# Search files
 	$vcf=array();
-	$vcf_root=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/*{vcf.gz,gvcf.gz,bcf.gz}",GLOB_BRACE);
+	$vcf_root=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/*{vcf,vcf.gz,gvcf.gz,bcf.gz}",GLOB_BRACE);
+	#$vcf_root=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/*{vcf.gz,gvcf.gz,bcf.gz}",GLOB_BRACE);
 	if ($CHECK_SUBFOLDER_DATA) {
-		$vcf_data=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/$RESULTS_SUBFOLDER_DATA/*{vcf.gz,gvcf.gz,bcf.gz}",GLOB_BRACE);
+		$vcf_data=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/$RESULTS_SUBFOLDER_DATA/*{vcf,vcf.gz,gvcf.gz,bcf.gz}",GLOB_BRACE);
+		#$vcf_data=glob("$ONE_SAMPLE_PATH$PATH_LEVEL/$RESULTS_SUBFOLDER_DATA/*{vcf.gz,gvcf.gz,bcf.gz}",GLOB_BRACE);
 	} else {
 		$vcf_data=array();
 	};
@@ -274,26 +279,42 @@ foreach ($SAMPLE_PATH as $key_sample => $ONE_SAMPLE_PATH) {
 	# Create tracks
 	foreach ($vcf as $key_vcf => $VCF) {
 
-		$TRACKS_JSON_KEY++;
+		if ( (pathinfo($VCF,PATHINFO_EXTENSION)=="gz" && file_exists($VCF.".tbi"))
+			|| (pathinfo($VCF,PATHINFO_EXTENSION)=="vcf")
+		) {
 
-		$VCF_NAME=end(explode( "/", $VCF ));
-		$VCF_FORMAT="vcf";
-		$TRACKS_URL=$uri_das."/".$VCF;
-
-		$ALIGNMENT_JSON = ' {
-			  "url": "'.$TRACKS_URL.'",
-			  "indexURL": null,
-			  "name": "'.$VCF_NAME.'",
-			  "sourceType": "file",
-			  "format": "'.$VCF_FORMAT.'",
-			  "order": '.$TRACKS_JSON_KEY.',
-			  "height": "40",
-			  "type": "annotation"
+			$indexURL='null';
+			if (pathinfo($VCF,PATHINFO_EXTENSION)=="gz") {
+				$indexURL='"'.$uri_das."/".$VCF.'.tbi"';
 			}
-		';
-		$TRACKS_JSON_ARRAY[$TRACKS_JSON_KEY]=$ALIGNMENT_JSON;
+
+			$TRACKS_JSON_KEY++;
+
+			$VCF_NAME=end(explode( "/", $VCF ));
+			$VCF_FORMAT="vcf";
+			$TRACKS_URL=$uri_das."/".$VCF;
+
+			$ALIGNMENT_JSON = ' {
+				"url": "'.$TRACKS_URL.'",
+				"indexURL": '.$indexURL.',
+				"name": "'.$VCF_NAME.'",
+				"sourceType": "file",
+				"format": "'.$VCF_FORMAT.'",
+				"order": '.$TRACKS_JSON_KEY.',
+				"height": "40",
+				"type": "variant"
+				}
+			';
+			$TRACKS_JSON_ARRAY[$TRACKS_JSON_KEY]=$ALIGNMENT_JSON;
+
+		} else {
+		};
+
+		#"indexURL": '.$indexURL.',
 
 	}
+
+	#"indexURL": "'.$TRACKS_URL.'.tbi",
 
 	# Alignment
 	##############
@@ -341,6 +362,7 @@ foreach ($SAMPLE_PATH as $key_sample => $ONE_SAMPLE_PATH) {
 			  "sourceType": "file",
 			  "format": "'.$ALIGNMENT_FORMAT.'",
 			  "order": '.$TRACKS_JSON_KEY.',
+			  "displayMode": "SQUISHED",
 			  "type": "alignment"
 			}
 		';
