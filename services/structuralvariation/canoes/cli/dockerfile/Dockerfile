@@ -37,15 +37,15 @@ RUN yum -y install https://repo.ius.io/ius-release-el7.rpm  && \
 #############
 # Snakemake #
 #############
-RUN cd /tmp  && \
-	wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh  && \
-	bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/lib/miniconda3/ && \
-	echo 'export PATH="$PATH:/usr/local/lib/miniconda3/bin"' > /etc/profile.d/miniconda.sh && \
-	chmod 755 /etc/profile.d/miniconda.sh && \
-	export PATH="$PATH:/usr/local/lib/miniconda3/bin" && \
-	/usr/local/lib/miniconda3/bin/conda install -y -c bioconda -c conda-forge snakemake && \
-	chmod -R 755 /usr/local/lib/miniconda3/ && \
-	rm -f /tmp/Miniconda3-latest-Linux-x86_64.sh;
+RUN cd /tmp
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/lib/miniconda3/
+RUN echo 'export PATH="$PATH:/usr/local/lib/miniconda3/bin"' > /etc/profile.d/miniconda.sh
+RUN chmod 755 /etc/profile.d/miniconda.sh
+ENV PATH="$PATH:/usr/local/lib/miniconda3/bin"
+RUN chmod -R 755 /usr/local/lib/miniconda3/
+RUN rm -f /tmp/Miniconda3-latest-Linux-x86_64.sh
+RUN /usr/local/lib/miniconda3/bin/conda install -y -c bioconda -c conda-forge snakemake
 
 ##########
 #java & R#
@@ -63,7 +63,7 @@ RUN Rscript -e 'install.packages("nnls",repos="http://cran.us.r-project.org")' &
 #########
 #  TCL  #
 #########
-RUN wget "https://sourceforge.net/projects/tcl/files/Tcl/8.6.9/tcl8.6.9-src.tar.gz/download?use_mirror=netcologne" && \
+RUN wget --no-check-certificate "https://sourceforge.net/projects/tcl/files/Tcl/8.6.9/tcl8.6.9-src.tar.gz/download?use_mirror=netcologne" && \
 		tar -xf download?use_mirror=netcologne && \
 		rm -f download?use_mirror=netcologne && \
 		cd tcl8.6.9/unix && \
@@ -102,13 +102,13 @@ RUN  wget "https://github.com/broadinstitute/gatk/releases/download/4.1.4.0/gatk
 #############
 #  AnnotSV  #
 #############
-RUN wget https://lbgi.fr/AnnotSV/Sources/AnnotSV_2.1.tar.gz && \
+RUN wget --no-check-certificate https://lbgi.fr/AnnotSV/Sources/AnnotSV_2.1.tar.gz && \
 		tar -xf AnnotSV_2.1.tar.gz && \
 		rm -rf AnnotSV_2.1.tar.gz && \
 		mkdir -p $SRC/AnnotSV/2.1 && \
 		rm -rf AnnotSV_2.1/Annotations && \
 		mv AnnotSV_2.1/* $SRC/AnnotSV/2.1 && \
-		rm -rf AnnotSV_2.1;
+		rm -rf AnnotSV_2.1 && \
 		rm -rf $SRC/AnnotSV/2.1/Annotations/Genes-based/OMIM/*
 RUN mkdir -p $SRC/AnnotSV/2.1
 ENV ANNOTSV=$SRC/AnnotSV/2.1

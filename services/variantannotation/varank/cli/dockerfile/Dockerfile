@@ -64,10 +64,11 @@ RUN mkdir /tools; \
 	ln -s VaRank_1.4.3 current; \
 	cd current/ExtAnn; \
 	rm -f OMIMannotations.tsv.gz; \
-	ln -s /STARK/databases/OMIMannotations/current/OMIMannotations.tsv.gz /tools/varank/current/ExtAnn/OMIMannotations.tsv.gz
+	mkdir /tools/varank/current/raw; \
+	ln -s /STARK/databases/OMIMannotations/current/OMIMannotations.tsv.gz /tools/varank/current/raw/OMIMannotations.tsv.gz
 
-ARG VARANK=/tools/varank/current/
-ENV VARANK $VARANK
+ENV VARANK=/tools/varank/current/
+ENV varank="python3 /tools/varank/current/scripts/newVaRank.py"
 
 # Alamut-Batch
 RUN mkdir /tools/alamut_batch; \
@@ -82,8 +83,7 @@ RUN mkdir /tools/alamut_batch; \
 
 COPY src/ancillary/ /tools/alamut_batch/current/ancillary/
 RUN chmod -R 777 /tools/alamut_batch/current/ancillary/
-ARG ALAMUT=/tools/alamut_batch/current/
-ENV ALAMUT $ALAMUT
+ENV ALAMUT=/tools/alamut_batch/current/
 
 ##########################################################################
 
@@ -98,5 +98,5 @@ COPY config/* /tools/varank/current/config/
 
 RUN chmod -R 777 /tools/
 
-ENTRYPOINT ["python3", "/tools/varank/current/scripts/newVaRank.py"]
+ENTRYPOINT ["$varank"]
 WORKDIR /
