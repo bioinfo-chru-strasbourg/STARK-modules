@@ -503,6 +503,7 @@ def launch_folder_analysis(args):
 		varank_launcher(varank_processing_folder)
 		logfile_checker(varank_processing_folder, args, 'None', 'None')
 		varank_processing_folder_cleaner(varank_processing_tsv_folder, varank_processing_folder, args)
+		generate_non_redundant(varank_processing_tsv_folder, folder_platform_application)
 		print('[' + datetime.now().strftime('%y%y%m%d-%H%M%S') + '] VARANK: Your analysis ended well, you can check results in ' + results)
 	else:
 		varank_processing_folder = folder
@@ -516,6 +517,7 @@ def launch_folder_analysis(args):
 		varank_launcher(varank_processing_folder)
 		logfile_checker(varank_processing_folder, args, 'None', 'None')
 		varank_processing_folder_cleaner(varank_processing_tsv_folder, varank_processing_folder, args)
+		generate_non_redundant(varank_processing_tsv_folder, "default")
 		print('[' + datetime.now().strftime('%y%y%m%d-%H%M%S') + '] VARANK: Your analysis ended well, you can check results in ' + results)
 
 
