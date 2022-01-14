@@ -1,0 +1,54 @@
+#Default configuration of canoes submodule
+genomePath: "/STARK/databases/genomes/current/hg19.fa"
+genomebuild: "GRCh37"
+#If sample contains one of those, sample will be discarded from the analysis
+exclude_sample: ["POOL_", "BlcADN", "blanc", "BlcPCR", "blcPCR", "Z_NTC"]
+exclude_tag: ["POOL"]
+valid_sex: ["A", "F", "M"]
+#Absolute path of Samplesheet optionnal
+samplesheetPath: ""
+#Absolute path of run folder required
+runPath: ""
+#Type of analysis Autosomal minimum optionnal
+analysis: ["A", "M"]
+#Path of a bed file if it is not in run folder
+bedPath: ""
+#Value bed in piece of int exemple 500
+splitbed: ""
+#Defautl output path
+outputPath: "/app/res"
+#Convert output SAM script tsv to VCF
+convertype: "vcf"
+#config SAM script 
+annotsvconf: "/home1/L/NGS/BIO_INFO/BIO_INFO_Sam/scripts/tsvConversion/fileconversion/config_annotsv3.json"
+#Localisation of SAM script converter
+convertscript: "/home1/L/NGS/BIO_INFO/BIO_INFO_Sam/scripts/tsvConversion/file_converter.py"
+#config for SAM script
+bed2vcfjson: "/home1/L/NGS/BIO_INFO/BIO_INFO_Sam/scripts/tsvConversion/fileconversion/config_canoes_bed.json"
+#Celine fileconverter script
+fileconvert: "/app/src/fileconversion/file_conversion_v2.0.2.py"
+src: "/app/src"
+gatk: "/tools/gatk/4.1.4.0/bin/gatk-package-4.1.4.0-local.jar"
+java: "/usr/bin/java"
+canoes: "/app/src/CANOES.v3.dev.R"
+bedtools: "/tools/bedtools/2.27.1/bin/bedtools"
+annotsv: "/tools/AnnotSV/3.1"
+R: "/usr/bin/R"
+Rscript: "/usr/bin/Rscript"
+service: ""
+versionannotsv: "3.0"
+plotscript: "/app/src/plotCoverage_origin.R"
+#pval:
+#     average rate of occurrence of CNVs (real) default is 1e-08
+pval: "1e-08"
+#   dist:
+#     expected distance between targets in a CNV (integer) default is 70,000
+dist: "70000"
+#   tnum:
+#     expected number of targets in a CNV (integer) default is 6
+tnum: "6"
+#   numref
+#     maximum number of reference samples to use (integer) default is 30
+#     the weighted variance calculations will take a long time if too 
+#     many reference samples are used
+numref: "30"

@@ -1,0 +1,3305 @@
+#### AnnotSV2vcf ####
+Recovery of fasta file
+Delete header line
+Dataframe from AnnotSV data (tsv)
+#[INFO] dataf head               AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+4  12_88444062_88444278_        12  ...                    yes               NaN
+5  12_88444062_88444278_        12  ...                    yes               NaN
+6  12_88449303_88449543_        12  ...                    yes               NaN
+7  12_88449303_88449543_        12  ...                    yes               NaN
+8  12_88481536_88482887_        12  ...                    yes               NaN
+
+[5 rows x 74 columns]
+Retrieving useful variable names
+#[INFO] SV features: svtype: SV type 
+ svchrom: SV chrom 
+ svstart: SV start 
+ sv_end: SV end
+Recovery of name of samples
+#[INFO] df columns Index(['AnnotSV ID', 'SV chrom', 'SV start', 'SV end', 'SV length', 'SV type',
+       'Samples_ID', 'AnnotSV type', 'Gene name', 'NM', 'CDS length',
+       'tx length', 'location', 'intersectStart', 'intersectEnd',
+       'DGV_GAIN_IDs', 'DGV_GAIN_n_samples_with_SV',
+       'DGV_GAIN_n_samples_tested', 'DGV_GAIN_Frequency', 'DGV_LOSS_IDs',
+       'DGV_LOSS_n_samples_with_SV', 'DGV_LOSS_n_samples_tested',
+       'DGV_LOSS_Frequency', 'GD_ID', 'GD_AN', 'GD_N_HET', 'GD_N_HOMALT',
+       'GD_AF', 'GD_POPMAX_AF', 'GD_ID_others', 'DDD_SV',
+       'DDD_DUP_n_samples_with_SV', 'DDD_DUP_Frequency',
+       'DDD_DEL_n_samples_with_SV', 'DDD_DEL_Frequency', '1000g_event',
+       '1000g_AF', '1000g_max_AF', 'IMH_ID', 'IMH_AF', 'IMH_ID_others',
+       'promoters', 'dbVar_event', 'dbVar_variant', 'dbVar_status',
+       'TADcoordinates', 'ENCODEexperiments', 'GCcontent_left',
+       'GCcontent_right', 'Repeats_coord_left', 'Repeats_type_left',
+       'Repeats_coord_right', 'Repeats_type_right', 'ACMG', 'HI_CGscore',
+       'TriS_CGscore', 'DDD_status', 'DDD_mode', 'DDD_consequence',
+       'DDD_disease', 'DDD_pmids', 'HI_DDDpercent', 'synZ_ExAC', 'misZ_ExAC',
+       'pLI_ExAC', 'delZ_ExAC', 'dupZ_ExAC', 'cnvZ_ExAC', 'Mim Number',
+       'Phenotypes', 'Inheritance', 'morbidGenes', 'morbidGenesCandidates',
+       'AnnotSV rankingg'],
+      dtype='object')
+#[INFO] list_sample_id ['SGT162459']
+#[INFO] index  6
+Remove duplicates
+Recovery of ID
+#[INFO] SAMPLES CHECK SGT162459
+#[INFO] DICT  {'SGT162459': []}
+Create header of VCF
+Empty DataFrame
+Columns: [#CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO, FORMAT, SGT162459]
+Index: []
+Creation of column of VCF
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  0
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  1
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  2
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  3
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  4
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  5
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  6
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  7
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  8
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  9
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  10
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  11
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  12
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  13
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  14
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  15
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  16
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  17
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  18
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  19
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  20
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  21
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  22
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  23
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  24
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  25
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  26
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+#[INFO] DATAF                  AnnotSV ID  SV chrom  ...  morbidGenesCandidates  AnnotSV rankingg
+0    12_88444062_88444278_        12  ...                    yes               NaN
+1    12_88444062_88444278_        12  ...                    yes               NaN
+2    12_88449303_88449543_        12  ...                    yes               NaN
+3    12_88449303_88449543_        12  ...                    yes               NaN
+4    12_88481536_88482887_        12  ...                    yes               NaN
+5    12_88481536_88482887_        12  ...                    yes               NaN
+6    12_94729282_94729522_        12  ...                    NaN               NaN
+7    12_94729282_94729522_        12  ...                    NaN               NaN
+8    12_94805391_94805703_        12  ...                    NaN               NaN
+9    12_94805391_94805703_        12  ...                    NaN               NaN
+10   14_89310063_89310279_        14  ...                    yes               NaN
+11   14_89310063_89310279_        14  ...                    yes               NaN
+12   15_72987193_72987342_        15  ...                    NaN               NaN
+13   15_72987193_72987342_        15  ...                    NaN               NaN
+14   16_53692604_53692868_        16  ...                    yes               NaN
+15   16_53692604_53692868_        16  ...                    yes               NaN
+16   16_56518218_56518367_        16  ...                    NaN               NaN
+17   16_56518218_56518367_        16  ...                    NaN               NaN
+18  2_170363030_170363270_         2  ...                    NaN               NaN
+19  2_170363030_170363270_         2  ...                    NaN               NaN
+20    4_39188105_39196353_         4  ...                    yes               NaN
+21    4_39188105_39196353_         4  ...                    yes               NaN
+22    5_37183727_37183835_         5  ...                    NaN               NaN
+23    5_37183727_37183835_         5  ...                    NaN               NaN
+24    7_33195173_33195389_         7  ...                    NaN               NaN
+25    7_33195173_33195389_         7  ...                    NaN               NaN
+26  9_103046725_103046911_         9  ...                    NaN               NaN
+27  9_103046725_103046911_         9  ...                    NaN               NaN
+
+[28 rows x 73 columns]
+#[INFO] DATAFDROP               AnnotSV ID    SV end  ...  morbidGenesCandidates AnnotSV rankingg
+0  12_88444062_88444278_  88444278  ...                    yes              NaN
+1  12_88444062_88444278_  88444278  ...                    yes              NaN
+2  12_88449303_88449543_  88449543  ...                    yes              NaN
+3  12_88449303_88449543_  88449543  ...                    yes              NaN
+4  12_88481536_88482887_  88482887  ...                    yes              NaN
+
+[5 rows x 71 columns]
+I value  27
+#[INFO]Presence  {}
+#[INFO] Dict  {'SGT162459': []}
+AnnotSV ID
+#[INFO] COLUMNS  AnnotSV ID
+SV end
+SV length
+SV type
+AnnotSV type
+Gene name
+NM
+CDS length
+tx length
+location
+intersectStart
+intersectEnd
+DGV_GAIN_IDs
+DGV_GAIN_n_samples_with_SV
+DGV_GAIN_n_samples_tested
+DGV_GAIN_Frequency
+DGV_LOSS_IDs
+DGV_LOSS_n_samples_with_SV
+DGV_LOSS_n_samples_tested
+DGV_LOSS_Frequency
+GD_ID
+GD_AN
+GD_N_HET
+GD_N_HOMALT
+GD_AF
+GD_POPMAX_AF
+GD_ID_others
+DDD_SV
+DDD_DUP_n_samples_with_SV
+DDD_DUP_Frequency
+DDD_DEL_n_samples_with_SV
+DDD_DEL_Frequency
+1000g_event
+1000g_AF
+1000g_max_AF
+IMH_ID
+IMH_AF
+IMH_ID_others
+promoters
+dbVar_event
+dbVar_variant
+dbVar_status
+TADcoordinates
+ENCODEexperiments
+GCcontent_left
+GCcontent_right
+Repeats_coord_left
+Repeats_type_left
+Repeats_coord_right
+Repeats_type_right
+ACMG
+HI_CGscore
+TriS_CGscore
+DDD_status
+DDD_mode
+DDD_consequence
+DDD_disease
+DDD_pmids
+HI_DDDpercent
+synZ_ExAC
+misZ_ExAC
+pLI_ExAC
+delZ_ExAC
+dupZ_ExAC
+cnvZ_ExAC
+Mim Number
+Phenotypes
+Inheritance
+morbidGenes
+morbidGenesCandidates
+AnnotSV rankingg
+   #CHROM        POS  ... FORMAT SGT162459
+0   chr12   88444061  ...     GT       ./.
+1   chr12   88444061  ...     GT       ./.
+2   chr12   88449302  ...     GT       ./.
+3   chr12   88449302  ...     GT       ./.
+4   chr12   88481535  ...     GT       ./.
+5   chr12   88481535  ...     GT       ./.
+6   chr12   94729281  ...     GT       ./.
+7   chr12   94729281  ...     GT       ./.
+8   chr12   94805390  ...     GT       ./.
+9   chr12   94805390  ...     GT       ./.
+10  chr14   89310062  ...     GT       ./.
+11  chr14   89310062  ...     GT       ./.
+12  chr15   72987192  ...     GT       ./.
+13  chr15   72987192  ...     GT       ./.
+14  chr16   53692603  ...     GT       ./.
+15  chr16   53692603  ...     GT       ./.
+16  chr16   56518217  ...     GT       ./.
+17  chr16   56518217  ...     GT       ./.
+18   chr2  170363029  ...     GT       ./.
+19   chr2  170363029  ...     GT       ./.
+20   chr4   39188104  ...     GT       ./.
+21   chr4   39188104  ...     GT       ./.
+22   chr5   37183726  ...     GT       ./.
+23   chr5   37183726  ...     GT       ./.
+24   chr7   33195172  ...     GT       ./.
+25   chr7   33195172  ...     GT       ./.
+26   chr9  103046724  ...     GT       ./.
+27   chr9  103046724  ...     GT       ./.
+
+[28 rows x 10 columns]
+AFTER
+   #CHROM        POS  ... FORMAT SGT162459
+1   chr12   88444061  ...     GT       ./.
+2   chr12   88449302  ...     GT       ./.
+3   chr12   88449302  ...     GT       ./.
+4   chr12   88481535  ...     GT       ./.
+5   chr12   88481535  ...     GT       ./.
+6   chr12   94729281  ...     GT       ./.
+7   chr12   94729281  ...     GT       ./.
+8   chr12   94805390  ...     GT       ./.
+9   chr12   94805390  ...     GT       ./.
+10  chr14   89310062  ...     GT       ./.
+11  chr14   89310062  ...     GT       ./.
+12  chr15   72987192  ...     GT       ./.
+13  chr15   72987192  ...     GT       ./.
+14  chr16   53692603  ...     GT       ./.
+15  chr16   53692603  ...     GT       ./.
+16  chr16   56518217  ...     GT       ./.
+17  chr16   56518217  ...     GT       ./.
+18   chr2  170363029  ...     GT       ./.
+19   chr2  170363029  ...     GT       ./.
+20   chr4   39188104  ...     GT       ./.
+21   chr4   39188104  ...     GT       ./.
+22   chr5   37183726  ...     GT       ./.
+23   chr5   37183726  ...     GT       ./.
+24   chr7   33195172  ...     GT       ./.
+25   chr7   33195172  ...     GT       ./.
+26   chr9  103046724  ...     GT       ./.
+27   chr9  103046724  ...     GT       ./.
+
+[27 rows x 10 columns]
+Sort output file

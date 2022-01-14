@@ -1,0 +1,38 @@
+09:57:47.665 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/src/gatk/4.1.4.0/bin/gatk-package-4.1.4.0-local.jar!/com/intel/gkl/native/libgkl_compression.so
+Nov 03, 2021 9:57:48 AM shaded.cloud_nio.com.google.auth.oauth2.ComputeEngineCredentials runningOnComputeEngine
+INFO: Failed to detect whether we are running on Google Compute Engine.
+09:57:48.353 INFO  AnnotateIntervals - ------------------------------------------------------------
+09:57:48.354 INFO  AnnotateIntervals - The Genome Analysis Toolkit (GATK) v4.1.4.0
+09:57:48.354 INFO  AnnotateIntervals - For support and documentation go to https://software.broadinstitute.org/gatk/
+09:57:48.355 INFO  AnnotateIntervals - Executing as root@25d79ceede2e on Linux v3.10.0-862.3.3.el7.x86_64 amd64
+09:57:48.355 INFO  AnnotateIntervals - Java runtime: OpenJDK 64-Bit Server VM v1.8.0_302-b08
+09:57:48.355 INFO  AnnotateIntervals - Start Date/Time: November 3, 2021 9:57:47 AM UTC
+09:57:48.355 INFO  AnnotateIntervals - ------------------------------------------------------------
+09:57:48.355 INFO  AnnotateIntervals - ------------------------------------------------------------
+09:57:48.356 INFO  AnnotateIntervals - HTSJDK Version: 2.20.3
+09:57:48.356 INFO  AnnotateIntervals - Picard Version: 2.21.1
+09:57:48.356 INFO  AnnotateIntervals - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+09:57:48.356 INFO  AnnotateIntervals - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+09:57:48.356 INFO  AnnotateIntervals - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+09:57:48.356 INFO  AnnotateIntervals - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+09:57:48.356 INFO  AnnotateIntervals - Deflater: IntelDeflater
+09:57:48.356 INFO  AnnotateIntervals - Inflater: IntelInflater
+09:57:48.356 INFO  AnnotateIntervals - GCS max retries/reopens: 20
+09:57:48.356 INFO  AnnotateIntervals - Requester pays: disabled
+09:57:48.356 INFO  AnnotateIntervals - Initializing engine
+09:57:50.892 INFO  FeatureManager - Using codec BEDCodec to read file file:///app/personalfolder/canoes_v2.0/CANOES/output/CANOES/analysis.bed
+09:57:51.192 INFO  IntervalArgumentCollection - Processing 332980 bp from intervals
+09:57:51.199 INFO  AnnotateIntervals - Done initializing engine
+09:57:51.280 INFO  AnnotateIntervals - Loading intervals for annotation...
+09:57:51.280 INFO  AnnotateIntervals - Loading resources for annotation...
+09:57:51.996 INFO  AnnotateIntervals - Adding GC-content annotator...
+09:57:51.996 INFO  AnnotateIntervals - Annotating intervals...
+09:57:51.996 INFO  ProgressMeter - Starting traversal
+09:57:51.997 INFO  ProgressMeter -        Current Locus  Elapsed Minutes     Records Processed   Records/Minute
+09:57:55.512 INFO  ProgressMeter -       chr16:53670468              0.1                  2303          39333.9
+09:57:55.512 INFO  ProgressMeter - Traversal complete. Processed 2303 total records in 0.1 minutes.
+09:57:55.512 INFO  AnnotateIntervals - Writing annotated intervals to /app/personalfolder/canoes_v2.0/CANOES/output/CANOES/GCpercent_to_change.tsv...
+09:57:55.702 INFO  AnnotateIntervals - AnnotateIntervals complete.
+09:57:55.702 INFO  AnnotateIntervals - Shutting down engine
+[November 3, 2021 9:57:55 AM UTC] org.broadinstitute.hellbender.tools.copynumber.AnnotateIntervals done. Elapsed time: 0.14 minutes.
+Runtime.totalMemory()=576716800
