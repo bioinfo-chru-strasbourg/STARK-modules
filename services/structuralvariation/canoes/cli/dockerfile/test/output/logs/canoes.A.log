@@ -1,0 +1,76 @@
+
+R version 3.6.0 (2019-04-26) -- "Planting of a Tree"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-redhat-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> setwd("/app/personalfolder/canoes_v2.0/CANOES/output")
+> gc <- read.table("/app/personalfolder/canoes_v2.0/CANOES/output/CANOES/GCpercent.A.tsv.conv")$V2
+> canoes.reads <- read.table("/app/personalfolder/canoes_v2.0/CANOES/output/CANOES/all.canoes.A.coverage.tsv.conv.no_header")
+> sample.names <- c("SGT144117","SGT140392","SGT162459")
+> names(canoes.reads) <- c("chromosome", "start", "end", sample.names)
+> target <- seq(1, nrow(canoes.reads))
+> canoes.reads <- cbind(target, gc, canoes.reads)
+> source("/app/personalfolder/canoes_v2.0/CANOES/CANOES.v3.R")
+> xcnv.list <- vector('list', length(sample.names))
+> for (i in 1:length(sample.names)){
++ xcnv.list[[i]] <- CallCNVs(sample.names[i], canoes.reads)
++ }
+Loading required package: lattice
+Loading required package: survival
+Loading required package: Formula
+Loading required package: ggplot2
+
+Attaching package: 'Hmisc'
+
+The following objects are masked from 'package:plyr':
+
+    is.discrete, summarize
+
+The following objects are masked from 'package:base':
+
+    format.pval, units
+
+Loading required package: nlme
+This is mgcv 1.8-36. For overview type 'help("mgcv-package")'.
+  target var.estimate
+1      1     15079.58
+2      2     30012.50
+3      3     58482.00
+4      4     91592.00
+5      5     18818.00
+6      6     15842.00
+0 CNVs called in sample SGT144117 
+  target var.estimate
+1      1     7215.775
+2      2     8238.782
+3      3     8244.332
+4      4     5605.970
+5      5     3753.010
+6      6     3042.171
+13 CNVs called in sample SGT140392 
+  target var.estimate
+1      1        14792
+2      2        34848
+3      3        59858
+4      4       105800
+5      5        15488
+6      6         7688
+4 CNVs called in sample SGT162459 
+> xcnvs <- do.call('rbind', xcnv.list)
+> write.csv(xcnvs, "/app/personalfolder/canoes_v2.0/CANOES/output/CANOES/results.A.csv", row.names=FALSE)
+> 
+> proc.time()
+   user  system elapsed 
+ 22.704   0.473  23.267 

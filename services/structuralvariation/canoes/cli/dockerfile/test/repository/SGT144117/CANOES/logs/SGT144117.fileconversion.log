@@ -1,0 +1,16 @@
+#### AnnotSV2vcf ####
+Recovery of fasta file
+Delete header line
+Dataframe from AnnotSV data (tsv)
+#[INFO] dataf head Empty DataFrame
+Columns: [No data to annotate]
+Index: []
+Retrieving useful variable names
+Traceback (most recent call last):
+  File "./fileconversion/file_conversion_v2.0.2.py", line 733, in <module>
+    annotsv2vcf()
+  File "./fileconversion/file_conversion_v2.0.2.py", line 652, in annotsv2vcf
+    sv_type, sv_chrom, sv_start, sv_end = name_of_var(dataf)
+  File "./fileconversion/file_conversion_v2.0.2.py", line 170, in name_of_var
+    return sv_type, sv_chrom, sv_start, sv_end
+UnboundLocalError: local variable 'sv_type' referenced before assignment

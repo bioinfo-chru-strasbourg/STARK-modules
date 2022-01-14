@@ -1,0 +1,12 @@
+name: ngs
+channels:
+  - bioconda
+  - conda-forge
+  - biobuilds
+dependencies:
+  - python=3.8
+  - pandas
+  - pysam
+  - biopython
+  - fasta
+prefix: ./envs

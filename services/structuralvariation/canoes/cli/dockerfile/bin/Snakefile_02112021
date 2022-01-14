@@ -1,0 +1,629 @@
+###############################
+###   Import libraries   ######
+###############################
+
+
+import os
+import pandas as pd
+import subprocess
+import time
+import re
+import shutil
+import time
+from datetime import datetime, timedelta
+import argparse
+import json
+import csv
+from os.path import join as osj
+
+###########################################
+#####   Configuration file and PATHS   ####
+###########################################
+#SAMPLESHEET RUN BED
+
+configfile: "config.yaml"
+
+
+########################
+###   Python Func   ####
+########################
+
+def systemcall(command):
+	'''
+	*passing command to the shell*
+	*return list containing stdout lines*
+	command - shell command (string)
+	'''
+	p = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+	return p.stdout.read().decode('utf8').strip().split('\n')
+
+#Find and return bed and samplesheet path
+def init(samplesheet_sample, bed_sample):
+	bed = systemcall('find . -maxdepth1 -mindepth1 -name "*.bed"')
+	samplesheet = systemcall('find . -maxdepth1 -mindepth1 -name "*SampleSheet.csv"')
+	shutil.copy2(samplesheet, osj(output, "CANOES"))
+	shutil.copy2(bed, osj(output, "CANOES"))
+	return bed, samplesheet
+
+### Return Dataframe with SampleSheet info
+def parse_samplesheet(samplesheet_path):
+	## Sample_ID extraction ##
+	samplesheet_data = []
+	samplesheet_header = []
+	with open(samplesheet_path, 'r') as f:
+		v = False
+		for lines in f:
+			lines = lines.strip()
+			if v:
+				samplesheet_data.append(lines.split(','))
+			if 'Sample_ID' in lines:
+				v = True
+				samplesheet_header.append(lines.split(','))
+
+	df = pd.DataFrame(samplesheet_data, columns=samplesheet_header)
+	
+	#sample ID
+	sample_list = df.iloc[:, 0].tolist()
+
+	#return dataframe with full SS's samples informations
+	return df
+
+def getSampleInfos(samplesheet, runPath):
+	exclude_list = ["POOL_", "BlcADN", "blanc", "BlcPCR", "blcPCR", "Z_NTC"]
+	infos = {}
+	if samplesheet:
+		parse_samplesheet(samplesheet)
+		for i, rows in parse_samplesheet(samplesheet).iterrows():
+			if not any(exclude in rows['Sample_ID'] for exclude in exclude_list):
+				sampleID = rows["Sample_ID"]
+				infos[sampleID] = {}
+				bam = systemcall("find "+osj(runPath, sampleID)+" -maxdepth 2 -name '*.bam' ! -name '*validation*'")[0]
+				infos[sampleID]['bam'] = bam
+				tags = rows['Description'].split('!')
+				#print("#[INFO] tag ", tags)
+				for tag in tags:
+					if 'SEX' in tag and '_' in tag:
+						sex = tag.split('_')[-1] 
+					elif 'SEX' in tag and '#' in tag:
+						sex = tag.split('#')[-1] 
+					infos[sampleID]['sex'] = sex
+	else:
+		#TODO informations from sample dir and Tag or pedigree
+		samplelist = [sampleID for sampleID in os.listdir(runPath) if any(exlude in sampleID for exclude in exclude_list)]
+	#print("#[INFO] Sample List ", infos)
+	return infos
+
+def checkWarnings(output_tsv):
+	print("#[INFO] sexlist: ",sexlist)
+	sex_all = {'M': [], 'A':[], 'F':[]}
+	for i, ite in infos.items():
+		sex_all[ite['sex']].append(i)
+		sex_all['A'].append(i)
+	sex_warning = {}
+	for sex in sexlist:
+		print("#[INFO] SEX: ",sex)
+		if os.path.exists(osj(output, "CANOES", "script_create."+sex+".R")):
+			print("#[INFO] Script R ", osj(output, "CANOES", "script_create."+sex+".R"))
+			#with open(output+"/{sample}/CANOES/{sample}.canoes.annotsv.tsv", "w+") as out:
+
+			grep = systemcall("grep -A1 'Error\|Warning' "+osj(output, "logs", "canoes."+sex+".log"))[0]
+			print(grep)
+			if "Error" in grep or "Warning" in grep:
+				if sex == 'A' and len(sexlist) > 2:
+					sex_warning["SEX#"+sex] = "##Autosomal chromosomes - /!\/!\/!\ A WARNING message appears, please check your results CAREFULLY: "+grep+"\n"
+				elif sex == 'A' and len(sexlist) == 1:
+					sex_warning["SEX#"+sex] = "##WARNING: /!\/!\/!\ CANOES launched without sexual chromosomes\n"
+				elif sex == 'F' or sex == 'M':
+					sex_warning["SEX#"+sex] = "##Sexual chromosomes - /!\/!\/!\ A WARNING message appears, please check your results CAREFULLY: "+grep+"\n"
+			else:
+				if sex == 'A' and len(sexlist) > 1:
+					sex_warning["SEX#"+sex] = "##Autosomal chromosomes: Samples used for CANOES Analysis: "
+				elif sex == 'A' and len(sexlist) == 1:
+					sex_warning["SEX#"+sex] = "##WARNING: /!\/!\/!\ CANOES launched without sexual chromosomes\n"
+				elif sex == 'F' or sex == 'M':
+					sex_warning["SEX#"+sex] = "##Sexual chromosomes - Samples used for CANOES Analysis with "
+		else:
+			print("ERROR no script R files generated")
+			break
+	print("#[INFO] sex all ", sex_all)
+	print("#[INFO] sex warnings ", sex_warning)
+	with open(output_tsv, "w+") as out:
+		sample = os.path.basename(output_tsv).split('.')[0]
+		if sample != "all":
+			sex = "SEX#"+infos[sample]['sex']
+			sexl = infos[sample]['sex']
+			print("#[INFO] Sample ", sample)
+			if not infos[sample]['sex']:
+				out.write("##Sex is UNKNWON for sample "+sample+" \n")
+			else:
+				out.write("##Sex for sample "+sample+" is : "+infos[sample]['sex']+"\n")
+
+			#in case of good analysis
+			if not 'WARNING' in sex_warning["SEX#A"]:
+				out.write(sex_warning["SEX#A"] + str(len(sex_all["A"]))+" | "+ ','.join(sex_all["A"])+"\n")
+			else:
+				out.write(sex_warning["SEX#A"]+"\n")
+
+			if not 'WARNING' in sex_warning[sex]:
+				out.write(sex_warning[sex] +sex+" "+str(len(sex_all[sexl]))+"\n")
+			else:
+				out.write(sex_warning[sex])
+		elif sample == "all":
+			if not 'WARNING' in sex_warning["SEX#A"]:
+				out.write(sex_warning["SEX#A"] + str(len(sex_all["A"]))+" | "+ ','.join(sex_all["A"])+" Analysis Ended Well !\n")
+			else:
+				out.write(sex_warning["SEX#A"])
+			#TODO a verif
+			if 'A' in sexlist and len(sexlist) == 1:
+				out.write("##WARNING: /!\/!\/!\ CANOES launched without sexual chromosomes\n")
+			else:
+				for values in sex_warning:
+					if values == "SEX#A":
+						continue
+					else:
+						if "WARNING" in values:
+							out.write(sex_warning[values])
+						else:
+							out.write(sex_warning[values] +values+" : "+','.join(sex_all[values.split('#')[-1]])+"\n")
+	return sex_all, sex_warning
+	
+		
+
+
+### Return Sex from .ped file and catch bams in folder OR all from SS
+#if samplesheet:
+#	rule bam
+
+#######################
+####   Global Variables   ####
+#######################
+
+##TODO init :les variables qui seront dans le fichier yaml passé a snakemake 
+
+#bed_path, samplesheet = init()
+#VARTESTS
+bed = config["bedPath"]
+runPath = config["runPath"]
+samplesheet = config["samplesheetPath"]
+splitbed = config["splitbed"]
+output = config["outputPath"]
+log = output + "/logs"
+aligner = config["aligner"]
+#all sample informations
+infos = getSampleInfos(samplesheet, runPath)
+print("#[INFO] infos ", infos)
+samplelist = [items for items in infos]
+print("#[INFO] SampleList ",samplelist)
+sexlist = list(set([sample["sex"] for sample in infos.values()]))
+sexlist.append('A')
+#print("#[INFO] sexlist ", sexlist)
+#genome = config['genome']
+#print(infos[wildcards.sample]['bam'] )
+
+
+###############
+##   Rules
+###############
+
+### Ruleorder
+ruleorder:
+		merge_CNVs > warnings_message_all > warnings_message >  AnnotSV
+
+
+rule all:
+	input:
+		#expand(output+"/{sample}/CANOES/{sample}.multicov.tsv", sample=samplelist)
+		#expand(output+"/CANOES/canoes.{sample}.tsv", sample=samplelist)
+		#expand(output+"/CANOES/canoes.{sex}.tsv", sex=sexlist)
+		output+"/CANOES/all.canoes.annotsv.vcf",
+		expand(output+"/{sample}/CANOES/{sample}.canoes.annotsv.vcf", sample=samplelist)
+	
+
+if config["splitbed"]:
+	rule split_bed:
+		input:
+			bedfile = bed
+		output:
+			output+"/CANOES/analysis.bed"
+		log:
+			log+"/splitbed.log"
+		shell: 
+			"""
+				python kmer.py -i {input} -k {splitbed} -o {output} &> {log} 
+			"""
+else:
+	rule get_bed:
+		input:
+			config["bedPath"]
+		output:
+			output+"/CANOES/analysis.bed"
+		shell:
+			"""
+				cp {input} {output}
+			"""
+
+rule merge_CNVs:
+	input:
+		expand(output+"/{sample}/CANOES/{sample}.canoes.annotsv.tsv", sample=samplelist),
+	output:
+		output+"/CANOES/all.canoes.annotsv.tmp.tsv"
+	run:
+		with open(output[0], "a+") as o:
+			print_header = True
+			for file in input:
+				ok_header = False
+				with open(file, "r") as i:
+					for line in i:
+						if not ok_header:
+							if line.startswith("AnnotSV ID"):
+								ok_header = True
+								if print_header:
+									print_header = False
+									o.write(line)
+						else:
+							o.write(line)
+
+rule bam_to_multicov:
+	input: 
+		bam = lambda wildcards: infos[wildcards.sample]['bam'],
+		bedfile = output+"/CANOES/analysis.bed"
+	log:
+		log+"/{sample}.multicov.log"
+	output:
+		output+"/{sample}/CANOES/{sample}.multicov.tsv"
+	shell:
+		"""
+			echo '#[INFO] {input.bam}' && python pybedtools.py --bam {input.bam} --bed {input.bedfile} -q 20 -o {output} 2> {log}
+		"""
+rule gc_percent:
+	params:
+		gatk = config["gatk"],
+		java = config["java"]
+	input:
+		bed = output+"/CANOES/analysis.bed",
+		genome = config["genomePath"]
+	log:
+		log+"/GCpercent_to_change.log"
+	output:
+		temp(output+"/CANOES/GCpercent_to_change.tsv"),
+	shell:
+		"""
+			{params.java} -Xmx2000m -jar {params.gatk} AnnotateIntervals -L {input.bed} -R {input.genome} -imr OVERLAPPING_ONLY -O {output} &> {log} 
+		"""
+
+rule correct_gc_percent_file:
+	input:
+		output+"/CANOES/GCpercent_to_change.tsv",
+	log:
+		log+"/GCpercent.log"
+	output:
+		temp(output+"/CANOES/GCpercent.tsv")
+	shell:
+		"""
+			cat {input} | awk 'NR>27{{print $0}}' > {output}
+		"""
+
+rule sex_gc_percent:
+	input:
+		output+"/CANOES/GCpercent.tsv"
+	output:
+		temp(output+"/CANOES/GCpercent.{sex}.tsv")
+	log:
+		log+"/GCpercent.{sex}.log"
+	shell:
+		"""
+			if [[ "{wildcards.sex}" == "A" ]]; then
+				grep -vE '^chrX|^chrY' {input} > {output};
+			else
+				cp {input} {output};
+			fi;
+		"""
+rule merge_multicov_to_reads:
+	input:
+		expand(output+"/{sample}/CANOES/{sample}.multicov.tsv", sample=samplelist)
+	output:
+		output+"/CANOES/all.canoes.coverage.tsv"
+	log:
+		log+"/all.canoes.coverage.log"
+	run:
+		data = {}
+		header = ["chrom","start","end"]
+		for multicovfile in input:
+			sample_name = multicovfile.split("/")[-1].split(".")[0]
+			header.append(sample_name)
+			with open(multicovfile,"r") as i:
+				for line in i:
+					field = line.strip().split("\t")
+					index = "\t".join(field[0:3])
+					value = field[-1]
+					if index not in data:
+						data[index] = {}
+					data[index][sample_name] = value
+
+		with open(output[0],"w") as o:
+			o.write("\t".join(header)+"\n")
+			for index in data:
+				sample_value = [index]
+				for sample_name in header[3:]:
+					sample_value.append(data[index][sample_name])
+				o.write("\t".join(sample_value)+"\n")
+
+rule sex_analysis_reads:
+	params:
+		data = infos
+	input:
+		output+"/CANOES/all.canoes.coverage.tsv"
+	output:
+		output+"/CANOES/all.canoes.{sex}.coverage.tsv"
+	run:
+		sample_sex = []
+		with open(output[0], "w") as f:
+			for sample in params.data:
+				if wildcards.sex == "A":
+					sample_sex.append(sample)
+				else:
+					if params.data[sample]["sex"] == wildcards.sex:
+						sample_sex.append(sample)
+
+			fieldnames = ['chrom','start','end'] + sample_sex
+			f.write("\t".join(fieldnames)+"\n")
+			with open(input[0], "r") as tsvfile:
+				reader = csv.DictReader(tsvfile, delimiter='\t')
+				for row in reader:
+					line = [ row[x] for x in fieldnames ]
+					if wildcards.sex == "A":
+						if line[0] == "chrX" or line[0] == "chrY":
+							continue
+					f.write("\t".join(line)+"\n")
+
+#rule sorted_multicov:
+#	input:
+#		"{w}.coverage.unsorted.tsv"
+#	output:
+#		"{w}.coverage.tsv"
+#	shell:
+#		"""
+#			head -1 {input} > {output} && sed 1d {input} | sort -k1,1V -k2,2n #>> {output}
+#		"""
+
+rule convert_chr:
+	input:
+		"{w}"
+	output:
+		"{w}.conv"
+	shell:
+		"""
+			sed -e "s/^chrX/chr23/" {input} | sed -e "s/^chrY/chr24/" | sed '1d' > {output}
+		"""
+
+rule without_header:
+	input:
+		"{w}"
+	output:
+		"{w}.no_header"
+	shell:
+		"""
+			sed '1d' {input} > {output}
+		""" 
+
+rule write_R_script:
+	params:
+		canoes = config["canoes"],
+		output = output
+	input:
+		read   = output+"/CANOES/all.canoes.{sex}.coverage.tsv.conv.no_header",
+		header = output+"/CANOES/all.canoes.{sex}.coverage.tsv.conv",
+		gc     = output+"/CANOES/GCpercent.{sex}.tsv.conv",
+	output:
+		output+"/CANOES/script_create.{sex}.R"
+	run:
+		with open(output[0], "w") as f:
+			f.write("setwd(\""+ params.output +"\")\n")
+			f.write("gc <- read.table(\""+ input.gc +"\")$V2\n")
+			f.write("canoes.reads <- read.table(\""+ input.read +"\")\n")
+			f.write("sample.names <- c("+ ','.join(f'"{s}"' for s in samplelist) +")\n")
+			f.write("names(canoes.reads) <- c(\"chromosome\", \"start\", \"end\", sample.names)\n")
+			f.write("target <- seq(1, nrow(canoes.reads))\n")
+			f.write("canoes.reads <- cbind(target, gc, canoes.reads)\n")
+			f.write("source(\""+ params.canoes +"\")\n")
+			f.write("xcnv.list <- vector('list', length(sample.names))\n")
+			f.write("for (i in 1:length(sample.names)){\n")
+			f.write("xcnv.list[[i]] <- CallCNVs(sample.names[i], canoes.reads)\n")
+			f.write("}\n")
+			f.write("xcnvs <- do.call('rbind', xcnv.list)\n")
+			f.write("write.csv(xcnvs, \""+ params.output +"/CANOES/results."+ wildcards.sex +".csv\", row.names=FALSE)\n")
+
+rule canoes_calling:
+	params:
+		R       = config["R"],
+	input:
+		read    = output+"/CANOES/all.canoes.{sex}.coverage.tsv.conv.no_header",
+		gc      = output+"/CANOES/GCpercent.{sex}.tsv.conv",
+		script  = output+"/CANOES/script_create.{sex}.R"
+	output:
+		results = output+"/CANOES/canoes.{sex}.tsv",
+		tmp     = temp(output+"/CANOES/results.{sex}.csv"),
+	log:
+		log+"/canoes.{sex}.log"
+	shell:
+		"""
+			{params.R} CMD BATCH {input.script} {log};
+			[[ -s {output.tmp} ]] && cat {output.tmp} | sed 's/"//g' | sed 's/,/\t/g' | sed '1d' | sort -u > {output.results} || echo "no CNV found for sex: {wildcards.sex}" > {output.results};
+		"""
+
+rule merge_sex:
+		input:
+			expand(output+"/CANOES/canoes.{sex}.tsv", sex=sexlist)
+		output:
+			temp(output+"/CANOES/canoes.tsv")
+		shell:
+			"""
+				cat {input} | sort -u >> {output}
+			"""
+
+rule canoes_to_bed:
+	input:
+		output+"/CANOES/canoes.tsv"
+	output:
+		output+"/CANOES/canoes.bed"
+	run:
+		with open(output[0], "w") as o:
+			o.write("\t".join([ "#Chrom", "Start", "End", "SV type", "Samples_ID" ])+"\n")
+			with open(input[0], "r") as i:
+				for line in i:
+					if line.startswith("no CNV found"):
+						o.write(line)
+						break
+					elif line.startswith("error in the analysis"):
+						o.write(line)
+						break
+					else:
+						field = line.strip().split("\t")
+						chrom = field[2].split(":")[0]
+						if chrom == "23":
+							chrom = "X"
+						if chrom == "24":
+							chrom = "Y"
+						start = field[2].split(":")[1].split("-")[0]
+						end = field[2].split(":")[1].split("-")[1]
+						sample = field[0]
+						cnv = field[1]
+						o.write("\t".join([ chrom, start, end, cnv, sample ])+"\n")
+
+rule bed_to_sample_bed:
+	input:
+		output+"/CANOES/canoes.bed"
+	output:
+		output+"/{sample}/CANOES/{sample}.canoes.bed"
+	shell:
+		"""
+			grep "#" {input} > {output} && grep -w "{wildcards.sample}" {input} >> {output} && [[ -s {output} ]] || echo "No CNV found" > {output}
+		"""
+
+rule warnings_message:
+	input:
+		output+"/{sample}/CANOES/{sample}.canoes.bed"
+	output:
+		output+"/{sample}/CANOES/{sample}.canoes.annotsv.header.tsv"
+	run:
+		checkWarnings(output[0])
+
+rule warnings_message_all:
+	input:
+		output+"/CANOES/all.canoes.annotsv.tmp.tsv"
+	output:
+		output+"/CANOES/all.canoes.annotsv.header.tsv"
+	run:
+		checkWarnings(output[0])
+
+
+rule AnnotSV:
+# AnnotSV need bedtools to work ie you have to specify the directory of bedtools binaries in -bedtools argument
+	input:
+		output+"/{sample}/CANOES/{sample}.canoes.bed"
+	output:
+		output+"/{sample}/CANOES/{sample}.canoes.annotsv.tmp.tsv"
+	log:
+		log+"/{sample}.canoes.annotsv.log"
+	params:
+		bedtools = config['bedtools'],
+		annotsv = config['annotsv']
+	shell:
+		"""
+		{params.annotsv}/AnnotSV -SVinputFile {input} -outputFile {output} -bedtools {params.bedtools} &>{log} && [[ -s {output} ]] || echo "No data to annotate" > {output}
+		"""
+
+rule merge_warnings_variants:
+	input: 
+		var = output+"/{sample}/CANOES/{sample}.canoes.annotsv.tmp.tsv",
+		header = output+"/{sample}/CANOES/{sample}.canoes.annotsv.header.tsv"
+	output:
+		output+"/{sample}/CANOES/{sample}.canoes.annotsv.tsv"
+	shell:
+		"""
+			cat {input.header} > {output} && cat {input.var} >> {output}	
+		"""
+
+rule merge_warnings_variants_all:
+	input: 
+		var = output+"/CANOES/all.canoes.annotsv.tmp.tsv",
+		header = output+"/CANOES/all.canoes.annotsv.header.tsv"
+	output:
+		output+"/CANOES/all.canoes.annotsv.tsv"
+	shell:
+		"""
+			cat {input.header} > {output} && cat {input.var} >> {output}	
+		"""
+
+
+rule AnnotSV2vcf:
+	input:
+		output+"/{sample}/CANOES/{sample}.canoes.annotsv.tsv"
+	output:
+		output+"/{sample}/CANOES/{sample}.canoes.annotsv.vcf"
+	params:
+		ref = config['genomePath']
+	log:
+		log+"/{sample}.fileconversion.log"
+	shell:
+		"""
+		python3 ./fileconversion/file_conversion_v2.0.1.py -c tsv2vcf -p AnnotSV -v 2.1 -i {input} -o {output} -r {params.ref} &>{log} && [[ -s {output} ]] || echo "No data to annotate" > {output}
+		"""
+rule AnnotSV2vcf_all:
+	input:
+		output+"/CANOES/all.canoes.annotsv.tsv"
+	output:
+		output+"/CANOES/all.canoes.annotsv.vcf"
+	params:
+		ref = config['genomePath']
+	log:
+		log+"/all.fileconversion.log"
+	shell:
+		"""
+		python3 ./fileconversion/file_conversion_v2.0.1.py -c tsv2vcf -p AnnotSV -v 2.1 -i {input} -o {output} -r {params.ref} &>{log} && [[ -s {output} ]] || echo "No data to annotate" > {output}
+		"""
+
+#rule copyRepository:
+#	input:
+#		samp = expand(output+"/{sample}/CANOES/{sample}.canoes.annotsv.vcf", sample=samplelist),
+#		vcf = output+"/CANOES/all.canoes.annotsv.vcf"
+#	output:
+#		output+"/CANOES/CANOESComplete.txt"
+#	run:
+#		if output == repository or not repository:
+#			with open(output[0], "w+") as f:
+#				f.write("# ["+(datetime.now() + timedelta(hours = 2)).strftime("%d/%m/%Y %H:%M:%S")+"] "+runPath+" analyzed with CANOES\n")
+#		else:
+#
+#
+#
+##TODO rule copy in repository and search from .ped or tag 
+#def copyRunResults(run, output, exclude, depository, samplesheet):
+#	sample_list = []
+#	if not samplesheet:
+#		sample_list = get_sample_id_from_samplesheet(find_any_samplesheet(output))
+#	else:
+#		sample_list = get_sample_id_from_samplesheet(samplesheet)
+#	if os.path.exists(osj(output,".snakemake/")):
+#		shutil.rmtree(osj(output,".snakemake/"))
+#	if not sample_list:
+#		command = 'find '+osj(output,"*/CANOES/*.canoes.annotsv.tsv")
+#		tsv_list = systemcall(command)
+#		for sample in tsv_list:
+#			sample_list.append(os.path.basename(sample)[:-19])
+#	for sample in sample_list:
+#		if isValidSample(sample, cleanList(exclude)):
+#			if not os.path.isdir(osj(run,sample,"CANOES/")):
+#				createDir(osj(run,sample,"CANOES/"))
+#			shutil.copy2(osj(output,"CANOES/all.canoes.annotsv.sorted.tsv"),osj(run,sample,"CANOES/"))
+#			shutil.copy2(osj(output,sample,"CANOES",sample+".canoes.annotsv.tsv"),osj(run,sample,"CANOES/"))
+#			if not os.path.exists(osj(run,sample,"CANOES/logs")):
+#				shutil.copytree(osj(output,"logs/"),osj(run,sample,"CANOES/logs"))
+#			if depository != run:
+#				if not os.path.exists(osj(depository,sample,"CANOES/")):
+#					createDir(osj(depository,sample,"CANOES/"))
+#				shutil.copy2(osj(output,"CANOES/all.canoes.annotsv.sorted.tsv"),osj(depository,sample,"CANOES/"))
+#				shutil.copy2(osj(output,sample,"CANOES",sample+".canoes.annotsv.tsv"),osj(depository,sample,"CANOES/"))
+#				if not os.path.exists(osj(depository,sample,"CANOES/logs")):
+#					shutil.copytree(osj(output,"logs/"),osj(depository,sample,"CANOES/logs"))
+
