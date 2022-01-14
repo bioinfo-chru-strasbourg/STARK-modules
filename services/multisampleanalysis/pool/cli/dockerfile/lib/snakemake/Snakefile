@@ -69,7 +69,7 @@ rule paste_vcf_pool:
 	input:
 		lambda wildcards: pool_name[wildcards.poolname]
 	output:
-		temp(output+"/{poolname}.pool.vcf")
+		output+"/{poolname}.pool.vcf"
 	shell:
 		"""
 			cp {input} {output}
@@ -80,7 +80,7 @@ rule add_info:
 		vcf = output+"/{sample}.trio.howard.norm.uniq.sorted.vcf",
 		cov = output+"/all.gatk.cov"
 	output:
-		vcf = temp(output+"/{sample}.final.vcf")
+		vcf = output+"/{sample}.final.vcf"
 	run:
 		subprocess.call("mkdir -p "+output.vcf+".dict", shell=True)
 		subprocess.call("awk -F \":\" '{print $0 >> (\""+output.vcf+".dict/COVFILE\" $1)}' "+input.cov, shell=True)
@@ -103,20 +103,21 @@ rule add_info:
 				for i in range(0,len(data)):
 					dictRes[locus][header[i]]=data[i].strip().replace(' ','|')
 				break #load header only. That's ugly, but I don't have the time to proofread this block.
-
+		print("#[INFO] dictres ", dictRes)
 		currentChr = "INITIATION"
 		with open(input.vcf,'r') as infile:
 			with open(output.vcf,'w') as outfile:
-				for line in infile:
-					if line.startswith("##"):
-						outfile.write(line)
-					elif line.startswith("#"):
+				for row in infile:
+					if row.startswith("##"):
+						outfile.write(row)
+					elif row.startswith("#"):
 						for info in dictRes["Locus"]:
 							outfile.write('##INFO=<ID='+info+',Number=.,Type=String,Description="GATK '+info+'">\n')
-						outfile.write(line)
+						outfile.write(row)
 					else:
-						field = line.strip().split("\t")
-						locus = field[0]+":"+field[1]
+						field = row.strip().split("\t")
+						#locus = field[0]+":"+field[1]
+						#print(locus)
 						
 						if field[0] != currentChr:
 							#flush chr dict and load a new one
@@ -138,12 +139,13 @@ rule add_info:
 										header = data
 									for i in range(0,len(data)):
 										dictRes[locus][header[i]]=data[i].strip().replace(' ','|')
-							
+						field = row.strip().split('\t')
+						locus = field[0]+":"+field[1]		
 						if locus in dictRes:
 							for info in dictRes[locus]:
 								field[7]=field[7]+';'+info+'='+dictRes[locus][info]
 							outfile.write('\t'.join(field)+'\n')
-		subprocess.call("rm -rf "+output.vcf+".dict", shell=True)
+		#subprocess.call("rm -rf "+output.vcf+".dict", shell=True)
 
 rule copy_vcf_pool:
 	params:
@@ -152,7 +154,7 @@ rule copy_vcf_pool:
 	input:
 		lambda wildcards: config["analysis"]["pool"][wildcards.pool]["vcf"]
 	output:
-		tmp = temp(output+"/{pool}.pool.renamed.vcf")
+		tmp = output+"/{pool}.pool.renamed.vcf"
 	log:
 		log+"/{pool}.bcftools.log"
 	shell:
@@ -166,7 +168,7 @@ rule copy_vcf_sample:
 	input:
 		lambda wildcards: config["analysis"]["sample"][wildcards.sample]["vcf"]
 	output:
-		temp(output+"/{sample}.sample.renamed.vcf")
+		output+"/{sample}.sample.renamed.vcf"
 	log:
 		log+"/{sample}.bcftools.log"
 	shell:
@@ -181,8 +183,8 @@ rule compress_index_vcf:
 	input:
 		"{w}.renamed.vcf"
 	output:
-		gz  = temp("{w}.renamed.vcf.gz"),
-		tbi = temp("{w}.renamed.vcf.gz.tbi")
+		gz  = "{w}.renamed.vcf.gz",
+		tbi = "{w}.renamed.vcf.gz.tbi"
 	shell:
 		"""
 			{params.bgzip} -c {input} > {output.gz} && {params.tabix} -p vcf {output.gz}
@@ -197,7 +199,7 @@ rule merge_vcf:
 		pool_vcf = expand(output+"/{pool}.pool.renamed.vcf.gz", pool=config["analysis"]["pool"]),
 		pool_vcf_tbi = expand(output+"/{pool}.pool.renamed.vcf.gz.tbi", pool=config["analysis"]["pool"])
 	output:
-		temp(output+"/{sample}.merged.vcf")
+		output+"/{sample}.merged.vcf"
 	log:
 		log+"/{sample}.bcftools.log"
 	shell:
@@ -211,7 +213,7 @@ rule howard_trio:
 	input:
 		output+"/{sample}.merged.vcf"
 	output:
-		temp(output+"/{sample}.trio.howard.vcf")
+		output+"/{sample}.trio.howard.vcf"
 	log:
 		log+"/{sample}.howard.log"
 	shell:
@@ -226,7 +228,7 @@ rule normalize_vcf:
 	input:
 		output+"/{sample}.trio.howard.vcf"
 	output:
-		temp(output+"/{sample}.trio.howard.norm.vcf")
+		output+"/{sample}.trio.howard.norm.vcf"
 	log:
 		log+"/{sample}.bcftools.log"
 	shell:
@@ -240,7 +242,7 @@ rule uniq_trio:
 	input:
 		output+"/{sample}.trio.howard.norm.vcf"
 	output:
-		temp(output+"/{sample}.trio.howard.norm.uniq.vcf")
+		output+"/{sample}.trio.howard.norm.uniq.vcf"
 	log:
 		log+"/{sample}.bcftools.log"
 	shell:
@@ -268,12 +270,12 @@ rule sort_vcf:
 	input:
 		output+"/{sample}.trio.howard.norm.uniq.vcf"
 	output:
-		temp(output+"/{sample}.trio.howard.norm.uniq.sorted.vcf")
+		output+"/{sample}.trio.howard.norm.uniq.sorted.vcf"
 	log:
 		log+"/{sample}.bcftools.sorted.log"
 	shell:
 		"""
-			{params.bcftools} sort -o {output} {input}
+			grep "^#" {input} > {output} && grep -v "^#" {input} | sort -k1,1V -k2,2n >> {output} 2>> {log}    #{params.bcftools} sort -o {output} {input}
 		"""
 
 rule depth_of_coverage_v2:
@@ -303,7 +305,7 @@ rule rename_pool_coverage_v2:
 	input:
 		output+"/{pool}.gatk.cov"
 	output:
-		temp(output+"/{pool}.gatk.renamed.cov")
+		output+"/{pool}.gatk.renamed.cov"
 	shell:
 		"""
 			sed '1 s/^.*$/Locus\tTotal_Depth\tAverage_Depth_sample\t{wildcards.pool}_Depth\t{wildcards.pool}_base_counts/' {input} > {output}
@@ -313,7 +315,7 @@ rule merge_coverage_v2:
 	input:
 		expand(output+"/{pool}.gatk.renamed.cov", pool=config["analysis"]["pool"])
 	output:
-		temp(output+"/all.gatk.cov")
+		output+"/all.gatk.cov"
 	shell:
 		"""
 			paste {input} > {output}
