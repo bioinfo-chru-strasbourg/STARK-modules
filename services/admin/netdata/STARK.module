@@ -1,0 +1,24 @@
+{
+  "submodules": {
+    "netdata": {
+      "services": {
+        "netdata": {
+          "code": "netdata",
+          "name": "NetData",
+          "type": "IHM",
+          "description": "Net Data is a real-time, per-second monitoring and troubleshooting solution for every environment",
+          "release": "v1.32.1",
+          "available": true,
+          "link": {
+            "available": true,
+            "protocol": "http",
+            "ip": "",
+            "port": "4291",
+            "port_inner": "19999",
+            "path": ""
+          }
+        }
+      }
+    }
+  }
+}
