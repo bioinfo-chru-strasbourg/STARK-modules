@@ -82,8 +82,14 @@ def bedFromrun(runPath, out):
 					shutil.copy2(bed, out)
 					print("#[INFO] Copy "+bed+" into "+os.path.dirname(output))
 					return bed
-		print("ERROR No Bed in "+runPath+" EXIT")
-		exit()
+		bedset = systemcall('find '+runPath+' -maxdepth 2 -name "*.bed"')[0]
+		if bedset:
+			shutil.copy2(bedset, out)
+			print("#[INFO] Copy "+bedset+" into "+os.path.dirname(output))
+			return bedset
+		else:
+			print("ERROR No Bed in "+runPath+" EXIT")
+			exit()
 	else:
 		print("ERROR "+runPath+" does not exists EXIT")
 		exit()
@@ -117,7 +123,7 @@ def getSampleInfos(samplesheet, runPath):
 			if not any(exclude in rows['Sample_ID'] for exclude in config['exclude_sample']):
 				sampleID = rows["Sample_ID"]
 				infos[sampleID] = {}
-				bam = systemcall("find "+osj(runPath, sampleID)+" -maxdepth 2 -name '*.bam' ! -name '*validation*'")[0]
+				bam = systemcall("find "+runPath+" -maxdepth 2 -name '"+sampleID+".bam' ! -name '*validation*'")[0]
 				infos[sampleID]['bam'] = bam
 				tags = rows['Description'].split('!')
 				#print("#[INFO] tag ", tags)
@@ -130,6 +136,7 @@ def getSampleInfos(samplesheet, runPath):
 						sex = ''
 					infos[sampleID]['sex'] = sex
 					break
+	print("INFO ",infos)
 	return infos
 ##TODO informations from sample dir and Tag or pedigree
 #samplelist = [sampleID for sampleID in os.listdir(runPath) if any(exlude in sampleID for exclude in exclude_list)]
@@ -462,10 +469,10 @@ def createbedigv():
 #exclude_tag = ['POOL']
 #valid_sex = ['A', 'F', 'M'
 #if not Samplesheet in configfile get sample and sex informations directly in the runPath
-#if config["samplesheetPath"]:   #TODO infos from samplesheet optionnal
-#	infos = getSampleInfos(samplesheet, config['runPath'])
-#else:
-infos = getSampleInfosFromRun(config['runPath'])
+if config["samplesheetPath"]:   #TODO infos from samplesheet optionnal
+	infos = getSampleInfos(config["samplesheetPath"], config['runPath'])
+else:
+	infos = getSampleInfosFromRun(config['runPath'])
 #print("#[INFO] infos ", infos)
 samplelist = [items for items in infos]
 #print("#[INFO] SampleList ",samplelist)
@@ -978,7 +985,7 @@ rule bedtovcf:
 		convertscript = config["convertscript"]
 	shell:
 		"""
-			docker run --rm -v /home1:/home1 -v /home1/data/STARK/data:/STARK/data tsvconvert:latest {params.convertscript} -i {input} -o {output} -fo {params.convertype} -fi tsv -c {params.bed2vcfjson} 2>{log}
+			docker run --rm -v /home1:/home1 -v /home1/data/STARK/data:/STARK/data tsvconvert:latest {params.convertscript} -i {input} -o {output} -fo {params.convertype} -fi tsv -c {params.bed2vcfjson} 2>{log} && [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
 		"""
 
 rule AnnotSV:
