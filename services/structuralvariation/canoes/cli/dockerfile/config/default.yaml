@@ -10,7 +10,7 @@ samplesheetPath: ""
 #Absolute path of run folder required
 runPath: ""
 #Type of analysis Autosomal minimum optionnal
-analysis: ["A", "M"]
+analysis: ["A"]
 #Path of a bed file if it is not in run folder
 bedPath: ""
 #Value bed in piece of int exemple 500
