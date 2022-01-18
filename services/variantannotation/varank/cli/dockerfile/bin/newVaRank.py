@@ -399,6 +399,8 @@ def run_varank_results_provider(varank_processing_tsv_folder, run_depository, ru
 	os.rename(varank_logfile_depository, varank_renamed_logfile_depository)
 	os.rename(varank_logfile_repository, varank_renamed_logfile_repository)
 
+	date = datetime.now().strftime('%y%m%d-%H%M%S')
+
 	for tsv_file in reversed(varank_processing_folder_tsv_files):
 		if os.path.basename(tsv_file).startswith('Non_Redondant'):
 			subprocess.run(['rsync', '-rp', tsv_file, run_repository])
@@ -407,16 +409,26 @@ def run_varank_results_provider(varank_processing_tsv_folder, run_depository, ru
 		else:
 			for sample_folder in run_repository_sample_folder_list:
 				sample_folder = (os.path.basename(os.path.dirname(sample_folder)))
-				run_repository_sample_folder_varank_folder = os.path.join(run_repository, os.path.basename(sample_folder), 'VARANK', '')
-				run_depository_sample_folder_varank_folder = os.path.join(run_depository, os.path.basename(sample_folder), 'VARANK', '')
+				varank_repository = os.path.join(run_repository, os.path.basename(sample_folder), 'VARANK', '')
+				varank_depository = os.path.join(run_depository, os.path.basename(sample_folder), 'VARANK', '')
+				if not os.path.isdir(varank_repository):
+					os.mkdir(varank_repository)
+				if not os.path.isdir(varank_depository):
+					os.mkdir(varank_depository)
+				run_repository_sample_folder_varank_folder = os.path.join(varank_repository, os.path.basename(sample_folder) + '_' + date + '_VARANK', '')
+				run_depository_sample_folder_varank_folder = os.path.join(varank_depository, os.path.basename(sample_folder) + '_' + date + '_VARANK', '')
 				if os.path.basename(tsv_file).startswith('fam'):
 					test = re.search(r'(?<=_)(.*?)(?=_[a-zA-Z0-9\.]+.tsv)', os.path.basename(tsv_file)).group(0)
 					if test == os.path.basename(sample_folder):
 						subprocess.run(['rsync', '-rp', tsv_file, run_repository_sample_folder_varank_folder])
 						subprocess.run(['rsync', '-rp', tsv_file, run_depository_sample_folder_varank_folder])
+						subprocess.run(['rsync', '-rp', tsv_file, varank_repository])
+						subprocess.run(['rsync', '-rp', tsv_file, varank_depository])
 				else:
 					subprocess.run(['rsync', '-rp', tsv_file, run_repository_sample_folder_varank_folder])
 					subprocess.run(['rsync', '-rp', tsv_file, run_depository_sample_folder_varank_folder])
+					subprocess.run(['rsync', '-rp', tsv_file, varank_repository])
+					subprocess.run(['rsync', '-rp', tsv_file, varank_depository])
 
 	os.rename(non_redundant_file_depository, non_redundant_renamed_file_depository)
 	os.rename(non_redundant_file_repository, non_redundant_renamed_file_repository)
@@ -555,7 +567,6 @@ def pattern_generator(args):
 def error_log_writer(error):
 	args = parse_args()
 	run_repository = run_path_generator(args)[1]
-	print(run_repository)
 	error = error + '\n'
 	with open(os.path.join(run_repository, 'VARANKRunning.txt'), 'a+') as write_file:
 		write_file.write(error)
@@ -643,10 +654,8 @@ def pattern_checker(pattern, run_repository, args):
 		check1 = False
 		check2 = False
 		
-	print(run_repository)
 	if run_repository.endswith("/"):
 		run_repository = run_repository[:-1]
-		print(run_repository)
 
 	for element in pattern:
 		vcf_files = glob.glob(os.path.join(run_repository, element))
