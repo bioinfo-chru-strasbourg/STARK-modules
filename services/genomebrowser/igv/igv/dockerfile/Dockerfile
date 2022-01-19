@@ -2,6 +2,8 @@ FROM ubuntu:latest
 
 ENV DEBIAN_FRONTEND noninteractive
 
+ENV DOCKER_STARK_MODULE_SUBMODULE_SERVICE_IGV_PARAM_IGV_WEBAPP_RELEASE=1.7.0
+
 ADD https://raw.githubusercontent.com/dceoy/print-github-tags/master/print-github-tags /usr/local/bin/print-github-tags
 
 RUN set -e \
@@ -11,26 +13,30 @@ RUN set -e \
       && apt-get -y update \
       && apt-get -y dist-upgrade \
       && apt-get -y install --no-install-recommends --no-install-suggests \
-        ca-certificates curl git npm \
+        ca-certificates curl git nginx npm \
       && apt-get -y autoremove \
       && apt-get clean \
       && rm -rf /var/lib/apt/lists/*
 
 RUN set -e \
-      && npm install -g npm
+      && npm install -g yarn
 
 RUN set -eo pipefail \
       && chmod +x /usr/local/bin/print-github-tags \
-      && print-github-tags --latest --tar igvteam/igv-webapp \
-        | xargs -i curl -SL {} -o /tmp/igv-webapp.tar.gz \
-      && tar xvf /tmp/igv-webapp.tar.gz -C /usr/local/src --remove-files \
-      && mv /usr/local/src/igv-webapp-* /usr/local/src/igv-webapp \
-      && cd /usr/local/src/igv-webapp \
-      && sed -ie 's/http-server -a localhost dist/http-server -a 0.0.0.0 dist/' package.json \
-      && rm package.jsone \
-      && npm install \
-      && npm run build
+      && curl -SL "https://github.com/igvteam/igv-webapp/archive/v"$DOCKER_STARK_MODULE_SUBMODULE_SERVICE_IGV_PARAM_IGV_WEBAPP_RELEASE".tar.gz" -o /tmp/igv-webapp.tar.gz \
+      && tar xvf /tmp/igv-webapp.tar.gz -C /opt --remove-files \
+      && mv /opt/igv-webapp-* /opt/igv-webapp \
+      && cd /opt/igv-webapp \
+      && yarn install \
+      && yarn run build
 
-EXPOSE 8080
+RUN set -e \
+      && rm -rf /var/www/html \
+      && ln -s /opt/igv-webapp/dist /var/www/html \
+      && ln -sf /dev/stdout /var/log/nginx/access.log \
+      && ln -sf /dev/stderr /var/log/nginx/error.log
 
-ENTRYPOINT ["npm", "start", "--prefix=/usr/local/src/igv-webapp"]
+EXPOSE 80
+
+ENTRYPOINT ["/usr/sbin/nginx"]
+CMD ["-g", "daemon off;"]
