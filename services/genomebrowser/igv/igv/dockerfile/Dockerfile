@@ -2,7 +2,7 @@ FROM ubuntu:latest
 
 ENV DEBIAN_FRONTEND noninteractive
 
-ENV DOCKER_STARK_MODULE_SUBMODULE_SERVICE_IGV_PARAM_IGV_WEBAPP_RELEASE=1.7.0
+ARG IGV_WEBAPP_RELEASE=latest
 
 ADD https://raw.githubusercontent.com/dceoy/print-github-tags/master/print-github-tags /usr/local/bin/print-github-tags
 
@@ -23,7 +23,8 @@ RUN set -e \
 
 RUN set -eo pipefail \
       && chmod +x /usr/local/bin/print-github-tags \
-      && curl -SL "https://github.com/igvteam/igv-webapp/archive/v"$DOCKER_STARK_MODULE_SUBMODULE_SERVICE_IGV_PARAM_IGV_WEBAPP_RELEASE".tar.gz" -o /tmp/igv-webapp.tar.gz \
+      && if [ "$IGV_WEBAPP_RELEASE" == "latest" ]; then IGV_WEBAPP_URL=$(print-github-tags --latest --tar igvteam/igv-webapp); else IGV_WEBAPP_URL="https://github.com/igvteam/igv-webapp/archive/v"$IGV_WEBAPP_RELEASE".tar.gz"; fi \
+      && curl -SL $IGV_WEBAPP_URL -o /tmp/igv-webapp.tar.gz \
       && tar xvf /tmp/igv-webapp.tar.gz -C /opt --remove-files \
       && mv /opt/igv-webapp-* /opt/igv-webapp \
       && cd /opt/igv-webapp \
