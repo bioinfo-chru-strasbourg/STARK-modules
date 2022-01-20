@@ -34,7 +34,8 @@ RUN set -e \
       && rm -rf /var/www/html \
       && ln -s /opt/igv-webapp/dist /var/www/html \
       && ln -sf /dev/stdout /var/log/nginx/access.log \
-      && ln -sf /dev/stderr /var/log/nginx/error.log
+      && ln -sf /dev/stderr /var/log/nginx/error.log \
+      && sed -i 's/listen \[::\]:80/#listen [::]:80/g' /etc/nginx/sites-enabled/default
 
 EXPOSE 80
 
