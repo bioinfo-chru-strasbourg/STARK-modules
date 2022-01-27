@@ -989,8 +989,8 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 						# 	echo '#[ERROR] VCF not well-formed for $< (FixVcfHeader)' ; \
 						# 	cp $VCF.empty.vcf $<.tmp.fixed.vcf; \
 						# fi;
-						ln -s $< $<.tmp.fixed.vcf.gz;
-						if zcat $<.tmp.fixed.vcf.gz | sed 's/[^\x00-\x7F]//gi' | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g | $BCFTOOLS sort -T $<.sort2. > $<.tmp.fixed2.vcf; then \
+						ln -s $< $<.tmp.fixed0.vcf.gz;
+						if zcat $<.tmp.fixed0.vcf.gz | sed 's/[^\x00-\x7F]//gi' | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g | $BCFTOOLS sort -T $<.sort2. > $<.tmp.fixed2.vcf; then \
 							echo '#[INFO] VCF well-formed for $VCF (sedBCFToolsSort)' ; \
 						else \
 							echo '#[ERROR] VCF not well-formed for $VCF (sedBCFToolsSort)' ; \
