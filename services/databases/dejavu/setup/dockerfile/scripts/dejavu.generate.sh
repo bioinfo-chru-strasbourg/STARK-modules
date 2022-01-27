@@ -1203,7 +1203,9 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 				echo "### variants frequency" >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
 				# for p in $(seq 0 100); do
 				#for p in 0.001 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1; do awk -F"\t" -v p=$p '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print "# "SUM+0" variants out of "TOT" ("PERC"%) found more than "(p*100)"% in the set"}' $TMP/$GROUP/$PROJECT/dejavu.txt; done >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
-				for p in $(seq 1 100); do awk -F"\t" -v p=$( echo "scale=2; $p/100" | bc) '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print "# "SUM+0" variants out of "TOT" ("PERC"%) found more than "(p*100)"% in the set"}' $TMP/$GROUP/$PROJECT/dejavu.txt; done >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
+				if (($NB_VARIANTS)); then
+					for p in $(seq 1 100); do awk -F"\t" -v p=$( echo "scale=2; $p/100" | bc) '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print "# "SUM+0" variants out of "TOT" ("PERC"%) found more than "(p*100)"% in the set"}' $TMP/$GROUP/$PROJECT/dejavu.txt; done >> $TMP/$GROUP/$PROJECT/dejavu.stats.txt
+				fi;
 				#cat $TMP/$GROUP/$PROJECT/dejavu.stats.txt
 
 				# TSV
@@ -1212,7 +1214,9 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 
 				echo -e "#NB_variant\tTOT_variant\tPercent\tmore_than" > $TMP/$GROUP/$PROJECT/dejavu.stats.tsv
 				#for p in 0.001 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1; do awk -F"\t" -v p=$p '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print SUM+0"\t"TOT"\t"PERC"\t"(p*100)}' $TMP/$GROUP/$PROJECT/dejavu.txt; done > $TMP/$GROUP/$PROJECT/dejavu.stats.frequency.tsv
-				for p in $(seq 1 100); do awk -F"\t" -v p=$( echo "scale=2; $p/100" | bc) '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print SUM+0"\t"TOT"\t"PERC"\t"(p*100)}' $TMP/$GROUP/$PROJECT/dejavu.txt; done >> $TMP/$GROUP/$PROJECT/dejavu.stats.tsv
+				if (($NB_VARIANTS)); then
+					for p in $(seq 1 100); do awk -F"\t" -v p=$( echo "scale=2; $p/100" | bc) '$6>p{SUM++} {TOT++} END {PERC=((SUM+0)/TOT)*100; print SUM+0"\t"TOT"\t"PERC"\t"(p*100)}' $TMP/$GROUP/$PROJECT/dejavu.txt; done >> $TMP/$GROUP/$PROJECT/dejavu.stats.tsv
+				fi;
 				#cat $TMP/$GROUP/$PROJECT/dejavu.stats.tsv
 
 
