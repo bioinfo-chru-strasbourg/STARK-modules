@@ -7,8 +7,8 @@
 
 SCRIPT_NAME="STARK_DEJAVU"
 SCRIPT_DESCRIPTION="STARK DEJAVU ANNOVAR databases generation"
-SCRIPT_RELEASE="0.12.1"
-SCRIPT_DATE="11/01/2021"
+SCRIPT_RELEASE="0.12.2"
+SCRIPT_DATE="29/10/2021"
 SCRIPT_AUTHOR="Antony Le Bechec"
 SCRIPT_COPYRIGHT="HUS"
 SCRIPT_LICENCE="GNU-AGPL"
@@ -21,6 +21,7 @@ RELEASE_NOTES=$RELEASE_NOTES"# 0.10.0-12/08/2020: Many changes.\n";
 RELEASE_NOTES=$RELEASE_NOTES"# 0.11.0-29/09/2020: Add STARK module json files.\n";
 RELEASE_NOTES=$RELEASE_NOTES"# 0.12.0-17/12/2020: Add sample filter parameters.\n";
 RELEASE_NOTES=$RELEASE_NOTES"# 0.12.1-11/01/2021: Add group project filter, annotation, calculation and nomen fields parameters, rebuld search goup/project folders.\n";
+RELEASE_NOTES=$RELEASE_NOTES"# 0.12.2-29/10/2021: Fix error in input vcf.\n";
 
 # Script folder
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -30,7 +31,7 @@ ENV_CONFIG=$(find -L $SCRIPT_DIR/.. -name config.app)
 
 source $ENV_CONFIG 1>/dev/null 2>/dev/null
 
-ENV_TOOLS=$(find -L $SCRIPT_DIR/.. -name toold.app)
+ENV_TOOLS=$(find -L $SCRIPT_DIR/.. -name tools.app)
 
 source $ENV_TOOLS 1>/dev/null 2>/dev/null
 
@@ -478,7 +479,10 @@ LOG=$DEJAVU_FOLDER_LOG/$RELEASE.log
 (($VERBOSE)) && echo "#[INFO] GROUP/PROJECT FILTER FILE:"
 (($VERBOSE)) && echo "#[INFO]    $GROUP_PROJECT_FILTER_FILE"
 (($VERBOSE)) && echo "#[INFO] GROUP/PROJECT FILTER:"
-(($VERBOSE)) && for GPF in $GROUP_PROJECT_FILTER; do echo "#[INFO]    "$GPF; done
+#(($VERBOSE)) && [ "$GROUP_PROJECT_FILTER" != "*/*/*" ] && for GPF in $(echo "$GROUP_PROJECT_FILTER" | tr " " "\n"); do echo "#[INFO]    "$GPF; done
+#(($VERBOSE)) && for GPF in $GROUP_PROJECT_FILTER; do echo "#[INFO]    $GPF"; done
+#($VERBOSE)) && for GPF in "$GROUP_PROJECT_FILTER"; do echo "$GPF" | sed "s/[^ ]/#[INFO]    $GPF/gi"; done
+(($VERBOSE)) && echo "#[INFO]    $GROUP_PROJECT_FILTER"
 
 (($VERBOSE)) && echo "#[INFO] SAMPLE EXCLUDE FILE:"
 (($VERBOSE)) && echo "#[INFO]    $SAMPLE_EXCLUDE_FILE"
@@ -498,7 +502,6 @@ LOG=$DEJAVU_FOLDER_LOG/$RELEASE.log
 (($DEBUG)) && echo "#[INFO] BGZIP: $BGZIP"
 (($DEBUG)) && echo "#[INFO] TABIX: $TABIX"
 (($DEBUG)) && echo "#[INFO] VCFSTATS: $VCFSTATS"
-
 
 
 ### Find Group folders
@@ -659,9 +662,8 @@ fi;
 
 
 # Repository found
-
 #GP_FOLDER_LIST_UNIQ=$(echo -e $GP_FOLDER_LIST | sort -u)
-GP_FOLDER_LIST_UNIQ=$(ls -d $GP_FOLDER_LIST 2>/dev/null | grep -v " " | sort -u)
+GP_FOLDER_LIST_UNIQ=$(ls -d $(echo -e $GP_FOLDER_LIST) 2>/dev/null | grep -v " " | sort -u)
 #GP_FOLDER_LIST_UNIQ="${GP_FOLDER_LIST_UNIQ// /\\ }"
 GP_FOLDER_LIST_UNIQ_COUNT=$(echo $GP_FOLDER_LIST_UNIQ | wc -w)
 
@@ -988,10 +990,17 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 						# 	cp $VCF.empty.vcf $<.tmp.fixed.vcf; \
 						# fi;
 						ln -s $< $<.tmp.fixed.vcf;
-						if zcat $<.tmp.fixed.vcf | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g | $BCFTOOLS sort -T $<.sort2. > $<.tmp.fixed2.vcf; then \
+						if zcat $<.tmp.fixed.vcf | sed 's/[^\x00-\x7F]//gi' | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g | $BCFTOOLS sort -T $<.sort2. > $<.tmp.fixed2.vcf; then \
 							echo '#[INFO] VCF well-formed for $VCF (sedBCFToolsSort)' ; \
 						else \
 							echo '#[ERROR] VCF not well-formed for $VCF (sedBCFToolsSort)' ; \
+							cp $VCF.empty.vcf $<.tmp.fixed2.vcf; \
+						fi;
+						# If not correctly fixed for merge
+						$BGZIP -c $<.tmp.fixed2.vcf -l 0 > $<.tmp.fixed2.vcf.gz;
+						$TABIX $<.tmp.fixed2.vcf.gz;
+						if ! $BCFTOOLS merge $<.tmp.fixed2.vcf.gz $<.tmp.fixed2.vcf.gz --force-samples 2>/dev/null; then \
+							echo '#[ERROR] VCF not well-formed for $VCF (merge test)' ; \
 							cp $VCF.empty.vcf $<.tmp.fixed2.vcf; \
 						fi;
 						$BGZIP -c $<.tmp.fixed2.vcf -l 0 > $<.tmp.fixed.vcf.gz;
@@ -1019,9 +1028,13 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 			#echo $VCFGZ_LIST > $TMP/$GROUP/$PROJECT/VCF_LIST
 			
 			# Minimum VCF
-			echo "$TMP/$GROUP/$PROJECT/dejavu.simple.vcf: $VCFGZ_LIST" >> $MK
+			echo "$TMP/$GROUP/$PROJECT/dejavu.simple.vcf: $VCFGZ_LIST $TMP/$GROUP/$PROJECT/dejavu.simple.empty.vcf" >> $MK
 			if [ $VCFGZ_NB -gt 1 ]; then
-				echo "	$BCFTOOLS merge --force-samples $TMP/$GROUP/$PROJECT/*.simple.vcf.gz | $BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
+				echo "	if ! $BCFTOOLS merge --force-samples $TMP/$GROUP/$PROJECT/*.simple.vcf.gz | $BCFTOOLS norm -m -any -c s --fasta-ref $GENOMES/current/$ASSEMBLY.fa | $BCFTOOLS norm --rm-dup=exact | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@; then \
+							cp $TMP/$GROUP/$PROJECT/dejavu.simple.empty.vcf \$@; \
+							echo '#[ERROR] VCF not well-formed for \$@' ; \
+						fi;
+				" >> $MK
 			else
 				echo "	$BCFTOOLS norm -m -any $VCFGZ_LIST | $BCFTOOLS +setGT  -- -t . -n 0 | $BCFTOOLS +fill-tags -- -t AN,AC,AF,AC_Hemi,AC_Hom,AC_Het,ExcHet,HWE,MAF,NS > \$@;" >> $MK
 			fi;
@@ -1083,7 +1096,7 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 			# snpEff classic
 			if [ "$SNPEFF" != "" ] && [ -e $SNPEFF ]; then
 				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz  $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz.tbi
-						$JAVA -Xmx4G -jar $SNPEFF -i vcf -classic -formatEff -o vcf $ASSEMBLY $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz -t -stats $TMP/$GROUP/$PROJECT/dejavu.stats.snpeff.html -dataDir $SNPEFF_DATABASES > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
+						$JAVA -Xmx4G -jar $SNPEFF -i vcf -classic -formatEff -o vcf $ASSEMBLY $TMP/$GROUP/$PROJECT/dejavu.simple.vcf.gz -stats $TMP/$GROUP/$PROJECT/dejavu.stats.snpeff.html -dataDir $SNPEFF_DATABASES > $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf
 					" >> $MK
 			else
 				echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf: $TMP/$GROUP/$PROJECT/dejavu.simple.vcf
@@ -1094,7 +1107,9 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 			# Annotated
 			# TODO: check if EFF exists
 			echo "$TMP/$GROUP/$PROJECT/dejavu.annotated.vcf: $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz.tbi $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz.tbi
-				$BCFTOOLS annotate -a $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz -c EFF $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz --threads $THREADS --single-overlaps -k > $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf
+				if ! $BCFTOOLS annotate -a $TMP/$GROUP/$PROJECT/dejavu.annotated.eff.vcf.gz -c EFF $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz --threads $THREADS --single-overlaps -k > $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf; then \
+					$BGZIP -dc $TMP/$GROUP/$PROJECT/dejavu.annotated.howard.vcf.gz > $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf ; \
+				fi;
 			" >> $MK
 
 
