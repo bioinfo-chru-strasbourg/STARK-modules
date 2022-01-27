@@ -990,7 +990,7 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 						# 	cp $VCF.empty.vcf $<.tmp.fixed.vcf; \
 						# fi;
 						ln -s $< $<.tmp.fixed.vcf;
-						if zcat $<.tmp.fixed.vcf | sed 's/[^\x00-\x7F]//gi' | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g | $BCFTOOLS sort -T $<.sort2. > $<.tmp.fixed2.vcf; then \
+						if cat $<.tmp.fixed.vcf | sed 's/[^\x00-\x7F]//gi' | grep -v '^##Prioritize list is' | sed s/Number=R/Number=./g | sed s/Number=G/Number=./g | $BCFTOOLS sort -T $<.sort2. > $<.tmp.fixed2.vcf; then \
 							echo '#[INFO] VCF well-formed for $VCF (sedBCFToolsSort)' ; \
 						else \
 							echo '#[ERROR] VCF not well-formed for $VCF (sedBCFToolsSort)' ; \
@@ -1179,9 +1179,10 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 			# $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz $TMP/$GROUP/$PROJECT/dejavu.annotated.vcf.gz.tbi 
 
 			# echo
-			if (($(cat $MK.$GROUP.$PROJECT.log $MK.$GROUP.$PROJECT.err | grep "\*\*\*" -c))); then
+			if (($(cat $MK.$GROUP.$PROJECT.log $MK.$GROUP.$PROJECT.err | grep "\*\*\*" -c))) || (($(cat $MK.$GROUP.$PROJECT.log $MK.$GROUP.$PROJECT.err | grep "^\[E::" -c))); then
 				echo "#[ERROR] File '$DEJAVU/$RELEASE/dejavu.$GROUP.$PROJECT.txt' generation..."
 				(($DEBUG)) && cat $MK.$GROUP.$PROJECT.log $MK.$GROUP.$PROJECT.err | grep "\*\*\*" -B 80
+				(($DEBUG)) && cat $MK.$GROUP.$PROJECT.log $MK.$GROUP.$PROJECT.err | | grep "^\[E::" -B 80
 				#exit 1
 			else
 			
