@@ -65,7 +65,7 @@ RUN mkdir /tools; \
 	cd current/ExtAnn; \
 	rm -f OMIMannotations.tsv.gz; \
 	mkdir /tools/varank/current/raw; \
-	ln -s /STARK/databases/OMIMannotations/current/OMIMannotations.tsv.gz /tools/varank/current/raw/OMIMannotations.tsv.gz
+	ln -s /STARK/databases/OMIMannotations/current/OMIMannotations.tsv.gz /tools/varank/current/ExtAnn/OMIMannotations.tsv.gz
 
 ENV VARANK=/tools/varank/current/
 ENV varank="python3 /tools/varank/current/scripts/newVaRank.py"
