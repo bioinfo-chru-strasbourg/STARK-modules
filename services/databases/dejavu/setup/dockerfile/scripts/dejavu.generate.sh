@@ -1000,7 +1000,7 @@ for GP_FOLDER in $GP_LIST_UNIQ; do
 						# If not correctly fixed for merge
 						$BGZIP -c $<.tmp.fixed2.vcf -l 0 > $<.tmp.fixed2.vcf.gz;
 						$TABIX $<.tmp.fixed2.vcf.gz;
-						if ! $BCFTOOLS merge $<.tmp.fixed2.vcf.gz $<.tmp.fixed2.vcf.gz --force-samples 2>/dev/null; then \
+						if ! $BCFTOOLS merge $<.tmp.fixed2.vcf.gz $<.tmp.fixed2.vcf.gz --force-samples 1>/dev/null 2>/dev/null; then \
 							echo '#[ERROR] VCF not well-formed for $VCF (merge test)' ; \
 							cp $VCF.empty.vcf $<.tmp.fixed2.vcf; \
 						fi;
