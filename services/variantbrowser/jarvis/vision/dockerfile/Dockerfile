@@ -105,6 +105,7 @@ RUN yum upgrade -y && \
 	yum install -y \
 	autoconf \
 	curl \
+	curl-devel \
 	cyrus-sasl-lib \
 	gcc \
 	g++ \
