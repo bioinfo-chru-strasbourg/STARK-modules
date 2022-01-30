@@ -40,7 +40,7 @@
 FROM centos:7
 MAINTAINER Antony Le Bechec <antony.lebechec@gmail.com>
 LABEL Software="VISION" \
-	Version="1.0.2b" \
+	Version="1.0.3" \
 	Website="https://github.com/bioinfo-chru-strasbourg/VISION/" \
 	Description="VISION" \
 	License="GNU Affero General Public License (AGPL)" \
@@ -163,7 +163,7 @@ RUN yum upgrade -y && \
 ##########
 
 ENV TOOL_NAME=htslib
-ENV TOOL_VERSION=1.9
+ENV TOOL_VERSION=1.12
 ENV TARBALL_LOCATION=https://github.com/samtools/$TOOL_NAME/releases/download/$TOOL_VERSION/
 ENV TARBALL=$TOOL_NAME-$TOOL_VERSION.tar.bz2
 ENV DEST=$TOOLS/$TOOL_NAME/$TOOL_VERSION
@@ -186,7 +186,7 @@ RUN wget $TARBALL_LOCATION/$TARBALL && \
 ############
 
 ENV TOOL_NAME=bcftools
-ENV TOOL_VERSION=1.9
+ENV TOOL_VERSION=1.12
 ENV TARBALL_LOCATION=https://github.com/samtools/$TOOL_NAME/releases/download/$TOOL_VERSION/
 ENV TARBALL=$TOOL_NAME-$TOOL_VERSION.tar.bz2
 ENV DEST=$TOOLS/$TOOL_NAME/$TOOL_VERSION
