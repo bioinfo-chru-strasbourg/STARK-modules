@@ -60,7 +60,7 @@ def launch_universal_sync18(pattern):
 		subprocess.run(['rsync', '-rp', stark_archives_all_vcf_file, varank_processing_run_vcf_folder])
 
 	for all_vcf in reversed(pattern):
-		if all_vcf == '*/*.final.vcf.gz':
+		if all_vcf == '*/STARK/*.reports/*.final.vcf.gz':
 			pattern.remove(all_vcf)
 		else:
 			all_other_vcf_files = glob.glob(os.path.join(os.environ['DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_ARCHIVES'], '*', '*', '*', all_vcf))
@@ -83,7 +83,8 @@ def vcf_synchronizer(pattern, run_repository, varank_processing_run_vcf_folder, 
 	for stark_vcf_file in stark_vcf_files:
 		if not os.path.isdir(varank_processing_run_vcf_folder):
 			os.makedirs(varank_processing_run_vcf_folder)
-		subprocess.run(['rsync', '-rp', stark_vcf_file, varank_processing_run_vcf_folder])
+		if re.match(run_repository + '\/.+\/STARK\/.+\.reports\/[^.]+.final.vcf.gz', stark_vcf_file):
+			subprocess.run(['rsync', '-rp', stark_vcf_file, varank_processing_run_vcf_folder])
 
 	for vcf in reversed(pattern):
 		if vcf == pattern[0]:
@@ -1193,7 +1194,7 @@ def parse_args():
 	group = parser.add_mutually_exclusive_group(required=False)
 	group.add_argument('-f', '--varank_folder', type=str, help='absolute path to the folder where you want to launch VaRank analysis')
 	group.add_argument('-r', '--run', type=str, help='path to STARK run for which you want to launch VaRank analysis')
-	parser.add_argument('-p', '--pattern', type=str, nargs='+', help='pattern describing which vcf files to synchronize in STARK folders, actual patterns : */*.final.vcf.gz, */POOL/*.final.vcf.gz. You can use two patterns with space as separator')
+	parser.add_argument('-p', '--pattern', type=str, nargs='+', help='pattern describing which vcf files to synchronize in STARK folders, actual patterns : */STARK/*.reports/*.final.vcf.gz, */POOL/*.final.vcf.gz. You can use two patterns with space as separator')
 	parser.add_argument('-as18', '--allsync18', help='Used to rsync all VCF files from all stark18 project to your VaRank processing directory, no argument required must be used alone', action='store_true')
 	parser.add_argument('-fam', '--family', type=str, nargs='+', help='You can pass families to add them to the configfile, the format is the following : -fam [SGT01,SGT02,SGT03] [SGT04,SGT05]')
 	parser.add_argument('-cfg', '--configure', help='Use this argument the very first time you launch VaRank to configure all the files and folders', action='store_true')
