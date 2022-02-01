@@ -27,21 +27,22 @@ export HTSLIB_DESCRIPTION="A C library for reading/writing high-throughput seque
 export HTSLIB_REF="http://www.htslib.org/"
 
 # TABIX
-export TABIX=$NGS_TOOLS/htslib/1.11/bin/tabix                   # BIN
+export TABIX=$NGS_TOOLS/htslib/1.14/bin/tabix                   # BIN
 export TABIX_PATH=$(dirname $TABIX)                             # BIN
-export TABIX_VERSION=1.11                                       # VER
+export TABIX_VERSION=1.14                                       # VER
 export TABIX_DESCRIPTION="Indexing VCF files"
 export TABIX_REF=$HTSLIB_REF
 
 # BGZIP
-export BGZIP=$NGS_TOOLS/htslib/1.11/bin/bgzip                   # BIN
-export BGZIP_VERSION=1.11                                       # VER
+export BGZIP=$NGS_TOOLS/htslib/1.14/bin/bgzip                   # BIN
+export BGZIP_VERSION=1.14                                       # VER
 export BGZIP_DESCRIPTION="Compressing VCF files"
 export BGZIP_REF=$HTSLIB_REF
 
 # BCFTOOLS
-export BCFTOOLS=$NGS_TOOLS/bcftools/1.12/bin/bcftools           # BIN
-export BCFTOOLS_VERSION=1.12                                    # VER
+#export BCFTOOLS=$NGS_TOOLS/bcftools/1.12/bin/bcftools           # BIN
+export BCFTOOLS=$NGS_TOOLS/bcftools/1.14/bin/bcftools           # BIN
+export BCFTOOLS_VERSION=1.14                                    # VER
 export BCFTOOLS_DESCRIPTION="Reading/writing BCF2/VCF/gVCF files and calling/filtering/summarising SNP and short indel sequence variants"
 export BCFTOOLS_REF="http://www.htslib.org/"
 
