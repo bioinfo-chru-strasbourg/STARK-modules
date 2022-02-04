@@ -27,6 +27,7 @@ def vcfTodataframe(file, rheader=False):
 	variants_tmp = []
 	variants = []
 	
+	
 	print("#[INFO] "+file)
 	if extension == '.vcf':
 		#print('[#INFO] VCF: '+file)
@@ -37,26 +38,20 @@ def vcfTodataframe(file, rheader=False):
 				else:
 					variants_tmp.append(lines)
 						
-		
-	print("#[INFO]", header[-1])
-	#print(variants[-1])
-	
 	col = header[-1].strip().split('\t')
 	for v in variants_tmp:
 		variants.append(v.strip().split('\t'))
+
 	
-	#headerCol = [res.replace('#', '') for res in colTemp]
-	dfVar = pd.DataFrame(columns=col)
-	#print(variants[0:3])
-	
-	#Creating Dataframe from the whole VCF
+	rows = []
+	#Creating Dataframe from the whole VCF	
 	print("#[INFO] Whole VCF to Dataframe")
 	for i, var in enumerate(variants):
-		rows = pd.Series(var, index=dfVar.columns)
+		rows.append(pd.Series(var, index=dfVar.columns))
 		#print(rows[0])
-		dfVar = dfVar.append(rows, ignore_index=True)
+		#dfVar = dfVar.append(rows, ignore_index=True)
+	dfVar = pd.concat(rows, axis=1, ignore_index=True).T
 	
-	print('\n')
 	if rheader:
 		return dfVar, header
 	else: 
@@ -304,8 +299,6 @@ def parseSpeed(covfiles, df, col):
 	
 	#print(final_tmp.head())
 	final = final_tmp.to_dict('records')
-
-			
 	print("#[INFO] Length variants "+os.path.basename(covfiles), len(final))
 	
 	return final
@@ -386,7 +379,7 @@ rule add_info:
 		cov = output+"/all.gatk.cov"
 	output:
 		vcf = temp(output+"/{sample}.final.vcf")
-	threads: 1
+	threads: config['threads']
 	run:
 		subprocess.call("mkdir -p "+output.vcf+".dict", shell=True)
 		subprocess.call("awk -F \":\" '{print $0 >> (\""+output.vcf+".dict/COVFILE\" $1)}' "+input.cov, shell=True)
@@ -404,7 +397,7 @@ rule add_info:
 		print("#[INFO] Parse variants by chr")
 		list_cov = [(osj(output.vcf+'.dict', covfiles), df, col) for covfiles in os.listdir(output.vcf+'.dict') if not covfiles.startswith('COVFILELocus')]
 		print("#[INFO] chr nbr", len(list_cov))
-		with Pool(8) as pool:
+		with Pool(config['threads)']) as pool:
 			result = pool.starmap(parseSpeed, list_cov)
 			for locus in result:
 				list_var.extend(locus)
@@ -438,9 +431,8 @@ rule add_info:
 		#Create final vcf with new header
 		createFinaldf(df, inforaw, infodenovo, newheader, tmp_vcf)
 		
-		#sort
+		#sort and supress dict of coverage files
 		subprocess.call('grep "^#" '+tmp_vcf+' > '+output.vcf+' && grep -v "^#" '+tmp_vcf+' | sort -k1,1V -k2,2n >> '+output.vcf, shell=True)
-		
 		subprocess.call("rm -rf "+output.vcf+".dict", shell=True)
 
 rule copy_vcf_pool:
