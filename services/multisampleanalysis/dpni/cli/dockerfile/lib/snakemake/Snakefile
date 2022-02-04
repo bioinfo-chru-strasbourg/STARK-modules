@@ -1,0 +1,614 @@
+import multiprocessing
+import os
+import shutil
+import random
+import string
+import subprocess
+import time
+import numpy as np
+from os.path import join as osj
+from itertools import islice
+import sys
+from collections import OrderedDict, defaultdict
+import re
+import pandas as pd
+from multiprocessing import Pool
+
+
+def vcfTodataframe(file, rheader=False):
+	'''
+	Take in input vcf file, or tsv and return a dataframe
+	I"m gonna build my own vcf parser et puis c'est tout
+	return 3 Dataframe, full, only sample, only info
+	'''
+	name, extension = os.path.splitext(file)
+	
+	header = []
+	variants_tmp = []
+	variants = []
+	
+	print("#[INFO] "+file)
+	if extension == '.vcf':
+		#print('[#INFO] VCF: '+file)
+		with open(file) as f:
+			for lines in f:
+				if lines.startswith('#'):
+					header.append(lines.strip())
+				else:
+					variants_tmp.append(lines)
+						
+		
+	print("#[INFO]", header[-1])
+	#print(variants[-1])
+	
+	col = header[-1].strip().split('\t')
+	for v in variants_tmp:
+		variants.append(v.strip().split('\t'))
+	
+	#headerCol = [res.replace('#', '') for res in colTemp]
+	dfVar = pd.DataFrame(columns=col)
+	#print(variants[0:3])
+	
+	#Creating Dataframe from the whole VCF
+	print("#[INFO] Whole VCF to Dataframe")
+	for i, var in enumerate(variants):
+		rows = pd.Series(var, index=dfVar.columns)
+		#print(rows[0])
+		dfVar = dfVar.append(rows, ignore_index=True)
+	
+	print('\n')
+	if rheader:
+		return dfVar, header
+	else: 
+		return dfVar
+
+def uniqueChr(df):
+	unique = df['#CHROM'].unique()
+	return unique
+
+def parseInfoField(dfVar):
+	'''
+	input: take a dataframe (from vcf)
+	
+	output: return a dataframe of the vcf when the info field is parsed 
+	'''
+	
+	############
+	#Parsing INFO field from dfVar dataframe containing all informations from vcf
+	############
+	
+	#print(dfVar.head())
+	infoList = []
+	dicoInfo = []
+	headers = []
+	
+	
+	print("#[INFO] Parsing INFO field")
+	for i,elems in dfVar.iterrows():
+		infoList.append([x.split('=') for x in elems['INFO'].split(';')])
+			
+	print("\n")
+	
+	
+	[headers.append(elems[0]) for ite in infoList for elems in ite]
+	dfInfo = pd.DataFrame(columns=np.unique(np.array(headers)))
+	#print(np.unique(np.array(headers)))
+	
+	
+	#print(infoList[0:5])
+	print("#[INFO] From INFO field to Dataframe")
+	for j, elems in enumerate(infoList):
+		add = {}
+		for fields in elems:
+			if len(fields) <= 1:
+				f = {fields[0]: 'TRUE'}
+				add.update(f)
+			else:
+				f = dict([fields])
+				add.update(f)
+				
+		dicoInfo.append(add)
+		
+	print("\n")
+	#print(dicoInfo.keys())
+	#print(dict(list(dicoInfo.items())[0:2]))
+	
+	df_final = pd.DataFrame(dicoInfo, columns=np.unique(np.array(headers)))
+	
+	dfInfo = dfVar.join(df_final, how='inner')
+	
+	return dfInfo
+	
+def parseFile(folder, df, unique):
+	'''
+	input: folder containing cov depth file by chr, vcf of the sample and list of unique chr
+	'''
+	final = []
+	#for each depth count file 
+	for covfiles in os.listdir(folder):
+		if not covfiles.startswith('COVFILELocus'):
+			#iterate chr by chr
+			print("#[INFO] chr"+covfiles)
+			for j, string in enumerate(unique):
+				if covfiles.endswith(string):
+					#print("#[INFO] Chrcov "+covfiles)
+					data = []
+					#read cov file results from gatk depth coverage
+					tmp = pd.read_csv(osj(folder, covfiles), sep='\t', names=['Locus_F', 'Total_Depth_F', 'Average_Depth_sample_F', 'POOL_F_Depth', 'POOL_F_base_counts', 'Locus_M', 'Total_Depth_M', 'Average_Depth_sample_M', 'POOL_M_Depth', 'POOL_M_base_counts'])
+					cov = tmp.to_dict('records')
+					
+					#Iterate over dataframe from vcf norm sorted and unique
+					for i, chpos in df[['#CHROM', 'POS']].iterrows():
+						if string == chpos[0]:
+							#print(chpos[1][1])
+							#time.sleep(10)
+							dot = ':'.join(chpos)
+							
+							val = [dico for dico in cov if dot in dico.values()]
+							final.append(val[0])
+							#add row in list
+							#final.append(cov[(cov == dot).any(axis=1)])
+							
+				else:
+					continue
+	print("#[INFO] Length variants ", len(final))
+	return final
+	#time.sleep(10)
+
+def addFrequence(listvar):
+	#print(listvar[0:10])
+	#print('sep')
+	#print(listvar[-5:-1])
+	df = pd.DataFrame(listvar)
+	#df.sort_values(by=['#CHROM', 'POS'], ascending=[False, True], key=lambda x: np.argsort(index_natsorted(df['#CHROM'] 
+	
+	data = []
+	sex = ['F', 'M']
+	#print(df.columns)
+	#print(df.head())
+	for i, values in df.iterrows():
+		#print(values)
+		last = {}
+		last['#CHROM'] = values['Locus_F'].strip().split(':')[0]
+		last['POS'] = values['Locus_F'].strip().split(':')[1]
+		for gender in sex:
+			tmp = values['POOL_'+gender+'_base_counts'].strip().split()
+			tmp_data = {}
+			tmp2_data = {}
+			for bases in tmp:
+				base = bases.split(':')
+				tmp_data[base[0]] = base[1]
+				#print(tmp_data)
+			for count in tmp_data.items():
+				#print(count)
+				try:
+					tmp2_data[count[0]] = str(round(float(count[1]) / values['Total_Depth_'+gender], 2))
+				except:
+					print("#[INFO] Depth is 0 for "+gender+" pool", values['Locus_F'])
+					tmp2_data[count[0]] = "0"
+					
+			count = '|'.join(':'.join((key,val)) for (key,val) in tmp_data.items())
+			freq = '|'.join(':'.join((key,val)) for (key,val) in tmp2_data.items())
+			
+			last['POOL_'+gender+'_Depth'] = values['POOL_'+gender+'_Depth']
+			last['POOL_'+gender+'_base_counts'] = count
+			last['POOL_'+gender+'_base_frequence'] = freq
+			
+		data.append(last)
+	final = pd.DataFrame(data)
+		
+	return final
+
+
+def denovoFilter(df, res):
+	#####merge df raw and df which new columns
+	result = pd.merge(df, res, on=["#CHROM", "POS"])
+	
+	#####denovo
+	result['denovo_filter'] = None
+	for i, var in result.iterrows():
+		ref = var['REF']
+		mut = var['ALT']
+		freq = [item.split(':') for item in var['POOL_F_base_counts'].split('|')]
+		freq.extend([item.split(':') for item in var['POOL_M_base_counts'].split('|')])
+		#[dict(item.split(':')[0] = item.split(':')[1]) for item in freq_f]
+		val = []
+		for values in freq:
+			#print(values)
+			#time.sleep(10)
+			if values[0] == mut:
+				#print(values[0], mut)
+				val.append(int(values[1]))
+		
+		#filter only for SNV 
+		if val and all(value < 3 for value in val) and var['POOL_F_Depth'] >= 300 and var['POOL_M_Depth'] >= 300 and len(mut) == 1 and len(ref) == 1:
+			result.loc[i, 'denovo_filter'] = "Denovo"
+			#print("#[INFO] counts", val)
+			#print(result.loc[i, 'denovo_filter'])
+			#time.sleep(5)
+		elif val and all(value < 2 for value in val) and var['POOL_F_Depth'] >= 200 and var['POOL_M_Depth'] >= 200 and len(mut) == 1 and len(ref) == 1:
+			result.loc[i, 'denovo_filter'] = "LikelyDenovo"
+			#print("#[INFO] counts", val)
+			#print(result.loc[i, 'denovo_filter'])
+			#print(var)
+		elif len(mut) > 1 and len(ref) == 1:
+			result.loc[i, 'denovo_filter'] = "unknown_insertion"
+		elif len(ref) > 1 and len(mut) == 1:
+			result.loc[i, 'denovo_filter'] = "unknown_deletion"
+		else:
+			result.loc[i, 'denovo_filter'] = "Inherit"
+	
+	print(result['denovo_filter'].value_counts())
+		
+	return result
+
+def mergeColumn(df, col):
+	#merge in info field tmp colindex = 10: or [14,13,10,11] for raw vcf
+	dico = []
+	for i, values in col.iterrows():
+		data = []
+		for j, items in enumerate(values):
+			data.append(values.index[j]+'='+str(values[j]))
+		tmp = ';'.join(data)
+		#print(values)
+		dico.append({'tmp_info': tmp})
+	df_out = pd.DataFrame(dico)
+	return  df_out
+
+def addHeader(col, header):
+	for field in col:
+		if field == 'denovo_filter':
+			info = '##INFO=<ID='+field+',Number=.,Type=String,Description="denovo_filter Filter established in genetics diagnosis team in the CHRU of Strasbourg, allele depth < 3 && Depth >= 300 > Denovo or allele depth < 2 && Depth >= 200 Likelydenovo, remaining variants are considered as inherit for snv and inherit_indels">\n'
+			header.insert(header.index(header[-1]), info)
+		else:
+			info = '##INFO=<ID='+field+',Number=.,Type=String,Description="GATK '+field+'">\n'
+			header.insert(header.index(header[-1]), info)
+	return header
+
+def createFinaldf(df, old, add, header, oup):
+	raw = df[df.columns[0:10]]
+	raw = raw.drop(['INFO'], axis=1)
+	raw.insert(loc=7, column='INFO', value= old['tmp_info'].astype(str)+';'+add['tmp_info'].astype(str))
+	with open(oup, 'w+') as f:
+		for lines in header:
+			f.write(lines.strip()+'\n')
+	raw.to_csv(oup, mode='a', index=False, header=False, sep='\t')
+	return raw
+	
+def parseSpeed(covfiles, df, col):
+	'''
+	input: folder containing cov depth file by chr, vcf of the sample and list of unique chr
+	'''
+	#hide warning
+	pd.set_option('mode.chained_assignment', None)
+	
+	final = []
+	print("#[INFO] chr"+covfiles)
+	#print("#[INFO] Chrcov "+covfiles)
+	data = []
+	#read cov file results from gatk depth coverage
+	tmp = pd.read_csv(covfiles, sep='\t', names=col)
+
+	#chr number
+	chr = os.path.basename(covfiles)[7:]
+	cov = tmp.loc[tmp['Locus_F'].str.startswith(chr+':')]#.to_dict('records')
+
+	df_tmp = df.loc[df['#CHROM'] == chr]
+
+	df_tmp.loc[:, 'find'] = df.loc[:,'#CHROM'].astype(str)+':'+df.loc[:,'POS'].astype(str)
+	final_tmp = pd.DataFrame(columns=col)
+	for var in df_tmp['find']:
+		#print(var)
+		final_tmp = final_tmp.append(cov.loc[cov['Locus_F'].str.contains(var)], ignore_index=True)
+			#final_tmp.append(cov[cov['Locus_F'].str.contains(var)])
+	
+	#print(final_tmp.head())
+	final = final_tmp.to_dict('records')
+
+			
+	print("#[INFO] Length variants "+os.path.basename(covfiles), len(final))
+	
+	return final
+
+def parse(dico):
+	data={}
+	for file in dico:
+		name=dico[file]["vcf"].split("/")[-1].split(".")[0]
+		data[name]=dico[file]["vcf"]
+	return data
+
+def get_pool_name(pool):
+	dico_pool = {}
+	for item in pool:
+		name = pool[item]["vcf"].split("/")[-1].split(".")[0]
+		dico_pool[name] = pool[item]["vcf"]
+	return dico_pool
+
+def writejson(d,f):
+	"""
+	Read dict, return a json file
+	"""
+	with open(f, 'w') as outfile:
+		json.dump(d, outfile, indent=4)
+
+output = config["analysis"]["output"]
+log = output+"/.log"
+pool_name = get_pool_name(config["analysis"]["pool"])
+
+if "thread" in config["analysis"]:
+	nbCPU =  config["analysis"]["thread"]
+else:
+	if multiprocessing.cpu_count() > 2:
+		nbCPU = multiprocessing.cpu_count()-1
+	else:
+		nbCPU = 1
+
+interval_padding = 100
+
+
+rule all:
+	params:
+		bgzip = config["tools"]["bgzip"],
+		tabix = config["tools"]["tabix"]
+	input:
+		sample_vcf = expand(output+"/{sample}.final.vcf",sample=config["analysis"]["sample"]),
+		pool_vcf = expand(output+"/{poolname}.pool.vcf",poolname=pool_name)
+	log:
+		log+"/all.log"
+	shell:
+		"""
+			for file in {input.sample_vcf};
+			do
+				{params.bgzip} --force $file && {params.tabix} -p vcf $file.gz
+			done;
+
+			for file in {input.pool_vcf};
+			do
+				renamedext=$(echo $file | sed s/.pool.vcf/.final.vcf/g)
+				{params.bgzip} -c $file > $renamedext.gz
+			done;
+		"""
+
+
+rule paste_vcf_pool:
+	input:
+		lambda wildcards: pool_name[wildcards.poolname]
+	output:
+		temp(output+"/{poolname}.pool.vcf")
+	shell:
+		"""
+			cp {input} {output}
+		"""
+
+rule add_info:
+	input:
+		vcf = output+"/{sample}.trio.howard.norm.uniq.sorted.vcf",
+		cov = output+"/all.gatk.cov"
+	output:
+		vcf = temp(output+"/{sample}.final.vcf")
+	threads: 1
+	run:
+		subprocess.call("mkdir -p "+output.vcf+".dict", shell=True)
+		subprocess.call("awk -F \":\" '{print $0 >> (\""+output.vcf+".dict/COVFILE\" $1)}' "+input.cov, shell=True)
+		#####new
+		#transform raw vcf into dataframe and insert header in list
+		df, head = vcfTodataframe(input.vcf, True)
+		
+		#unique chr cov file from gatk
+		unique = uniqueChr(df)
+		list_var = []
+		
+		col = ['Locus_F', 'Total_Depth_F', 'Average_Depth_sample_F', 'POOL_F_Depth', 'POOL_F_base_counts', 'Locus_M', 'Total_Depth_M', 'Average_Depth_sample_M', 'POOL_M_Depth', 'POOL_M_base_counts']
+		#parse variants by chr to speed up analysis
+		#prepare args for multiprocessing
+		print("#[INFO] Parse variants by chr")
+		list_cov = [(osj(output.vcf+'.dict', covfiles), df, col) for covfiles in os.listdir(output.vcf+'.dict') if not covfiles.startswith('COVFILELocus')]
+		print("#[INFO] chr nbr", len(list_cov))
+		with Pool(8) as pool:
+			result = pool.starmap(parseSpeed, list_cov)
+			for locus in result:
+				list_var.extend(locus)
+		
+		#Merge list of True variant
+		#list_cov.append(output)
+		
+		print("#[INFO] Process annotations")
+		#frequence annotations
+		frequence = addFrequence(list_var)
+		
+		#denovo filter on merge 
+		denovo = denovoFilter(df, frequence)
+		
+		#Merge old info field annotations
+		inforaw = mergeColumn(parseInfoField(df), parseInfoField(df).iloc[:, [14,13,10,11]])
+		
+		#Add denovo filter and merge freq depth and base count into info field
+		infodenovo = mergeColumn(denovo, denovo.iloc[:,10:])
+		
+		#Add new rows in header
+		newheader = addHeader(denovo.columns[10:], head)
+		
+		#outputfile name
+		#out_tmp = osj(folder_vcf, os.path.basename(vcfile).split('.')[0]+'.final.vcf.tmp')
+		#out = osj(folder_vcf, os.path.basename(vcfile).split('.')[0]+'.final.vcf')
+		
+		tmp_vcf = output.vcf+'.tmp'
+		#vcf = output.vcf
+		
+		#Create final vcf with new header
+		createFinaldf(df, inforaw, infodenovo, newheader, tmp_vcf)
+		
+		#sort
+		subprocess.call('grep "^#" '+tmp_vcf+' > '+output.vcf+' && grep -v "^#" '+tmp_vcf+' | sort -k1,1V -k2,2n >> '+output.vcf, shell=True)
+		
+		subprocess.call("rm -rf "+output.vcf+".dict", shell=True)
+
+rule copy_vcf_pool:
+	params:
+		bcftools = config["tools"]["bcftools"],
+		output = config["analysis"]["output"]
+	input:
+		lambda wildcards: config["analysis"]["pool"][wildcards.pool]["vcf"]
+	output:
+		tmp = temp(output+"/{pool}.pool.renamed.vcf")
+	log:
+		log+"/{pool}.bcftools.log"
+	shell:
+		"""
+			sed "s/$(grep '^#CHROM' {input} | awk -F'\t' '{{print $10}}')/{wildcards.pool}/g" {input} | {params.bcftools} annotate --remove "^INFO/FindByPipelines,INFO/GenotypeConcordance" > {output.tmp} 2>> {log}
+		"""
+
+rule copy_vcf_sample:
+	params:
+		bcftools = config["tools"]["bcftools"]
+	input:
+		lambda wildcards: config["analysis"]["sample"][wildcards.sample]["vcf"]
+	output:
+		temp(output+"/{sample}.sample.renamed.vcf")
+	log:
+		log+"/{sample}.bcftools.log"
+	shell:
+		"""
+			{params.bcftools} annotate --remove "^INFO/FindByPipelines,INFO/GenotypeConcordance" {input} > {output} 2>> {log}
+		"""
+
+rule compress_index_vcf:
+	params:
+		bgzip = config["tools"]["bgzip"],
+		tabix = config["tools"]["tabix"]
+	input:
+		"{w}.renamed.vcf"
+	output:
+		gz  = temp("{w}.renamed.vcf.gz"),
+		tbi = temp("{w}.renamed.vcf.gz.tbi")
+	shell:
+		"""
+			{params.bgzip} -c {input} > {output.gz} && {params.tabix} -p vcf {output.gz}
+		"""
+
+rule merge_vcf:
+	params:
+		bcftools=config["tools"]["bcftools"]
+	input:
+		sample_vcf = output+"/{sample}.sample.renamed.vcf.gz",
+		sample_vcf_tbi = output+"/{sample}.sample.renamed.vcf.gz.tbi",
+		pool_vcf = expand(output+"/{pool}.pool.renamed.vcf.gz", pool=config["analysis"]["pool"]),
+		pool_vcf_tbi = expand(output+"/{pool}.pool.renamed.vcf.gz.tbi", pool=config["analysis"]["pool"])
+	output:
+		output+"/{sample}.merged.vcf"
+	log:
+		log+"/{sample}.bcftools.log"
+	shell:
+		"""
+			{params.bcftools} merge {input.sample_vcf} {input.pool_vcf} -o {output} 2>> {log}
+		"""
+
+rule howard_trio:
+	params:
+		howard = config["tools"]["howard"]
+	input:
+		output+"/{sample}.merged.vcf"
+	output:
+		output+"/{sample}.trio.howard.vcf"
+	log:
+		log+"/{sample}.howard.log"
+	shell:
+		"""
+			{params.howard} --input={input} --output={output} --calculation=BARCODE --trio=POOL_M,POOL_F,{wildcards.sample} &>> {log}
+		"""
+
+rule normalize_vcf:
+	params:
+		bcftools = config["tools"]["bcftools"],
+		genome = config["analysis"]["genome"]
+	input:
+		output+"/{sample}.trio.howard.vcf"
+	output:
+		temp(output+"/{sample}.trio.howard.norm.vcf")
+	log:
+		log+"/{sample}.bcftools.log"
+	shell:
+		"""
+			{params.bcftools} norm -m-any {input} | {params.bcftools} norm -d none -f {params.genome} -o {output} 2>> {log}
+		"""
+
+rule uniq_trio:
+	params:
+		bcftools=config["tools"]["bcftools"]
+	input:
+		output+"/{sample}.trio.howard.norm.vcf"
+	output:
+		temp(output+"/{sample}.trio.howard.norm.uniq.vcf")
+	log:
+		log+"/{sample}.bcftools.log"
+	shell:
+		"""
+			{params.bcftools} view -s {wildcards.sample} {input} | grep -v '^##HOWARD' > {output} 2>> {log}
+		"""
+
+rule sort_vcf:
+	input:
+		output+"/{sample}.trio.howard.norm.uniq.vcf"
+	output:
+		output+"/{sample}.trio.howard.norm.uniq.sorted.vcf"
+	shell:
+		"""
+			grep "^#" {input} > {output} && grep -v "^#" {input} | sort -k1,1V -k2,2n >> {output}
+		"""
+
+#rule sort_vcf:
+#	params:
+#		bcftools = config["tools"]["bcftools"]
+#	input:
+#		output+"/{sample}.trio.howard.norm.uniq.vcf"
+#	output:
+#		output+"/{sample}.trio.howard.norm.uniq.sorted.vcf"
+#	log:
+#		log+"/{sample}.bcftools.sorted.log"
+#	shell:
+#		"""
+#			{params.bcftools} sort -o {output} {input}
+#		"""
+
+rule depth_of_coverage_v2:
+	params:
+		cpu     = nbCPU//2,
+		padding = interval_padding,
+		java    = config["tools"]["java"],
+		gatk    = config["tools"]["gatk"]
+	input:
+		genome  = config["analysis"]["genome"],
+		bed     = config["analysis"]["bed"],
+		bam     = lambda wildcards: config["analysis"]["pool"][wildcards.pool]["bam"]
+	output:
+		temp(output+"/{pool}.gatk.cov"),
+		temp(output+"/{pool}.gatk.cov.sample_cumulative_coverage_counts"),
+		temp(output+"/{pool}.gatk.cov.sample_cumulative_coverage_proportions"),
+		temp(output+"/{pool}.gatk.cov.sample_statistics"),
+		temp(output+"/{pool}.gatk.cov.sample_summary")
+	log:
+		log+"/{pool}.gatk.cov.log"
+	shell:
+		"""
+			{params.java} -jar {params.gatk} -nt {params.cpu} -omitIntervals -T DepthOfCoverage -R {input.genome} -o {output[0]} -I {input.bam} --includeDeletions --minMappingQuality 10 --printBaseCounts -L {input.bed} --interval_padding {params.padding} &>> {log};
+		"""
+
+rule rename_pool_coverage_v2:
+	input:
+		output+"/{pool}.gatk.cov"
+	output:
+		temp(output+"/{pool}.gatk.renamed.cov")
+	shell:
+		"""
+			sed '1 s/^.*$/Locus\tTotal_Depth\tAverage_Depth_sample\t{wildcards.pool}_Depth\t{wildcards.pool}_base_counts/' {input} > {output}
+		"""
+
+rule merge_coverage_v2:
+	input:
+		expand(output+"/{pool}.gatk.renamed.cov", pool=config["analysis"]["pool"])
+	output:
+		output+"/all.gatk.cov"
+	shell:
+		"""
+			paste {input} > {output}
+		"""

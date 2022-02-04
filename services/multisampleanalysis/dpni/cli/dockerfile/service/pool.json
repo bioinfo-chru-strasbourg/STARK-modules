@@ -1,0 +1,18 @@
+{
+	"services": {
+		"POOL": {
+			"infos": {
+				"name": "POOL",
+				"description": "POOL analysis",
+				"triggers-description": "(STARKCopyComplete.txt AND !POOLComplete.txt AND !POOLRunning.txt AND #POOL)"
+			},
+			"triggers": {
+				"AND":
+				{
+					"file": ["STARKCopyComplete.txt", "!POOLComplete.txt", "!POOLRunning.txt"],
+					"tags": ["#POOL"]
+				}
+			}
+		}
+	}
+}

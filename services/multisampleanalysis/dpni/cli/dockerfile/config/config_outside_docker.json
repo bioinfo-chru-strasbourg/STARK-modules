@@ -1,0 +1,12 @@
+{
+	"tools":{
+		"java":"java",
+		"gatk":"/home1/TOOLS/tools/gatk/3.8-0/GenomeAnalysisTK.jar",
+		"VaRank":"/home1/TOOLS/tools/varank/VaRank_1.4.3",
+		"Alamut-batch":"/home1/TOOLS/tools/alamut_batch/alamut-batch-standalone-1.11",
+		"howard":"/STARK/tools/howard/current/bin/HOWARD",
+		"bcftools":"/home1/TOOLS/tools/bcftools/1.8/bin/bcftools",
+		"bgzip":"/home1/TOOLS/tools/htslib/1.8/bin/bgzip",
+		"tabix":"/home1/TOOLS/tools/htslib/1.8/bin/tabix"
+	}
+}
