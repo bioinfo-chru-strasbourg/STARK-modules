@@ -42,14 +42,12 @@ def vcfTodataframe(file, rheader=False):
 	for v in variants_tmp:
 		variants.append(v.strip().split('\t'))
 
-	
 	rows = []
 	#Creating Dataframe from the whole VCF	
 	print("#[INFO] Whole VCF to Dataframe")
 	for i, var in enumerate(variants):
-		rows.append(pd.Series(var, index=dfVar.columns))
-		#print(rows[0])
-		#dfVar = dfVar.append(rows, ignore_index=True)
+		rows.append(pd.Series(var, index=col))
+	#.T necessary to transpose index and columns
 	dfVar = pd.concat(rows, axis=1, ignore_index=True).T
 	
 	if rheader:
@@ -237,19 +235,6 @@ def denovoFilter(df, res):
 		
 	return result
 
-def mergeColumn(df, col):
-	#merge in info field tmp colindex = 10: or [14,13,10,11] for raw vcf
-	dico = []
-	for i, values in col.iterrows():
-		data = []
-		for j, items in enumerate(values):
-			data.append(values.index[j]+'='+str(values[j]))
-		tmp = ';'.join(data)
-		#print(values)
-		dico.append({'tmp_info': tmp})
-	df_out = pd.DataFrame(dico)
-	return  df_out
-
 def addHeader(col, header):
 	for field in col:
 		if field == 'denovo_filter':
@@ -260,10 +245,8 @@ def addHeader(col, header):
 			header.insert(header.index(header[-1]), info)
 	return header
 
-def createFinaldf(df, old, add, header, oup):
+def createFinaldf(df, header, oup):
 	raw = df[df.columns[0:10]]
-	raw = raw.drop(['INFO'], axis=1)
-	raw.insert(loc=7, column='INFO', value= old['tmp_info'].astype(str)+';'+add['tmp_info'].astype(str))
 	with open(oup, 'w+') as f:
 		for lines in header:
 			f.write(lines.strip()+'\n')
@@ -397,13 +380,11 @@ rule add_info:
 		print("#[INFO] Parse variants by chr")
 		list_cov = [(osj(output.vcf+'.dict', covfiles), df, col) for covfiles in os.listdir(output.vcf+'.dict') if not covfiles.startswith('COVFILELocus')]
 		print("#[INFO] chr nbr", len(list_cov))
-		with Pool(config['threads)']) as pool:
+		with Pool(config['threads']) as pool:
 			result = pool.starmap(parseSpeed, list_cov)
 			for locus in result:
 				list_var.extend(locus)
-		
-		#Merge list of True variant
-		#list_cov.append(output)
+
 		
 		print("#[INFO] Process annotations")
 		#frequence annotations
@@ -412,24 +393,21 @@ rule add_info:
 		#denovo filter on merge 
 		denovo = denovoFilter(df, frequence)
 		
-		#Merge old info field annotations
-		inforaw = mergeColumn(parseInfoField(df), parseInfoField(df).iloc[:, [14,13,10,11]])
-		
-		#Add denovo filter and merge freq depth and base count into info field
-		infodenovo = mergeColumn(denovo, denovo.iloc[:,10:])
-		
+		info = denovo.loc[:, ['POOL_F_Depth', 'POOL_F_base_counts', 'POOL_F_base_frequence', 'POOL_M_Depth', 'POOL_M_base_counts', 'POOL_M_base_frequence', 'denovo_filter']]
+
+		for items in list(info.columns):
+			info[items] = items+'='+info[items].astype(str)
+		denovo['INFOS'] = info[['POOL_F_Depth', 'POOL_F_base_counts', 'POOL_F_base_frequence', 'POOL_M_Depth', 'POOL_M_base_counts', 'POOL_M_base_frequence', 'denovo_filter']].agg(';'.join, 	axis=1)
+		denovo['INFO'] = denovo['INFO']+';'+denovo['INFOS']
+
 		#Add new rows in header
 		newheader = addHeader(denovo.columns[10:], head)
-		
-		#outputfile name
-		#out_tmp = osj(folder_vcf, os.path.basename(vcfile).split('.')[0]+'.final.vcf.tmp')
-		#out = osj(folder_vcf, os.path.basename(vcfile).split('.')[0]+'.final.vcf')
 		
 		tmp_vcf = output.vcf+'.tmp'
 		#vcf = output.vcf
 		
 		#Create final vcf with new header
-		createFinaldf(df, inforaw, infodenovo, newheader, tmp_vcf)
+		createFinaldf(df, newheader, tmp_vcf)
 		
 		#sort and supress dict of coverage files
 		subprocess.call('grep "^#" '+tmp_vcf+' > '+output.vcf+' && grep -v "^#" '+tmp_vcf+' | sort -k1,1V -k2,2n >> '+output.vcf, shell=True)

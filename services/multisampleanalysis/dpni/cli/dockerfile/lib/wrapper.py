@@ -260,7 +260,7 @@ def copyResults(sampleList, runDir, dockerOutputDir):
 		else:
 			writeErrorLog(s, runDir,  "[ERROR] Missing final VCF file. Are the input BAM & VCF correct?")
 
-def launchAnalysis(sampleList, key, runDir, dockerOutputDir, genome, bcftools, samtools):
+def launchAnalysis(sampleList, key, runDir, dockerOutputDir, genome, bcftools, samtools, extraconf):
 	vcfList = []
 	poolFStr = "init"
 	poolMStr = "init"
@@ -310,7 +310,7 @@ def launchAnalysis(sampleList, key, runDir, dockerOutputDir, genome, bcftools, s
 			writeErrorLog(s, runDir, "[ERROR] Missing bed for POOL analysis.")
 		return "[ERROR] Missing bed for POOL analysis."
 	#TODO: be able to fetch a pool from a different run ?
-	cmd = 'python /app/lib/pool/pool.py sample -o '+dockerOutputDir+' -s "'+','.join(vcfList)+'" -p "'+poolFStr+","+poolMStr+'" -b '+bed+' -g '+genome
+	cmd = 'python /app/lib/pool/pool.py sample -o '+dockerOutputDir+' -s "'+','.join(vcfList)+'" -p "'+poolFStr+","+poolMStr+'" -b '+bed+' -g '+genome+extraconf
 	# cmd = 'python /home1/TOOLS/tools/pool/1.2/lib/pool/pool.py sample -o '+dockerOutputDir+' -s "'+','.join(vcfList)+'" -p "'+poolFStr+","+poolMStr+'" -b '+bed+' -g '+genome
 	print(cmd)
 	subprocess.call(cmd, shell=True)
@@ -335,9 +335,10 @@ def main(args):
 		sampleList.remove(removed)
 	#create a dictionary with POOL_ID1#POOL_ID2 as key, and samples as values, depending on tag POOL#POOL_ID1#POOL_ID2
 	poolDict = getPoolDict(sampleList, args.runDir)
+
 	print("#[INFO] POOL dict", poolDict)
 	for key in poolDict:
-		launchAnalysis(poolDict[key], key, args.runDir, dockerOutputDir, args.genome, args.bcftools, args.samtools)
+		launchAnalysis(poolDict[key], key, args.runDir, dockerOutputDir, args.genome, args.bcftools, args.samtools, args.extraconf)
 	#shutil.rmtree(dockerOutputDir)
 	with open(osj(args.runDir, "POOLComplete.txt"), "w") as f:
 		f.write(time.ctime())
@@ -352,6 +353,7 @@ if __name__=="__main__":
 	parser.add_argument("-e","--exclude", help="list of tags for which samples are removed if have them", type=str, dest='exclude', default="CQI#")
 	parser.add_argument("-b","--bcftools", help="path to bcftools bin", type=str, dest='bcftools', default="/STARK/tools/bcftools/current/bin/bcftools")
 	parser.add_argument("-s","--samtools", help="path to samtools bin", type=str, dest='samtools', default="/STARK/tools/samtools/current/bin/samtools")
+	parser.add_argument("-x","--extraconf", help="extra config parameters in snakemake ex ' --conf threads=8'", type=str, dest='extraconf', default="")
 	
 	args = parser.parse_args()
 	args.mode(args)

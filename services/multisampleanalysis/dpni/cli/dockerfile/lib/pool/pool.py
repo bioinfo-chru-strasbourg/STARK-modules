@@ -150,19 +150,27 @@ def writejson(d,f):
 	with open(f, 'w') as outfile:
 		json.dump(d, outfile, indent=4)
 
-def pool(config,output,jobs,dryrun,dag):
+def pool(config,output,jobs,dryrun,dag,extraconf):
 	"""
 	Launch snakefile for pool
 	"""
 	if not jobs:
-		jobs = str(int(nbCPUs()[0]) -1)
+		#jobs = str(int(nbCPUs()[0]) -1)
+		jobs = str(4)
 	snk_opt = ""
 	if dryrun:
 		snk_opt = " -np "
 	if dag:
 		snk_opt += " --dag | dot -Tsvg > " + output + "/dag.svg "
 	current_dir = os.path.dirname(os.path.realpath(__file__))
-	command = "/usr/local/lib/miniconda3/bin/snakemake -p --snakefile " + current_dir + "/../snakemake/Snakefile --configfile " + config + " --directory " + output + " --jobs "+ jobs + snk_opt
+
+	#extra options
+	if extraconf:
+		extra = " --config "+extraconf
+	else:
+		extra = ""
+
+	command = "/usr/local/lib/miniconda3/bin/snakemake -p --snakefile " + current_dir + "/../snakemake/Snakefile --configfile " + config + extra+" --directory " + output + " --jobs "+ jobs + snk_opt
 	print(command)
 	systemcall(command)
 
@@ -173,7 +181,7 @@ def main_sample(args):
 	config = getConfig(args)
 	configfile = config["analysis"]["output"]+"/analysis.json"
 	writejson(config,configfile)
-	pool(configfile,config["analysis"]["output"],args.jobs,args.dryrun,args.dag)
+	pool(configfile,config["analysis"]["output"],args.jobs,args.dryrun,args.dag, args.extraconf)
 
 def main_run(args):
 	"""
@@ -201,6 +209,7 @@ def main():
 	group0.add_argument("-g","--genome", help="analysis genome file", type=str, dest='genome')
 	group0.add_argument("-n","--padding", help="The padding used for the variant calling", type=str, dest='padding')
 	group0.add_argument("-c","--config", help="The json config file", type=str, dest='config')
+	group0.add_argument("-x", "--extraconf", type=str, help="extraconf to pass to pool script", dest='extraconf')
 	
 	group1 = parser_a.add_argument_group('Ressources')
 	group1.add_argument("--java",type=str,help="The path to the java executable")
