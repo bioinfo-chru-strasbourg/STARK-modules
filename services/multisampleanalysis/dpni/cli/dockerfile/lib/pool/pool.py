@@ -150,13 +150,14 @@ def writejson(d,f):
 	with open(f, 'w') as outfile:
 		json.dump(d, outfile, indent=4)
 
-def pool(config,output,jobs,dryrun,dag,extraconf):
+def pool(config,output,jobs,dryrun,dag):
 	"""
 	Launch snakefile for pool
 	"""
-	if not jobs:
-		#jobs = str(int(nbCPUs()[0]) -1)
-		jobs = str(4)
+	#if not jobs:
+	#	jobs = str(int(nbCPUs()[0]) -1)
+	#	#jobs = str(4)
+	threads = "threads="+str(jobs)
 	snk_opt = ""
 	if dryrun:
 		snk_opt = " -np "
@@ -164,13 +165,7 @@ def pool(config,output,jobs,dryrun,dag,extraconf):
 		snk_opt += " --dag | dot -Tsvg > " + output + "/dag.svg "
 	current_dir = os.path.dirname(os.path.realpath(__file__))
 
-	#extra options
-	if extraconf:
-		extra = " --config "+extraconf
-	else:
-		extra = ""
-
-	command = "/usr/local/lib/miniconda3/bin/snakemake -p --snakefile " + current_dir + "/../snakemake/Snakefile --configfile " + config + extra+" --directory " + output + " --jobs "+ jobs + snk_opt
+	command = "/usr/local/lib/miniconda3/bin/snakemake -p --snakefile " + current_dir + "/../snakemake/Snakefile --configfile " + config + " --config "+threads+" --directory " + output + " --jobs "+ str(jobs) + snk_opt
 	print(command)
 	systemcall(command)
 
@@ -181,7 +176,7 @@ def main_sample(args):
 	config = getConfig(args)
 	configfile = config["analysis"]["output"]+"/analysis.json"
 	writejson(config,configfile)
-	pool(configfile,config["analysis"]["output"],args.jobs,args.dryrun,args.dag, args.extraconf)
+	pool(configfile,config["analysis"]["output"],args.jobs,args.dryrun,args.dag)
 
 def main_run(args):
 	"""
