@@ -14,6 +14,90 @@ import re
 import pandas as pd
 from multiprocessing import Pool
 
+###### DEV DPNI MODULE
+def systemcall(command):
+	'''
+	*passing command to the shell*
+	*return list containing stdout lines*
+	command - shell command (string)
+	'''
+	p = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+	return p.stdout.read().decode('utf8').strip().split('\n')
+
+def getbed(run):
+	for samples in os.listdir(run):
+		if os.path.isdir(osj(run, samples)):
+			bed  = systemcall('find '+osj(run, samples)+' -name "'+samples+'.bed"')[0]
+			if bed:
+				return bed
+	print("ERROR no bed in run "+run+" exit !")
+	exit()
+	
+
+def configure(run, trio, genome, tools, output):
+	family = {}
+	family['tools'] = tools
+	family['family'] = list()
+	for samples in os.listdir(run):
+		print("#[INFO] samples ", samples)
+		if samples in trio and os.path.isdir(osj(run, samples)):
+			samp = {}
+			tagfile = systemcall('find '+osj(run, samples)+' -maxdepth 2  -name "'+samples+'.tag"')[0]
+			if not tagfile:
+				#TODO search ped file
+				print("WARNING no tag file in sample "+ samples)
+			else:
+				with open(tagfile, 'r') as t:
+					for lines in t:
+						whole = lines.strip().split('!')
+						print(whole)
+						for tag in whole:
+							if 'SEX' in tag and '_' in tag:
+								sex = tag.split('_')[-1]
+								samp[samples]['sex'] = sex
+							elif 'SEX' in tag and '#' in tag:
+								sex = tag.split('#')[-1]
+								#family['family'][samples]['sex'] = sex
+							#MOTHER, FOETUS, FATHER
+							elif 'FOETAL' in tag:
+								print(tag)
+								fam = tag.split('#')[-1]
+								if fam == 'FOETUS':
+									family['foetus'] = samp
+								else:
+									samp['affinity'] = fam.lower()
+									family['family'].append(samp)
+			#Looking for bam files
+			bamfile = systemcall('find '+osj(run, samples)+' -maxdepth 3 -name "*.bwamem.bam" ! -name "*.validation.*"')[0]
+			samp['bam'] = bamfile
+			if not bamfile:
+				print("ERROR no bam file in sample "+samples+" exit !")
+				exit()
+			vcfile = systemcall('find '+osj(run, samples)+' -maxdepth 3 -name "'+samples+'.final.vcf"')[0]
+			samp['vcf'] = vcfile
+			samp['sample'] = samples
+			if not vcfile:
+				print("ERROR no vcf file in sample "+samples+" exit !")
+				exit()
+			#family['family'] = samp
+	bed = getbed(run)
+	
+	family['env'] = {}
+	family['env']["output"] = "/app/res"
+	family['env']["genome"] = genome
+	family['env']["bed"] = bed
+	
+	
+	json = writejson(family, output)
+	return json
+
+
+
+
+
+
+
+
 
 def vcfTodataframe(file, rheader=False):
 	'''
@@ -327,13 +411,13 @@ rule all:
 		bgzip = config["tools"]["bgzip"],
 		tabix = config["tools"]["tabix"]
 	input:
-		sample_vcf = expand(output+"/{sample}.final.vcf",sample=config["analysis"]["sample"]),
-		pool_vcf = expand(output+"/{poolname}.pool.vcf",poolname=pool_name)
+		family_vcf = expand(output+"/{sample}.final.vcf",sample=config["family"]["sample"]),
+		foetus_vcf = expand(output+"/pool.final.vcf")
 	log:
 		log+"/all.log"
 	shell:
 		"""
-			for file in {input.sample_vcf};
+			for file in {input.family_vcf};
 			do
 				{params.bgzip} --force $file && {params.tabix} -p vcf $file.gz
 			done;
@@ -348,9 +432,9 @@ rule all:
 
 rule paste_vcf_pool:
 	input:
-		lambda wildcards: pool_name[wildcards.poolname]
+		foetus = config['foetus']['vcf']
 	output:
-		temp(output+"/{poolname}.pool.vcf")
+		temp(output+"/pool.vcf")
 	shell:
 		"""
 			cp {input} {output}
@@ -418,14 +502,14 @@ rule copy_vcf_pool:
 		bcftools = config["tools"]["bcftools"],
 		output = config["analysis"]["output"]
 	input:
-		lambda wildcards: config["analysis"]["pool"][wildcards.pool]["vcf"]
+		foetus = config['foetus']['vcf']
 	output:
-		tmp = temp(output+"/{pool}.pool.renamed.vcf")
+		tmp = temp(output+"/pool.renamed.vcf")
 	log:
-		log+"/{pool}.bcftools.log"
+		log+"/pool.bcftools.log"
 	shell:
 		"""
-			sed "s/$(grep '^#CHROM' {input} | awk -F'\t' '{{print $10}}')/{wildcards.pool}/g" {input} | {params.bcftools} annotate --remove "^INFO/FindByPipelines,INFO/GenotypeConcordance" > {output.tmp} 2>> {log}
+			{params.bcftools} annotate --remove "^INFO/FindByPipelines,INFO/GenotypeConcordance" > {output.tmp} 2>> {log}
 		"""
 
 rule copy_vcf_sample:
@@ -461,9 +545,7 @@ rule merge_vcf:
 		bcftools=config["tools"]["bcftools"]
 	input:
 		sample_vcf = output+"/{sample}.sample.renamed.vcf.gz",
-		sample_vcf_tbi = output+"/{sample}.sample.renamed.vcf.gz.tbi",
-		pool_vcf = expand(output+"/{pool}.pool.renamed.vcf.gz", pool=config["analysis"]["pool"]),
-		pool_vcf_tbi = expand(output+"/{pool}.pool.renamed.vcf.gz.tbi", pool=config["analysis"]["pool"])
+		pool_vcf = output+"/pool.renamed.vcf.gz"
 	output:
 		output+"/{sample}.merged.vcf"
 	log:
@@ -473,19 +555,19 @@ rule merge_vcf:
 			{params.bcftools} merge {input.sample_vcf} {input.pool_vcf} -o {output} 2>> {log}
 		"""
 
-rule howard_trio:
-	params:
-		howard = config["tools"]["howard"]
-	input:
-		output+"/{sample}.merged.vcf"
-	output:
-		output+"/{sample}.trio.howard.vcf"
-	log:
-		log+"/{sample}.howard.log"
-	shell:
-		"""
-			{params.howard} --input={input} --output={output} --calculation=BARCODE --trio=POOL_M,POOL_F,{wildcards.sample} &>> {log}
-		"""
+#rule howard_trio:
+#	params:
+#		howard = config["tools"]["howard"]
+#	input:
+#		output+"/{sample}.merged.vcf"
+#	output:
+#		output+"/{sample}.trio.howard.vcf"
+#	log:
+#		log+"/{sample}.howard.log"
+#	shell:
+#		"""
+#			{params.howard} --input={input} --output={output} --calculation=BARCODE --trio=POOL_M,POOL_F,{wildcards.sample} &>> {log}
+#		"""
 
 rule normalize_vcf:
 	params:
@@ -526,19 +608,6 @@ rule sort_vcf:
 			grep "^#" {input} > {output} && grep -v "^#" {input} | sort -k1,1V -k2,2n >> {output}
 		"""
 
-#rule sort_vcf:
-#	params:
-#		bcftools = config["tools"]["bcftools"]
-#	input:
-#		output+"/{sample}.trio.howard.norm.uniq.vcf"
-#	output:
-#		output+"/{sample}.trio.howard.norm.uniq.sorted.vcf"
-#	log:
-#		log+"/{sample}.bcftools.sorted.log"
-#	shell:
-#		"""
-#			{params.bcftools} sort -o {output} {input}
-#		"""
 
 rule depth_of_coverage_v2:
 	params:
@@ -549,7 +618,7 @@ rule depth_of_coverage_v2:
 	input:
 		genome  = config["analysis"]["genome"],
 		bed     = config["analysis"]["bed"],
-		bam     = lambda wildcards: config["analysis"]["pool"][wildcards.pool]["bam"]
+		bam     = config["family"]["bam"]
 	output:
 		temp(output+"/{pool}.gatk.cov"),
 		temp(output+"/{pool}.gatk.cov.sample_cumulative_coverage_counts"),
