@@ -416,8 +416,8 @@ def run_varank_results_provider(varank_processing_tsv_folder, run_depository, ru
 					os.mkdir(varank_repository)
 				if not os.path.isdir(varank_depository):
 					os.mkdir(varank_depository)
-				run_repository_sample_folder_varank_folder = os.path.join(varank_repository, os.path.basename(sample_folder) + '_' + date + '_VARANK', '')
-				run_depository_sample_folder_varank_folder = os.path.join(varank_depository, os.path.basename(sample_folder) + '_' + date + '_VARANK', '')
+				run_repository_sample_folder_varank_folder = os.path.join(varank_repository, os.path.basename(sample_folder) + '_' + date, '')
+				run_depository_sample_folder_varank_folder = os.path.join(varank_depository, os.path.basename(sample_folder) + '_' + date, '')
 				if os.path.basename(tsv_file).startswith('fam'):
 					test = re.search(r'(?<=_)(.*?)(?=_[a-zA-Z0-9\.]+.tsv)', os.path.basename(tsv_file)).group(0)
 					if test == os.path.basename(sample_folder):

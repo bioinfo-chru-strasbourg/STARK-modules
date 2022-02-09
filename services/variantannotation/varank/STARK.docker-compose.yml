@@ -44,6 +44,8 @@ services:
         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}:${DOCKER_STARK_INNER_FOLDER_CONFIG}:rw
         # Volumes for databases
         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
+        # File for developing, to comment if not used
+        #- /home1/bin/STARK-modules/current/services/variantannotation/varank/cli/dockerfile/bin/newVaRank.py:/tools/varank/current/scripts/newVaRank.py:rw
         networks: 
             - ${DOCKER_STARK_MAIN_NETWORK}
 
@@ -51,8 +53,8 @@ services:
     stark-module-variantannotation-submodule-varank-service-listener:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE}
         # build:
-        #     context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE_CONTEXT}
-        #     dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE_CONTEXT_DOCKERFILE}
+        # context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE_CONTEXT}
+        # dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE_CONTEXT_DOCKERFILE}
         container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_NAME}
         entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_ENTRYPOINT}
         command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_COMMAND}
