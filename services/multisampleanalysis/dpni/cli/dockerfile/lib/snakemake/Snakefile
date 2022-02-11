@@ -13,6 +13,7 @@ from collections import OrderedDict, defaultdict
 import re
 import pandas as pd
 from multiprocessing import Pool
+import json
 
 ###### DEV DPNI MODULE
 def systemcall(command):
@@ -38,6 +39,7 @@ def configure(run, trio, genome, tools, output):
 	family = {}
 	family['tools'] = tools
 	family['family'] = list()
+	family['process'] = list()
 	for samples in os.listdir(run):
 		print("#[INFO] samples ", samples)
 		if samples in trio and os.path.isdir(osj(run, samples)):
@@ -54,9 +56,10 @@ def configure(run, trio, genome, tools, output):
 						for tag in whole:
 							if 'SEX' in tag and '_' in tag:
 								sex = tag.split('_')[-1]
-								samp[samples]['sex'] = sex
+								samp['sex'] = sex
 							elif 'SEX' in tag and '#' in tag:
 								sex = tag.split('#')[-1]
+								samp['sex'] = sex
 								#family['family'][samples]['sex'] = sex
 							#MOTHER, FOETUS, FATHER
 							elif 'FOETAL' in tag:
@@ -79,6 +82,11 @@ def configure(run, trio, genome, tools, output):
 			if not vcfile:
 				print("ERROR no vcf file in sample "+samples+" exit !")
 				exit()
+			if 'affinity' in samp:
+				s = {}
+				s[samples] = {}
+				s[samples]['bam'] = bamfile
+				family['process'].append(s)
 			#family['family'] = samp
 	bed = getbed(run)
 	
@@ -87,15 +95,9 @@ def configure(run, trio, genome, tools, output):
 	family['env']["genome"] = genome
 	family['env']["bed"] = bed
 	
-	
+
 	json = writejson(family, output)
 	return json
-
-
-
-
-
-
 
 
 
@@ -345,27 +347,33 @@ def parseSpeed(covfiles, df, col):
 	pd.set_option('mode.chained_assignment', None)
 	
 	final = []
-	print("#[INFO] chr"+covfiles)
+	print("#[INFO] chr "+covfiles)
 	#print("#[INFO] Chrcov "+covfiles)
 	data = []
 	#read cov file results from gatk depth coverage
 	tmp = pd.read_csv(covfiles, sep='\t', names=col)
 
+	#print(tmp.columns)
+	#print(tmp.head())
 	#chr number
 	chr = os.path.basename(covfiles)[7:]
-	cov = tmp.loc[tmp['Locus_F'].str.startswith(chr+':')]#.to_dict('records')
+	cov = tmp.loc[tmp['Locus'].str.startswith(chr+':')]#.to_dict('records')
 
 	df_tmp = df.loc[df['#CHROM'] == chr]
+	#print(df_tmp.head())
 
 	df_tmp.loc[:, 'find'] = df.loc[:,'#CHROM'].astype(str)+':'+df.loc[:,'POS'].astype(str)
-	final_tmp = pd.DataFrame(columns=col)
-	for var in df_tmp['find']:
-		#print(var)
-		final_tmp = final_tmp.append(cov.loc[cov['Locus_F'].str.contains(var)], ignore_index=True)
+	print(df_tmp.head())
+	print("#[INFO] COV df ", cov.head())
+	final_tmp = []
+	for values in df_tmp['find']:
+		final_tmp.append(cov.loc[cov['Locus'].str.contains(values)])
 			#final_tmp.append(cov[cov['Locus_F'].str.contains(var)])
-	
+	print("#[INFO] list match ", final_tmp[0:5])
 	#print(final_tmp.head())
-	final = final_tmp.to_dict('records')
+	df_tmp = pd.concat(final_tmp, axis=1).T
+	print("222222", df_tmp.head())
+	final = df_tmp.to_dict('records')
 	print("#[INFO] Length variants "+os.path.basename(covfiles), len(final))
 	
 	return final
@@ -391,12 +399,21 @@ def writejson(d,f):
 	with open(f, 'w') as outfile:
 		json.dump(d, outfile, indent=4)
 
-output = config["analysis"]["output"]
-log = output+"/.log"
-pool_name = get_pool_name(config["analysis"]["pool"])
 
-if "thread" in config["analysis"]:
-	nbCPU =  config["analysis"]["thread"]
+
+
+#Prerequisites
+
+	#trio = ["ADN2104279", "ADN2104278", "ASG184957"]
+	#configure(config['run'], trio, "/STARK/databases/genomes/current/hg19.fa", "/app/res")
+#configfile: "/app/res/analysis.json"
+onstart: print(config)
+output = config["env"]["output"]
+log = output+"/.log"
+#pool_name = get_pool_name(config["analysis"]["pool"])
+
+if "threads" in config["tools"]:
+	nbCPU =  config["tools"]["threads"]
 else:
 	if multiprocessing.cpu_count() > 2:
 		nbCPU = multiprocessing.cpu_count()-1
@@ -411,22 +428,12 @@ rule all:
 		bgzip = config["tools"]["bgzip"],
 		tabix = config["tools"]["tabix"]
 	input:
-		family_vcf = expand(output+"/{sample}.final.vcf",sample=config["family"]["sample"]),
 		foetus_vcf = expand(output+"/pool.final.vcf")
 	log:
 		log+"/all.log"
 	shell:
 		"""
-			for file in {input.family_vcf};
-			do
-				{params.bgzip} --force $file && {params.tabix} -p vcf $file.gz
-			done;
-
-			for file in {input.pool_vcf};
-			do
-				renamedext=$(echo $file | sed s/.pool.vcf/.final.vcf/g)
-				{params.bgzip} -c $file > $renamedext.gz
-			done;
+			{params.bgzip} --force {input} && {params.tabix} -p vcf {input.gz}
 		"""
 
 
@@ -434,7 +441,7 @@ rule paste_vcf_pool:
 	input:
 		foetus = config['foetus']['vcf']
 	output:
-		temp(output+"/pool.vcf")
+		output+"/pool.vcf"
 	shell:
 		"""
 			cp {input} {output}
@@ -442,11 +449,11 @@ rule paste_vcf_pool:
 
 rule add_info:
 	input:
-		vcf = output+"/{sample}.trio.howard.norm.uniq.sorted.vcf",
+		vcf = output+"/pool.norm.sorted.vcf",
 		cov = output+"/all.gatk.cov"
 	output:
-		vcf = temp(output+"/{sample}.final.vcf")
-	threads: config['threads']
+		vcf = temp(output+"/pool.final.vcf")
+	threads: config['tools']['threads']
 	run:
 		subprocess.call("mkdir -p "+output.vcf+".dict", shell=True)
 		subprocess.call("awk -F \":\" '{print $0 >> (\""+output.vcf+".dict/COVFILE\" $1)}' "+input.cov, shell=True)
@@ -458,13 +465,13 @@ rule add_info:
 		unique = uniqueChr(df)
 		list_var = []
 		
-		col = ['Locus_F', 'Total_Depth_F', 'Average_Depth_sample_F', 'POOL_F_Depth', 'POOL_F_base_counts', 'Locus_M', 'Total_Depth_M', 'Average_Depth_sample_M', 'POOL_M_Depth', 'POOL_M_base_counts']
+		col = ['Locus', 'Total_Depth', 'Average_Depth', 'Depth', 'Base_counts']
 		#parse variants by chr to speed up analysis
 		#prepare args for multiprocessing
 		print("#[INFO] Parse variants by chr")
 		list_cov = [(osj(output.vcf+'.dict', covfiles), df, col) for covfiles in os.listdir(output.vcf+'.dict') if not covfiles.startswith('COVFILELocus')]
 		print("#[INFO] chr nbr", len(list_cov))
-		with Pool(config['threads']) as pool:
+		with Pool(config['tools']['threads']) as pool:
 			result = pool.starmap(parseSpeed, list_cov)
 			for locus in result:
 				list_var.extend(locus)
@@ -474,10 +481,11 @@ rule add_info:
 		#frequence annotations
 		frequence = addFrequence(list_var)
 		
-		#denovo filter on merge 
-		denovo = denovoFilter(df, frequence)
-		
-		info = denovo.loc[:, ['POOL_F_Depth', 'POOL_F_base_counts', 'POOL_F_base_frequence', 'POOL_M_Depth', 'POOL_M_base_counts', 'POOL_M_base_frequence', 'denovo_filter']]
+		dfinal = df.merge(frequence, on="POS", how = 'inner')
+		print("#[INFO] length df merge "+str(len(dfinal.index)))
+		print(dfinal.columns)
+		exit()
+		info = frequence.loc[:, ['POOL_F_Depth', 'POOL_F_base_counts', 'POOL_F_base_frequence', 'POOL_M_Depth', 'POOL_M_base_counts', 'POOL_M_base_frequence', 'denovo_filter']]
 
 		for items in list(info.columns):
 			info[items] = items+'='+info[items].astype(str)
@@ -499,26 +507,25 @@ rule add_info:
 
 rule copy_vcf_pool:
 	params:
-		bcftools = config["tools"]["bcftools"],
-		output = config["analysis"]["output"]
+		bcftools = config["tools"]["bcftools"]
 	input:
-		foetus = config['foetus']['vcf']
+		foetus = output+"/pool.vcf"
 	output:
 		tmp = temp(output+"/pool.renamed.vcf")
 	log:
 		log+"/pool.bcftools.log"
 	shell:
 		"""
-			{params.bcftools} annotate --remove "^INFO/FindByPipelines,INFO/GenotypeConcordance" > {output.tmp} 2>> {log}
+			{params.bcftools} annotate --remove "^INFO/FindByPipelines,INFO/GenotypeConcordance" {input} > {output.tmp} 2>> {log}
 		"""
 
 rule copy_vcf_sample:
 	params:
 		bcftools = config["tools"]["bcftools"]
 	input:
-		lambda wildcards: config["analysis"]["sample"][wildcards.sample]["vcf"]
+		lambda wildcards: config["family"][wildcards.sample]["vcf"]
 	output:
-		temp(output+"/{sample}.sample.renamed.vcf")
+		temp(output+"/{sample}.renamed.vcf")
 	log:
 		log+"/{sample}.bcftools.log"
 	shell:
@@ -531,10 +538,10 @@ rule compress_index_vcf:
 		bgzip = config["tools"]["bgzip"],
 		tabix = config["tools"]["tabix"]
 	input:
-		"{w}.renamed.vcf"
+		output+"/{sample}.renamed.vcf"
 	output:
-		gz  = temp("{w}.renamed.vcf.gz"),
-		tbi = temp("{w}.renamed.vcf.gz.tbi")
+		gz  = output+"/{sample}.renamed.vcf.gz",
+		tbi = output+"/{sample}.renamed.vcf.gz.tbi"
 	shell:
 		"""
 			{params.bgzip} -c {input} > {output.gz} && {params.tabix} -p vcf {output.gz}
@@ -544,12 +551,12 @@ rule merge_vcf:
 	params:
 		bcftools=config["tools"]["bcftools"]
 	input:
-		sample_vcf = output+"/{sample}.sample.renamed.vcf.gz",
+		sample_vcf = expand(output+"/{sample}.renamed.vcf.gz", sample=config["family"]),
 		pool_vcf = output+"/pool.renamed.vcf.gz"
 	output:
-		output+"/{sample}.merged.vcf"
+		output+"/pool.merged.vcf"
 	log:
-		log+"/{sample}.bcftools.log"
+		log+"/pool.bcftools.log"
 	shell:
 		"""
 			{params.bcftools} merge {input.sample_vcf} {input.pool_vcf} -o {output} 2>> {log}
@@ -572,37 +579,38 @@ rule merge_vcf:
 rule normalize_vcf:
 	params:
 		bcftools = config["tools"]["bcftools"],
-		genome = config["analysis"]["genome"]
+		genome = config["env"]["genome"]
 	input:
-		output+"/{sample}.trio.howard.vcf"
+		output+"/pool.merged.vcf"
 	output:
-		temp(output+"/{sample}.trio.howard.norm.vcf")
+		temp(output+"/pool.norm.vcf")
 	log:
-		log+"/{sample}.bcftools.log"
+		log+"/pool.bcftools.normalize.log"
 	shell:
 		"""
 			{params.bcftools} norm -m-any {input} | {params.bcftools} norm -d none -f {params.genome} -o {output} 2>> {log}
 		"""
 
-rule uniq_trio:
-	params:
-		bcftools=config["tools"]["bcftools"]
-	input:
-		output+"/{sample}.trio.howard.norm.vcf"
-	output:
-		temp(output+"/{sample}.trio.howard.norm.uniq.vcf")
-	log:
-		log+"/{sample}.bcftools.log"
-	shell:
-		"""
-			{params.bcftools} view -s {wildcards.sample} {input} | grep -v '^##HOWARD' > {output} 2>> {log}
-		"""
+#only for multiple in trio in batch
+#rule uniq_trio:
+#	params:
+#		bcftools=config["tools"]["bcftools"]
+#	input:
+#		output+"/pool.norm.vcf"
+#	output:
+#		temp(output+"/pool.norm.uniq.vcf")
+#	log:
+#		log+"/pool.bcftools.log"
+#	shell:
+#		"""
+#			{params.bcftools} view -s {wildcards.sample} {input} | grep -v '^##HOWARD' > {output} 2>> {log}
+#		"""
 
 rule sort_vcf:
 	input:
-		output+"/{sample}.trio.howard.norm.uniq.vcf"
+		output+"/pool.norm.vcf"
 	output:
-		output+"/{sample}.trio.howard.norm.uniq.sorted.vcf"
+		output+"/pool.norm.sorted.vcf"
 	shell:
 		"""
 			grep "^#" {input} > {output} && grep -v "^#" {input} | sort -k1,1V -k2,2n >> {output}
@@ -616,17 +624,18 @@ rule depth_of_coverage_v2:
 		java    = config["tools"]["java"],
 		gatk    = config["tools"]["gatk"]
 	input:
-		genome  = config["analysis"]["genome"],
-		bed     = config["analysis"]["bed"],
-		bam     = config["family"]["bam"]
+		genome  = config["env"]["genome"],
+		bed     = config["env"]["bed"],
+		bam     = config["foetus"]["bam"]
+		
 	output:
-		temp(output+"/{pool}.gatk.cov"),
-		temp(output+"/{pool}.gatk.cov.sample_cumulative_coverage_counts"),
-		temp(output+"/{pool}.gatk.cov.sample_cumulative_coverage_proportions"),
-		temp(output+"/{pool}.gatk.cov.sample_statistics"),
-		temp(output+"/{pool}.gatk.cov.sample_summary")
+		temp(output+"/foetus.gatk.cov"),
+		temp(output+"/foetus.gatk.cov.sample_cumulative_coverage_counts"),
+		temp(output+"/foetus.gatk.cov.sample_cumulative_coverage_proportions"),
+		temp(output+"/foetus.gatk.cov.sample_statistics"),
+		temp(output+"/foetus.gatk.cov.sample_summary")
 	log:
-		log+"/{pool}.gatk.cov.log"
+		log+"/foetus.gatk.cov.log"
 	shell:
 		"""
 			{params.java} -jar {params.gatk} -nt {params.cpu} -omitIntervals -T DepthOfCoverage -R {input.genome} -o {output[0]} -I {input.bam} --includeDeletions --minMappingQuality 10 --printBaseCounts -L {input.bed} --interval_padding {params.padding} &>> {log};
@@ -634,20 +643,20 @@ rule depth_of_coverage_v2:
 
 rule rename_pool_coverage_v2:
 	input:
-		output+"/{pool}.gatk.cov"
+		output+"/foetus.gatk.cov"
 	output:
-		temp(output+"/{pool}.gatk.renamed.cov")
+		temp(output+"/all.gatk.cov")
 	shell:
 		"""
-			sed '1 s/^.*$/Locus\tTotal_Depth\tAverage_Depth_sample\t{wildcards.pool}_Depth\t{wildcards.pool}_base_counts/' {input} > {output}
+			sed '1 s/^.*$/Locus\tTotal_Depth\tAverage_Depth\tDepth\tBase_counts/' {input} > {output}
 		"""
 
-rule merge_coverage_v2:
-	input:
-		expand(output+"/{pool}.gatk.renamed.cov", pool=config["analysis"]["pool"])
-	output:
-		output+"/all.gatk.cov"
-	shell:
-		"""
-			paste {input} > {output}
-		"""
+#rule merge_coverage_v2:
+#	input:
+#		expand(output+"/{sample}.gatk.renamed.cov", sample=config["family"])
+#	output:
+#		output+"/all.gatk.cov"
+#	shell:
+#		"""
+#			paste {input} > {output}
+#		"""
