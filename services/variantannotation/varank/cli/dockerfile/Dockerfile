@@ -29,7 +29,7 @@ RUN yum -y update && yum -y install  epel-release && yum -y group install 'Devel
 # tools installation
 # PYTHON 3.8.5
 RUN cd /usr/src; \
-	wget "https://www.python.org/ftp/python/3.8.5/Python-3.8.5.tgz"; \
+	wget --no-check-certificate "https://www.python.org/ftp/python/3.8.5/Python-3.8.5.tgz"; \
 	tar xzf Python-3.8.5.tgz; \
 	rm -f Python-3.8.5.tgz; \
 	cd Python-3.8.5; \
@@ -39,7 +39,7 @@ RUN cd /usr/src; \
 RUN pip3 install pandas
 				
 # TCL
-RUN wget "https://sourceforge.net/projects/tcl/files/Tcl/8.6.9/tcl8.6.9-src.tar.gz/download?use_mirror=netcologne"; \
+RUN wget --no-check-certificate "https://sourceforge.net/projects/tcl/files/Tcl/8.6.9/tcl8.6.9-src.tar.gz/download?use_mirror=netcologne"; \
 	tar -xf download?use_mirror=netcologne; \
 	rm -f download?use_mirror=netcologne; \
 	cd tcl8.6.9/unix; \
@@ -58,7 +58,7 @@ RUN yum -y install java-11-openjdk
 RUN mkdir /tools; \
 	mkdir /tools/varank; \
 	cd /tools/varank; \
-	wget "http://www.lbgi.fr/VaRank/Sources/VaRank_1.4.3.tar.gz"; \
+	wget --no-check-certificate "http://www.lbgi.fr/VaRank/Sources/VaRank_1.4.3.tar.gz"; \
 	tar -xvf VaRank_1.4.3.tar.gz; \
 	rm -rf VaRank_1.4.3.tar.gz; \
 	ln -s VaRank_1.4.3 current; \
@@ -73,7 +73,7 @@ ENV varank="python3 /tools/varank/current/scripts/newVaRank.py"
 # Alamut-Batch
 RUN mkdir /tools/alamut_batch; \
 	cd /tools/alamut_batch; \
-	wget "https://downloads.interactive-biosoftware.com/download.php?product=Alamut-batch-standalone&platform=&OS=Linux&version=1.11"; \
+	wget --no-check-certificate "https://downloads.interactive-biosoftware.com/download.php?product=Alamut-batch-standalone&platform=&OS=Linux&version=1.11"; \
 	tar -xvf download.php?product=Alamut-batch-standalone\&platform=\&OS=Linux\&version=1.11; \
 	rm -rf download.php?product=Alamut-batch-standalone\&platform=\&OS=Linux\&version=1.11; \
 	ln -s alamut-batch-standalone-1.11 current; \
