@@ -239,8 +239,9 @@ def addFrequence(listvar):
 	#print('sep')
 	#print(listvar[-5:-1])
 	df = pd.DataFrame(listvar)
+
 	#df.sort_values(by=['#CHROM', 'POS'], ascending=[False, True], key=lambda x: np.argsort(index_natsorted(df['#CHROM'] 
-	
+	print(df.head())
 	data = []
 	sex = ['F', 'M']
 	#print(df.columns)
@@ -248,30 +249,30 @@ def addFrequence(listvar):
 	for i, values in df.iterrows():
 		#print(values)
 		last = {}
-		last['#CHROM'] = values['Locus_F'].strip().split(':')[0]
-		last['POS'] = values['Locus_F'].strip().split(':')[1]
-		for gender in sex:
-			tmp = values['POOL_'+gender+'_base_counts'].strip().split()
-			tmp_data = {}
-			tmp2_data = {}
-			for bases in tmp:
-				base = bases.split(':')
-				tmp_data[base[0]] = base[1]
-				#print(tmp_data)
-			for count in tmp_data.items():
-				#print(count)
-				try:
-					tmp2_data[count[0]] = str(round(float(count[1]) / values['Total_Depth_'+gender], 2))
-				except:
-					print("#[INFO] Depth is 0 for "+gender+" pool", values['Locus_F'])
-					tmp2_data[count[0]] = "0"
-					
-			count = '|'.join(':'.join((key,val)) for (key,val) in tmp_data.items())
-			freq = '|'.join(':'.join((key,val)) for (key,val) in tmp2_data.items())
-			
-			last['POOL_'+gender+'_Depth'] = values['POOL_'+gender+'_Depth']
-			last['POOL_'+gender+'_base_counts'] = count
-			last['POOL_'+gender+'_base_frequence'] = freq
+		last['#CHROM'] = values['Locus'].strip().split(':')[0]
+		last['POS'] = values['Locus'].strip().split(':')[1]
+		
+		tmp = values['Base_counts'].strip().split()
+		tmp_data = {}
+		tmp2_data = {}
+		for bases in tmp:
+			base = bases.split(':')
+			tmp_data[base[0]] = base[1]
+			#print(tmp_data)
+		for count in tmp_data.items():
+			#print(count)
+			try:
+				tmp2_data[count[0]] = str(round(float(count[1]) / values['Total_Depth'], 2))
+			except:
+				print("#[INFO] Depth is 0 for ", values['Locus'])
+				tmp2_data[count[0]] = "0"
+				
+		count = '|'.join(':'.join((key,val)) for (key,val) in tmp_data.items())
+		freq = '|'.join(':'.join((key,val)) for (key,val) in tmp2_data.items())
+		
+		last['Depth'] = values['Depth']
+		last['Base_counts'] = count
+		last['Base_frequence'] = freq
 			
 		data.append(last)
 	final = pd.DataFrame(data)
@@ -361,19 +362,24 @@ def parseSpeed(covfiles, df, col):
 
 	df_tmp = df.loc[df['#CHROM'] == chr]
 	#print(df_tmp.head())
+	
 
 	df_tmp.loc[:, 'find'] = df.loc[:,'#CHROM'].astype(str)+':'+df.loc[:,'POS'].astype(str)
-	print(df_tmp.head())
-	print("#[INFO] COV df ", cov.head())
+
+	print("INFO DF_TMP ", df_tmp)
+	print(df_tmp.columns)
+	exit()
+	#print("#[INFO] COV df ", cov.head())
 	final_tmp = []
 	for values in df_tmp['find']:
 		final_tmp.append(cov.loc[cov['Locus'].str.contains(values)])
 			#final_tmp.append(cov[cov['Locus_F'].str.contains(var)])
-	print("#[INFO] list match ", final_tmp[0:5])
+
 	#print(final_tmp.head())
-	df_tmp = pd.concat(final_tmp, axis=1).T
-	print("222222", df_tmp.head())
-	final = df_tmp.to_dict('records')
+	df_tmp = pd.concat(final_tmp, axis=1)
+	print(df_tmp.head())
+	exit()
+	#final = df_tmp.to_dict('records')
 	print("#[INFO] Length variants "+os.path.basename(covfiles), len(final))
 	
 	return final
@@ -476,10 +482,13 @@ rule add_info:
 			for locus in result:
 				list_var.extend(locus)
 
-		
+		#print("#[INFO] LISTVAR ", list_var)
+		#result = pd.concat(list_var, axis=1, ignore_index=True)
 		print("#[INFO] Process annotations")
 		#frequence annotations
 		frequence = addFrequence(list_var)
+		print(frequence.head())
+		print(frequence.columns)
 		
 		dfinal = df.merge(frequence, on="POS", how = 'inner')
 		print("#[INFO] length df merge "+str(len(dfinal.index)))
@@ -559,7 +568,7 @@ rule merge_vcf:
 		log+"/pool.bcftools.log"
 	shell:
 		"""
-			{params.bcftools} merge {input.sample_vcf} {input.pool_vcf} -o {output} 2>> {log}
+			{params.bcftools} merge -m none {input.sample_vcf} {input.pool_vcf} -o {output} 2>> {log}
 		"""
 
 #rule howard_trio:
