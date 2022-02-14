@@ -238,10 +238,9 @@ def addFrequence(listvar):
 	#print(listvar[0:10])
 	#print('sep')
 	#print(listvar[-5:-1])
-	df = pd.DataFrame(listvar)
 
 	#df.sort_values(by=['#CHROM', 'POS'], ascending=[False, True], key=lambda x: np.argsort(index_natsorted(df['#CHROM'] 
-	print(df.head())
+	
 	data = []
 	sex = ['F', 'M']
 	#print(df.columns)
@@ -377,8 +376,7 @@ def parseSpeed(covfiles, df, col):
 
 	#print(final_tmp.head())
 	df_tmp = pd.concat(final_tmp, axis=1)
-	print(df_tmp.head())
-	exit()
+
 	#final = df_tmp.to_dict('records')
 	print("#[INFO] Length variants "+os.path.basename(covfiles), len(final))
 	
@@ -486,7 +484,8 @@ rule add_info:
 		#result = pd.concat(list_var, axis=1, ignore_index=True)
 		print("#[INFO] Process annotations")
 		#frequence annotations
-		frequence = addFrequence(list_var)
+		df = pd.concat(list_var)
+		frequence = addFrequence(df)
 		print(frequence.head())
 		print(frequence.columns)
 		
