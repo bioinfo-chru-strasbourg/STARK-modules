@@ -204,7 +204,7 @@ rule merge_vcf:
 		log+"/{sample}.bcftools.log"
 	shell:
 		"""
-			{params.bcftools} merge {input.sample_vcf} {input.pool_vcf} -o {output} 2>> {log}
+			{params.bcftools} merge -m none {input.sample_vcf} {input.pool_vcf} -o {output} 2>> {log}
 		"""
 
 rule howard_trio:
