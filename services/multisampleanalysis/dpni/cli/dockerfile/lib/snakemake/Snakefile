@@ -234,15 +234,10 @@ def parseFile(folder, df, unique):
 	return final
 	#time.sleep(10)
 
-def addFrequence(listvar):
-	#print(listvar[0:10])
-	#print('sep')
-	#print(listvar[-5:-1])
-
+def addFrequence(df):
 	#df.sort_values(by=['#CHROM', 'POS'], ascending=[False, True], key=lambda x: np.argsort(index_natsorted(df['#CHROM'] 
 	
 	data = []
-	sex = ['F', 'M']
 	#print(df.columns)
 	#print(df.head())
 	for i, values in df.iterrows():
@@ -344,9 +339,10 @@ def parseSpeed(covfiles, df, col):
 	input: folder containing cov depth file by chr, vcf of the sample and list of unique chr
 	'''
 	#hide warning
+
 	pd.set_option('mode.chained_assignment', None)
 	
-	final = []
+	
 	print("#[INFO] chr "+covfiles)
 	#print("#[INFO] Chrcov "+covfiles)
 	data = []
@@ -358,28 +354,61 @@ def parseSpeed(covfiles, df, col):
 	#chr number
 	chr = os.path.basename(covfiles)[7:]
 	cov = tmp.loc[tmp['Locus'].str.startswith(chr+':')]#.to_dict('records')
+	print("INFO COV", cov.head())
 
 	df_tmp = df.loc[df['#CHROM'] == chr]
 	#print(df_tmp.head())
 	
 
-	df_tmp.loc[:, 'find'] = df.loc[:,'#CHROM'].astype(str)+':'+df.loc[:,'POS'].astype(str)
+	df_tmp.loc[:, 'Locus'] = df.loc[:,'#CHROM'].astype(str)+':'+df.loc[:,'POS'].astype(str)
 
-	print("INFO DF_TMP ", df_tmp)
-	print(df_tmp.columns)
-	exit()
-	#print("#[INFO] COV df ", cov.head())
-	final_tmp = []
-	for values in df_tmp['find']:
-		final_tmp.append(cov.loc[cov['Locus'].str.contains(values)])
-			#final_tmp.append(cov[cov['Locus_F'].str.contains(var)])
 
-	#print(final_tmp.head())
-	df_tmp = pd.concat(final_tmp, axis=1)
-
-	#final = df_tmp.to_dict('records')
-	print("#[INFO] Length variants "+os.path.basename(covfiles), len(final))
 	
+	#print("#[INFO] COV df ", cov.head())
+	
+	#for values in df_tmp['find']:
+	#final_tmp = cov.loc[cov['Locus'].isin(df_tmp['Locus'].to_list())]
+	#print("INFO list locus", len(df_tmp['Locus'].to_list()))
+	#print("FINAL TMP ", final_tmp.head())
+	#print("INFO final (locus) ", len(final_tmp.index))
+
+	#print(df_tmp['find'].to_list()[0:5])
+	#print(len(df_tmp['find'].to_list()))
+	#final_tmp = []
+	#for var in df_tmp['find']:
+	#	#print(var)
+	#	final_tmp.append(cov.loc[cov['Locus'].str.contains(var)])
+	df_tmp = df_tmp.set_index('Locus')
+	cov = cov.set_index('Locus')
+
+	print(cov.head())
+	
+	print("INFO DF_TMP "+covfiles, df_tmp)
+	print("INFO length dftmp ", len(df_tmp.index))
+	#final_tmp = df_tmp.merge(cov, on='Locus', how='left')
+
+	final = df_tmp.merge(cov, left_index=True, right_index=True, how='left')
+
+	#print("INFO FINALTMP list ", len(final_tmp))
+	#print(final_tmp[0:5])
+	
+
+
+
+	#final = pd.concat(final_tmp, axis=1, ignore_index=True)
+	#print("INFO LEN "+covfiles+" "+str(len(final.index)))
+	#print("INFO FINALTMP ", final)
+	#tmp = pd.concat(final_tmp, axis=1)
+	#print("INFO TMP ",tmp)
+	
+	#final = pd.merge(df_tmp, tmp, on=['Locus'])
+	final.reset_index(level=0, inplace=True)
+	final.insert(10, "Locus", final['Locus'])
+	final = final.iloc[:, 1:]
+	print("#[INFO] Length variants "+os.path.basename(covfiles), len(final.index))
+	print("COUCOU ",final.columns)
+	print(final.head())
+	exit()
 	return final
 
 def parse(dico):
@@ -432,7 +461,7 @@ rule all:
 		bgzip = config["tools"]["bgzip"],
 		tabix = config["tools"]["tabix"]
 	input:
-		foetus_vcf = expand(output+"/pool.final.vcf")
+		foetus_vcf = expand(output+"/{sample}.final.vcf", sample=config['family'])
 	log:
 		log+"/all.log"
 	shell:
@@ -453,10 +482,10 @@ rule paste_vcf_pool:
 
 rule add_info:
 	input:
-		vcf = output+"/pool.norm.sorted.vcf",
+		vcf = output+"/{sample}.norm.uniq.sorted.vcf",
 		cov = output+"/all.gatk.cov"
 	output:
-		vcf = temp(output+"/pool.final.vcf")
+		vcf = temp(output+"/{sample}.final.vcf")
 	threads: config['tools']['threads']
 	run:
 		subprocess.call("mkdir -p "+output.vcf+".dict", shell=True)
@@ -474,22 +503,25 @@ rule add_info:
 		#prepare args for multiprocessing
 		print("#[INFO] Parse variants by chr")
 		list_cov = [(osj(output.vcf+'.dict', covfiles), df, col) for covfiles in os.listdir(output.vcf+'.dict') if not covfiles.startswith('COVFILELocus')]
+		print("INFO LISTCV", list_cov)
 		print("#[INFO] chr nbr", len(list_cov))
 		with Pool(config['tools']['threads']) as pool:
 			result = pool.starmap(parseSpeed, list_cov)
 			for locus in result:
-				list_var.extend(locus)
+				list_var.append(locus)
 
 		#print("#[INFO] LISTVAR ", list_var)
 		#result = pd.concat(list_var, axis=1, ignore_index=True)
 		print("#[INFO] Process annotations")
 		#frequence annotations
-		df = pd.concat(list_var)
-		frequence = addFrequence(df)
-		print(frequence.head())
-		print(frequence.columns)
+		metrics = pd.concat(list_var)
+
+
+		frequence = addFrequence(metrics)
+		print(metrics.head())
+		print(metrics.columns)
 		
-		dfinal = df.merge(frequence, on="POS", how = 'inner')
+		dfinal = pd.merge(frequence, on="POS", how = 'inner')
 		print("#[INFO] length df merge "+str(len(dfinal.index)))
 		print(dfinal.columns)
 		exit()
@@ -562,9 +594,9 @@ rule merge_vcf:
 		sample_vcf = expand(output+"/{sample}.renamed.vcf.gz", sample=config["family"]),
 		pool_vcf = output+"/pool.renamed.vcf.gz"
 	output:
-		output+"/pool.merged.vcf"
+		output+"/{sample}.merged.vcf"
 	log:
-		log+"/pool.bcftools.log"
+		log+"/{sample}.bcftools.log"
 	shell:
 		"""
 			{params.bcftools} merge -m none {input.sample_vcf} {input.pool_vcf} -o {output} 2>> {log}
@@ -589,36 +621,37 @@ rule normalize_vcf:
 		bcftools = config["tools"]["bcftools"],
 		genome = config["env"]["genome"]
 	input:
-		output+"/pool.merged.vcf"
+		output+"/{sample}.merged.vcf"
 	output:
-		temp(output+"/pool.norm.vcf")
+		temp(output+"/{sample}.norm.vcf")
 	log:
-		log+"/pool.bcftools.normalize.log"
+		log+"/{sample}.bcftools.normalize.log"
 	shell:
 		"""
 			{params.bcftools} norm -m-any {input} | {params.bcftools} norm -d none -f {params.genome} -o {output} 2>> {log}
 		"""
 
 #only for multiple in trio in batch
-#rule uniq_trio:
-#	params:
-#		bcftools=config["tools"]["bcftools"]
-#	input:
-#		output+"/pool.norm.vcf"
-#	output:
-#		temp(output+"/pool.norm.uniq.vcf")
-#	log:
-#		log+"/pool.bcftools.log"
-#	shell:
-#		"""
-#			{params.bcftools} view -s {wildcards.sample} {input} | grep -v '^##HOWARD' > {output} 2>> {log}
-#		"""
+rule uniq_trio:
+	params:
+		bcftools=config["tools"]["bcftools"]
+	input:
+		output+"/{sample}.norm.vcf",
+
+	output:
+		temp(output+"/{sample}.norm.uniq.vcf")
+	log:
+		log+"/{sample}.bcftools.log"
+	shell:
+		"""
+			{params.bcftools} view -s {wildcards.sample} {input} | grep -v '^##HOWARD' > {output} 2>> {log}
+		"""
 
 rule sort_vcf:
 	input:
-		output+"/pool.norm.vcf"
+		output+"/{sample}.norm.uniq.vcf"
 	output:
-		output+"/pool.norm.sorted.vcf"
+		output+"/{sample}.norm.uniq.sorted.vcf"
 	shell:
 		"""
 			grep "^#" {input} > {output} && grep -v "^#" {input} | sort -k1,1V -k2,2n >> {output}
@@ -627,7 +660,7 @@ rule sort_vcf:
 
 rule depth_of_coverage_v2:
 	params:
-		cpu     = nbCPU//2,
+		cpu     = config["tools"]["threads"],
 		padding = interval_padding,
 		java    = config["tools"]["java"],
 		gatk    = config["tools"]["gatk"]
