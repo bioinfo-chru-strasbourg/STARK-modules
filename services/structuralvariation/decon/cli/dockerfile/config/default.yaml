@@ -1,0 +1,10 @@
+##########################################################################
+# Config Yaml Version:     0.1
+# Description:             Yaml file to run DECON module
+##########################################################################
+
+# DEV version 0.1 : 10/11/2021
+# Authoring : Thomas LAVAUX
+
+# Add here variables that will extend default configuration yaml file.
+# If a variable was already defined in the default configuration yaml file, it will be replace.

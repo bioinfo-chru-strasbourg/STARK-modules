@@ -1,0 +1,19 @@
+
+{
+	"services": {
+		"SCRAMBLE": {
+			"infos": {
+				"name": "SCRAMBLE",
+				"description": "SCRAMBLE analysis",
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (SCRAMBLERunning.txt AND SCRAMBLEComplete.txt) AND (#SCRAMBLE) ))"
+			},
+			"triggers": {
+				"AND":
+				{
+					"file": ["STARKCopyComplete.txt", "!SCRAMBLEComplete.txt", "!SCRAMBLERunning.txt"],
+					"tags": ["#SCRAMBLE"]
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,19 @@
+
+{
+	"services": {
+		"DECON": {
+			"infos": {
+				"name": "DECON module",
+				"description": "DECON analysis",
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (DECONRunning.txt AND DECONComplete.txt) AND (#DECON) ))"
+			},
+			"triggers": {
+				"AND":
+				{
+					"file": ["STARKCopyComplete.txt", "!DECONComplete.txt", "!DECONRunning.txt"],
+					"tags": ["#DECON"]
+				}
+			}
+		}
+	}
+}

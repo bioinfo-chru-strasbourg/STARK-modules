@@ -1,0 +1,753 @@
+##########################################################################
+# Snakemakefile Version:   0.1
+# Description:             Snakemake file to run DECoN module
+##########################################################################
+
+# DEV version 0.1 : 10/11/2021
+# Authoring : Thomas LAVAUX
+
+# TODO catch an exception if the bam files don't have a aligner name ie structure is sample.bam and not sample.aligner.bam
+# Need to figure out a trick to avoid crash
+
+################## Context ##################
+# launch snakemake -s  snakefile_decon -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory (default is data) without / at the end of the path
+# to launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
+# every variable defined in the yaml file can be change
+# separate multiple variable with a space (ex  --config DATA_DIR=runname transProb=0.05 var1=0.05 var2=12)
+# also use option --configfile another.yaml to replace and merge existing config.yaml file variables
+
+# use -p to display shell commands
+# use --lt to display docstrings of rules
+# input file = bam files (if bai is needed, it will be generate)
+# output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of vcf files by design/panel
+
+################## Import libraries ##################
+import os
+import os.path
+import glob
+import pandas as pd
+
+from datetime import datetime
+from shutil import copy2
+from shutil import move
+
+################## Configuration file and PATHS ##################
+configfile: "config_decon.yaml"
+
+# configfile: "/app/config/default.yaml"
+
+# Subdir of module results
+serviceName = config['serviceName']
+
+# Datas directory
+rundir = config['run']
+
+# RefSeq variable
+refseq = config['REFSEQGENE_PATH']
+
+# Refgene variable
+refgene = config['REFGENEFA_PATH']
+
+# Decon dir for R scripts
+decondir = config['DECON_PATH']
+
+# Design.bed or SAMPLE.bed or SAMPLE.aligner.design.bed in STARK folder
+bed_file = config['BED_FILE']
+# Panel.SAMPLE.APP.manifest.genes.bed or SAMPLE.APP.manifest.genes.bed in STARK folder
+genes_file = config['GENES_FILE']
+# Transcripts file containing NM notation SAMPLE.transcripts in STARK folder
+transcripts_file = config['TRANSCRIPTS_FILE']
+
+# Sample to remove, set in config_scramble.yaml file
+sample_exclude_list = config['EXCLUDE_SAMPLE_LIST']
+filter_sample_list = config['FILTER_SAMPLE_LIST']
+
+# Ext to index
+ext_list = config['EXT_INDEX_LIST']
+
+# Set DECON to custom exon analysis or not (True / False)
+custom_exon = config['custom']
+
+# Formatting Gene column from bed file
+genecol_format = config['GENECOL_FORMAT']
+
+# Search options
+recursive_search = config['RECURSIVE_SEARCH']
+search_argument = config['SEARCH_ARGUMENT']
+
+#Analysis option
+validation_only = config['VALIDATION_ONLY']
+cram_only = config['CRAM_ONLY']
+
+# Option for bam copy (true) or symlink (false)
+bam_copy = config['BAM_COPY']
+
+# Rsync option
+include_file = config['INCLUDE_RSYNC']
+exclude_file = config['EXCLUDE_RSYNC']
+
+include_file_log = config['INCLUDE_LOG_RSYNC']
+
+# Repository/depository directories
+repositorydir = config['repository']
+depositorydir = config['depository']
+outputdir = config['OUTPUT_DIR']
+
+# Group and app name to construct output
+group_dir = config['GROUP_NAME']
+app_dir = config['APP_NAME']
+
+# Copy to depot (archive)
+depotcopy = config['DEPOT_COPY']
+
+# Debug mode
+debug = config['DEBUG_MODE']
+
+# Variables initialisation
+# List of the files in the repo
+files_name = []
+# Structure of aligned files is sample.aligner.(validation).bam
+sample_list = []
+aligner_list = []
+files_list_depot = []
+
+# Dictionary of the run containing all files referenced by the key_list
+dico_run = {}
+
+# set datetime to add to output file name
+date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+# Return last directory of the complete path (without /)
+# for a classic STARK run directory return the run name (complete path to a run directory == /STARK/output/repository/GROUP/APP/{run} ie ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}/GROUP/APP/{nameoftherun}
+# nameoftherun = os.path.basename(os.path.dirname(rundir))
+nameoftherun = os.path.basename(rundir)
+
+# Get group [4] and app [5] name from run (or -1 and -2 ?)
+# run structure is "/STARK/output/repository/group/app/run"
+# Default is UNKNOW in the yaml file
+try:
+	group_name =  rundir.split('/')[4]
+	app_name = rundir.split('/')[5]
+except IndexError: pass
+
+# set & create directories to save results
+# all will be save in /app/res/
+# TODO adapt for final pipeline
+inputdir = repositorydir + "/" + "DECONTEST/" + nameoftherun + "/input"
+tmpdir = repositorydir + "/" + "DECONTEST/" + nameoftherun + "/tmp"
+
+if not outputdir:
+	outputdir = repositorydir + "/" + "DECONTEST/" + nameoftherun + "/ouput"
+
+# Final structure in the docker container
+# /app/res/input for all input files
+# inputdir = "/app/res/" + nameoftherun + "/input"
+
+# /app/res/tmp for tmp files
+# tmpdir = "/app/res/" + nameoftherun + "/tmp"
+
+# Construct repository and depository dir structure (outputdir will be the default output)
+#if not outputdir:
+#	outputdir = repository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
+# depotdir = depository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
+
+
+# Set the path of the customnumberingfile for makeCNVcalls
+customnumberingfile = tmpdir + "/" + serviceName + "." +  date_time + '.CustomNumbering.txt'
+
+# Set log path file
+logfile = tmpdir + "/" + serviceName + "." + date_time + '.parameters.log'
+
+# Set annotation file path
+annotation_file = tmpdir + "/" + serviceName + "." + date_time + '.AnnotSV.txt'
+
+# Set Decon Bed file
+deconbed_file = tmpdir + "/" + serviceName + "." + date_time + '.bed'
+
+# Create directories
+try:
+	os.mkdir(inputdir)
+	os.mkdir(tmpdir)
+	os.mkdir(outputdir)
+except FileExistsError: pass
+
+if depotcopy == True:
+	try:
+		os.mkdir(depotdir)
+	except FileExistsError: pass	
+
+# Search all files (full path) in the directory rundir with search_argument and recursive_search options
+files_list = sorted(filter(os.path.isfile, glob.glob(rundir + search_argument, recursive=recursive_search)))
+
+# extract file names only
+for files in files_list:
+	for ext in ext_list:
+		if files.endswith(ext):
+			files_name.append(os.path.basename(files))
+
+# Creating sample list
+# [0] for first part of the filename separated by '.' 
+# [0] is sample ; [-1] is extension ; [1] is aligner
+# if structure of bam files are sample.aligners.(validation).bam
+# samples name are taken from bam files
+
+# If filter_sample_list variable is not empty, it will force the sample list
+if filter_sample_list:
+	sample_list = list(filter_sample_list)
+	for files in files_name:
+		for sample in sample_list:
+			if files.endswith('.bam') and sample in files:
+				# creating aligner list only from sample list
+				aligner_list.append(files.split('.')[1])
+else:
+	for files in files_name:
+		if files.endswith('.bam'):
+			# creating sample & aligner list
+			sample_list.append(files.split('.')[0])
+			aligner_list.append(files.split('.')[1])
+
+# Lambda expression to replace aligner == bam to == noaligner
+# aligner_list = list(map(lambda item: item.replace("bam","noaligner"), aligner_list))
+
+# Suppress duplicate of lists with list(set())
+sample_list = list(set(sample_list))
+aligner_list = list(set(aligner_list))
+
+# Exclude samples from the exclude_list
+for sample_exclude in sample_exclude_list:
+	for sample in sample_list:
+		if sample.startswith(sample_exclude):
+			sample_list.remove(sample)
+
+# Populating dictionary
+for samples in sample_list:
+	dico_run[samples] = {}
+	for ext in ext_list:
+		for files in files_list:
+			if validation_only == False:
+				if os.path.basename(files).startswith(samples) and os.path.basename(files).endswith(ext) and '.validation.bam' not in os.path.basename(files):
+					dico_run[samples][ext] = files
+			else:
+				if os.path.basename(files).startswith(samples) and os.path.basename(files).endswith(ext) and '.validation.bam' in os.path.basename(files):
+					dico_run[samples][ext] = files
+
+# for validation analyse bam will be sample.validation.bam
+if validation_only == True:
+	aligner_list = ['validation']
+# for cram analyse bam will be sample.archive.bam
+if cram_only == True:
+	aligner_list = ['archive']
+
+# Separate cram/bam treatment
+# for cram extract to bam into the depot directory
+# for bam copy or symlink the bam files to depot directory
+for sample in sample_list:
+	if cram_only == True:
+		try:
+			cramfile = dico_run[sample]['.cram']
+			if 'archive.cram' in cramfile:
+				files_cram = []
+				files_cram.append(os.path.splitext((os.path.basename(cramfile)))[0])
+				for cram in files_cram:
+					#samtools view -b -T ref_sequence.fa -o $sample.bam $sample.cram
+					shell("samtools view -T "+refgene+" -o "+inputdir+"/"+cram+".bam"+" "+cramfile)
+					with open(logfile, 'a+') as f:
+						f.write("Extracting cram files :"+ "\n")
+						f.write(str(cramfile) + "\n")
+		except KeyError:
+			continue
+	if cram_only == False:
+		try:
+			items = dico_run[sample]['.bam']
+			for aligner in aligner_list:
+				if validation_only == True:
+					if 'validation' in items and aligner in items:
+						if bam_copy == True:
+							copy2(items, inputdir)
+							with open(logfile, 'a+') as f:
+								f.write("Copying files :"+ "\n")
+								f.write(str(items) + "\n")
+						else:
+							shell("ln -sfn "+items+" "+inputdir)
+							with open(logfile, 'a+') as f:
+								f.write("Symlink files :"+ "\n")
+								f.write(str(items) + "\n")
+				if validation_only == False:
+					if 'validation' not in items and aligner in items:
+						if bam_copy == True:
+							copy2(items, inputdir)
+							with open(logfile, 'a+') as f:
+								f.write("Copying files :"+ "\n")
+								f.write(str(items) + "\n")
+						else:
+							shell("ln -sfn "+items+" "+inputdir)
+							with open(logfile, 'a+') as f:
+								f.write("Symlink files :"+ "\n")
+								f.write(str(items) + "\n")
+		except KeyError: pass
+
+# Creating a txt list for the bam files per aligner
+files_list_depot = sorted(filter(os.path.isfile, glob.glob(inputdir + '*/*', recursive=False)))
+for aligner in aligner_list:
+	bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + '.bamlist.txt'
+	with open(bamlist, 'a+') as f:
+		for files in files_list_depot:
+			if aligner in files:
+				if files.endswith('.bam'):
+					f.write(str(files) + "\n")
+
+# Find transcripts files (NM)
+if not transcripts_file:
+	for sample in sample_list:
+		for ext in ext_list:
+			try:
+				items = dico_run[sample][ext]
+				if '.transcripts' in items and not '.list.transcripts' in items:
+					if os.path.exists(items) and os.path.getsize(items) != 0:
+						transcripts_file = items
+			except KeyError: pass
+
+# Find bed file (Design)
+if not bed_file:
+	for sample in sample_list:
+		for ext in ext_list:
+			try:
+				items = dico_run[sample][ext]
+				if '.design.bed' in items:
+					if os.path.exists(items) and os.path.getsize(items) != 0:
+						bed_file = items
+			except KeyError: pass
+
+# Find genes file (Panel)
+if not genes_file:
+	for sample in sample_list:
+		for ext in ext_list:
+			try:
+				items = dico_run[sample][ext]
+				if '.manifest.genes' in items and not '.manifest.genes.bed' in items:
+					if os.path.exists(items) and os.path.getsize(items) != 0:
+						genes_file = items
+			except KeyError: pass
+
+# If transcript file exist, create the annotation file for AnnotSV
+if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
+	df = pd.read_csv(transcripts_file, sep='\t', names=["NM", "Gene"])
+	df = df.drop(['Gene'], 1)
+	NM_list = df.loc[:,'NM'].tolist()
+	with open(annotation_file, 'w+') as f:
+		f.write('\t'.join(NM_list))
+else:
+	with open(annotation_file, 'w') as f:
+		f.write("No NM found")
+
+# Decon need a 4 columns bed for the ReadInBams rule
+# Chromosome Start End Gene but no header, bed format (tsv)
+# Keep the chr prefix to the Chr list (chr1 and not 1) if your ref genome got chr1 notation (and not 1)
+# If not set correctly ReadInBams will crash
+if bed_file:
+	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
+	df.to_csv(inputdir + "/" + serviceName + '.custom.bed', sep='\t', index=False, header=False)
+# Intersect bed with refseq using bedtools
+	shell("intersectBed -a "+inputdir+"/"+serviceName+".custom.bed -b "+refseq+" -loj > "+inputdir+"/"+serviceName+".custom.exon.bed")
+# DECON need a customNumbering.txt exons description for the accurate formatting of pdfs graph (makeCNVcalls) and for the IdentifyFailures rule
+# Format is tab separated	:	'chr'	'Start'	'End'	'Gene'	'Custom.Exon'
+# exemple					:	17	4511	4889	BCRA1	26
+# documentation forgot to mention Gene column
+# Create the customnumberingfile from the custom.exon.bed file
+	df = pd.read_csv(inputdir + "/" + serviceName + '.custom.exon.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "Tosplit", "Gene", "9"])
+	df = df.drop(['4', '5', '6', '9'], 1)
+	df['NM'] = df['Tosplit'].str.split(',').str[0]
+	df['Custom.Exon'] = df['Tosplit'].str.split(',').str[-1]
+	df['Custom.Exon'] = df['Custom.Exon'].str.replace('exon','')
+	df['Chr'] = df['Chr'].str.replace('chr','')
+	df = df.drop(['Tosplit'], 1)
+	# Remove row that don't have gene name (intergenic regions) if not DECON will crash because it manage only exons (Detection of Exon Copy Number variants)
+	df = df[df.Gene != '-1']
+	# Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
+	if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
+		df = df[df['NM'].isin(NM_list)]
+	df = df.drop(['NM'], 1)
+	df.to_csv(customnumberingfile, sep='\t', index=False)
+	# Save bed file DECON formatted
+	df = df.drop(['Custom.Exon'], 1)
+	df['Chr'] = 'chr' + df['Chr'].astype(str)
+	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
+else:
+	with open(logfile, 'a+') as f:
+		f.write("NO bed found, DECON cannot continue, exiting")
+	#exit()
+
+# Use a 4 bed columns if bed file exist, assuming that the bed is tab separated	like this :	'chr'	'Start'	'End'	'Gene'
+# No custom.exon will be generate
+# if var: => if var == True: and if not => if var == False
+# Gene column can be formatted like this
+# case 1 : TNFRSF14_chr1_2488046_2488232 == df['Gene'] = df['Genetoformat'].str.split('_').str[0]
+# case 2 : NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129 == df['Gene'] = df['Genetoformat'].str.split('_').str[1]
+# other cases : _chr1_2336211_2337303 == no change
+if not custom_exon:
+	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+	if genecol_format == 1:
+		df['Gene'] = df['Gene'].str.split('_').str[0] # we keep the gene name (Gene name first)
+	if genecol_format == 2:
+		df['Gene'] = df['Gene'].str.split('_').str[1] # we keep the gene name (NM then Gene name)
+	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
+
+# log
+with open(logfile, 'a+') as f:
+	f.write("Start of the analysis : ")
+	f.write((date_time) + "\n")
+	f.write("Analysis run : ")
+	f.write((nameoftherun) + "\n")
+	f.write("List of samples :" + "\n")
+	for sample in sample_list:
+		f.write((sample) + "\n")
+	f.write("List of aligners :" + "\n")
+	for aligner in aligner_list:
+		f.write((aligner) + "\n")
+	f.write("Input files :" + "\n")
+	f.write("Bed : ")
+	f.write((bed_file) + "\n")
+	f.write("Genes : ")
+	f.write((genes_file) + "\n")
+	f.write("Transcripts : ")
+	f.write((transcripts_file) + "\n")
+	f.write((include_file) + "\n")
+
+
+# Copy2 bed_file & genes_file & transcripts_file (for debug)
+if debug:
+	try:
+		copy2(bed_file, inputdir)
+		copy2(genes_file, inputdir)
+		copy2(transcripts_file, inputdir)
+	except FileNotFoundError: pass
+
+################################################## RULES ##################################################
+# The input for the rule all is the output of the pipeline
+# The expand for the {sample} {aligner} is done only at this step
+# Final results will follow this structure in the output directory
+# /nameoftherun/SAMPLENAME/ServiceName/ individual results
+# /nameoftherun/global results & global logs with ServiceName index
+#
+# rule all will different depending on the bed files available
+# design = .bed, vcf will be vcf.design ; panel = genes, vcf will be vcf.panel ; not bed or genes = vcf will be vcf.full
+# warning : bcftools merge will crash if there's only 1 sample
+############################################################################################################
+
+##### NOTE ####
+# Tools that output a file adding a extension should be set with params: params.output as the output of the command without the extension, and output: output.ext exist only to connect rules
+# For programs that do not have an explicit log parameter, you may always use 2> {log} to redirect standard output to a file (here, the log file) in Linux-based systems. Note that it is also supported to have multiple (named) log files being specified
+# 1 is stdout, 2 is stderr 
+##################
+
+
+ruleorder: indexing > ReadInBams
+
+if genes_file:
+	rule all:
+		"""
+		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
+		"""
+		input:
+			bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
+			failtxt = tmpdir + "/" + serviceName + "." + date_time + "_coverage_Failures.txt",
+			vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.vcf.gz", aligner=aligner_list, sample=sample_list),
+			vcfgzallpanel = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Panel.vcf.gz"
+else:
+	rule all:
+		"""
+		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
+		"""
+		input:
+			bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
+			failtxt = tmpdir + "/" + serviceName + "." + date_time + "_coverage_Failures.txt",
+			vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
+			vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
+
+rule help:
+	"""
+	General help for DECON
+	Launch snakemake -s  snakefile_decon -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory (default is data) without / at the end of the path
+	To launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
+	Every variable defined in the yaml file can be change
+	Separate multiple variable with a space (ex  --config DATA_DIR=runname transProb=0.05 var1=0.05 var2=12)
+	Also use option --configfile another.yaml to replace and merge existing config.yaml file variables
+	Use -p to display shell commands
+	Use --lt to display docstrings of rules
+	Input file = bam files (if bai is needed, it will be generate)
+	Output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of vcf files by design/panel
+	"""
+
+
+rule indexing:
+	"""
+	Indexing bam files with samtools
+	"""
+	input:
+		bam = inputdir + "/" + "{sample}.{aligner}.bam"
+	output:
+		bai = inputdir + "/" + "{sample}.{aligner}.bai"
+	params:
+		threads = config['THREADS']
+	shell:
+		"""
+		samtools index -b -@ {params.threads} {input.bam} {output.bai}
+		"""
+
+# ReadInBams must run R in the decondir directory to be able to load packrat
+rule ReadInBams:
+	"""
+	DECoN uses a list of BAM files and a BED file of exons to calculate a coverage metric called the fragment per kilobase and million base pairs (FPKM) for each exon specified in the BED file in each sample’s BAM file
+	Rscript ReadInBams.R --bams listofbams.txt --bed file.bed (unique for all bams) --fasta refgenome.fasta --out output.(prefix).RData
+	Requirement : all .bam files must have a .bai file associated with in the same folder
+	"""
+	input:
+		bamlist = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.bamlist.txt", aligner=aligner_list)
+	output:
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".RData"
+	params:
+		output = tmpdir + "/" + serviceName + '.' + date_time
+	log: 
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".ReadInBams.err"
+	shell:
+		"""
+		cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
+		"""
+
+# makeCNVcalls must run R in the decondir directory to be able to load packrat
+# We add a if then condition because --custom FALSE will not work if we provide a --exons file
+rule makeCNVcalls:
+	"""
+	This step calls exon CNVs in each sample by selecting reference samples from all other samples contained in the input summary .RData file. The correlation between samples and the number of samples used as a reference are thus calculated and outputted to aid interpretation of call quality
+	Rscript makeCNVcalls.R --Rdata summary.file --transProb 0.01 (default) --exons listofexonsforspecificannotation --custom TRUE/FALSE --out output.prefix –-plot  None, Custom or All --plotFolder Plotfoldertoset
+	output is _results_all.txt and a summary Rdata associated
+	"""
+	input:
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".RData"
+	params:
+		prob = config['transProb'],
+		pdf = tmpdir + "/pdfs/",
+		exons = customnumberingfile,
+		plot = config['plot'],
+		customplot = config['custom'],
+		output = tmpdir + "/" + serviceName + "." + date_time + ".Design_results"
+	output:
+		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt",
+	log: 
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".makeCNVcalls.err"
+	shell:
+		"""
+		if [ {params.customplot} ];
+		then
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} –-plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
+		else
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} –-plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
+		fi
+		"""
+
+# IdentifyFailures must run R in the decondir directory to be able to load packrat
+# We add a if then condition because --custom FALSE will not work if we provide a --exons file
+rule IdentifyFailures:
+	"""
+	The summary .RData file outputted can be used to flag any samples or exons where exon CNV calling may be suboptimal. Both exons and samples are evaluated based on their median coverage level. When coverage is low, accuracy of detection will be compromised and caution should be exercised when interpreting results. Samples are also evaluated based on their correlation with other samples. Samples which do not have a high correlation with other samples in the set are likely to have suboptimal detection across the entire target
+	Rscript IdentifyFailures.R --Rdata file.RData --mincorr .98 --mincov 100 --exons listofexonsforspecificannotation --custom TRUE/FALSE --out output.prefix
+	output is _coverage_Failures.txt ; if --custom is true file name is _custom_Failures.txt
+	"""
+	input:
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".RData"
+	params:
+		exons = customnumberingfile,
+		mincorr = config['mincorr'],
+		mincov = config['mincov'],
+		customplot = config['custom'],
+		output = tmpdir + "/" + serviceName + "." + date_time + "IdentifyFailures"
+	output:
+		failtxt = tmpdir + "/" + serviceName + "." + date_time + "_coverage_Failures.txt"
+	log: 
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".IdentifyFailures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".IdentifyFailures.err"
+	shell:
+		"""
+		if [ {params.customplot} ];
+		then
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
+		else
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
+		fi
+		"""
+
+rule Decon_tsv2vcf:
+	input:
+		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt"
+	output:
+		vcfunsort = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.unsort.vcf"
+	log:
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".DeconTsv2Vcf.log"
+	shell:
+		"""
+		python3.9 ./scripts/file_converter.py -i {input.txt} -o {output.vcfunsort} -fi tsv -fo vcf -c ./scripts/fileconversion/config_decon.json 2> {log.log1} && [[ -s {output.vcfunsort} ]] || cat empty.vcf > {output.vcfunsort} 
+		"""
+
+# bcftools sort don't sort correctly
+rule sortvcf:
+	input:
+		vcfunsort = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.unsort.vcf"
+	output:
+		vcfsort = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf"
+	shell:
+		"""
+		grep \"^#\" {input.vcfunsort} > {output.vcfsort} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfsort} && [[ -s {output.vcfsort} ]] || cat empty.vcf > {output.vcfsort}
+		"""
+
+# bgzip -c to keep input file
+rule vcf2gz:
+	input:
+		vcfsort = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf"
+	output:
+		vcfgz = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
+	shell:
+		"""
+		bgzip -c {input.vcfsort} > {output.vcfgz} && [[ -s {output.vcfgz} ]] || cat empty.vcf.gz > {output.vcfgz} ; tabix {output.vcfgz} 
+		"""
+
+
+rule filtervcfall:
+	input:
+		vcfgz = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
+	output:
+		vcfgzallpanel = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Panel.vcf.gz"
+	shell:
+		"""
+		bcftools view {input.vcfgzdesign} -R {genes_file} -O z -o {output.vcfgzallpanel} && tabix {output.vcfgzallpanel} && [[ -s {output.vcfgzallpanel} ]] || cat empty.vcf.gz > {output.vcfgzallpanel}
+		"""
+
+
+
+# --force-samples will output a vcf file with all annotations but without a sample name if the sample did not exist
+# so we output a dummy vcf.gz
+rule splitvcf:
+	"""
+	Split vcf with bcftools
+	-s {sample} : comma-separated list of samples to include
+	-Oz : output vcf compressed
+	-c1 : minimum allele count (INFO/AC) of sites to be printed
+	"""
+	input:
+		vcfgz = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
+	output:
+		vcfgzsplit = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.Noannotation.vcf.gz"
+	params:
+		path = tmpdir + "/{sample}/" + serviceName + "/"
+	shell:
+		"""
+		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgz} && [[ -s {output.vcfgzsplit} ]] || cat empty.vcf.gz > {output.vcfgzsplit}  ; tabix {output.vcfgzsplit}
+		"""
+		
+#need to output a valid emptyvcf.gz		
+#  ; tabix {output.vcfgzsplit}
+
+
+# AnnotSV need bedtools to work ie you have to specify the directory of bedtools binaries in -bedtools argument
+# add -hpo {params.hpofile} if hpofile exist
+rule AnnotSV:
+	"""
+	AnnotSV will annotate and rank Structural Variations (SV) from a vcf file. Output will be an AnnotSV tsv file.
+	-annotationMode can be : split by exons/introns or full by genes
+	-txtFile : path to a file containing a list of preferred genes transcripts to be used in priority during the annotation, preferred genes transcripts names should be tab or space separated
+	-genomeBuild must be specified if not hg19
+	"""
+	input:
+		vcf = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.Noannotation.vcf.gz"
+	output:
+		tsv = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv"
+	log:
+		txt = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.log"
+	params:
+		bedtools = config['BEDTOOLS_PATH'],
+		bcftools = config['BCFTOOLS_PATH'],
+		genome = config['genomeBuild'],
+		overlap = config ['overlap'],
+		mode = config['annotationMode']
+	shell:
+		"""
+		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsv} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsv} ]] || echo "No data to annotate" > {output.tsv}
+		"""
+
+
+rule AnnotSV2vcf:
+	input:
+		tsv = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv"
+	output:
+		vcfanot = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf"
+	log:
+		log1 = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV2vcf.log"
+	shell:
+		"""
+		python3.9 ./scripts/file_converter.py  -i {input.tsv} -o {output.vcfanot} -fi annotsv -fo vcf -c ./scripts/fileconversion/config_annotsv3.json 2> {log.log1} && [[ -s {output.vcfanot} ]] || echo "No data to annotate" > {output.vcfanot}
+		"""
+
+rule vcf2gzsample:
+	input:
+		vcfanot = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf"
+	output:
+		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
+	shell:
+		"""
+		bcftools sort {input.vcfanot} | bgzip > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign}
+		"""
+
+
+rule filtervcf:
+	input:
+		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
+	output:
+		vcfgzpanel = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.vcf.gz"
+	shell:
+		"""
+		bcftools view {input.vcfgzdesign} -R {genes_file} -O z -o {output.vcfgzpanel} && [[ -s {output.vcfgzpanel} ]] || cat empty.vcf.gz > {output.vcfgzpanel} ;  tabix {output.vcfgzpanel} 
+		"""
+
+
+onstart:
+	shell("touch " + tmpdir + "/" + serviceName + "Running.txt")
+	# Add the snakemake parameters to log
+	with open(logfile, "a+") as f:
+		json.dump(config, f)
+		f.write("\n")
+	
+onsuccess:
+	shell("touch " + tmpdir + "/" + serviceName + "Complete.txt")
+	shell("rm " + tmpdir + "/" + serviceName + "Running.txt")
+	
+	# Sort pdfs file into each sample directory
+	pdf_list = os.listdir(tmpdir+"/pdfs")
+	for sample in sample_list:
+		for pdf in pdf_list:
+			if sample in pdf:
+				# Change directoy for destination
+				# Structure of output is /SAMPLE/ServiceName/pdfs 
+				# copy2 or move
+				shell("mkdir -p " + outputdir + "/" + sample + "/" + serviceName + "/pdfs")
+				move(tmpdir+ "/pdfs/"+pdf, outputdir+"/" + sample + "/"  + serviceName +"/pdfs/")
+	#if move rmdir the /pdfs dir
+	try:
+		shell("rmdir "+tmpdir+"/pdfs")
+	except subprocess.CalledProcessError: pass
+	
+	# Add end time of the analysis to the log file
+	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
+	with open(logfile, "a+") as f:
+		f.write("End of the analysis : ")
+		f.write((date_time_end) + "\n")
+
+	
+	# Copy files to final destination
+	shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
+		
+	if depotcopy == True:
+		shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {depotdir}")
+
+
+onerror:
+	shell("touch " + tmpdir + "/" + serviceName + "Failed.txt")
+	shell("rm " + tmpdir + "/" + serviceName + "Running.txt")
+	shell("rsync -azvh --include={include_file_log} --exclude {exclude_file} {tmpdir}/ {outputdir}")
