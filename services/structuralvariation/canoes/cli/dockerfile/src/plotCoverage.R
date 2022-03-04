@@ -29,7 +29,7 @@ PlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	my_data_box <- data.frame(Genomic_Region=row.names(coverageNormal), Sample=coverageNormal)
 	y_data.long<-melt(select(my_data_box, -ends_with(SAMPLE)))
 	sample_list <- paste(colnames(coverage), collapse=',')
-	nrows <- dim(coverage)[1]
+	nrows <- dim(coverage)[1]*10
 
 	#geom_text(aes(covergeOut,1,label = "NO COVERAGE"), angle = 90, color="white") +
 
@@ -48,9 +48,9 @@ PlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	#geom_text(aes(6.4,-2,label = "median coverage x0.25", vjust = -1)) +
 	labs(title = "Boxplot coverage mean taget sample vs all(normalised)", subtitle = paste("[INFO] Target Sample: ", SAMPLE, "\n[INFO] Processed samples: ", sample_list, "\n[INFO] Warning: Without sexual chromosomes, Normalisation: For each sample and for each region the coverage mean is divide by the total coverage mean of the sample and multply by the total coverage mean of the target sample (values are divide by the median(Graph:median=0), in log2 )"), x="Genomic Region(chromosome:start-end)", y="Coverage(normalised)(log2)") +
 	theme(axis.text=element_text(size=7),axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6)) +
-	# png(width=nrows, height=400)
-	pdf(width=nrows, height=400)
-	ggsave(OUTPUT, width=200, height=10, limitsize = FALSE)
+	#png(width=nrows, height=400)
+	png(type="cairo")
+	ggsave(OUTPUT,limitsize = FALSE)
 }
 
 PlotCoverage2 <- function(SAMPLE, INPUT, OUTPUT){
@@ -58,7 +58,7 @@ PlotCoverage2 <- function(SAMPLE, INPUT, OUTPUT){
 	coverage <- read.csv(INPUT, header=TRUE, check.names=FALSE,, row.names=1, sep="\t")
 	my_data <- data.frame(Genomic_Region=row.names(coverage), Coverage_Mean_Sample=coverage[,SAMPLE])
 	sample_list <- paste(colnames(coverage), collapse=',')
-	nrows <- dim(coverage)[1]
+	nrows <- dim(coverage)[1]*10
 	lab <- mixedsort(rownames(coverage))
 
 	#do barplot
@@ -66,7 +66,7 @@ PlotCoverage2 <- function(SAMPLE, INPUT, OUTPUT){
 	geom_bar(data=my_data, stat="identity", fill="skyblue", aes(x=factor(Genomic_Region, levels=lab), y=Coverage_Mean_Sample)) +
 	labs(title = "Barplot coverage mean per base per region", subtitle = paste("[INFO] Target Sample: ", SAMPLE), x="Genomic Region(chromosome:start-end)", y="Coverage mean(bp)") +
 	theme(axis.text=element_text(size=7) ,axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6)) +
-	# png(width=nrows, height=400)
-	pdf(width=nrows, height=400)
-	ggsave(OUTPUT, width=200, height=10, limitsize = FALSE)
+	#png(width=nrows, height=400)
+	png(type="cairo")
+	ggsave(OUTPUT,limitsize = FALSE)
 }
