@@ -378,10 +378,10 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 #  AnnotSV  #
 #############
 
-# https://github.com/lgmgeo/AnnotSV/archive/refs/tags/v3.0.9.zip
+# https://github.com/lgmgeo/AnnotSV/archive/refs/tags/v3.1.zip
 
 ENV TOOL_NAME="AnnotSV"
-ENV TOOL_VERSION="3.0.9"
+ENV TOOL_VERSION="3.1"
 ENV TOOL_TARBALL="v$TOOL_VERSION.zip"
 ENV TOOL_SOURCE_EXTERNAL="https://github.com/lgmgeo/$TOOL_NAME/archive/refs/tags/$TOOL_TARBALL"
 ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
@@ -501,12 +501,10 @@ RUN echo "#[INFO] Cleaning" && \
 	if (($REMOVE_SOURCES)); then rm -rf $SOURCES; fi;
 
 
-
 ##############################
 # WORKDIR / ENTRYPOINT / CMD #
 ##############################
 
-
-WORKDIR "/data"
-
-ENTRYPOINT [ "/tool/bin/" ]
+# Copy application files (/app)
+COPY . /app
+WORKDIR "/app"

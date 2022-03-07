@@ -361,21 +361,19 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 
 WORKDIR $WORKDIR
 
-
-
 #############
 #  AnnotSV  #
 #############
 
-# https://github.com/lgmgeo/AnnotSV/archive/refs/tags/v3.0.9.zip
+# https://github.com/lgmgeo/AnnotSV/archive/refs/tags/v3.1.zip
 
-# https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_3.0.9.tar.gz
+# https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_3.1.tar.gz
 # https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_$TOOL_VERSION.tar.gz
 
 
 
 ENV TOOL_NAME="AnnotSV"
-ENV TOOL_VERSION="3.0.9"
+ENV TOOL_VERSION="3.1"
 ENV TOOL_TARBALL="v$TOOL_VERSION.zip"
 ENV TOOL_SOURCE_EXTERNAL="https://github.com/lgmgeo/$TOOL_NAME/archive/refs/tags/$TOOL_TARBALL"
 ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
@@ -402,7 +400,6 @@ ENV ANNOTSV="$TOOLS/$TOOL_NAME/$TOOL_VERSION"
 # HTSLIB #
 ##########
 
-# https://github.com/samtools/htscodecs to install ?
 
 # TOOL INFO
 ENV TOOL_NAME="htslib"
@@ -497,7 +494,8 @@ RUN echo "#[INFO] Cleaning" && \
 # WORKDIR / ENTRYPOINT / CMD #
 ##############################
 
+# Copy application files (/app)
+COPY . /app
+WORKDIR "/app"
 
-WORKDIR "/data"
 
-ENTRYPOINT [ "/tool/bin/" ]

@@ -1,6 +1,6 @@
 ##########################################################################
 # Snakemakefile Version:   0.1
-# Description:             Snakemake file to run DECoN module
+# Description:             Snakemake file to run DECoN module (Detection of Exon Copy Number variants)
 ##########################################################################
 
 # DEV version 0.1 : 10/11/2021
@@ -32,9 +32,7 @@ from shutil import copy2
 from shutil import move
 
 ################## Configuration file and PATHS ##################
-configfile: "config_decon.yaml"
-
-# configfile: "/app/config/default.yaml"
+configfile: "./config/default.yaml"
 
 # Subdir of module results
 serviceName = config['serviceName']
@@ -68,8 +66,9 @@ ext_list = config['EXT_INDEX_LIST']
 # Set DECON to custom exon analysis or not (True / False)
 custom_exon = config['custom']
 
-# Formatting Gene column from bed file
+# Formating Gene column from bed file
 genecol_format = config['GENECOL_FORMAT']
+keep_intergenic = config['KEEP_INTERGENIC']
 
 # Search options
 recursive_search = config['RECURSIVE_SEARCH']
@@ -130,28 +129,21 @@ try:
 	app_name = rundir.split('/')[5]
 except IndexError: pass
 
+# Final structure in the docker container
 # set & create directories to save results
 # all will be save in /app/res/
-# TODO adapt for final pipeline
-inputdir = repositorydir + "/" + "DECONTEST/" + nameoftherun + "/input"
-tmpdir = repositorydir + "/" + "DECONTEST/" + nameoftherun + "/tmp"
-
-if not outputdir:
-	outputdir = repositorydir + "/" + "DECONTEST/" + nameoftherun + "/ouput"
-
-# Final structure in the docker container
 # /app/res/input for all input files
-# inputdir = "/app/res/" + nameoftherun + "/input"
+inputdir = "/app/res/" + nameoftherun + "/input"
 
 # /app/res/tmp for tmp files
-# tmpdir = "/app/res/" + nameoftherun + "/tmp"
+tmpdir = "/app/res/" + nameoftherun + "/tmp"
 
 # Construct repository and depository dir structure (outputdir will be the default output)
-#if not outputdir:
-#	outputdir = repository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
-# depotdir = depository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
+depotdir = depository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
 
-
+if not outputdir:
+	outputdir = repository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
+ 
 # Set the path of the customnumberingfile for makeCNVcalls
 customnumberingfile = tmpdir + "/" + serviceName + "." +  date_time + '.CustomNumbering.txt'
 
@@ -205,9 +197,6 @@ else:
 			# creating sample & aligner list
 			sample_list.append(files.split('.')[0])
 			aligner_list.append(files.split('.')[1])
-
-# Lambda expression to replace aligner == bam to == noaligner
-# aligner_list = list(map(lambda item: item.replace("bam","noaligner"), aligner_list))
 
 # Suppress duplicate of lists with list(set())
 sample_list = list(set(sample_list))
@@ -340,20 +329,29 @@ else:
 	with open(annotation_file, 'w') as f:
 		f.write("No NM found")
 
-# Decon need a 4 columns bed for the ReadInBams rule
+# DECON bed
+# DECON need a 4 columns bed for the ReadInBams rule, if bed is not set correctly ReadInBams will crash
 # Chromosome Start End Gene but no header, bed format (tsv)
-# Keep the chr prefix to the Chr list (chr1 and not 1) if your ref genome got chr1 notation (and not 1)
-# If not set correctly ReadInBams will crash
+# Chr must be formated chr1, Gene column must be a string, no negative numbers
+# 2 options are possible to reformat Gene column : 
+# keep  = split the gene name from the column assuming that all rows are formated like GENENAME_etc.
+# regen = don't use Gene column, regen Gene name with Refseq intersect
+
 if bed_file:
+	# Pretreatment of bed for regen option and custom.exon formating
+	
+	# DECON Custom.Exon
+	# DECON can use a customNumbering.txt exons description for the accurate formating of pdfs graph (makeCNVcalls) and the IdentifyFailures rule
+	# Custom.Exon is not mandatory
+	# Format is tab separated	:	'chr'	'Start'	'End'	'Gene'	'Custom.Exon'
+	# exemple					:	17	4511	4889	BCRA1	26
+	# documentation forgot to mention Gene column
+	# Create the customnumberingfile from the custom.exon.bed file if custom variable is True
+	
 	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
 	df.to_csv(inputdir + "/" + serviceName + '.custom.bed', sep='\t', index=False, header=False)
-# Intersect bed with refseq using bedtools
+	# Intersect bed with refseq using bedtools
 	shell("intersectBed -a "+inputdir+"/"+serviceName+".custom.bed -b "+refseq+" -loj > "+inputdir+"/"+serviceName+".custom.exon.bed")
-# DECON need a customNumbering.txt exons description for the accurate formatting of pdfs graph (makeCNVcalls) and for the IdentifyFailures rule
-# Format is tab separated	:	'chr'	'Start'	'End'	'Gene'	'Custom.Exon'
-# exemple					:	17	4511	4889	BCRA1	26
-# documentation forgot to mention Gene column
-# Create the customnumberingfile from the custom.exon.bed file
 	df = pd.read_csv(inputdir + "/" + serviceName + '.custom.exon.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "Tosplit", "Gene", "9"])
 	df = df.drop(['4', '5', '6', '9'], 1)
 	df['NM'] = df['Tosplit'].str.split(',').str[0]
@@ -361,36 +359,38 @@ if bed_file:
 	df['Custom.Exon'] = df['Custom.Exon'].str.replace('exon','')
 	df['Chr'] = df['Chr'].str.replace('chr','')
 	df = df.drop(['Tosplit'], 1)
-	# Remove row that don't have gene name (intergenic regions) if not DECON will crash because it manage only exons (Detection of Exon Copy Number variants)
-	df = df[df.Gene != '-1']
-	# Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
-	if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
-		df = df[df['NM'].isin(NM_list)]
+	# Formating intergenic loc : intersect will output -1 if no NM exist, replace with "Intergenic"
+	if keep_intergenic == True:
+		df = df.replace('-1', 'Intergenic', regex=True)
+		df = df.replace('\.', '0', regex=True)
+		if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0: # Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
+			Intergenic_number = '0'
+			NM_list.append(Intergenic_number)
+			df = df[df['NM'].isin(NM_list)]
+			df = df.replace('0', '', regex=True) # will replace 0 numeration with NA
+	else:
+		df = df[df.Gene != '-1'] # Remove row that don't have gene name (intergenic regions are noted -1) if not DECON will crash
+		if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0: # Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
+			df = df[df['NM'].isin(NM_list)]
 	df = df.drop(['NM'], 1)
-	df.to_csv(customnumberingfile, sep='\t', index=False)
-	# Save bed file DECON formatted
-	df = df.drop(['Custom.Exon'], 1)
-	df['Chr'] = 'chr' + df['Chr'].astype(str)
-	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
+	df.to_csv(customnumberingfile, sep='\t', index=False) # if intergenic is kept we need to add a fake exon number
+	
+	if genecol_format == "keep": # we will output a bed 4 columns with the original Gene name
+		df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+		df['Gene'] = df['Gene'].str.split('_').str[0] # we keep the gene name (Gene name first position)
+		df.to_csv(deconbed_file, sep='\t', index=False, header=False)
+	
+	if genecol_format == "regen": # we will output a bed 4 columns with the regen Gene name from the customnumberingfile
+		df = pd.read_csv(customnumberingfile, sep='\t', index_col=False)
+		df['Chr'] = 'chr' + df['Chr'].astype(str) # re-add the chr prefix to Chr columns value
+		# Save bed file DECON formated
+		df = df.drop(['Custom.Exon'], 1)
+		df.to_csv(deconbed_file, sep='\t', index=False, header=False)
+
 else:
 	with open(logfile, 'a+') as f:
 		f.write("NO bed found, DECON cannot continue, exiting")
 	#exit()
-
-# Use a 4 bed columns if bed file exist, assuming that the bed is tab separated	like this :	'chr'	'Start'	'End'	'Gene'
-# No custom.exon will be generate
-# if var: => if var == True: and if not => if var == False
-# Gene column can be formatted like this
-# case 1 : TNFRSF14_chr1_2488046_2488232 == df['Gene'] = df['Genetoformat'].str.split('_').str[0]
-# case 2 : NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129 == df['Gene'] = df['Genetoformat'].str.split('_').str[1]
-# other cases : _chr1_2336211_2337303 == no change
-if not custom_exon:
-	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-	if genecol_format == 1:
-		df['Gene'] = df['Gene'].str.split('_').str[0] # we keep the gene name (Gene name first)
-	if genecol_format == 2:
-		df['Gene'] = df['Gene'].str.split('_').str[1] # we keep the gene name (NM then Gene name)
-	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
 
 # log
 with open(logfile, 'a+') as f:
@@ -494,6 +494,7 @@ rule indexing:
 		samtools index -b -@ {params.threads} {input.bam} {output.bai}
 		"""
 
+# Keep the chr prefix to the Chr list (chr1 and not 1) if your ref genome got chr1 notation (and not 1) if not ReadInBams will crash
 # ReadInBams must run R in the decondir directory to be able to load packrat
 rule ReadInBams:
 	"""
@@ -584,7 +585,7 @@ rule Decon_tsv2vcf:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".DeconTsv2Vcf.log"
 	shell:
 		"""
-		python3.9 ./scripts/file_converter.py -i {input.txt} -o {output.vcfunsort} -fi tsv -fo vcf -c ./scripts/fileconversion/config_decon.json 2> {log.log1} && [[ -s {output.vcfunsort} ]] || cat empty.vcf > {output.vcfunsort} 
+		python3.9 ./src/file_converter.py -i {input.txt} -o {output.vcfunsort} -fi tsv -fo vcf -c ./src/fileconversion/config_decon.json 2> {log.log1} && [[ -s {output.vcfunsort} ]] || cat empty.vcf > {output.vcfunsort} 
 		"""
 
 # bcftools sort don't sort correctly
@@ -603,16 +604,16 @@ rule vcf2gz:
 	input:
 		vcfsort = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf"
 	output:
-		vcfgz = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
+		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
 	shell:
 		"""
-		bgzip -c {input.vcfsort} > {output.vcfgz} && [[ -s {output.vcfgz} ]] || cat empty.vcf.gz > {output.vcfgz} ; tabix {output.vcfgz} 
+		bgzip -c {input.vcfsort} > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign} 
 		"""
 
 
 rule filtervcfall:
 	input:
-		vcfgz = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
+		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
 	output:
 		vcfgzallpanel = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Panel.vcf.gz"
 	shell:
@@ -632,14 +633,14 @@ rule splitvcf:
 	-c1 : minimum allele count (INFO/AC) of sites to be printed
 	"""
 	input:
-		vcfgz = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
+		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
 	output:
 		vcfgzsplit = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.Noannotation.vcf.gz"
 	params:
 		path = tmpdir + "/{sample}/" + serviceName + "/"
 	shell:
 		"""
-		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgz} && [[ -s {output.vcfgzsplit} ]] || cat empty.vcf.gz > {output.vcfgzsplit}  ; tabix {output.vcfgzsplit}
+		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgzdesign} && [[ -s {output.vcfgzsplit} ]] || cat empty.vcf.gz > {output.vcfgzsplit}  ; tabix {output.vcfgzsplit}
 		"""
 		
 #need to output a valid emptyvcf.gz		
@@ -682,7 +683,7 @@ rule AnnotSV2vcf:
 		log1 = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV2vcf.log"
 	shell:
 		"""
-		python3.9 ./scripts/file_converter.py  -i {input.tsv} -o {output.vcfanot} -fi annotsv -fo vcf -c ./scripts/fileconversion/config_annotsv3.json 2> {log.log1} && [[ -s {output.vcfanot} ]] || echo "No data to annotate" > {output.vcfanot}
+		python3.9 ./src/file_converter.py  -i {input.tsv} -o {output.vcfanot} -fi annotsv -fo vcf -c ./src/fileconversion/config_annotsv3.json 2> {log.log1} && [[ -s {output.vcfanot} ]] || echo "No data to annotate" > {output.vcfanot}
 		"""
 
 rule vcf2gzsample:

@@ -41,7 +41,6 @@ json_config = json.load(configFile)
 launchCommand = getDataFromJson(json_config)['services'][serviceName]['launch']
 image = getDataFromJson(json_config)['services'][serviceName]['images']
 
-
 # Add the default.yaml config to the cmd and specific yaml file depending on the APP and/or GROUP tag
 # Find the GROUP or AP tag and then add an GROUP.yaml or a APP.yaml to the cmd after --config
 # get group [4] and app [5] name from run
@@ -58,10 +57,14 @@ except IndexError:
 # (/home1/data)/STARK/config/structuralvariation/decon/cli/*.yaml
 # option is only for GROUP NAME
 yaml_path = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG')
-if group_name != "":
-	yaml_config_file = yaml_path+"/"+group_name+".yaml"
+
+if group_name and yaml_path:
+	yaml_config_file = yaml_path+"/"+group_name+".yaml"	
+	if not os.path.exists(yaml_config_file) and os.path.getsize(yaml_config_file) == 0:
+		yaml_config_file = yaml_path+"/default.yaml"
 else:
-	yaml_config_file = yaml_path+"/"+"default.yaml"
+	yaml_config_file = ""
+
 
 # snakefile command options after --config should be separated by a space
 # to exclude sample = EXCLUDE_SAMPLE_LIST=["SGT2101772","SGT2101762"]
@@ -74,7 +77,7 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 	# docker-compose -f to specify an alternate compose file (default: docker-compose.yml) ; --env-file PATH to specify an alternate environment file
 	# we use docker-compose run to launch an analysis, the -f argument can be use to specify a specific servicename.docker-compose.yml
 	# we can pass arguements like a classic docker run
-	cmd = "docker-compose run --rm -f "+serviceName+"docker-compose.yml " +cli_service_name+ "+launchCommand+" --config DATA_DIR="+os.path.basename(run)+" --configfile "+yaml_config_file+"'"
+	cmd = "docker-compose run --rm -f "+serviceName+"docker-compose.yml " +cli_service_name+" "+launchCommand+" --config DATA_DIR="+os.path.basename(run)+" --configfile "+yaml_config_file
 	subprocess.call(cmd, shell = True)
 	# Create a log file
 	createContainerFile(containersFile, run, containerName)

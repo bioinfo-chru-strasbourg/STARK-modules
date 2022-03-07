@@ -40,9 +40,7 @@ from shutil import copy2
 from shutil import move
 
 ################## Configuration file and PATHS ##################
-configfile: "config_scramble.yaml"
-
-# configfile: "/app/config/default.yaml"
+configfile: "./config/default.yaml"
 
 # Subdir of module results
 serviceName = config['serviceName']
@@ -125,26 +123,21 @@ try:
 	app_dir = rundir.split('/')[5]
 except IndexError: pass
 
-# set & create directories to save results
-# all will be save in /app/res/
-# TODO adapt for final pipeline
-inputdir = repositorydir + "/" + "SCRAMBLETEST/" + nameoftherun + "/input"
-tmpdir = repositorydir + "/" + "SCRAMBLETEST/" + nameoftherun + "/tmp"
-
-if not outputdir:
-	outputdir = repositorydir + "/" + "SCRAMBLETEST/" + nameoftherun + "/ouput"
 
 # Final structure in the docker container
+# set & create directories to save results
+# all will be save in /app/res/
 # /app/res/input for all input files
-# inputdir = "/app/res/" + nameoftherun + "/input"
+inputdir = "/app/res/" + nameoftherun + "/input"
 
 # /app/res/tmp for tmp files
-# tmpdir = "/app/res/" + nameoftherun + "/tmp"
+tmpdir = "/app/res/" + nameoftherun + "/tmp"
 
 # Construct repository et depository dir structure
-#if not outputdir:
-#	outputdir = repository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
-# depotdir = depository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
+depotdir = depository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
+
+if not outputdir:
+	outputdir = repository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
 
 # Set log path file
 logfile = tmpdir + "/" + serviceName + "." + date_time + '.parameters.log'
@@ -535,7 +528,7 @@ rule AnnotSV2vcf:
 		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Fullunsort.vcf"
 	shell:
 		"""
-		python3.9 ./scripts/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c ./scripts/fileconversion/config_annotsv3.json && [[ -s {output.vcfunsort} ]] || cat emptyAnnotSVvcf | sed 's/NAMEOFTHEINPUTFILE/{input.tsv}/g' | sed 's/DATE/${{date +%d/%m/%Y}}/g' | sed 's /REFNAME/{refgene}/g' | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
+		python3.9 ./src/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c ./src/fileconversion/config_annotsv3.json && [[ -s {output.vcfunsort} ]] || cat emptyAnnotSVvcf | sed 's/NAMEOFTHEINPUTFILE/{input.tsv}/g' | sed 's/DATE/${{date +%d/%m/%Y}}/g' | sed 's /REFNAME/{refgene}/g' | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
 		"""
 
 # bcftools sort don't sort correctly
