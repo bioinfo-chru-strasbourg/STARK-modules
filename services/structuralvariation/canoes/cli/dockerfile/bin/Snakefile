@@ -123,20 +123,25 @@ def getSampleInfos(samplesheet, runPath):
 			if not any(exclude in rows['Sample_ID'] for exclude in config['exclude_sample']):
 				sampleID = rows["Sample_ID"]
 				infos[sampleID] = {}
-				bam = systemcall("find "+runPath+" -maxdepth 2 -name '"+sampleID+".bam' ! -name '*validation*'")[0]
+				bam = systemcall("find "+osj(runPath, sampleID)+" -maxdepth 2 -name '*.bam' ! -name '*validation*'")[0]
 				infos[sampleID]['bam'] = bam
 				tags = rows['Description'].split('!')
 				#print("#[INFO] tag ", tags)
 				for tag in tags:
 					if 'SEX' in tag and '_' in tag:
 						sex = tag.split('_')[-1]
+						infos[sampleID]['sex'] = sex
+						break
 					elif 'SEX' in tag and '#' in tag:
 						sex = tag.split('#')[-1]
+						infos[sampleID]['sex'] = sex
+						break
 					else:
 						sex = ''
-					infos[sampleID]['sex'] = sex
-					break
-	print("INFO ",infos)
+						infos[sampleID]['sex'] = sex
+						break
+					
+	print("INFO OK",infos)
 	return infos
 ##TODO informations from sample dir and Tag or pedigree
 #samplelist = [sampleID for sampleID in os.listdir(runPath) if any(exlude in sampleID for exclude in exclude_list)]
@@ -160,12 +165,16 @@ def getSampleInfosFromRun(runPath):
 							for tag in row:
 								if 'SEX' in tag and '_' in tag:
 									sex = tag.split('_')[-1] 
+									infos[sampleID]['sex'] = sex
+									break
 								elif 'SEX' in tag and '#' in tag:
 									sex = tag.split('#')[-1] 
+									infos[sampleID]['sex'] = sex
+									break
 								else:
 									sex = ''
-								infos[sampleID]['sex'] = sex
-								break
+									infos[sampleID]['sex'] = sex
+									break
 				else:
 					#print("WARNING "+sampleID+" does not have a tag file")
 					infos[sampleID]['sex'] = ''
@@ -390,8 +399,8 @@ def modifyfilename(filename, typo):
 		#extension
 		extension = bs.split('.')[-1]
 		#basename without extension
-		sample = '.'.join(bs.split('.')[0])
-		out = osj(os.path.dirname(filename), "CANOES"+'.'+date+'.variants.Design.'+extension)
+		sample = bs.split('.')[0]
+		out = osj(os.path.dirname(filename), sample+'.CANOES.'+date+'.variants.Design.'+extension)
 		print("INFO OUT", out)
 		return out
 	elif typo == 'folder':
@@ -440,7 +449,20 @@ def copylog():
 				print("INFO ",sample)
 				if not os.path.exists(osj(config['repositoryPath'], sample, 'CANOES')):
 					os.mkdir(osj(config['repositoryPath'], sample, 'CANOES'))
-				shutil.copytree(osj(config['outputPath'], "logs"), osj(config['repositoryPath'], sample, 'CANOES', "logs."+date))
+					shutil.copytree()
+				else:
+					listfile = [folder for folder in os.listdir(osj(config['repositoryPath'], sample, "CANOES")) if os.path.isdir(osj(config['repositoryPath'], sample, 		"CANOES", 	folder)) and 'logs' in folder]
+					print("#[INFO] Listfie ", listfile)
+					old = sample+'.'+listfile[0].split('.')[-1]
+					print("#[INFO] Create "+osj(config['repositoryPath'], sample, "CANOES", old))
+					os.mkdir(osj(config['repositoryPath'], sample, "CANOES", old))
+
+					for content in os.listdir(osj(config['repositoryPath'], sample, "CANOES" )):
+						if os.path.isfile(osj(config['repositoryPath'], sample, "CANOES", content)):
+							shutil.move(osj(config['repositoryPath'], sample, "CANOES", content), osj(config['repositoryPath'], sample, "CANOES", old))
+						else:
+							shutil.move(osj(config['repositoryPath'], sample, "CANOES", content), osj(config['repositoryPath'], sample, "CANOES", old))
+					
 	else:
 		print("WARNING anything will be copied, logs folder does not exists, EXIT")
 
@@ -452,35 +474,17 @@ def createbedigv():
 ####   Global Variables   ####
 ##############################
 
-#Output Path
-#if not "outputPath" in config:
-#	output = "/app/res"
-#	if not os.path.exists(output):
-#		os.mkdir(output)
-#		print("#[INFO] Create folder "+output)
-#else:
-#	output = config["outputPath"
-#exclude_list = ["POOL_", "BlcADN", "blanc", "BlcPCR", "blcPCR", "Z_NTC"]
-#Sample to remove in conf.json analysis which will add in the exclude list from yaml
-#exclude_list = config["exclude"]
-#if "sample_exclude" in config:
-#	exclude_list.append(config["sample_exclude"]
-#List of tag to exclude, merge with exclude sample ?
-#exclude_tag = ['POOL']
-#valid_sex = ['A', 'F', 'M'
 #if not Samplesheet in configfile get sample and sex informations directly in the runPath
 if config["samplesheetPath"]:   #TODO infos from samplesheet optionnal
+	print(config["samplesheetPath"])
 	infos = getSampleInfos(config["samplesheetPath"], config['runPath'])
 else:
 	infos = getSampleInfosFromRun(config['runPath'])
 #print("#[INFO] infos ", infos)
 samplelist = [items for items in infos]
-#print("#[INFO] SampleList ",samplelist)
-#at least Autosomal only A and full A, F, M
+
 sexlist = list(set([sample["sex"] for sample in infos.values()]))
-#if not sexlist: #TODO check
-#	sexlist = []
-#if analysis sex are not specified launch on autosomal by default and for M and F depending on number of sample
+
 if not config['analysis']:
 	if not sexlist:
 		sexlist = ['A']
@@ -492,16 +496,9 @@ else:
 for elem in sexlist:
 	if elem not in config['valid_sex']:
 		sexlist.remove(elem)
-#check size of batch we need at least 4 samples per sex to do meaningfull analysis, otherwise search for run/sample in the same project TODO
-#sexless_list = checkSizeBatch(infos)
-#new_sample_list = []
-#if len(sexless_list) != 0:
-#	#print("#[INFO] Check batch sex size ", ', '.join(sexless_list))
-#	infos, sexlist, new_sample_list = addOtherSamples(sexless_list, sexlist, infos, config['runPath'], config['exclude_sample'])
 
 output = config['outputPath']
 log = osj(config['outputPath'], "logs")
-#print("#[INFO] Variable init done")
 
 ###############
 ##   Rules
@@ -511,79 +508,105 @@ log = osj(config['outputPath'], "logs")
 ruleorder:
 		merge_CNVs > warnings_message_all > warnings_message > AnnotSV > plot_coverage 
 
-if 'repositoryPath' in config:
+if config['repositoryPath']:
 	rule all:
 		input:
 			samp = expand(output+"/{sample}/CANOES/{sample}.canoes.annotsv.vcf", sample=samplelist),
 			tsv = expand(output+"/{sample}/CANOES/{sample}.canoes.annotsv.tsv", sample=samplelist),
 			#tsv_tmp = expand(output+"/{sample}/CANOES/{sample}.canoes.annotsv.tmp.tsv", sample=samplelist)
 			tsv_all = output+"/CANOES/all.canoes.annotsv.tsv",
-			vcf = output+"/CANOES/all.canoes.annotsv.vcf"
+			vcf_all = output+"/CANOES/all.canoes.annotsv.vcf"
 		output:
 			output+"/CANOES/CANOESComplete.txt"
 		log:
 			logfile = log+"/copyrepository.log"
 		run:
-			with open(log[0], 'w+') as lg:
+			with open(log.logfile, 'w+') as lg:
 				with open(output[0], "w+") as f:
 					f.write("# ["+(datetime.now() + timedelta(hours = 2)).strftime("%d/%m/%Y %H:%M:%S")+"] "+config['runPath']+" analyzed with CANOES\n")
 
 				#vcf per sample
-				for sampl in input.samp:
+				for sample in samplelist:
 					#if os.path.basename(sampl).split('.')[0] in new_sample_list:
 					#	lg.write("#[INFO] sample added from other run "+sampl)
 					#	continue
-					print("#[INFO] Sample copy"+sampl)
-					lg.write("#[INFO] Sample copy"+sampl)
-					#Name of sample
-					sam = os.path.basename(sampl).split('.')[0]
-					lg.write("#[INFO] sample split name "+sam)
+
+					###TSV
+					tsv = sample+".canoes.annotsv.tsv"
+					all_tsv = "all.canoes.annotsv.tsv"
+
+					###VCF
+					vcf = sample+".canoes.annotsv.vcf"
+					all_vcf = "all.canoes.annotsv.vcf"
+
+					print("#[INFO] Sample copy"+sample)
+					lg.write("#[INFO] Sample copy"+sample)
+
 					#if repository exists and is folder
-					if os.path.exists(osj(config['repositoryPath'], sam)) and os.path.isdir(osj(config['repositoryPath'], sam)):
+					if os.path.exists(osj(config['repositoryPath'], sample)) and os.path.isdir(osj(config['repositoryPath'], sample)):
 						#If its the first CANOES analysis
-						if not os.path.exists(osj(config['repositoryPath'], sam, "CANOES")):
-							os.mkdir(osj(config['repositoryPath'], sam, "CANOES"))
+						if not os.path.exists(osj(config['repositoryPath'], sample, "CANOES")):
+							os.mkdir(osj(config['repositoryPath'], sample, "CANOES"))
 						
+						#Gestion Archivage, seconde ore more CANOES analysis
+						else:
+							#name canoes old analysis folder
+							listfile = [folder for folder in os.listdir(osj(config['repositoryPath'], sample, "CANOES")) if os.path.isdir(osj(config['repositoryPath'], sample, "CANOES", folder)) and 'logs' in folder]
+							print("#[INFO] Listfile ", listfile)
+							#old = listfile[0].split('.')[-1]
+							old = sample+'.'+listfile[0].split('.')[-1]
+
+
+							print("#[INFO] Create "+osj(config['repositoryPath'], sample, "CANOES", old))
+							os.mkdir(osj(config['repositoryPath'], sample, "CANOES", old))
+							for content in os.listdir(osj(config['repositoryPath'], sample, "CANOES" )):
+								if content != old:
+									if os.path.isfile(osj(config['repositoryPath'], sample, "CANOES", content)):
+										shutil.move(osj(config['repositoryPath'], sample, "CANOES", content), osj(config['repositoryPath'], sample, "CANOES", old))
+									elif os.path.isdir(osj(config['repositoryPath'], sample, "CANOES", content)) and content.startswith('logs'):
+										shutil.move(osj(config['repositoryPath'], sample, "CANOES", content), osj(config['repositoryPath'], sample, "CANOES", old))
+							#move old file
+							print("#[INFO] Cleaning "+config['repositoryPath'])
+
+							systemcall("find "+osj(config['repositoryPath'], sample)+" -mindepth 1 -maxdepth 1 -name '*.CANOES.*' -exec rm -f {} \;")
+							systemcall("find "+config['repositoryPath']+" -maxdepth 2 -name 'CANOES.*' -exec rm -f {} \;")
+
 						#vcf and put in sample root
-						sampl_out = modifyfilename(osj(config['repositoryPath'], sam, "CANOES", os.path.basename(sampl)), 'file')
-						shutil.copy2(sampl, sampl_out)
-						shutil.copy2(sampl_out, osj(config['repositoryPath'], sam))
+						sampl_out = modifyfilename(osj(config['repositoryPath'], sample, "CANOES", vcf), 'file')
+						shutil.copy2(osj(config['outputPath'], sample, "CANOES", vcf), sampl_out)
+						shutil.copy2(sampl_out, osj(config['repositoryPath'], sample))
 						
 
 						#vcf all
-						vcf_all_out = modifyfilename(osj(config['repositoryPath'], sam, "CANOES", os.path.basename(input.vcf)), 'file')
-						shutil.copy2(input.vcf, vcf_all_out)
+						vcf_all_out = modifyfilename(osj(config['repositoryPath'], sample, "CANOES", all_vcf), 'file')
+						shutil.copy2(osj(config['outputPath'], "CANOES", all_vcf), vcf_all_out)
+
+						#tsv and put in sample root
+						tsv_out = modifyfilename(osj(config['repositoryPath'], sample, "CANOES", tsv), 'file')
+						shutil.copy2(osj(config['outputPath'], sample, "CANOES", tsv), tsv_out)
+						shutil.copy2(sampl_out, osj(config['repositoryPath'], sample))
 
 						#tsv_all
-						tsv_all_out = modifyfilename(osj(config['repositoryPath'], sam, "CANOES", os.path.basename(input.tsv_all)), 'file')
-						shutil.copy2(input.tsv_all, tsv_all_out)
+						tsv_all_out = modifyfilename(osj(config['repositoryPath'], sample, "CANOES", all_tsv), 'file')
+						shutil.copy2(osj(config['outputPath'], "CANOES", all_tsv), tsv_all_out)
 
 						#log folder
-						log_out = modifyfilename(osj(config['repositoryPath'], sam, "CANOES", "logs" ), 'folder')
-						shutil.copytree(os.path.dirname(log[0]), log_out)
+						log_out = modifyfilename(osj(config['repositoryPath'], sample, "CANOES", "logs" ), 'folder')
+						shutil.copytree(osj(config['outputPath'], "logs"), log_out)
 					else:
-						print("WARNING "+sam+" in "+config['repositoryPath']+" does not exist or is not a directory")
+						print("WARNING "+sample+" in "+config['repositoryPath']+" does not exist or is not a directory")
 						break
-				#tsv per sample
-				for ts in input.tsv:
-					#if os.path.basename(sampl).split('.')[0] in new_sample_list:
-					#	continue
-					#else:
-					tsname = os.path.basename(ts).split('.')[0]
-					tsname_out = modifyfilename(osj(config['repositoryPath'], sam, "CANOES", os.path.basename(ts)), 'file')
-					shutil.copy2(ts, tsname_out)
 				
-				##vcf panel
-				#for tsvtmp in input.tsv_tmp:
-				#	with open(tsvtmp, 'r') as pnl:
-				#		firstline = pnl.readline().strip()
-				#		print("INFO line ", firstline)
-				#		if not firstline == "No data to annotate":
-				#			panel_vcf = filteronpanel(sampl, sam)
-				#			shutil.copy2(panel_vcf, osj(config['repositoryPath'], sam))
-
 				#copy vcf all at root of the run
-				shutil.copy2(vcf_all_out, config['repositoryPath'])
+				out_vcf = 'CANOES.'+date+'.variants.Design.vcf'
+				shutil.copy2(input.vcf_all, osj(config['repositoryPath'], out_vcf))
+				
+				#Depository copying
+				if config['depositoryPath']:
+					for s in samplelist:
+						print("#[INFO] Rsync sample "+s+" in depository "+config['depositoryPath'])
+						print('rsync -ar '+osj(config['repositoryPath'], s, "CANOES")+' '+osj(config['depositoryPath'], s+'/'))
+						systemcall('rsync -ar '+osj(config['repositoryPath'], s, "CANOES")+' '+osj(config['depositoryPath'], s+'/'))
 				
 				#finish files
 				if os.path.exists(osj(config['repositoryPath'], "CANOESRunning.txt")):
@@ -1003,7 +1026,7 @@ rule AnnotSV:
 		#-svtBEDcol 4 -samplesidBEDcol 5 
 	shell:
 		"""
-		{params.annotsv}/bin/AnnotSV -SVinputFile {input} -outputFile {output} -bedtools {params.bedtools} -genomeBuild {params.genomebuild} &>{log} && [[ -s {output} ]] || echo "No data to annotate" > {output}
+		{params.annotsv}/bin/AnnotSV -SVinputFile {input} -outputFile {output} -bedtools {params.bedtools} -genomeBuild {params.genomebuild} &>{log} || [[ -s {output} ]] || echo "No data to annotate" > {output}
 		"""
 
 rule split_annotations:

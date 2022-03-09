@@ -4,9 +4,10 @@ channels:
   - conda-forge
   - biobuilds
 dependencies:
-  - python=3.8
+  - python=3.9
   - pandas
   - pysam
   - biopython
   - fasta
+  - pyfasta
 prefix: ./envs

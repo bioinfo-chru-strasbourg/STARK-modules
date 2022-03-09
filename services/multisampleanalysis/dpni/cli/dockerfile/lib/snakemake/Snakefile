@@ -15,7 +15,7 @@ import pandas as pd
 from multiprocessing import Pool
 import json
 
-###### DEV DPNI MODULE
+
 def systemcall(command):
 	'''
 	*passing command to the shell*
@@ -244,8 +244,7 @@ def addFrequence(df):
 		#print(values)
 		last = {}
 		last['#CHROM'] = values['Locus'].strip().split(':')[0]
-		last['POS'] = values['Locus'].strip().split(':')[1]
-		
+		last['POSITION'] = values['Locus'].strip().split(':')[1]
 		tmp = values['Base_counts'].strip().split()
 		tmp_data = {}
 		tmp2_data = {}
@@ -362,22 +361,6 @@ def parseSpeed(covfiles, df, col):
 
 	df_tmp.loc[:, 'Locus'] = df.loc[:,'#CHROM'].astype(str)+':'+df.loc[:,'POS'].astype(str)
 
-
-	
-	#print("#[INFO] COV df ", cov.head())
-	
-	#for values in df_tmp['find']:
-	#final_tmp = cov.loc[cov['Locus'].isin(df_tmp['Locus'].to_list())]
-	#print("INFO list locus", len(df_tmp['Locus'].to_list()))
-	#print("FINAL TMP ", final_tmp.head())
-	#print("INFO final (locus) ", len(final_tmp.index))
-
-	#print(df_tmp['find'].to_list()[0:5])
-	#print(len(df_tmp['find'].to_list()))
-	#final_tmp = []
-	#for var in df_tmp['find']:
-	#	#print(var)
-	#	final_tmp.append(cov.loc[cov['Locus'].str.contains(var)])
 	df_tmp = df_tmp.set_index('Locus')
 	cov = cov.set_index('Locus')
 
@@ -389,26 +372,13 @@ def parseSpeed(covfiles, df, col):
 
 	final = df_tmp.merge(cov, left_index=True, right_index=True, how='left')
 
-	#print("INFO FINALTMP list ", len(final_tmp))
-	#print(final_tmp[0:5])
-	
-
-
-
-	#final = pd.concat(final_tmp, axis=1, ignore_index=True)
-	#print("INFO LEN "+covfiles+" "+str(len(final.index)))
-	#print("INFO FINALTMP ", final)
-	#tmp = pd.concat(final_tmp, axis=1)
-	#print("INFO TMP ",tmp)
-	
 	#final = pd.merge(df_tmp, tmp, on=['Locus'])
 	final.reset_index(level=0, inplace=True)
-	final.insert(10, "Locus", final['Locus'])
+	locus = final['Locus']
+	final.drop(columns='Locus', inplace=True)
+	final.insert(10, "Locus", locus)
 	final = final.iloc[:, 1:]
 	print("#[INFO] Length variants "+os.path.basename(covfiles), len(final.index))
-	print("COUCOU ",final.columns)
-	print(final.head())
-	exit()
 	return final
 
 def parse(dico):
@@ -461,12 +431,12 @@ rule all:
 		bgzip = config["tools"]["bgzip"],
 		tabix = config["tools"]["tabix"]
 	input:
-		foetus_vcf = expand(output+"/{sample}.final.vcf", sample=config['family'])
+		expand(output+"/{sample}.final.vcf", sample=config['family'])
 	log:
 		log+"/all.log"
 	shell:
 		"""
-			{params.bgzip} --force {input} && {params.tabix} -p vcf {input.gz}
+			for VCF in {input}; do {params.bgzip} --force $VCF && {params.tabix} -p vcf $VCF.gz; done
 		"""
 
 
@@ -484,6 +454,7 @@ rule add_info:
 	input:
 		vcf = output+"/{sample}.norm.uniq.sorted.vcf",
 		cov = output+"/all.gatk.cov"
+		cov_sample = output+"/sample.gatk.cov"
 	output:
 		vcf = temp(output+"/{sample}.final.vcf")
 	threads: config['tools']['threads']
@@ -515,31 +486,33 @@ rule add_info:
 		print("#[INFO] Process annotations")
 		#frequence annotations
 		metrics = pd.concat(list_var)
-
+		metrics = metrics.dropna(subset=['REF', 'ALT'], how='all')
+		print(metrics.columns)
+		print(len(metrics.index))
 
 		frequence = addFrequence(metrics)
-		print(metrics.head())
-		print(metrics.columns)
+		print(frequence.columns)
+		print(len(frequence.index))
 		
-		dfinal = pd.merge(frequence, on="POS", how = 'inner')
+		dfinal = pd.concat([metrics.reset_index(drop=True), frequence.reset_index(drop=True)], axis=1)
 		print("#[INFO] length df merge "+str(len(dfinal.index)))
 		print(dfinal.columns)
-		exit()
-		info = frequence.loc[:, ['POOL_F_Depth', 'POOL_F_base_counts', 'POOL_F_base_frequence', 'POOL_M_Depth', 'POOL_M_base_counts', 'POOL_M_base_frequence', 'denovo_filter']]
+		info = frequence.loc[:, ['Depth', 'Base_counts', 'Base_frequence']]
 
 		for items in list(info.columns):
 			info[items] = items+'='+info[items].astype(str)
-		denovo['INFOS'] = info[['POOL_F_Depth', 'POOL_F_base_counts', 'POOL_F_base_frequence', 'POOL_M_Depth', 'POOL_M_base_counts', 'POOL_M_base_frequence', 'denovo_filter']].agg(';'.join, 	axis=1)
-		denovo['INFO'] = denovo['INFO']+';'+denovo['INFOS']
-
+		info['INFOS'] = info[['Depth', 'Base_counts', 'Base_frequence']].agg(';'.join, axis=1)
+		dfinal['INFO'] = dfinal['INFO']+';'+info['INFOS']
+		print(dfinal)
+		print(dfinal.columns)
 		#Add new rows in header
-		newheader = addHeader(denovo.columns[10:], head)
+		#newheader = addHeader(denovo.columns[10:], head)
 		
 		tmp_vcf = output.vcf+'.tmp'
-		#vcf = output.vcf
+		sample = os.path.basename(tmp_vcf).split('.')[0]
 		
 		#Create final vcf with new header
-		createFinaldf(df, newheader, tmp_vcf)
+		createFinaldf(dfinal[['#CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', sample]], head, tmp_vcf)
 		
 		#sort and supress dict of coverage files
 		subprocess.call('grep "^#" '+tmp_vcf+' > '+output.vcf+' && grep -v "^#" '+tmp_vcf+' | sort -k1,1V -k2,2n >> '+output.vcf, shell=True)
@@ -686,18 +659,42 @@ rule rename_pool_coverage_v2:
 	input:
 		output+"/foetus.gatk.cov"
 	output:
-		temp(output+"/all.gatk.cov")
+		output+"/all.gatk.cov"
 	shell:
 		"""
 			sed '1 s/^.*$/Locus\tTotal_Depth\tAverage_Depth\tDepth\tBase_counts/' {input} > {output}
 		"""
 
-#rule merge_coverage_v2:
-#	input:
-#		expand(output+"/{sample}.gatk.renamed.cov", sample=config["family"])
-#	output:
-#		output+"/all.gatk.cov"
-#	shell:
-#		"""
-#			paste {input} > {output}
-#		"""
+rule depth_of_coverage_sample:
+	params:
+		cpu     = config["tools"]["threads"],
+		padding = interval_padding,
+		java    = config["tools"]["java"],
+		gatk    = config["tools"]["gatk"]
+	input:
+		genome  = config["env"]["genome"],
+		bed     = config["env"]["bed"],
+		lambda wildcards: config["family"][wildcards.sample]["bam"]
+		
+	output:
+		temp(output+"/{sample}.gatk.cov"),
+		temp(output+"/{sample}.gatk.cov.sample_cumulative_coverage_counts"),
+		temp(output+"/{sample}.gatk.cov.sample_cumulative_coverage_proportions"),
+		temp(output+"/{sample}.gatk.cov.sample_statistics"),
+		temp(output+"/{sample}.gatk.cov.sample_summary")
+	log:
+		log+"/{sample}.gatk.cov.log"
+	shell:
+		"""
+			{params.java} -jar {params.gatk} -nt {params.cpu} -omitIntervals -T DepthOfCoverage -R {input.genome} -o {output[0]} -I {input.bam} --includeDeletions --minMappingQuality 10 --printBaseCounts -L {input.bed} --interval_padding {params.padding} &>> {log};
+		"""
+
+rule merge_coverage_v2:
+	input:
+		expand(output+"/{sample}.gatk.renamed.cov", sample=config["family"])
+	output:
+		output+"/sample.gatk.cov"
+	shell:
+		"""
+			paste {input} > {output}
+		"""

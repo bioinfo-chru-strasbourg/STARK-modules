@@ -5,6 +5,8 @@ genomebuild: "GRCh37"
 exclude_sample: ["POOL_", "BlcADN", "blanc", "BlcPCR", "blcPCR", "Z_NTC"]
 exclude_tag: ["POOL"]
 valid_sex: ["A", "F", "M"]
+#DepositoryPAath, if set analysis will be copied in deposiotyr/archive folder
+depositoryPath: ""
 #Absolute path of Samplesheet optionnal
 samplesheetPath: ""
 #Absolute path of run folder required
