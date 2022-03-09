@@ -1,0 +1,8 @@
+{
+  "code" : "common",
+  "name": "COMMON module",
+  "fullname": "COMMON module services",
+  "description": "COMMON module services used by other modules and services, by building images and configuration/setup",
+  "release": "1.0",
+  "available": false
+}

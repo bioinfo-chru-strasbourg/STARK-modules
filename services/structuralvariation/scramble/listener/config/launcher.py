@@ -37,10 +37,11 @@ def createContainerFile(containersFile, run, containerName):
 # /home1/data/STARK/config/structuralvariation/decon/listener/decon.conf
 # configFile is the --config argument from listener.py, defined in the decon.env file
 # we get image and launchCommand from the decon.conf file
+# os.getenv('MICROSERVICE_MONTAGE') == DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_JSON
+configFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_JSON')
 json_config = json.load(configFile)
 launchCommand = getDataFromJson(json_config)['services'][serviceName]['launch']
 image = getDataFromJson(json_config)['services'][serviceName]['images']
-
 
 # Add the default.yaml config to the cmd and specific yaml file depending on the APP and/or GROUP tag
 # Find the GROUP or AP tag and then add an GROUP.yaml or a APP.yaml to the cmd after --config
@@ -50,9 +51,7 @@ image = getDataFromJson(json_config)['services'][serviceName]['images']
 try:
 	group_name =  run.split('/')[4]
 	app_name = run.split('/')[5]
-except IndexError:
-	print("No APP or GROUP find. Using default configuration.")
-	continue
+except IndexError: pass
 
 # Path of the yaml config file
 # (/home1/data)/STARK/config/structuralvariation/decon/cli/*.yaml
@@ -73,7 +72,7 @@ else:
 
 def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile):
 	containerName = serviceName+os.path.basename(run)
-	cli_service_name = = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME')
+	cli_service_name = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME')
 	# Should be stark-module-structuralvariation-submodule-decon-service-cli
 	# docker-compose -f to specify an alternate compose file (default: docker-compose.yml) ; --env-file PATH to specify an alternate environment file
 	# we use docker-compose run to launch an analysis, the -f argument can be use to specify a specific servicename.docker-compose.yml
