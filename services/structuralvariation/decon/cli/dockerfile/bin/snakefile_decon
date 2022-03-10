@@ -41,7 +41,7 @@ serviceName = config['serviceName']
 rundir = config['run']
 
 # RefSeq variable
-refseq = config['REFSEQGENE_PATH']
+refseqgene = config['REFSEQGENE_PATH']
 
 # Refgene variable
 refgene = config['REFGENEFA_PATH']
@@ -63,12 +63,13 @@ filter_sample_list = config['FILTER_SAMPLE_LIST']
 # Ext to index
 ext_list = config['EXT_INDEX_LIST']
 
-# Set DECON to custom exon analysis or not (True / False)
+# Set DECON to custom exon analysis
 custom_exon = config['custom']
 
-# Formating Gene column from bed file
-genecol_format = config['GENECOL_FORMAT']
-keep_intergenic = config['KEEP_INTERGENIC']
+# Regen exon number with IntersectBed and a refseqgene reference 
+customexon_regen = config['EXON_REGEN']
+# Extract Gene name from custom exon file
+bed_customexon = config['BED_CUSTOMEXON']
 
 # Search options
 recursive_search = config['RECURSIVE_SEARCH']
@@ -329,29 +330,45 @@ else:
 	with open(annotation_file, 'w') as f:
 		f.write("No NM found")
 
-# DECON bed
+### DECON bed ###
 # DECON need a 4 columns bed for the ReadInBams rule, if bed is not set correctly ReadInBams will crash
 # Chromosome Start End Gene but no header, bed format (tsv)
 # Chr must be formated chr1, Gene column must be a string, no negative numbers
-# 2 options are possible to reformat Gene column : 
-# keep  = split the gene name from the column assuming that all rows are formated like GENENAME_etc.
-# regen = don't use Gene column, regen Gene name with Refseq intersect
-
 if bed_file:
-	# Pretreatment of bed for regen option and custom.exon formating
-	
-	# DECON Custom.Exon
-	# DECON can use a customNumbering.txt exons description for the accurate formating of pdfs graph (makeCNVcalls) and the IdentifyFailures rule
-	# Custom.Exon is not mandatory
-	# Format is tab separated	:	'chr'	'Start'	'End'	'Gene'	'Custom.Exon'
-	# exemple					:	17	4511	4889	BCRA1	26
-	# documentation forgot to mention Gene column
-	# Create the customnumberingfile from the custom.exon.bed file if custom variable is True
-	
+	# we will output a bed 4 columns with the original Gene name from the bed_file
+	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+	df['Gene'] = df['Gene'].str.split('_chr').str[0] # we extract the gene name == string before _chr separator (ex TP73_chr1_3598878_3599018)
+	# Note : for some bed with Gene = NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129, we will have a gene name == NM_006015_ARID1A_5utr-ex1
+	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
+else:
+	with open(logfile, 'a+') as f:
+		f.write("NO bed found, DECON cannot continue, exiting")
+	#exit()
+
+### DECON Custom.Exon ###
+# DECON can use a customNumbering.txt exons description for the accurate formating of pdfs graph (makeCNVcalls) and the IdentifyFailures rule, file is not mandatory
+# Format is tab separated	:	'Chr'	'Start'	'End'	'Gene'	'Custom.Exon'
+# exemple					:	17	4511	4889	BCRA1	26
+# documentation forgot to mention Gene column
+
+# Custom.exon creation based on genes bed file (aka panel)
+# Formating of gene.bed is chr1	45794957	45795129	MUTYH	0	- with a future 7th column = exon number, format is "exon1"
+if genes_file and customexon_regen == False:
+	df = pd.read_csv(genes_file, sep='\t', names=["Chr", "Start", "End", "Gene", "Version", "Strand", "Custom.Exon"], index_col=False)
+	df = df.drop(['Version', 'Strand'], 1)
+	df['Custom.Exon'] = df['Custom.Exon'].str.replace('exon','') # only numeric value of exons is required
+	df['Chr'] = df['Chr'].str.replace('chr','') # only numeric value of chr is required
+	df.to_csv(customnumberingfile, sep='\t', index=False)
+
+# Case if genes file bed don't have the 7th column = exon number
+# We create a custom exon file from intersectBed to get the exon number
+# Warning the refseqgene must be generated before
+if bed_file and customexon_regen == True:
+	# Generating the custom.exon file from scratch (intersectBed)
 	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
 	df.to_csv(inputdir + "/" + serviceName + '.custom.bed', sep='\t', index=False, header=False)
-	# Intersect bed with refseq using bedtools
-	shell("intersectBed -a "+inputdir+"/"+serviceName+".custom.bed -b "+refseq+" -loj > "+inputdir+"/"+serviceName+".custom.exon.bed")
+	# Intersect bed with refgene using bedtools
+	shell("intersectBed -a "+inputdir+"/"+serviceName+".custom.bed -b "+refseqgene+" -loj > "+inputdir+"/"+serviceName+".custom.exon.bed")
 	df = pd.read_csv(inputdir + "/" + serviceName + '.custom.exon.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "Tosplit", "Gene", "9"])
 	df = df.drop(['4', '5', '6', '9'], 1)
 	df['NM'] = df['Tosplit'].str.split(',').str[0]
@@ -373,24 +390,16 @@ if bed_file:
 		if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0: # Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
 			df = df[df['NM'].isin(NM_list)]
 	df = df.drop(['NM'], 1)
-	df.to_csv(customnumberingfile, sep='\t', index=False) # if intergenic is kept we need to add a fake exon number
-	
-	if genecol_format == "keep": # we will output a bed 4 columns with the original Gene name
-		df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-		df['Gene'] = df['Gene'].str.split('_').str[0] # we keep the gene name (Gene name first position)
-		df.to_csv(deconbed_file, sep='\t', index=False, header=False)
-	
-	if genecol_format == "regen": # we will output a bed 4 columns with the regen Gene name from the customnumberingfile
+	df.to_csv(customnumberingfile, sep='\t', index=False)
+	# DECON.bed from custom.exon : if Gene name is missing from bed file, it will be extract from the customnumbering file
+	# Assuming that the custom exon file is tab separated	:	'Chr'	'Start'	'End'	'Gene'	'Custom.Exon'
+	if bed_customexon == True:
 		df = pd.read_csv(customnumberingfile, sep='\t', index_col=False)
 		df['Chr'] = 'chr' + df['Chr'].astype(str) # re-add the chr prefix to Chr columns value
 		# Save bed file DECON formated
 		df = df.drop(['Custom.Exon'], 1)
 		df.to_csv(deconbed_file, sep='\t', index=False, header=False)
 
-else:
-	with open(logfile, 'a+') as f:
-		f.write("NO bed found, DECON cannot continue, exiting")
-	#exit()
 
 # log
 with open(logfile, 'a+') as f:

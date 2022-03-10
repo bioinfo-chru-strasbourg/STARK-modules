@@ -31,18 +31,17 @@ serviceName: "DECON"
 # Bed file
 BED_FILE: ""
 
-# Options for formatting gene column's bed
-# Gene column can be formatted :
-# case 1 : TNFRSF14_chr1_2488046_2488232 == df['Gene'] = df['Gene'].str.split('_').str[0]
-# case 2 : NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129 == df['Gene'] = df['Gene'].str.split('_').str[1]
-# other cases : _chr1_2336211_2337303 == no change
-GENECOL_FORMAT: ""
-
 # Genes file
 GENES_FILE: ""
 
 # Transcripts file
 TRANSCRIPTS_FILE: ""
+
+# Regen exon number with IntersectBed and a refseqgene reference (True/False)
+EXON_REGEN: False
+
+# Extract Gene name from custom exon file if EXON_REGEN: True only (only if Gene name is missing from initial bed)
+BED_CUSTOMEXON: False
 
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
