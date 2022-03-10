@@ -39,7 +39,8 @@ TRANSCRIPTS_FILE: ""
 
 # Regen exon number with IntersectBed and a refseqgene reference (True/False)
 EXON_REGEN: False
-
+# Keep intergenic region when exon regen is done
+KEEP_INTERGENIC: False
 # Extract Gene name from custom exon file if EXON_REGEN: True only (only if Gene name is missing from initial bed)
 BED_CUSTOMEXON: False
 

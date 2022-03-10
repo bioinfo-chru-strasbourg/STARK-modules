@@ -32,7 +32,7 @@ from shutil import copy2
 from shutil import move
 
 ################## Configuration file and PATHS ##################
-configfile: "./config/default.yaml"
+configfile: "/app/config/default.yaml"
 
 # Subdir of module results
 serviceName = config['serviceName']
@@ -68,6 +68,8 @@ custom_exon = config['custom']
 
 # Regen exon number with IntersectBed and a refseqgene reference 
 customexon_regen = config['EXON_REGEN']
+keep_intergenic = config['KEEP_INTERGENIC']
+
 # Extract Gene name from custom exon file
 bed_customexon = config['BED_CUSTOMEXON']
 
@@ -94,8 +96,8 @@ depositorydir = config['depository']
 outputdir = config['OUTPUT_DIR']
 
 # Group and app name to construct output
-group_dir = config['GROUP_NAME']
-app_dir = config['APP_NAME']
+group_name = config['GROUP_NAME']
+app_name = config['APP_NAME']
 
 # Copy to depot (archive)
 depotcopy = config['DEPOT_COPY']
@@ -126,7 +128,7 @@ nameoftherun = os.path.basename(rundir)
 # run structure is "/STARK/output/repository/group/app/run"
 # Default is UNKNOW in the yaml file
 try:
-	group_name =  rundir.split('/')[4]
+	group_name = rundir.split('/')[4]
 	app_name = rundir.split('/')[5]
 except IndexError: pass
 
@@ -140,10 +142,10 @@ inputdir = "/app/res/" + nameoftherun + "/input"
 tmpdir = "/app/res/" + nameoftherun + "/tmp"
 
 # Construct repository and depository dir structure (outputdir will be the default output)
-depotdir = depository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
+depotdir = depositorydir + "/" + group_name + "/" + app_name + "/" + nameoftherun + "/"
 
 if not outputdir:
-	outputdir = repository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
+	outputdir = repositorydir + "/" + group_name + "/" + app_name + "/" + nameoftherun + "/"
  
 # Set the path of the customnumberingfile for makeCNVcalls
 customnumberingfile = tmpdir + "/" + serviceName + "." +  date_time + '.CustomNumbering.txt'
@@ -159,14 +161,14 @@ deconbed_file = tmpdir + "/" + serviceName + "." + date_time + '.bed'
 
 # Create directories
 try:
-	os.mkdir(inputdir)
-	os.mkdir(tmpdir)
-	os.mkdir(outputdir)
+	os.makedirs(inputdir)
+	os.makedirs(tmpdir)
+	os.makedirs(outputdir)
 except FileExistsError: pass
 
 if depotcopy == True:
 	try:
-		os.mkdir(depotdir)
+		os.makedirs(depotdir)
 	except FileExistsError: pass	
 
 # Search all files (full path) in the directory rundir with search_argument and recursive_search options

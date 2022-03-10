@@ -9,10 +9,7 @@
 
 # TODO catch an exception if the bam files don't have a aligner name ie structure is sample.bam and not sample.aligner.bam
 # Need to figure out a trick to avoid crash
-# tabix don't like dummy vcf
-# [E::get_intv] Failed to parse TBX_VCF, was wrong -p [type] used?
-# The offending line was: ".      .       .       .       .       .       .       ."
-# bcftools don't add dummy vcf in the final vcf for all sample files
+
 
 
 ################## Context ##################
@@ -40,7 +37,7 @@ from shutil import copy2
 from shutil import move
 
 ################## Configuration file and PATHS ##################
-configfile: "./config/default.yaml"
+configfile: "/app/config/default.yaml"
 
 # Subdir of module results
 serviceName = config['serviceName']
@@ -86,8 +83,8 @@ depositorydir = config['depository']
 outputdir = config['OUTPUT_DIR']
 
 # Group and app name to construct output
-group_dir = config['GROUP_NAME']
-app_dir = config['APP_NAME']
+group_name = config['GROUP_NAME']
+app_name = config['APP_NAME']
 
 # Copy to depot (archive)
 depotcopy = config['DEPOT_COPY']
@@ -119,7 +116,7 @@ nameoftherun = os.path.basename(rundir)
 # Get group [4] and app [5] name from run (or -1 and -2 ?)
 # run structure is "/STARK/output/repository/group/app/run"
 try:
-	group_dir =  rundir.split('/')[4]
+	group_dir = rundir.split('/')[4]
 	app_dir = rundir.split('/')[5]
 except IndexError: pass
 
@@ -134,10 +131,10 @@ inputdir = "/app/res/" + nameoftherun + "/input"
 tmpdir = "/app/res/" + nameoftherun + "/tmp"
 
 # Construct repository et depository dir structure
-depotdir = depository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
+depotdir = depositorydir + "/" + group_name + "/" + app_name + "/" + nameoftherun + "/"
 
 if not outputdir:
-	outputdir = repository + "/" + group_dir + "/" + app_dir + "/" + nameoftherun + "/"
+	outputdir = repositorydir + "/" + group_name + "/" + app_name + "/" + nameoftherun + "/"
 
 # Set log path file
 logfile = tmpdir + "/" + serviceName + "." + date_time + '.parameters.log'
@@ -147,14 +144,14 @@ annotation_file = tmpdir + "/" + serviceName + "." + date_time + '.AnnotSV.txt'
 
 # Create directories
 try:
-	os.mkdir(inputdir)
-	os.mkdir(tmpdir)
-	os.mkdir(outputdir)
+	os.makedirs(inputdir)
+	os.makedirs(tmpdir)
+	os.makedirs(outputdir)
 except FileExistsError: pass
 
 if depotcopy == True:
 	try:
-		os.mkdir(depotdir)
+		os.makedirs(depotdir)
 	except FileExistsError: pass	
 		
 # Search all files (full path) in the directory rundir with search_argument and recursive_search options
