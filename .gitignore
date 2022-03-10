@@ -1,0 +1,4 @@
+services/common/
+services/STARK.env
+services/services.sh
+./.env
