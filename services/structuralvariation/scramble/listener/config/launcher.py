@@ -69,7 +69,7 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 	# we use docker-compose run to launch an analysis, the -f argument can be use to specify a specific servicename.docker-compose.yml
 	# we can pass arguements like a classic docker run
 	# docker-compose -f test.docker-compose.yml  run  stark-module-structuralvariation-submodule-decon-service-listener
-	cmd = "docker-compose -f "+serviceName+"docker-compose.yml run -rm " +cli_service_name+" "+launchCommand+" --config DATA_DIR="+os.path.basename(run)+" --configfile "+yaml_config_file
+	cmd = "docker-compose -f "+serviceName+"docker-compose.yml run -rm " +cli_service_name+" "+launchCommand+" --config run="+os.path.basename(run)+" --configfile "+yaml_config_file
 	# launch the cmd to the shell 
 	subprocess.call(cmd, shell = True)
 	# Create a log file
