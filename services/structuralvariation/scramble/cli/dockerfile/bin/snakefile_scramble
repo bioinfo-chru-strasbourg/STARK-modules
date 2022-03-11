@@ -92,25 +92,32 @@ depotcopy = config['DEPOT_COPY']
 # Debug mode
 debug = config['DEBUG_MODE']
 
+### FUNCTIONS ###
+
+def finditemindico(sample_list, ext_list, dictionnary, include_ext, exclude_ext):
+	searchresult = ""
+	for sample in sample_list:
+		for ext in ext_list:
+			try:
+				items = dictionnary[sample][ext]
+				if include_ext in items and not exclude_ext in items:
+					if os.path.exists(items) and os.path.getsize(items) != 0:
+						searchresult = items
+			except KeyError: pass
+	return searchresult
+
+def searchfiles(directory, search_arg, recursive_arg):
+	# Search all files in the directory + search_arg with recursive_search options (True/False)
+	return sorted(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
+
+### END OF FUNCTIONS ###
+
 # Variables initialisation
-# List of the files in the repo
-files_name = []
-# Structure of aligned files is sample.aligner.(validation).bam
-sample_list = []
-aligner_list = []
-files_list_depot = []
-
-# Dictionary of the run containing all files referenced by the key_list
-dico_run = {}
-
-########################## FUNCTIONS ###########################
-##########################END FUNCTIONS ###########################
 # set datetime to add to output file name
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-# Return last directory of the complete path (without /)
-# for a classic STARK run directory return the run name (complete path to a run directory == /STARK/output/repository/GROUP/APP/{run} ie ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}/GROUP/APP/{nameoftherun}
-# nameoftherun = os.path.basename(os.path.dirname(rundir))
+# Return last directory of the path run (without /)
+# ex == /STARK/output/repository/GROUP/APP/run
 nameoftherun = os.path.basename(rundir)
 
 # Get group [4] and app [5] name from run (or -1 and -2 ?)
@@ -121,13 +128,8 @@ try:
 except IndexError: pass
 
 
-# Final structure in the docker container
-# set & create directories to save results
-# all will be save in /app/res/
-# /app/res/input for all input files
+# Set directories to save tempory results and input files
 inputdir = "/app/res/" + nameoftherun + "/input"
-
-# /app/res/tmp for tmp files
 tmpdir = "/app/res/" + nameoftherun + "/tmp"
 
 # Construct repository et depository dir structure
@@ -152,10 +154,11 @@ except FileExistsError: pass
 if depotcopy == True:
 	try:
 		os.makedirs(depotdir)
-	except FileExistsError: pass	
-		
-# Search all files (full path) in the directory rundir with search_argument and recursive_search options
-files_list = sorted(filter(os.path.isfile, glob.glob(rundir + search_argument, recursive=recursive_search)))
+	except FileExistsError: pass
+
+
+# Search files in repository 
+files_list = searchfiles(rundir, search_argument, recursive_search)
 
 # extract file names only
 for files in files_list:
@@ -165,49 +168,45 @@ for files in files_list:
 
 # Creating sample list
 # [0] for first part of the filename separated by '.' 
-# [0] is sample ; [-1] is extension ;  [1] is aligner
-# if structure of bam files are sample.aligner.(validation).bam
+# [0] is sample ; [-1] is extension ; [1] is aligner
+# if structure of bam files are sample.aligners.(validation).bam
 # samples name are taken from bam files
-
-# If filter_sample_list variable is not empty, it will force the sample list
-if filter_sample_list:
-	sample_list = list(filter_sample_list)
-	for files in files_name:
-		for sample in sample_list:
-			if files.endswith('.bam') and sample in files:
-				# creating aligner list only from sample list
-				aligner_list.append(files.split('.')[1])
-else:
-	for files in files_name:
-		if files.endswith('.bam'):
-			# creating sample & aligner list
-			sample_list.append(files.split('.')[0])
-			aligner_list.append(files.split('.')[1])
-
-# Lambda expression to replace aligner == bam to == noaligner
-# aligner_list = list(map(lambda item: item.replace("bam","noaligner"), aligner_list))
+aligner_list = []
+sample_list = []
+for files in files_name:
+	if files.endswith('.bam'):
+		# creating sample & aligner list
+		sample_list.append(files.split('.')[0])
+		aligner_list.append(files.split('.')[1])
 
 # Suppress duplicate of lists with list(set())
 sample_list = list(set(sample_list))
 aligner_list = list(set(aligner_list))
 
-# Exclude samples from the exclude_list (start with exclude name)
+# Exclude samples from the exclude_list
 for sample_exclude in sample_exclude_list:
 	for sample in sample_list:
 		if sample.startswith(sample_exclude):
 			sample_list.remove(sample)
 
+# If filter_sample_list variable is not empty, it will force the sample list
+if filter_sample_list:
+	sample_list = list(filter_sample_list)
+# For validation analyse bam will be sample.validation.bam only
+if validation_only == True:
+	aligner_list = ['validation']
+# For cram analyse bam will be sample.archive.bam only
+if cram_only == True:
+	aligner_list = ['archive']
+
 # Populating dictionary
+dico_run = {}
 for samples in sample_list:
 	dico_run[samples] = {}
 	for ext in ext_list:
 		for files in files_list:
-			if validation_only == False:
-				if os.path.basename(files).startswith(samples) and os.path.basename(files).endswith(ext) and '.validation.bam' not in os.path.basename(files):
-					dico_run[samples][ext] = files
-			else:
-				if os.path.basename(files).startswith(samples) and os.path.basename(files).endswith(ext) and '.validation.bam' in os.path.basename(files):
-					dico_run[samples][ext] = files
+			if os.path.basename(files).startswith(samples) and os.path.basename(files).endswith(ext):
+				dico_run[samples][ext] = files
 
 # for validation analyse bam will be sample.validation.bam
 if validation_only == True:
@@ -222,51 +221,37 @@ if cram_only == True:
 for sample in sample_list:
 	if cram_only == True:
 		try:
-			cramfile = dico_run[sample]['.cram']
-			if 'archive.cram' in cramfile:
-				files_cram = []
-				files_cram.append(os.path.splitext((os.path.basename(cramfile)))[0])
-				for cram in files_cram:
+			items = dico_run[sample]['.cram']
+			for aligner in aligner_list:
+				if aligner in items:
 					#samtools view -b -T ref_sequence.fa -o $sample.bam $sample.cram
-					shell("samtools view -T "+refgene+" -o "+inputdir+"/"+cram+".bam"+" "+cramfile)
+					name = os.path.splitext((os.path.basename(items)))[0]
+					shell("samtools view -T "+refgene+" -o "+inputdir+"/"+name+".bam"+" "+items)
 					with open(logfile, 'a+') as f:
 						f.write("Extracting cram files :"+ "\n")
-						f.write(str(cramfile) + "\n")
+						f.write(str(items) + "\n")
 		except KeyError:
 			continue
 	if cram_only == False:
 		try:
 			items = dico_run[sample]['.bam']
 			for aligner in aligner_list:
-				if validation_only == True:
-					if 'validation' in items and aligner in items:
-					# Rename file sample.aligner.bam
-						if bam_copy == True:
-							copy2(items, inputdir+"/"+sample+"."+aligner+".bam")
-							with open(logfile, 'a+') as f:
-								f.write("Copying files :"+ "\n")
-								f.write(str(items) + "\n")
-						else:
-							shell("ln -sfn "+items+" "+inputdir+"/"+sample+"."+aligner+".bam")
-							with open(logfile, 'a+') as f:
-								f.write("Symlink files :"+ "\n")
-								f.write(str(items) + "\n")
-				if validation_only == False:
-					if 'validation' not in items and aligner in items:
-						if bam_copy == True:
-							copy2(items, inputdir+"/"+sample+"."+aligner+".bam")
-							with open(logfile, 'a+') as f:
-								f.write("Copying files :"+ "\n")
-								f.write(str(items) + "\n")
-						else:
-							shell("ln -sfn "+items+" "+inputdir+"/"+sample+"."+aligner+".bam")
-							with open(logfile, 'a+') as f:
-								f.write("Symlink files :"+ "\n")
-								f.write(str(items) + "\n")
+				if aligner in items:
+					if bam_copy == True:
+						copy2(items, inputdir)
+						with open(logfile, 'a+') as f:
+							f.write("Copying files :"+ "\n")
+							f.write(str(items) + "\n")
+					else:
+						shell("ln -sfn "+items+" "+inputdir)
+						with open(logfile, 'a+') as f:
+							f.write("Symlink files :"+ "\n")
+							f.write(str(items) + "\n")
 		except KeyError: pass
 
-# Creating a txt list for the bam files per aligner from the inputdir
-files_list_depot = sorted(filter(os.path.isfile, glob.glob(inputdir + '*/*', recursive=False)))
+# Creating a txt list for the bam files per aligner
+files_list_depot = searchfiles(inputdir, '*/*', False)
+
 for aligner in aligner_list:
 	bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + '.bamlist.txt'
 	with open(bamlist, 'a+') as f:
@@ -275,37 +260,17 @@ for aligner in aligner_list:
 				if files.endswith('.bam'):
 					f.write(str(files) + "\n")
 
-# Find transcripts files (NM)
-if not transcripts_file:
-	for sample in sample_list:
-		for ext in ext_list:
-			try:
-				items = dico_run[sample][ext]
-				if '.transcripts' in items and not '.list.transcripts' in items:
-					transcripts_file = items
-			except KeyError: pass
-
 # Find bed file (Design)
 if not bed_file:
-	for sample in sample_list:
-		for ext in ext_list:
-			try:
-				items = dico_run[sample][ext]
-				if '.design.bed' in items:
-					if os.path.exists(items) and os.path.getsize(items) != 0:
-						bed_file = items
-			except KeyError: pass
+	bed_file = finditemindico(sample_list, ext_list, dico_run, '.design.bed', '.genes.bed')
+
+# Find transcripts files (NM)
+if not transcripts_file:
+	transcripts_file = finditemindico(sample_list, ext_list, dico_run, '.transcripts', '.list.transcripts')
 
 # Find genes file (Panel)
 if not genes_file:
-	for sample in sample_list:
-		for ext in ext_list:
-			try:
-				items = dico_run[sample][ext]
-				if '.manifest.genes' in items and not '.manifest.genes.bed' in items:
-					if os.path.exists(items) and os.path.getsize(items) != 0:
-						genes_file = items
-			except KeyError: pass
+	genes_file = finditemindico(sample_list, ext_list, dico_run, '.manifest.genes.bed', '.manifest.genes')
 
 if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
 	df = pd.read_csv(transcripts_file, sep='\t', names=["NM", "Gene"])

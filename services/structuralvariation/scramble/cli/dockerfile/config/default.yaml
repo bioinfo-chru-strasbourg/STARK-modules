@@ -59,7 +59,7 @@ EXCLUDE_SAMPLE_LIST: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', '
 FILTER_SAMPLE_LIST: []
 
 # Ext to index (endwith)
-EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai"]
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai"]
 
 # Copy options of input files (true = copy false = symlink)
 BAM_COPY: False
@@ -83,7 +83,7 @@ DEPOT_COPY: False
 
 ##### Search parameters for inputs ####
 RECURSIVE_SEARCH: False
-SEARCH_ARGUMENT: "*/*/STARK/*"
+SEARCH_ARGUMENT: "/*/STARK/*"
 
 ## DEBUG ##
 DEBUG_MODE: True
