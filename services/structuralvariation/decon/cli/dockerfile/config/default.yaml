@@ -14,71 +14,61 @@
 # Default repository/depository path from listener.py/launcher.py
 repository: "/STARK/output/repository"
 depository: "/STARK/output/depository"
-
 # Output directory if not repository
 OUTPUT_DIR: ""
+# Path to a folder where intermediate files will be written
+TMP_DIR: "tmp"
+
+# Copy to depot directory (archive)
+DEPOT_COPY: False
 
 # Group and App default name
 GROUP_NAME: "UNKNOW"
 APP_NAME: "UNKNOW"
 
 # Default path to the input datas == {run} from listener.py/launcher.py
-run: "data"
+run: ""
+# Bed file
+BED_FILE: ""
+# Genes file
+GENES_FILE: ""
+# Transcripts file
+TRANSCRIPTS_FILE: ""
 
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "DECON"
 
-# Bed file
-BED_FILE: ""
-
-# Genes file
-GENES_FILE: ""
-
-# Transcripts file
-TRANSCRIPTS_FILE: ""
-
-# Regen exon number with IntersectBed and a refseqgene reference (True/False)
-EXON_REGEN: False
-# Keep intergenic region when exon regen is done
-KEEP_INTERGENIC: False
-# Extract Gene name from custom exon file if EXON_REGEN: True only (only if Gene name is missing from initial bed)
-BED_CUSTOMEXON: False
-
+### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
-
 # Default path to Refgene file
 REFSEQGENE_PATH: "/STARK/databases/refGene/current/formated_refgene.tsv"
-
 # Path to Decon R directory
 DECON_PATH: "/tools/DECoN/current/bin/"
-
 # Path to Bedtools
 BEDTOOLS_PATH: "/tools/bedtools/current/bin/bedtools"
-
 # Path to Bcftools
 BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
 
-# Path to a folder where intermediate files will be written
-TMP_DIR: "tmp"
-
 # Samples list exclusion (not to be analyse) (startswith)
 EXCLUDE_SAMPLE_LIST: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
-
 # Sample filter
 FILTER_SAMPLE_LIST: []
 
+### Indexing files options
 # Ext to index (endwith)
 EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai"]
 
-# Copy option (True = copy / False = symlink)
-BAM_COPY: False
-
-# Validation BAM analysis only
+# Only analyse validation.bam/cram files
 VALIDATION_ONLY: False
 
-# Analyse only CRAM
-CRAM_ONLY: False
+# Process .bam or .cram
+PROCESS_FILE: ".bam"
+# Process input files : samtools/cp/ls
+PROCESS_CMD: 'ls'
+
+# Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
+ALIGNER_NAME:
 
 # Rsync options : if several files are added add {} at the start and end of the list
 # include_rsync must have more than one arguement
@@ -88,10 +78,7 @@ EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
-# Copy to depot directory (archive)
-DEPOT_COPY: False
-
-##### Search parameters #####
+##### Search parameters of input for the search function #####
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
@@ -101,7 +88,15 @@ THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: True
 
-############## Tools parameters ##############
+### DECON BED processing ###
+# Regen exon number with IntersectBed and a refseqgene reference (True/False)
+EXON_REGEN: False
+# Keep intergenic region when exon regen is done
+KEEP_INTERGENIC: False
+
+
+############## Tools specific parameters ##############
+
 ############# IdentifyFailures params
 mincorr: 0.98 # Minimum correlation threshold – the minimum correlation between a test sample and any other sample for the test sample to be considered well-correlated (default 0.98)
 mincov: 100 # Minimum coverage threshold – the minimum median coverage for any sample (measured across all exons in the target) or exon (measured across all samples) to be considered well-covered (default 100)

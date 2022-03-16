@@ -6,8 +6,7 @@
 # DEV version 0.1 : 10/11/2021
 # Authoring : Thomas LAVAUX
 
-# TODO catch an exception if the bam files don't have a aligner name ie structure is sample.bam and not sample.aligner.bam
-# Need to figure out a trick to avoid crash
+# TODO create a vcf per panel if there's more than one panel (genes_file)
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory (default is data) without / at the end of the path
@@ -29,11 +28,16 @@ import pandas as pd
 
 from datetime import datetime
 from shutil import copy2
-from shutil import move
 
 ################## Configuration file and PATHS ##################
 configfile: "/app/config/default.yaml"
 
+### COMMON VARIABLES ###
+# Analysis only validation bam/cram files
+validation_only = config['VALIDATION_ONLY']
+
+# Debug mode
+debug = config['DEBUG_MODE']
 
 # Subdir of module results
 serviceName = config['serviceName']
@@ -41,14 +45,17 @@ serviceName = config['serviceName']
 # Datas directory
 rundir = config['run']
 
-# RefSeq variable
-refseqgene = config['REFSEQGENE_PATH']
+# Repository/depository directories
+repositorydir = config['repository']
+depositorydir = config['depository']
+outputdir = config['OUTPUT_DIR']
 
-# Refgene variable
-refgene = config['REFGENEFA_PATH']
+# Copy to depot (archive)
+depotcopy = config['DEPOT_COPY']
 
-# Decon dir for R scripts
-decondir = config['DECON_PATH']
+# Group and app name to construct output
+group_name = config['GROUP_NAME']
+app_name = config['APP_NAME']
 
 # Design.bed or SAMPLE.bed or SAMPLE.aligner.design.bed in STARK folder
 bed_file = config['BED_FILE']
@@ -57,63 +64,57 @@ genes_file = config['GENES_FILE']
 # Transcripts file containing NM notation SAMPLE.transcripts in STARK folder
 transcripts_file = config['TRANSCRIPTS_FILE']
 
+# Search options to find files to process
+recursive_search = config['RECURSIVE_SEARCH']
+search_argument = config['SEARCH_ARGUMENT']
+
 # Sample to remove, set in config_scramble.yaml file
 sample_exclude_list = config['EXCLUDE_SAMPLE_LIST']
 filter_sample_list = config['FILTER_SAMPLE_LIST']
 
-# Ext to index
+# Ext to index into dictionary
 ext_list = config['EXT_INDEX_LIST']
+# Option for processing (cp/ls/samtools)
+process_cmd = config['PROCESS_CMD']
+# Option for processing bam or cram
+process_file = config['PROCESS_FILE']
 
+# Option to append an aligner name to a file (case if the bam don't have an aligner name == sample.bam)
+aligner_name = config['ALIGNER_NAME']
+
+# Rsync options for copying results/log
+include_file = config['INCLUDE_RSYNC']
+exclude_file = config['EXCLUDE_RSYNC']
+include_file_log = config['INCLUDE_LOG_RSYNC']
+
+### Variables specific for the tools ###
+# RefSeq variable
+refseqgene = config['REFSEQGENE_PATH']
+# Refgene variable
+refgene = config['REFGENEFA_PATH']
+
+### Variable for DECON ###
+# DECON dir for R scripts
+decondir = config['DECON_PATH']
+
+### DECON Bed processing ###
 # Set DECON to custom exon analysis
 custom_exon = config['custom']
-
 # Regen exon number with IntersectBed and a refseqgene reference 
 customexon_regen = config['EXON_REGEN']
 keep_intergenic = config['KEEP_INTERGENIC']
 
-# Extract Gene name from custom exon file
-bed_customexon = config['BED_CUSTOMEXON']
-
-# Search options
-recursive_search = config['RECURSIVE_SEARCH']
-search_argument = config['SEARCH_ARGUMENT']
-
-#Analysis option
-validation_only = config['VALIDATION_ONLY']
-cram_only = config['CRAM_ONLY']
-
-# Option for bam copy (true) or symlink (false)
-bam_copy = config['BAM_COPY']
-
-# Rsync option
-include_file = config['INCLUDE_RSYNC']
-exclude_file = config['EXCLUDE_RSYNC']
-
-include_file_log = config['INCLUDE_LOG_RSYNC']
-
-# Repository/depository directories
-repositorydir = config['repository']
-depositorydir = config['depository']
-outputdir = config['OUTPUT_DIR']
-
-# Group and app name to construct output
-group_name = config['GROUP_NAME']
-app_name = config['APP_NAME']
-
-# Copy to depot (archive)
-depotcopy = config['DEPOT_COPY']
-
-# Debug mode
-debug = config['DEBUG_MODE']
 
 ### FUNCTIONS ###
 
-def finditemindico(sample_list, ext_list, dictionnary, include_ext, exclude_ext):
+def finditemindico(sample_list, ext_list, dictionary, include_ext, exclude_ext):
+	""" Function to search in a dictionary a file path itering by the first key (sample_list) and second key (extension_list) with an including and excluding filter """
+	""" Result must be an non empty file """
 	searchresult = ""
 	for sample in sample_list:
 		for ext in ext_list:
 			try:
-				items = dictionnary[sample][ext]
+				items = dictionary[sample][ext]
 				if include_ext in items and not exclude_ext in items:
 					if os.path.exists(items) and os.path.getsize(items) != 0:
 						searchresult = items
@@ -121,8 +122,91 @@ def finditemindico(sample_list, ext_list, dictionnary, include_ext, exclude_ext)
 	return searchresult
 
 def searchfiles(directory, search_arg, recursive_arg):
-	# Search all files in the directory + search_arg with recursive_search options (True/False)
+	""" Function to search all files in a directory, addind a search arguement append to the directory and a recursive_search options (True/False) """
 	return sorted(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
+
+def processalignedfiles(storedir, dictonnary, sample, ext, aligner_list, process_cmd, name=None):
+	""" Function to process bam or cram files who's path are stored in a dictionary by sample/ext name"""
+	""" You can either cp, ls bam files ; or use samtools to extract bam from a cram file into a storedir"""
+	""" You can append a name to the files if you specify a name """
+	inputfile = dictonnary[sample][ext]
+	file_without_ext = os.path.splitext((os.path.basename(inputfile)))[0]
+	# option to append name file with an aligner name (if file is sample.bam we need to rename it to sample.aligner.bam for the pipeline)
+	if name:
+		outputfile = storedir + "/" + file_without_ext + name
+		aligner_list.append(name)
+	else:
+		outputfile = storedir + "/" + file_without_ext
+	for aligner in aligner_list:
+		if aligner in inputfile:
+			if process_cmd == 'samtools':
+				shell("samtools view -b -T "+refgene+" -o "+outputfile+".bam "+inputfile)	# samtools view -b -T ref_sequence.fa -o sample.bam sample.cram
+			if process_cmd == 'cp':
+				copy2(inputfile, outputfile+ext)
+			if process_cmd == 'ls':
+				shell("ln -sfn "+inputfile+" "+outputfile+ext)
+
+def logsomefile(logfile, text, sep, items_list=None, items=None):
+	""" Function to log variable value or list values into a log file """
+	with open(logfile, 'a+') as f:
+		f.write(text + sep)
+		if items_list:
+			for items in items_list:
+				f.write(str(items) + sep)
+		else:
+			f.write(str(items) + sep)
+
+# structure of bam files are sample.aligner.(validation).bam or sample.archive.cram
+# samples name are taken from bam files
+# [x] for x part of the filename separated by '.'
+# [0] is sample ; [-1] is extension ; [1] is aligner
+def extractlistfromfiles(file_list, extension, sep, position):
+	""" Function for creating list from a file list, with a specific extension, a separator and the position of the string we want to extract """
+	output_list = []
+	for files in file_list:
+		filesname = os.path.basename(files)
+		if filesname.endswith(extension):
+			output_list.append(filesname.split(sep)[position])
+	output_list = list(set(output_list)) # we don't want duplicate in the list
+	return output_list
+
+def deconbedfromdesign(inputbed, outputbed, sepgenecolumn):
+	""" Function to extract a DECON bed 4 columns from another bed, assuming that the 4th column contains a gene name with a unique separator """
+	df = pd.read_csv(inputbed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+	df['Gene'] = df['Gene'].str.split(sepgenecolumn).str[0] # we extract the gene name == string before separator (ex TP73_chr1_3598878_3599018 sep is _chr to get TP73)
+	df.to_csv(outputbed, sep='\t', index=False, header=False)
+
+
+def aligned_list(txtlistoutput, file_list, ext, pattern):
+	""" Function to create a txt file from a list of files filtered by extension and pattern """
+	with open(txtlistoutput, 'a+') as f:
+		for files in file_list:
+			if pattern in files and files.endswith(ext):
+				f.write(str(files) + "\n")
+
+
+def makedictionary(dictionary, firstkey_list, secondkey_list, files_list, exclude_pattern, specific_ext, option_validation):
+	""" Function to create a dictionary """
+	# Init dictionary
+	dictionary = {}
+	for firstkey in firstkey_list:
+		dictionary[firstkey] = {}
+	# Populating dictionary
+	for firstkey in firstkey_list:
+		for secondkey in secondkey_list:
+			for files in files_list:
+				if os.path.basename(files).startswith(firstkey) and os.path.basename(files).endswith(secondkey):
+					if option_validation == False:
+						if secondkey == specific_ext and not exclude_pattern in files:
+							dico_run[firstkey][secondkey] = files
+						if secondkey != specific_ext and not exclude_pattern in files:
+							dico_run[firstkey][secondkey] = files
+					if option_validation == True:
+						if secondkey == specific_ext and exclude_pattern in files:
+							dico_run[firstkey][secondkey] = files
+						if secondkey != specific_ext and not exclude_pattern in files:
+							dico_run[firstkey][secondkey] = files
+
 
 ### END OF FUNCTIONS ###
 
@@ -165,43 +249,18 @@ annotation_file = tmpdir + "/" + serviceName + "." + date_time + '.AnnotSV.txt'
 deconbed_file = tmpdir + "/" + serviceName + "." + date_time + '.bed'
 
 # Create directories
-try:
-	os.makedirs(inputdir)
-	os.makedirs(tmpdir)
-	os.makedirs(outputdir)
-except FileExistsError: pass
-
+os.makedirs(inputdir, exist_ok = True)
+os.makedirs(tmpdir, exist_ok = True)
+os.makedirs(outputdir, exist_ok = True)
 if depotcopy == True:
-	try:
-		os.makedirs(depotdir)
-	except FileExistsError: pass
+	os.makedirs(depotdir, exist_ok = True)
 
 # Search files in repository 
 files_list = searchfiles(rundir, search_argument, recursive_search)
 
-# extract file names only
-files_name = []
-for files in files_list:
-	for ext in ext_list:
-		if files.endswith(ext):
-			files_name.append(os.path.basename(files))
-
-# Creating sample list
-# [0] for first part of the filename separated by '.' 
-# [0] is sample ; [-1] is extension ; [1] is aligner
-# if structure of bam files are sample.aligners.(validation).bam
-# samples name are taken from bam files
-aligner_list = []
-sample_list = []
-for files in files_name:
-	if files.endswith('.bam'):
-		# creating sample & aligner list
-		sample_list.append(files.split('.')[0])
-		aligner_list.append(files.split('.')[1])
-
-# Suppress duplicate of lists with list(set())
-sample_list = list(set(sample_list))
-aligner_list = list(set(aligner_list))
+# Create sample and ligner list
+sample_list = extractlistfromfiles(files_list, process_file, '.', 0)
+aligner_list = extractlistfromfiles(files_list, process_file, '.', 1)
 
 # Exclude samples from the exclude_list
 for sample_exclude in sample_exclude_list:
@@ -212,78 +271,60 @@ for sample_exclude in sample_exclude_list:
 # If filter_sample_list variable is not empty, it will force the sample list
 if filter_sample_list:
 	sample_list = list(filter_sample_list)
-# For validation analyse bam will be sample.validation.bam only
+# For validation analyse bam will be sample.aligner.validation.bam
 if validation_only == True:
-	aligner_list = ['validation']
-# For cram analyse bam will be sample.archive.bam only
-if cram_only == True:
-	aligner_list = ['archive']
+	append_aligner = '.validation'
+	aligner_list = [sub + append_aligner for sub in aligner_list]
 
-# Populating dictionary
+# Init dictionary
 dico_run = {}
 for samples in sample_list:
 	dico_run[samples] = {}
+
+# Populating dictionary
+for samples in sample_list:
 	for ext in ext_list:
 		for files in files_list:
 			if os.path.basename(files).startswith(samples) and os.path.basename(files).endswith(ext):
-				dico_run[samples][ext] = files
+				if validation_only == False:
+					if ext == process_file and not 'validation' in files:
+						dico_run[samples][ext] = files
+					if ext != process_file and not 'validation' in files:
+						dico_run[samples][ext] = files
+				if validation_only == True:
+					if ext == process_file and 'validation' in files:
+						dico_run[samples][ext] = files
+					if ext != process_file and not 'validation' in files:
+						dico_run[samples][ext] = files
 
-# Separate cram/bam treatment
-# for cram extract to bam into the depot directory
-# for bam copy or symlink the bam files to depot directory
+# Separate cram/bam processing
+# for cram extract to bam into the input directory
+# for bam copy or symlink the bam files to input directory
 for sample in sample_list:
-	if cram_only == True:
-		try:
-			items = dico_run[sample]['.cram']
-			for aligner in aligner_list:
-				if aligner in items:
-					#samtools view -b -T ref_sequence.fa -o $sample.bam $sample.cram
-					name = os.path.splitext((os.path.basename(items)))[0]
-					shell("samtools view -T "+refgene+" -o "+inputdir+"/"+name+".bam"+" "+items)
-					with open(logfile, 'a+') as f:
-						f.write("Extracting cram files :"+ "\n")
-						f.write(str(items) + "\n")
-		except KeyError:
-			continue
-	if cram_only == False:
-		try:
-			items = dico_run[sample]['.bam']
-			for aligner in aligner_list:
-				if aligner in items:
-					if bam_copy == True:
-						copy2(items, inputdir)
-						with open(logfile, 'a+') as f:
-							f.write("Copying files :"+ "\n")
-							f.write(str(items) + "\n")
-					else:
-						shell("ln -sfn "+items+" "+inputdir)
-						with open(logfile, 'a+') as f:
-							f.write("Symlink files :"+ "\n")
-							f.write(str(items) + "\n")
-		except KeyError: pass
+	processalignedfiles(inputdir, dico_run, sample, process_file, aligner_list, process_cmd, name=aligner_name)
+
+# Create the file_list by searching the depot directory
+files_list_depot = searchfiles(inputdir, '/*', False)
+
+# log
+logsomefile(logfile, 'Input file:', "\n", items_list = files_list_depot)
 
 # Creating a txt list for the bam files per aligner
-files_list_depot = searchfiles(inputdir, '*/*', False)
-
 for aligner in aligner_list:
-	bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + '.bamlist.txt'
-	with open(bamlist, 'a+') as f:
-		for files in files_list_depot:
-			if aligner in files:
-				if files.endswith('.bam'):
-					f.write(str(files) + "\n")
+	bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + '.list.txt'
+	aligned_list(bamlist, files_list_depot, process_file, aligner)
 
 # Find bed file (Design)
 if not bed_file:
 	bed_file = finditemindico(sample_list, ext_list, dico_run, '.design.bed', '.genes.bed')
 
+# Find genes file (Panel)
+if not genes_file:
+	genes_file = finditemindico(sample_list, ext_list, dico_run, '.genes.bed', '.design.genes')
+
 # Find transcripts files (NM)
 if not transcripts_file:
 	transcripts_file = finditemindico(sample_list, ext_list, dico_run, '.transcripts', '.list.transcripts')
-
-# Find genes file (Panel)
-if not genes_file:
-	genes_file = finditemindico(sample_list, ext_list, dico_run, '.manifest.genes.bed', '.manifest.genes')
 
 # If transcript file exist, create the annotation file for AnnotSV
 if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
@@ -300,16 +341,6 @@ else:
 # DECON need a 4 columns bed for the ReadInBams rule, if bed is not set correctly ReadInBams will crash
 # Chromosome Start End Gene but no header, bed format (tsv)
 # Chr must be formated chr1, Gene column must be a string, no negative numbers
-if bed_file:
-	# we will output a bed 4 columns with the original Gene name from the bed_file
-	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-	df['Gene'] = df['Gene'].str.split('_chr').str[0] # we extract the gene name == string before _chr separator (ex TP73_chr1_3598878_3599018)
-	# Note : for some bed with Gene = NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129, we will have a gene name == NM_006015_ARID1A_5utr-ex1
-	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
-else:
-	with open(logfile, 'a+') as f:
-		f.write("NO bed found, DECON cannot continue, exiting")
-	exit()
 
 ### DECON Custom.Exon ###
 # DECON can use a customNumbering.txt exons description for the accurate formating of pdfs graph (makeCNVcalls) and the IdentifyFailures rule, file is not mandatory
@@ -317,25 +348,16 @@ else:
 # exemple					:	17	4511	4889	BCRA1	26
 # documentation forgot to mention Gene column
 
-# Custom.exon creation based on genes bed file (aka panel)
-# Formating of gene.bed is chr1	45794957	45795129	MUTYH	0	- with a future 7th column = exon number, format is "exon1"
-if genes_file and customexon_regen == False:
-	df = pd.read_csv(genes_file, sep='\t', names=["Chr", "Start", "End", "Gene", "Version", "Strand", "Custom.Exon"], index_col=False)
-	df = df.drop(['Version', 'Strand'], 1)
-	df['Custom.Exon'] = df['Custom.Exon'].str.replace('exon','') # only numeric value of exons is required
-	df['Chr'] = df['Chr'].str.replace('chr','') # only numeric value of chr is required
-	df.to_csv(customnumberingfile, sep='\t', index=False)
-
-# Case if genes file bed don't have the 7th column = exon number
-# We create a custom exon file from intersectBed to get the exon number
+# Case if genes file bed don't have exon number
+# We create a custom exon file from the design bed and intersectBed with a refseqgene database to get the exon number
 # Warning the refseqgene must be generated before
 if bed_file and customexon_regen == True:
-	# Generating the custom.exon file from scratch (intersectBed)
+	# Generating the custom.exon file from scratch (intersectBed with refgene file)
 	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
 	df.to_csv(inputdir + "/" + serviceName + '.custom.bed', sep='\t', index=False, header=False)
 	# Intersect bed with refgene using bedtools
-	shell("intersectBed -a "+inputdir+"/"+serviceName+".custom.bed -b "+refseqgene+" -loj > "+inputdir+"/"+serviceName+".custom.exon.bed")
-	df = pd.read_csv(inputdir + "/" + serviceName + '.custom.exon.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "Tosplit", "Gene", "9"])
+	shell("intersectBed -a "+inputdir+"/"+serviceName+".custom.bed -b "+refseqgene+" -loj > "+inputdir+"/"+serviceName+".customtemp.bed")
+	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "Tosplit", "Gene", "9"])
 	df = df.drop(['4', '5', '6', '9'], 1)
 	df['NM'] = df['Tosplit'].str.split(',').str[0]
 	df['Custom.Exon'] = df['Tosplit'].str.split(',').str[-1]
@@ -359,34 +381,42 @@ if bed_file and customexon_regen == True:
 	df.to_csv(customnumberingfile, sep='\t', index=False)
 	# DECON.bed from custom.exon : if Gene name is missing from bed file, it will be extract from the customnumbering file
 	# Assuming that the custom exon file is tab separated	:	'Chr'	'Start'	'End'	'Gene'	'Custom.Exon'
-	if bed_customexon == True:
-		df = pd.read_csv(customnumberingfile, sep='\t', index_col=False)
-		df['Chr'] = 'chr' + df['Chr'].astype(str) # re-add the chr prefix to Chr columns value
-		# Save bed file DECON formated
-		df = df.drop(['Custom.Exon'], 1)
-		df.to_csv(deconbed_file, sep='\t', index=False, header=False)
+	df = pd.read_csv(customnumberingfile, sep='\t', index_col=False)
+	df['Chr'] = 'chr' + df['Chr'].astype(str) # re-add the chr prefix to Chr columns value
+	# Save bed file DECON formated
+	df = df.drop(['Custom.Exon'], 1)
+	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
 
+# Case when we generate a DECON.bed and a custom.exon file with design and panel bed
+if bed_file and genes_file and customexon_regen == False:
+	# Intersect bed design with panel intersectBed -a design.bed -b panel.bed -loj > RESULT.bed = columns 1 2 3 & 10 are retained for the bed, column 13 for the exon number
+	# ex = chr1	27022390	27024129	NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129	0	+	.	-1	-1	.	-1	.
+	shell("intersectBed -a "+bed_file+" -b "+genes_file+" -loj > "+inputdir+"/"+serviceName+".customtemp.bed")
+	# Generate DECON.bed
+	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene"])
+	df = df.drop(['4', '5', '6', '7', '8', '9'], 1)
+	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
+	# Generate custom numbering file
+	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "Custom.Exon"])
+	df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12'], 1)
+	df = df[pd.to_numeric(df['Custom.Exon'], errors='coerce').notnull()] # value is NaN if errors
+	df.to_csv(customnumberingfile, sep='\t', index=False)
 
-# log
-with open(logfile, 'a+') as f:
-	f.write("Start of the analysis : ")
-	f.write((date_time) + "\n")
-	f.write("Analysis run : ")
-	f.write((nameoftherun) + "\n")
-	f.write("List of samples :" + "\n")
-	for sample in sample_list:
-		f.write((sample) + "\n")
-	f.write("List of aligners :" + "\n")
-	for aligner in aligner_list:
-		f.write((aligner) + "\n")
-	f.write("Input files :" + "\n")
-	f.write("Bed : ")
-	f.write((bed_file) + "\n")
-	f.write("Genes : ")
-	f.write((genes_file) + "\n")
-	f.write("Transcripts : ")
-	f.write((transcripts_file) + "\n")
-	f.write((include_file) + "\n")
+#if bed_file and customexon_regen == False:
+#	deconbedfromdesign(bed_file, deconbed_file, '_chr')
+
+if not bed_file:
+	logsomefile(logfile, 'No bed found, DECON cannot continue, exiting', "\n")
+	exit()
+
+# Log
+logsomefile(logfile, 'Start of the analysis:', "\n", items = date_time)
+logsomefile(logfile, 'List of samples:', "\n", items_list = sample_list)
+logsomefile(logfile, 'Aligner list:', "\n", items_list = aligner_list)
+logsomefile(logfile, 'Analyse run:', "\n", items = nameoftherun)
+logsomefile(logfile, 'Design Bed:', "\n", items = bed_file)
+logsomefile(logfile, 'Panel Bed:', "\n", items = genes_file)
+logsomefile(logfile, 'Transcripts list:', "\n", items = transcripts_file)
 
 
 # Copy2 bed_file & genes_file & transcripts_file (for debug)
@@ -478,7 +508,7 @@ rule ReadInBams:
 	Requirement : all .bam files must have a .bai file associated with in the same folder
 	"""
 	input:
-		bamlist = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.bamlist.txt", aligner=aligner_list)
+		bamlist = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.list.txt", aligner=aligner_list)
 	output:
 		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".RData"
 	params:
@@ -617,9 +647,6 @@ rule splitvcf:
 		"""
 		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgzdesign} && [[ -s {output.vcfgzsplit} ]] || cat empty.vcf.gz > {output.vcfgzsplit}  ; tabix {output.vcfgzsplit}
 		"""
-		
-#need to output a valid emptyvcf.gz		
-#  ; tabix {output.vcfgzsplit}
 
 
 # AnnotSV need bedtools to work ie you have to specify the directory of bedtools binaries in -bedtools argument
