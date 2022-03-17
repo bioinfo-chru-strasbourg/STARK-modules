@@ -34,6 +34,8 @@ BED_FILE: ""
 GENES_FILE: ""
 # Transcripts file
 TRANSCRIPTS_FILE: ""
+# List genes
+LIST_GENES: ""
 
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "DECON"
@@ -49,7 +51,8 @@ DECON_PATH: "/tools/DECoN/current/bin/"
 BEDTOOLS_PATH: "/tools/bedtools/current/bin/bedtools"
 # Path to Bcftools
 BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
-
+# Path to scripts
+SCRIPTS_PATH: "/app/src"
 # Samples list exclusion (not to be analyse) (startswith)
 EXCLUDE_SAMPLE_LIST: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
 # Sample filter
@@ -57,7 +60,7 @@ FILTER_SAMPLE_LIST: []
 
 ### Indexing files options
 # Ext to index (endwith)
-EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai"]
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai", "list.genes"]
 
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False

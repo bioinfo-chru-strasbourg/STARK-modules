@@ -46,7 +46,8 @@ BEDTOOLS_PATH: "/tools/bedtools/current/bin/bedtools"
 BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
 # Path to Scramble R directory scripts
 SCRAMBLE_PATH: "/tools/scramble/current/bin"
-
+# Path to scripts
+SCRIPTS_PATH: "/app/src"
 # Samples list exclusion (not to be analyse)
 EXCLUDE_SAMPLE_LIST: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
 # Sample filter

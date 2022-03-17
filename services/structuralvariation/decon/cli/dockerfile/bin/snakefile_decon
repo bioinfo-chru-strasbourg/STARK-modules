@@ -28,7 +28,7 @@ import pandas as pd
 
 from datetime import datetime
 from shutil import copy2
-
+from shutil import move
 ################## Configuration file and PATHS ##################
 configfile: "/app/config/default.yaml"
 
@@ -63,6 +63,8 @@ bed_file = config['BED_FILE']
 genes_file = config['GENES_FILE']
 # Transcripts file containing NM notation SAMPLE.transcripts in STARK folder
 transcripts_file = config['TRANSCRIPTS_FILE']
+# List genes contains list of gene's files
+list_genes = config['LIST_GENES']
 
 # Search options to find files to process
 recursive_search = config['RECURSIVE_SEARCH']
@@ -92,6 +94,8 @@ include_file_log = config['INCLUDE_LOG_RSYNC']
 refseqgene = config['REFSEQGENE_PATH']
 # Refgene variable
 refgene = config['REFGENEFA_PATH']
+# Scripts path
+scriptspath = config['SCRIPTS_PATH']
 
 ### Variable for DECON ###
 # DECON dir for R scripts
@@ -103,7 +107,6 @@ custom_exon = config['custom']
 # Regen exon number with IntersectBed and a refseqgene reference 
 customexon_regen = config['EXON_REGEN']
 keep_intergenic = config['KEEP_INTERGENIC']
-
 
 ### FUNCTIONS ###
 
@@ -176,14 +179,12 @@ def deconbedfromdesign(inputbed, outputbed, sepgenecolumn):
 	df['Gene'] = df['Gene'].str.split(sepgenecolumn).str[0] # we extract the gene name == string before separator (ex TP73_chr1_3598878_3599018 sep is _chr to get TP73)
 	df.to_csv(outputbed, sep='\t', index=False, header=False)
 
-
 def aligned_list(txtlistoutput, file_list, ext, pattern):
 	""" Function to create a txt file from a list of files filtered by extension and pattern """
 	with open(txtlistoutput, 'a+') as f:
 		for files in file_list:
 			if pattern in files and files.endswith(ext):
 				f.write(str(files) + "\n")
-
 
 def makedictionary(dictionary, firstkey_list, secondkey_list, files_list, exclude_pattern, specific_ext, option_validation):
 	""" Function to create a dictionary """
@@ -206,7 +207,6 @@ def makedictionary(dictionary, firstkey_list, secondkey_list, files_list, exclud
 							dico_run[firstkey][secondkey] = files
 						if secondkey != specific_ext and not exclude_pattern in files:
 							dico_run[firstkey][secondkey] = files
-
 
 ### END OF FUNCTIONS ###
 
@@ -258,7 +258,7 @@ if depotcopy == True:
 # Search files in repository 
 files_list = searchfiles(rundir, search_argument, recursive_search)
 
-# Create sample and ligner list
+# Create sample and aligner list
 sample_list = extractlistfromfiles(files_list, process_file, '.', 0)
 aligner_list = extractlistfromfiles(files_list, process_file, '.', 1)
 
@@ -280,7 +280,6 @@ if validation_only == True:
 dico_run = {}
 for samples in sample_list:
 	dico_run[samples] = {}
-
 # Populating dictionary
 for samples in sample_list:
 	for ext in ext_list:
@@ -337,6 +336,30 @@ else:
 	with open(annotation_file, 'w') as f:
 		f.write("No NM found")
 
+# Find list.genes files 
+if not list_genes:
+	list_genes = finditemindico(sample_list, ext_list, dico_run, '.list.genes', '.list.transcripts')
+
+# Transform list_genes into a list
+if list_genes:
+	with open(list_genes) as f:
+		panel_list = f.read().splitlines()
+elif genes_file and not list_genes:
+	panel_list = genes_files
+# cp files from panel_list to inputdir and rename them
+if panel_list:
+	for panel in panel_list:
+		inputfile = os.path.dirname(list_genes) + "/" + panel
+		# cut sample. and .genes.bed from file name like sample.whatever.genes.bed for outputfile file
+		panel_trunc = panel.split(".", 1)[1].split(".genes.bed",1)[0]
+		outputfile = tmpdir + "/" + panel_trunc
+		copy2(inputfile, outputfile)
+		# Create a new list with file name without sample and .genes.bed
+		panel_list_trunc = []
+		panel_list_trunc.append(panel_trunc)
+
+print(panel_list)
+print(panel_list_trunc)
 ### DECON bed ###
 # DECON need a 4 columns bed for the ReadInBams rule, if bed is not set correctly ReadInBams will crash
 # Chromosome Start End Gene but no header, bed format (tsv)
@@ -418,7 +441,6 @@ logsomefile(logfile, 'Design Bed:', "\n", items = bed_file)
 logsomefile(logfile, 'Panel Bed:', "\n", items = genes_file)
 logsomefile(logfile, 'Transcripts list:', "\n", items = transcripts_file)
 
-
 # Copy2 bed_file & genes_file & transcripts_file (for debug)
 if debug:
 	try:
@@ -436,7 +458,7 @@ if debug:
 #
 # rule all will different depending on the bed files available
 # design = .bed, vcf will be vcf.design ; panel = genes, vcf will be vcf.panel ; not bed or genes = vcf will be vcf.full
-# warning : bcftools merge will crash if there's only 1 sample
+# warning : bcftools merge will crash if there's only 1 sample, so we need to cp files
 ############################################################################################################
 
 ##### NOTE ####
@@ -444,7 +466,6 @@ if debug:
 # For programs that do not have an explicit log parameter, you may always use 2> {log} to redirect standard output to a file (here, the log file) in Linux-based systems. Note that it is also supported to have multiple (named) log files being specified
 # 1 is stdout, 2 is stderr 
 ##################
-
 
 ruleorder: indexing > ReadInBams
 
@@ -456,8 +477,9 @@ if genes_file:
 		input:
 			bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
 			failtxt = tmpdir + "/" + serviceName + "." + date_time + "_coverage_Failures.txt",
-			vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.vcf.gz", aligner=aligner_list, sample=sample_list),
-			vcfgzallpanel = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Panel.vcf.gz"
+			vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panel_list_trunc),
+			vcfgzallpanel = expand(tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Panel.{panel}.vcf.gz", panel=panel_list_trunc)
+
 else:
 	rule all:
 		"""
@@ -482,7 +504,6 @@ rule help:
 	Input file = bam files (if bai is needed, it will be generate)
 	Output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of vcf files by design/panel
 	"""
-
 
 rule indexing:
 	"""
@@ -590,7 +611,7 @@ rule Decon_tsv2vcf:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".DeconTsv2Vcf.log"
 	shell:
 		"""
-		python3.9 ./src/file_converter.py -i {input.txt} -o {output.vcfunsort} -fi tsv -fo vcf -c ./src/fileconversion/config_decon.json 2> {log.log1} && [[ -s {output.vcfunsort} ]] || cat empty.vcf > {output.vcfunsort} 
+		python3.9 {scriptspath}/file_converter.py -i {input.txt} -o {output.vcfunsort} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log1} && [[ -s {output.vcfunsort} ]] || cat empty.vcf > {output.vcfunsort} 
 		"""
 
 # bcftools sort don't sort correctly
@@ -615,18 +636,17 @@ rule vcf2gz:
 		bgzip -c {input.vcfsort} > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign} 
 		"""
 
-
 rule filtervcfall:
 	input:
 		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
 	output:
-		vcfgzallpanel = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Panel.vcf.gz"
+		vcfgzallpanel = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Panel.{panel}.vcf.gz"
+	params:
+		genes = expand(tmpdir + "/{panel}" , panel=panel_list_trunc)
 	shell:
 		"""
-		bcftools view {input.vcfgzdesign} -R {genes_file} -O z -o {output.vcfgzallpanel} && tabix {output.vcfgzallpanel} && [[ -s {output.vcfgzallpanel} ]] || cat empty.vcf.gz > {output.vcfgzallpanel}
+		bcftools view {input.vcfgzdesign} -R {params.genes} -O z -o {output.vcfgzallpanel} && tabix {output.vcfgzallpanel} && [[ -s {output.vcfgzallpanel} ]] || cat empty.vcf.gz > {output.vcfgzallpanel}
 		"""
-
-
 
 # --force-samples will output a vcf file with all annotations but without a sample name if the sample did not exist
 # so we output a dummy vcf.gz
@@ -647,7 +667,6 @@ rule splitvcf:
 		"""
 		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgzdesign} && [[ -s {output.vcfgzsplit} ]] || cat empty.vcf.gz > {output.vcfgzsplit}  ; tabix {output.vcfgzsplit}
 		"""
-
 
 # AnnotSV need bedtools to work ie you have to specify the directory of bedtools binaries in -bedtools argument
 # add -hpo {params.hpofile} if hpofile exist
@@ -675,7 +694,6 @@ rule AnnotSV:
 		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsv} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsv} ]] || echo "No data to annotate" > {output.tsv}
 		"""
 
-
 rule AnnotSV2vcf:
 	input:
 		tsv = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv"
@@ -685,7 +703,7 @@ rule AnnotSV2vcf:
 		log1 = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV2vcf.log"
 	shell:
 		"""
-		python3.9 ./src/file_converter.py  -i {input.tsv} -o {output.vcfanot} -fi annotsv -fo vcf -c ./src/fileconversion/config_annotsv3.json 2> {log.log1} && [[ -s {output.vcfanot} ]] || echo "No data to annotate" > {output.vcfanot}
+		python3.9 {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfanot} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json 2> {log.log1} && [[ -s {output.vcfanot} ]] || echo "No data to annotate" > {output.vcfanot}
 		"""
 
 rule vcf2gzsample:
@@ -698,17 +716,17 @@ rule vcf2gzsample:
 		bcftools sort {input.vcfanot} | bgzip > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign}
 		"""
 
-
-rule filtervcf:
+rule filtervcfpanel:
 	input:
 		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
 	output:
-		vcfgzpanel = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.vcf.gz"
+		vcfgzpanel = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz"
+	params:
+		genes = expand(tmpdir + "/{panel}", panel=panel_list_trunc)
 	shell:
 		"""
-		bcftools view {input.vcfgzdesign} -R {genes_file} -O z -o {output.vcfgzpanel} && [[ -s {output.vcfgzpanel} ]] || cat empty.vcf.gz > {output.vcfgzpanel} ;  tabix {output.vcfgzpanel} 
+		bcftools view {input.vcfgzdesign} -R {params.genes} -O z -o {output.vcfgzpanel} && [[ -s {output.vcfgzpanel} ]] || cat empty.vcf.gz > {output.vcfgzpanel} ;  tabix {output.vcfgzpanel} 
 		"""
-
 
 onstart:
 	shell("touch " + tmpdir + "/" + serviceName + "Running.txt")
@@ -748,7 +766,6 @@ onsuccess:
 		
 	if depotcopy == True:
 		shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {depotdir}")
-
 
 onerror:
 	shell("touch " + tmpdir + "/" + serviceName + "Failed.txt")

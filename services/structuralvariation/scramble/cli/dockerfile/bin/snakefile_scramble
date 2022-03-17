@@ -6,9 +6,7 @@
 # DEV version 0.1 : 10/11/2021
 # Authoring : Thomas LAVAUX
 
-
 # TODO create a vcf per panel if there's more than one panel (genes_file)
-
 
 ################## Context ##################
 # launch snakemake -s  snakefile_scramble -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory (default data) without / at the end of the path
@@ -22,7 +20,7 @@
 
 # input file = bam files (if bai is needed, it will be generate)
 # output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of files by design/panel
-
+# warning : bcftools merge will crash if there's only 1 sample, so we need to cp files
 ################## Import libraries ##################
 import os
 import os.path
@@ -32,7 +30,7 @@ import json
 
 from datetime import datetime
 from shutil import copy2
-
+from shutil import move
 
 ################## Configuration file and PATHS ##################
 configfile: "/app/config/default.yaml"
@@ -45,6 +43,8 @@ rundir = config['run']
 
 # Refgene variable
 refgene = config['REFGENEFA_PATH']
+# Scripts path
+scriptspath = config['SCRIPTS_PATH']
 
 # Sample to remove, set in config_scramble.yaml file
 sample_exclude_list = config['EXCLUDE_SAMPLE_LIST']
@@ -63,6 +63,8 @@ bed_file = config['BED_FILE']
 genes_file = config['GENES_FILE']
 # Transcripts file containing NM notation SAMPLE.transcripts in STARK folder
 transcripts_file = config['TRANSCRIPTS_FILE']
+# List genes contains list of gene's files
+list_genes = config['LIST_GENES']
 
 #Analysis option
 validation_only = config['VALIDATION_ONLY']
@@ -213,7 +215,7 @@ if depotcopy == True:
 # Search files in the rundir directory
 files_list = searchfiles(rundir, search_argument, recursive_search)
 
-# Create sample and ligner list
+# Create sample and aligner list
 sample_list = extractlistfromfiles(files_list, process_file, '.', 0)
 aligner_list = extractlistfromfiles(files_list, process_file, '.', 1)
 
@@ -236,7 +238,6 @@ if validation_only == True:
 dico_run = {}
 for samples in sample_list:
 	dico_run[samples] = {}
-
 # Populating dictionary
 for samples in sample_list:
 	for ext in ext_list:
@@ -293,6 +294,28 @@ else:
 	with open(annotation_file, 'w') as f:
 		f.write("No NM found")
 
+# Find list.genes files 
+if not list_genes:
+	list_genes = finditemindico(sample_list, ext_list, dico_run, '.list.genes', '.list.transcripts')
+
+# Transform list_genes into a list
+if list_genes:
+	with open(list_genes) as f:
+		panel_list = f.read().splitlines()
+elif genes_file and not list_genes:
+	panel_list = genes_files
+# cp files from panel_list to inputdir and rename them
+if panel_list:
+	for panel in panel_list:
+		inputfile = os.path.dirname(list_genes) + "/" + panel
+		# cut sample. and .genes.bed from file name like sample.whatever.genes.bed for outputfile file
+		panel_trunc = panel.split(".", 1)[1].split(".genes.bed",1)[0]
+		outputfile = tmpdir + "/" + panel_trunc
+		copy2(inputfile, outputfile)
+		# Create a new list with file name without sample and .genes.bed
+		panel_list_trunc = []
+		panel_list_trunc.append(panel_trunc)
+
 # Log
 logsomefile(logfile, 'Start of the analysis:', "\n", items = date_time)
 logsomefile(logfile, 'List of samples:', "\n", items_list = sample_list)
@@ -302,7 +325,6 @@ logsomefile(logfile, 'Design Bed:', "\n", items = bed_file)
 logsomefile(logfile, 'Panel Bed:', "\n", items = genes_file)
 logsomefile(logfile, 'Transcripts list:', "\n", items = transcripts_file)
 
-
 # Copy2 bed_file & genes_file & transcripts_file (for debug)
 if debug:
 	try:
@@ -310,7 +332,6 @@ if debug:
 		copy2(genes_file, inputdir)
 		copy2(transcripts_file, inputdir)
 	except FileNotFoundError: pass
-
 
 ################################################## RULES ##################################################
 # The input for the rule all is the output of the pipeline
@@ -339,8 +360,8 @@ if genes_file:
 		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
 		"""
 		input:
-			vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.vcf.gz", sample=sample_list, aligner=aligner_list),
-			vcfgzallpanel = tmpdir + "/" + serviceName + "." + date_time + ".all.Panel.vcf.gz"
+			vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panel_list_trunc),
+			vcfgzallpanel = expand(tmpdir + "/" + serviceName + "." + date_time + ".all.Panel.{panel}.vcf.gz",  panel=panel_list_trunc)
 
 if bed_file:
 	rule all:
@@ -359,7 +380,6 @@ else:
 		input:
 			vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
 			vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Full.vcf.gz"
-
 
 rule help:
 	"""
@@ -482,7 +502,6 @@ rule AnnotSV:
 		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsv} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsv} ]] || cat emptyAnnotSV | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.tsv}
 		"""
 
-
 rule AnnotSV2vcf:
 	input:
 		tsv = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.tsv"
@@ -490,7 +509,7 @@ rule AnnotSV2vcf:
 		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Fullunsort.vcf"
 	shell:
 		"""
-		python3.9 ./src/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c ./src/fileconversion/config_annotsv3.json && [[ -s {output.vcfunsort} ]] || cat emptyAnnotSVvcf | sed 's/NAMEOFTHEINPUTFILE/{input.tsv}/g' | sed 's/DATE/${{date +%d/%m/%Y}}/g' | sed 's /REFNAME/{refgene}/g' | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
+		python3.9 {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json && [[ -s {output.vcfunsort} ]] || cat emptyAnnotSVvcf | sed 's/NAMEOFTHEINPUTFILE/{input.tsv}/g' | sed 's/DATE/${{date +%d/%m/%Y}}/g' | sed 's /REFNAME/{refgene}/g' | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
 		"""
 
 # bcftools sort don't sort correctly
@@ -530,7 +549,6 @@ rule cpvcffull:
 		fi
 		"""
 
-
 # bcftools need vcf.gz.tbi index
 rule filtervcfdesign:
 	input:
@@ -543,7 +561,6 @@ rule filtervcfdesign:
 		"""
 		bcftools view {input.vcfgz} -R {params.bed} -O z -o {output.vcfgzdesign} && tabix {output.vcfgzdesign}
 		"""
-
 
 rule cpvcfdesign:
 	input:
@@ -560,14 +577,13 @@ rule cpvcfdesign:
 		fi
 		"""
 
-
 rule filtervcfpanel:
 	input:
 		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
 	output:
-		vcfgzpanel = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.vcf.gz"
+		vcfgzpanel = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz"
 	params:
-		genes = genes_file
+		genes = expand(tmpdir + "/{panel}", panel=panel_list_trunc)
 	shell:
 		"""
 		bcftools view {input.vcfgzdesign} -R {params.genes} -O z -o {output.vcfgzpanel} && tabix {output.vcfgzpanel}
@@ -575,9 +591,9 @@ rule filtervcfpanel:
 
 rule cpvcfpanel:
 	input:
-		vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.vcf.gz", sample=sample_list, aligner=aligner_list)
+		vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panel_list_trunc)
 	output:
-		vcfgzallpanel = tmpdir + "/" + serviceName + "." + date_time + ".all.Panel.vcf.gz"
+		vcfgzallpanel = expand(tmpdir + "/" + serviceName + "." + date_time + ".all.Panel.{panel}.vcf.gz", panel=panel_list_trunc)
 	shell:
 		"""
 		if [ {sample_count} -eq 1 ]
@@ -609,7 +625,6 @@ onsuccess:
 	shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
 	if depotcopy == True:
 		shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {depotdir}")
-
 
 onerror:
 	shell("touch " + tmpdir + "/" + serviceName + "Failed.txt")
