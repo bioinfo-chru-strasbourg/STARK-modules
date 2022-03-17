@@ -62,7 +62,7 @@ FILTER_SAMPLE_LIST: []
 
 ### Indexing files options
 # Ext to index (endwith)
-EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai", "list.genes"]
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai", ".list.genes"]
 
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False

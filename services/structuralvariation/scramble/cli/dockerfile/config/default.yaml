@@ -57,8 +57,9 @@ EXCLUDE_SAMPLE_LIST: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', '
 # Sample filter
 FILTER_SAMPLE_LIST: []
 
+### Indexing files options
 # Ext to index (endwith)
-EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai"]
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai", ".list.genes"]
 
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False

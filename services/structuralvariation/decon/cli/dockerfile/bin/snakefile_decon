@@ -318,7 +318,7 @@ if not bed_file:
 
 # Find genes file (Panel)
 if not genes_file:
-	genes_file = finditemindico(sample_list, ext_list, dico_run, '.genes.bed', '.design.genes')
+	genes_file = finditemindico(sample_list, ext_list, dico_run, '.genes.bed', '.list.genes')
 
 # Find transcripts files (NM)
 if not transcripts_file:
@@ -344,16 +344,17 @@ if list_genes:
 	with open(list_genes) as f:
 		panel_list = f.read().splitlines()
 elif genes_file and not list_genes:
-	panel_list = genes_files
+	panel_list = []
+	panel_list.append(os.path.basename(genes_file).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
 # cp files from panel_list to inputdir and rename them
 if panel_list:
 	for panel in panel_list:
-		inputfile = os.path.dirname(list_genes) + "/" + panel
-		# cut sample. and .genes.bed from file name like sample.whatever.genes.bed for outputfile file
-		panel_trunc = panel.split(".", 1)[1].split(".genes.bed",1)[0]
+		inputfile = os.path.dirname(list_genes) + "/" + panel + ".bed" # panel_list don't have the bed extension, need that for the copy
+		# cut sample. and .genes from file name so files will have the same name as the truncated name list
+		panel_trunc = panel.split(".", 1)[1].split(".genes",1)[0]
 		outputfile = tmpdir + "/" + panel_trunc
 		copy2(inputfile, outputfile)
-		# Create a new list with file name without sample and .genes.bed
+		# Create a new list for expand, names are filenames without sample and .genes.bed ext
 		panel_list_trunc = []
 		panel_list_trunc.append(panel_trunc)
 
@@ -437,6 +438,7 @@ logsomefile(logfile, 'Analyse run:', "\n", items = nameoftherun)
 logsomefile(logfile, 'Design Bed:', "\n", items = bed_file)
 logsomefile(logfile, 'Panel Bed:', "\n", items = genes_file)
 logsomefile(logfile, 'Transcripts list:', "\n", items = transcripts_file)
+logsomefile(logfile, 'List of genes files:', "\n", items = list_genes)
 
 # Copy2 bed_file & genes_file & transcripts_file (for debug)
 if debug:
