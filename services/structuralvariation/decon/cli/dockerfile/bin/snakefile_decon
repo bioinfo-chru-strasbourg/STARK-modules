@@ -4,15 +4,14 @@
 ##########################################################################
 
 # DEV version 0.1 : 10/11/2021
+# INT version 0.1 : 17/03/2022
 # Authoring : Thomas LAVAUX
 
-# TODO create a vcf per panel if there's more than one panel (genes_file)
-
 ################## Context ##################
-# launch snakemake -s  snakefile_decon -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory (default is data) without / at the end of the path
+# launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
 # to launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
 # every variable defined in the yaml file can be change
-# separate multiple variable with a space (ex  --config DATA_DIR=runname transProb=0.05 var1=0.05 var2=12)
+# separate multiple variable with a space (ex  --config run=runname transProb=0.05 var1=0.05 var2=12)
 # also use option --configfile another.yaml to replace and merge existing config.yaml file variables
 
 # use -p to display shell commands
@@ -340,7 +339,7 @@ else:
 if not list_genes:
 	list_genes = finditemindico(sample_list, ext_list, dico_run, '.list.genes', '.list.transcripts')
 
-# Transform list_genes into a list
+# Transform list_genes into a list if list_genes exist, else use genes_file if exist
 if list_genes:
 	with open(list_genes) as f:
 		panel_list = f.read().splitlines()
@@ -358,8 +357,6 @@ if panel_list:
 		panel_list_trunc = []
 		panel_list_trunc.append(panel_trunc)
 
-print(panel_list)
-print(panel_list_trunc)
 ### DECON bed ###
 # DECON need a 4 columns bed for the ReadInBams rule, if bed is not set correctly ReadInBams will crash
 # Chromosome Start End Gene but no header, bed format (tsv)
@@ -734,11 +731,10 @@ onstart:
 	with open(logfile, "a+") as f:
 		json.dump(config, f)
 		f.write("\n")
-	
+
 onsuccess:
 	shell("touch " + tmpdir + "/" + serviceName + "Complete.txt")
 	shell("rm " + tmpdir + "/" + serviceName + "Running.txt")
-	
 	# Sort pdfs file into each sample directory
 	pdf_list = os.listdir(tmpdir+"/pdfs")
 	for sample in sample_list:
@@ -746,21 +742,17 @@ onsuccess:
 			if sample in pdf:
 				# Change directoy for destination
 				# Structure of output is /SAMPLE/ServiceName/pdfs 
-				# copy2 or move
 				shell("mkdir -p " + outputdir + "/" + sample + "/" + serviceName + "/pdfs")
 				move(tmpdir+ "/pdfs/"+pdf, outputdir+"/" + sample + "/"  + serviceName +"/pdfs/")
-	#if move rmdir the /pdfs dir
+	# if move rmdir the /pdfs dir
 	try:
 		shell("rmdir "+tmpdir+"/pdfs")
 	except subprocess.CalledProcessError: pass
-	
 	# Add end time of the analysis to the log file
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write("End of the analysis : ")
 		f.write((date_time_end) + "\n")
-
-	
 	# Copy files to final destination
 	shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
 		

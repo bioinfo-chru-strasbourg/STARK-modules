@@ -4,15 +4,14 @@
 ##########################################################################
 
 # DEV version 0.1 : 10/11/2021
+# INT version 0.1 : 17/03/2022
 # Authoring : Thomas LAVAUX
 
-# TODO create a vcf per panel if there's more than one panel (genes_file)
-
 ################## Context ##################
-# launch snakemake -s  snakefile_scramble -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory (default data) without / at the end of the path
+# launch snakemake -s  snakefile_scramble -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
 # to launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
 # every variable defined in the yaml file can be change
-# separate multiple variable with a space (ex  --config DATA_DIR=runname var1=0.05 var2=12)
+# separate multiple variable with a space (ex  --config run=runname var1=0.05 var2=12)
 # also use option --configfile another.yaml to replace and merge existing config.yaml file variables
 
 # use -p to display shell commands
@@ -298,7 +297,7 @@ else:
 if not list_genes:
 	list_genes = finditemindico(sample_list, ext_list, dico_run, '.list.genes', '.list.transcripts')
 
-# Transform list_genes into a list
+# Transform list_genes into a list if list_genes exist, else use genes_file if exist
 if list_genes:
 	with open(list_genes) as f:
 		panel_list = f.read().splitlines()
@@ -614,7 +613,6 @@ onstart:
 onsuccess:
 	shell("touch " + tmpdir + "/" + serviceName + "Complete.txt")
 	shell("rm " + tmpdir + "/" + serviceName + "Running.txt")
-	
 	# Add end time of the analysis to the log file
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
