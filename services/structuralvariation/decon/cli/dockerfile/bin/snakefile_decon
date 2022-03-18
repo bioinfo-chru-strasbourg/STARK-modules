@@ -414,8 +414,8 @@ if bed_file and genes_file and customexon_regen == False:
 	# ex = chr1	27022390	27024129	NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129	0	+	.	-1	-1	.	-1	.
 	shell("intersectBed -a "+bed_file+" -b "+genes_file+" -loj > "+inputdir+"/"+serviceName+".customtemp.bed")
 	# Generate DECON.bed
-	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene"])
-	df = df.drop(['4', '5', '6', '7', '8', '9'], 1)
+	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12"])
+	df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12'], 1)
 	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
 	# Generate custom numbering file
 	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "Custom.Exon"])
