@@ -728,15 +728,15 @@ rule filtervcfpanel:
 		"""
 
 onstart:
-	shell("touch " + tmpdir + "/" + serviceName + "Running.txt")
+	shell("touch " + outputdir + "/" + serviceName + "Running.txt")
 	# Add the snakemake parameters to log
 	with open(logfile, "a+") as f:
 		json.dump(config, f)
 		f.write("\n")
 
 onsuccess:
-	shell("touch " + tmpdir + "/" + serviceName + "Complete.txt")
-	shell("rm " + tmpdir + "/" + serviceName + "Running.txt")
+	shell("touch " + outputdir + "/" + serviceName + "Complete.txt")
+	shell("rm " + outputdir + "/" + serviceName + "Running.txt")
 	# Sort pdfs file into each sample directory
 	pdf_list = os.listdir(tmpdir+"/pdfs")
 	for sample in sample_list:
@@ -762,6 +762,6 @@ onsuccess:
 		shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {depotdir}")
 
 onerror:
-	shell("touch " + tmpdir + "/" + serviceName + "Failed.txt")
-	shell("rm " + tmpdir + "/" + serviceName + "Running.txt")
+	shell("touch " + outputdir + "/" + serviceName + "Failed.txt")
+	shell("rm " + outputdir + "/" + serviceName + "Running.txt")
 	shell("rsync -azvh --include={include_file_log} --exclude {exclude_file} {tmpdir}/ {outputdir}")
