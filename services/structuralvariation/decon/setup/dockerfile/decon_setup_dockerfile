@@ -1,6 +1,7 @@
 ##############################################################
-# Module :             AnnotSV database installation
-# Services :           setup
+# Module :             Setup Structural Variation
+# Submodule :          Setup
+# Services :           cli
 # Version :            1.0.0
 # Description:         Dockerfile to build container image
 ##############################################################
@@ -35,13 +36,13 @@
 ########
 
 FROM centos:7
-LABEL Software="annotsvdatabaseinstall" \
+LABEL Software="setup" \
 	Version="0" \
 	Website="" \
 	maintainer="" \
-	Description="annotsvdatabaseinstall" \
+	Description="setup" \
 	License="" \
-	Usage="docker run annotsvdatabaseinstall:version"
+	Usage="docker run setup:version"
 
 
 
@@ -98,26 +99,24 @@ WORKDIR $WORKDIR
 # HEADER #
 ##########
 
-RUN echo "#[INFO] SCRAMBLE module installation configuration" && echo "#" ;
+RUN echo "#[INFO] Setup module installation configuration" && echo "#" ;
 
 ##################
 # SYSTEM INSTALL #
 ##################
+
 # This will install system packages, python packages and scripts to install tools
 
-ENV YUM_INSTALL="htop bc bzip2 wget curl gcc gcc-c++ git lzma make"
+ENV YUM_INSTALL="automake htop bc bzip2 bzip2-devel libffi-devel sqlite-devel"
 
-ENV YUM_REMOVE="make"
+ENV YUM_REMOVE="automake"
 
 ENV REPO_SYSTEM_GIT="$REPO/sources.system.tar.gz?path=sources/system"
 ENV REPO_SYSTEM_HTTP="$REPO/sources/system/"
 
-
 ENV GET_TOOL_SOURCE=$SOURCES/$SOURCES_FOLDER/get_tool_source.sh
 ENV TOOL_INIT=$SOURCES/$SOURCES_FOLDER/tool_init.sh
 ENV TOOL_CHECK=$SOURCES/$SOURCES_FOLDER/tool_check.sh
-
-
 
 
 RUN echo "#[INFO] Sources scripts" && \
@@ -260,7 +259,7 @@ RUN echo "#[INFO] System installation" && \
 	yum $YUM_PARAM update -y --downloadonly --downloaddir=$SOURCES/$SOURCES_FOLDER/system/build/update && \
 	yum $YUM_PARAM update -y && \
 	rsync -auczqAXhi --no-links --no-perms --no-owner --no-group $SOURCES/$SOURCES_FOLDER/system/build/update/*rpm $SOURCES/$SOURCES_FOLDER/system/ && \
-	echo "#[INFO] System packages downloaded & updated from YUM Repository" && \
+	echo "#[INFO] System packages downloaded & updated from YUM Repository"; \
 	echo "#[INFO] System packages install from YUM Repository" && \
 	mkdir -p $SOURCES/$SOURCES_FOLDER/system/build/install && \
 	yum $YUM_PARAM install -y --downloadonly --downloaddir=$SOURCES/$SOURCES_FOLDER/system/build/install/ $YUM_INSTALL && \
@@ -273,13 +272,20 @@ RUN echo "#[INFO] System installation" && \
 	echo "#[INFO] System Clean" && \
 	echo "#";
 
-######################
-# COPY Script
-######################
+yum groupinstall "Development Tools" -y;
 
-RUN mkdir toolbox ;
+##############
+# Python 3.9 #
+##############
 
-ADD ./scripts/* /toolbox/
+RUN wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz && tar xvf Python-3.9.9.tgz ;
+RUN cd Python-3.9*/ && ./configure --enable-optimizations && make altinstall ;
+
+
+# Export LANG
+RUN export LANG="en_US.UTF-8" ;
+RUN export LC_ALL="en_US.UTF-8" ;
+
 
 ######################
 # YUM REMOVE & CLEAR #
@@ -294,12 +300,13 @@ RUN echo "#[INFO] Cleaning" && \
 	if (($REMOVE_SOURCES)); then rm -rf $SOURCES; fi;
 
 
-
 ##############################
 # WORKDIR / ENTRYPOINT / CMD #
 ##############################
 
+# Copy application files (/app)
+COPY ./ /app
+WORKDIR "/app"
 
-WORKDIR "/data"
+# CMD ["python3.9", "/app/bin/setup.py"]
 
-ENTRYPOINT [ "/tool/bin/" ]

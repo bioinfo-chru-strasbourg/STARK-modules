@@ -495,7 +495,7 @@ if genes_file:
 		"""
 		input:
 			bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
-			failtxt = tmpdir + "/" + serviceName + "." + date_time + "_coverage_Failures.txt",
+			failtxt = tmpdir + "/" + serviceName + "." + date_time + "_Failures.txt",
 			vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panel_list_trunc),
 			vcfgzallpanel = expand(tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Panel.{panel}.vcf.gz", panel=panel_list_trunc)
 
@@ -506,7 +506,7 @@ else:
 		"""
 		input:
 			bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
-			failtxt = tmpdir + "/" + serviceName + "." + date_time + "_coverage_Failures.txt",
+			failtxt = tmpdir + "/" + serviceName + "." + date_time + "_Failures.txt",
 			vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 			vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
 
@@ -576,7 +576,7 @@ rule makeCNVcalls:
 		exons = customnumberingfile,
 		plot = config['plot'],
 		customplot = config['custom'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".Design_results"
+		output = tmpdir + "/" + serviceName + "." + date_time + ".Design"
 	output:
 		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt",
 	log: 
@@ -606,18 +606,18 @@ rule IdentifyFailures:
 		mincorr = config['mincorr'],
 		mincov = config['mincov'],
 		customplot = config['custom'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".IdentifyFailures"
+		output = tmpdir + "/" + serviceName + "." + date_time + ".Identify" # DECON.datetime.Identify_Failures.txt
 	output:
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + "_coverage_Failures.txt"
+		failtxt = tmpdir + "/" + serviceName + "." + date_time + "_Failures.txt"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".IdentifyFailures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".IdentifyFailures.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.err"
 	shell:
 		"""
 		if [ {params.customplot} ];
 		then
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {params.output}_Failures.txt ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}_Failures.txt
 		else
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {params.output}_Failures.txt ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {params.output}_Failures.txt
 		fi
 		"""
 
