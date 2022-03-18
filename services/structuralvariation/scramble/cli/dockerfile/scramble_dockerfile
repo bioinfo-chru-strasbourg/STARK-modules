@@ -300,7 +300,7 @@ RUN pip3.9 install snakemake ;
 ######################
 
 RUN pip3.9 install Biopython && pip3.9 install pandas ;
-RUN pip3.9 install -U setuptools && pip3.9 install pyfasta ;
+RUN pip3.9 install -U setuptools && pip3.9 install pyfaidx ;
 
 # Export LANG
 RUN export LANG="en_US.UTF-8" ;

@@ -4,7 +4,7 @@
 @Author: Samuel Nicaise
 @Date: 23/11/2021
 
-Prerequisites: pandas, pyfasta (https://github.com/brentp/pyfasta)
+Prerequisites: pandas, pyfaidx
 
 Usage examples:
 #TSV (Decon) to VCF
@@ -41,7 +41,8 @@ import time
 from functools import lru_cache
 from os.path import join as osj
 import pandas as pd
-from pyfasta import Fasta
+# change pyfasta by pyfaidx TL 18032022
+from pyfaidx import Fasta
 
 class Converter:
 	"""
