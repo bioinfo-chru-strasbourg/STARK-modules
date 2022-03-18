@@ -317,6 +317,7 @@ if not bed_file:
 	bed_file = finditemindico(sample_list, ext_list, dico_run, '.design.bed', '.genes.bed')
 
 # Find genes file (Panel)
+# Note : we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
 if not genes_file:
 	genes_file = finditemindico(sample_list, ext_list, dico_run, '.genes.bed', '.list.genes')
 
@@ -340,6 +341,7 @@ if not list_genes:
 	list_genes = finditemindico(sample_list, ext_list, dico_run, '.list.genes', '.list.transcripts')
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
+# Trick is that we use list .genes to found the .genes.bed files, so we add .bed to the .genes list
 if list_genes:
 	with open(list_genes) as f:
 		panel_list = f.read().splitlines()
@@ -387,7 +389,7 @@ if bed_file and customexon_regen == True:
 	df = df.drop(['Tosplit'], 1)
 	# Formating intergenic loc : intersect will output -1 if no NM exist, replace with "Intergenic"
 	if keep_intergenic == True:
-		df = df.replace('-1', 'Intergenic', regex=True)
+		df = df.replace('-1', 'Unknown', regex=True)
 		df = df.replace('\.', '0', regex=True)
 		if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0: # Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
 			Intergenic_number = '0'
@@ -410,12 +412,30 @@ if bed_file and customexon_regen == True:
 
 # Case when we generate a DECON.bed and a custom.exon file with design and panel bed
 if bed_file and genes_file and customexon_regen == False:
+	# We concatenate all panels
+	cat_panels_bed = inputdir+"/"+serviceName+".concatenatepanels.bed"
+	cat_list_genes = inputdir+"/"+serviceName+".fullpath.genes.list"
+	if list_genes:
+		basepath = os. path. dirname(list_genes)
+		with open(list_genes) as f:
+			cat_panel_list = f.read().splitlines()
+			cat_panel_list = [basepath + "/" + s for s in cat_panel_list]
+		with open(cat_list_genes, 'w+') as f:
+			f.write('\t'.join(cat_panel_list))
+		shell(" xargs --delimiter='\\n' cat <"+cat_list_genes+" >> "+cat_panels_bed+" ")
+	else:
+		shell(" xargs --delimiter='\\n' cat <"+genes_file+" >> "+cat_panels_bed+" ")
+	df = pd.read_csv(inputdir + "/" + serviceName + '.concatenatepanels.bed',  sep='\t')
+	df = df.drop_duplicates() # remove duplicate
+	cat_noduplicate_panels_bed = inputdir+"/"+serviceName+".concatenatepanelsnoduplicate.bed"
+	df.to_csv(cat_noduplicate_panels_bed, sep='\t', index=False, header=False)
 	# Intersect bed design with panel intersectBed -a design.bed -b panel.bed -loj > RESULT.bed = columns 1 2 3 & 10 are retained for the bed, column 13 for the exon number
 	# ex = chr1	27022390	27024129	NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129	0	+	.	-1	-1	.	-1	.
-	shell("intersectBed -a "+bed_file+" -b "+genes_file+" -loj > "+inputdir+"/"+serviceName+".customtemp.bed")
+	shell("intersectBed -a "+bed_file+" -b "+cat_noduplicate_panels_bed+" -loj > "+inputdir+"/"+serviceName+".customtemp.bed")
 	# Generate DECON.bed
-	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12"])
-	df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12'], 1)
+	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "Custom.Exon"])
+	df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12', "Custom.Exon"], 1)
+	df = df.replace('\.', 'Unknown', regex=True)
 	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
 	# Generate custom numbering file
 	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "Custom.Exon"])
@@ -586,7 +606,7 @@ rule IdentifyFailures:
 		mincorr = config['mincorr'],
 		mincov = config['mincov'],
 		customplot = config['custom'],
-		output = tmpdir + "/" + serviceName + "." + date_time + "IdentifyFailures"
+		output = tmpdir + "/" + serviceName + "." + date_time + ".IdentifyFailures"
 	output:
 		failtxt = tmpdir + "/" + serviceName + "." + date_time + "_coverage_Failures.txt"
 	log: 
@@ -610,7 +630,7 @@ rule Decon_tsv2vcf:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".DeconTsv2Vcf.log"
 	shell:
 		"""
-		python3.9 {scriptspath}/file_converter.py -i {input.txt} -o {output.vcfunsort} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log1} && [[ -s {output.vcfunsort} ]] || cat empty.vcf > {output.vcfunsort} 
+		python3.9 {scriptspath}/file_converter.py -i {input.txt} -o {output.vcfunsort} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log1} && [[ -s {output.vcfunsort} ]] || cat {scriptspath}/empty.vcf > {output.vcfunsort} 
 		"""
 
 # bcftools sort don't sort correctly
@@ -621,7 +641,7 @@ rule sortvcf:
 		vcfsort = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf"
 	shell:
 		"""
-		grep \"^#\" {input.vcfunsort} > {output.vcfsort} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfsort} && [[ -s {output.vcfsort} ]] || cat empty.vcf > {output.vcfsort}
+		grep \"^#\" {input.vcfunsort} > {output.vcfsort} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfsort} && [[ -s {output.vcfsort} ]] || cat {scriptspath}/empty.vcf > {output.vcfsort}
 		"""
 
 # bgzip -c to keep input file
@@ -632,7 +652,7 @@ rule vcf2gz:
 		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
 	shell:
 		"""
-		bgzip -c {input.vcfsort} > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign} 
+		bgzip -c {input.vcfsort} > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign} 
 		"""
 
 rule filtervcfall:
@@ -644,7 +664,7 @@ rule filtervcfall:
 		genes = expand(tmpdir + "/{panel}" , panel=panel_list_trunc)
 	shell:
 		"""
-		bcftools view {input.vcfgzdesign} -R {params.genes} -O z -o {output.vcfgzallpanel} && tabix {output.vcfgzallpanel} && [[ -s {output.vcfgzallpanel} ]] || cat empty.vcf.gz > {output.vcfgzallpanel}
+		bcftools view {input.vcfgzdesign} -R {params.genes} -O z -o {output.vcfgzallpanel} && tabix {output.vcfgzallpanel} && [[ -s {output.vcfgzallpanel} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzallpanel}
 		"""
 
 # --force-samples will output a vcf file with all annotations but without a sample name if the sample did not exist
@@ -664,7 +684,7 @@ rule splitvcf:
 		path = tmpdir + "/{sample}/" + serviceName + "/"
 	shell:
 		"""
-		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgzdesign} && [[ -s {output.vcfgzsplit} ]] || cat empty.vcf.gz > {output.vcfgzsplit}  ; tabix {output.vcfgzsplit}
+		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgzdesign} && [[ -s {output.vcfgzsplit} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzsplit}  ; tabix {output.vcfgzsplit}
 		"""
 
 # AnnotSV need bedtools to work ie you have to specify the directory of bedtools binaries in -bedtools argument
@@ -712,7 +732,7 @@ rule vcf2gzsample:
 		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
 	shell:
 		"""
-		bcftools sort {input.vcfanot} | bgzip > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign}
+		bcftools sort {input.vcfanot} | bgzip > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign}
 		"""
 
 rule filtervcfpanel:
@@ -724,7 +744,7 @@ rule filtervcfpanel:
 		genes = expand(tmpdir + "/{panel}", panel=panel_list_trunc)
 	shell:
 		"""
-		bcftools view {input.vcfgzdesign} -R {params.genes} -O z -o {output.vcfgzpanel} && [[ -s {output.vcfgzpanel} ]] || cat empty.vcf.gz > {output.vcfgzpanel} ;  tabix {output.vcfgzpanel} 
+		bcftools view {input.vcfgzdesign} -R {params.genes} -O z -o {output.vcfgzpanel} && [[ -s {output.vcfgzpanel} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzpanel} ;  tabix {output.vcfgzpanel} 
 		"""
 
 onstart:
