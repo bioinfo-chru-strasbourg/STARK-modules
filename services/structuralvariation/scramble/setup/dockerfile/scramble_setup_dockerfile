@@ -107,7 +107,7 @@ RUN echo "#[INFO] Setup module installation configuration" && echo "#" ;
 
 # This will install system packages, python packages and scripts to install tools
 
-ENV YUM_INSTALL="automake htop bc bzip2 bzip2-devel libffi-devel sqlite-devel"
+ENV YUM_INSTALL="automake htop bc bzip2 bzip2-devel libffi-devel rsync wget which xz xz-devel zlib zlib-devel openssl-devel sqlite-devel"
 
 ENV YUM_REMOVE="automake"
 
@@ -272,7 +272,7 @@ RUN echo "#[INFO] System installation" && \
 	echo "#[INFO] System Clean" && \
 	echo "#";
 
-yum groupinstall "Development Tools" -y;
+RUN yum groupinstall "Development Tools" -y;
 
 ##############
 # Python 3.9 #
