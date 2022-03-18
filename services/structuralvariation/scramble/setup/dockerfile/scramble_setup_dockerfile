@@ -308,4 +308,4 @@ RUN echo "#[INFO] Cleaning" && \
 COPY ./ /app
 WORKDIR "/app"
 
-# CMD ["python3.9", "/app/bin/setup.py"]
+CMD ["python3.9", "/app/bin/setup.py"]

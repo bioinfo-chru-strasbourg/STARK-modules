@@ -19,8 +19,7 @@
 
 import os
 import subprocess
-#import os.path
-#import glob
+
 
 
 def systemcall(command):
@@ -51,15 +50,16 @@ DATABASES = STARK_FOLDER+ "/databases"
 ANNOTSV_NAME = "AnnotSV"
 ANNOTSV_VERSION = "3.1"
 ANNOTSV_TARBALL = ANNOTSV_VERSION+".tar.gz"
-ANNOTSV_SOURCE_EXTERNAL = "https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_"+ANNOTSV_VERSION
+ANNOTSV_SOURCE_EXTERNAL = "https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_"+ANNOTSV_TARBALL
 ANNOTSV_PARAM_DATABASE_FOLDER_LINK = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/"
 
 # Check if a directory exist
 # os.path.isdir('folder') will return true if exist
 if os.path.isdir(ANNOTSV_PARAM_DATABASE_FOLDER_LINK) == False:
 	try:
+		os.makedirs(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
 		systemcall("wget "+ ANNOTSV_SOURCE_EXTERNAL+" ")
-		systemcall("tar xf Annotations_Human_"+ANNOTSV_TARBALL+" -C "+ANNOTSV_PARAM_DATABASE_FOLDER_LINK+" ")
+		systemcall("tar xzf Annotations_Human_"+ANNOTSV_TARBALL+" -C "+ANNOTSV_PARAM_DATABASE_FOLDER_LINK+" ")
 	except: pass
 
 ## OMIM database ln will be set in the dockercompose.yml
@@ -126,8 +126,9 @@ TOOL_PARAM_DATABASE_FOLDER_LINK= DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/Annotat
 
 if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 	try:
+		os.makedirs(TOOL_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
 		systemcall("wget "+ TOOL_SOURCE_EXTERNAL+" ")
-		systemcall("tar -xf "+TOOL_TARBALL+"-C " +TOOL_PARAM_DATABASE_FOLDER_LINK+" ")
+		systemcall("tar -xzf "+TOOL_TARBALL+" -C " +TOOL_PARAM_DATABASE_FOLDER_LINK+" ")
 	except: pass
 
 # https://data.monarchinitiative.org/exomiser/data/2109_phenotype.zip
@@ -138,17 +139,15 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 
 	try:
 		systemcall("wget "+ TOOL_SOURCE_EXTERNAL+" ")
-		systemcall("unzip -q "+TOOL_TARBALL+"-d " +TOOL_PARAM_DATABASE_FOLDER_LINK+" ")
+		systemcall("unzip -q "+TOOL_TARBALL+" -d " +TOOL_PARAM_DATABASE_FOLDER_LINK+" ")
 	except : pass
 
 #######################
 # Copy config files (service.conf & service.json) and launcher.py from app/condig to /config/module/servicename/listener/
 #######################
 
-if not serviceName:
-	serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')
-if not moduleName:
-	moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')
+serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')
+moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')
 
 if serviceName and moduleName:
-	systemcall("cp /app/config/* /config/"+moduleName+"/"+serviceName+"/listener/ ")
+	systemcall("\cp -r /app/config/* /STARK/config/"+moduleName+"/"+serviceName+"/listener/ ")
