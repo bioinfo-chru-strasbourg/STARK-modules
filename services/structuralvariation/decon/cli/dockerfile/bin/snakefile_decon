@@ -342,11 +342,11 @@ if not list_genes:
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
 # Trick is that we use list .genes to found the .genes.bed files, so we add .bed to the .genes list
+panel_list = []
 if list_genes:
 	with open(list_genes) as f:
 		panel_list = f.read().splitlines()
 elif genes_file and not list_genes:
-	panel_list = []
 	panel_list.append(os.path.basename(genes_file).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
 # cp files from panel_list to inputdir and rename them
 if panel_list:

@@ -24,6 +24,7 @@ services:
         env_file:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_ENV_FILE}
             - ${DOCKER_STARK_MODULE_SUBMODULE_ENV}
+            - ${DOCKER_STARK_MODULE_ENV}
         environment:
             - SLEEP=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_PARAM_SLEEP}
         volumes:
@@ -50,6 +51,7 @@ services:
         env_file:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_ENV_FILE}
             - ${DOCKER_STARK_MODULE_SUBMODULE_ENV}
+            - ${DOCKER_STARK_MODULE_ENV}
         environment:
             - SLEEP=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_SLEEP}
         volumes:
@@ -82,6 +84,7 @@ services:
         env_file:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_ENV_FILE}
             - ${DOCKER_STARK_MODULE_SUBMODULE_ENV}
+            - ${DOCKER_STARK_MODULE_ENV}
         environment:
             # Those variables are the inputs of the common listener
             # Each line is an argument of listener.py

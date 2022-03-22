@@ -68,8 +68,10 @@ list_genes = config['LIST_GENES']
 #Analysis option
 validation_only = config['VALIDATION_ONLY']
 
-# Option for processing bam/cram
+# Option for processing (cp/ls/samtools)
 process_cmd = config['PROCESS_CMD']
+# Option for processing bam or cram
+process_file = config['PROCESS_FILE']
 
 # Rsync options
 include_file = config['INCLUDE_RSYNC']
@@ -298,11 +300,11 @@ if not list_genes:
 	list_genes = finditemindico(sample_list, ext_list, dico_run, '.list.genes', '.list.transcripts')
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
+panel_list = []
 if list_genes:
 	with open(list_genes) as f:
 		panel_list = f.read().splitlines()
 elif genes_file and not list_genes:
-	panel_list = []
 	panel_list.append(os.path.basename(genes_file).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
 # cp files from panel_list to inputdir and rename them
 if panel_list:

@@ -280,7 +280,7 @@ RUN echo "#[INFO] System installation" && \
 # Python 3.9 #
 ##############
 
-RUN wget https://www.python.org/ftp/python/3.9.7/Python-3.9.7.tgz && tar xvf Python-3.9.7.tgz ;
+RUN wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz && tar xvf Python-3.9.9.tgz ;
 RUN cd Python-3.9* && ./configure --enable-optimizations && make altinstall ;
 
 
@@ -411,7 +411,7 @@ ENV ANNOTSV="$TOOLS/$TOOL_NAME/$TOOL_VERSION"
 
 # TOOL INFO
 ENV TOOL_NAME="htslib"
-ENV TOOL_VERSION="1.13"
+ENV TOOL_VERSION="1.15"
 ENV TOOL_TARBALL="$TOOL_NAME-$TOOL_VERSION.tar.bz2"
 ENV TOOL_SOURCE_EXTERNAL="https://github.com/samtools/$TOOL_NAME/releases/download/$TOOL_VERSION/$TOOL_TARBALL"
 ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
@@ -430,11 +430,11 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 # BCFTOOLS #
 ############
 
-# v1.13 need Htslib 1.13
+# Depend on Htslib
 
 # TOOL INFO
 ENV TOOL_NAME="bcftools"
-ENV TOOL_VERSION="1.13"
+ENV TOOL_VERSION="1.15"
 ENV TOOL_TARBALL="$TOOL_NAME-$TOOL_VERSION.tar.bz2"
 ENV TOOL_SOURCE_EXTERNAL="https://github.com/samtools/$TOOL_NAME/releases/download/$TOOL_VERSION/$TOOL_TARBALL"
 ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
@@ -471,9 +471,11 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 # SAMTOOLS #
 ############
 
+# Depend on Htslib
+
 # TOOL INFO
 ENV TOOL_NAME="samtools"
-ENV TOOL_VERSION="1.13"
+ENV TOOL_VERSION="1.15"
 ENV TOOL_TARBALL="$TOOL_NAME-$TOOL_VERSION.tar.bz2"
 ENV TOOL_SOURCE_EXTERNAL="https://github.com/samtools/$TOOL_NAME/releases/download/$TOOL_VERSION/$TOOL_TARBALL"
 ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
@@ -506,5 +508,5 @@ RUN echo "#[INFO] Cleaning" && \
 ##############################
 
 # Copy application files (/app)
-COPY . /app
+COPY ./ /app
 WORKDIR "/app"
