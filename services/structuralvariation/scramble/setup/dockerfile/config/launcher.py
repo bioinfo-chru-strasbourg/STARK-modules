@@ -77,12 +77,6 @@ def readconfig(configfile, serviceName, configkey):
 	outputconfig = json_config['services'][serviceName][configkey]
 	return outputconfig
 
-def getsomepathname(path, number, sep):
-	""" Function to extract variable from a string with a separator """
-	try:
-		output = path.split(sep)[number]
-	except : pass
-
 # need to test the default argument with the listener.py
 def launch(run, serviceName, configFile, image=None, launchCommand=None, montage=None, containersFile=None):
 	""" Function to start a docker container with a specific command """
@@ -94,10 +88,10 @@ def launch(run, serviceName, configFile, image=None, launchCommand=None, montage
 	if configFile:
 		launchCommand = readconfig(configFile, serviceName, 'launch')
 		image = readconfig(configFile, serviceName, 'image')
-	if serviceName and run:
+	if run:
 		containerName = serviceName + os.path.basename(run)
-		group_name = getsomepathname(run, 4, '/')
-		app_name = getsomepathname(run, 5, '/')
+		group_name = run.split('/')[4]
+		app_name = run.split('/')[5]
 	# Config snakefile config file path
 	yaml_path = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG')
 	if group_name:
@@ -106,32 +100,18 @@ def launch(run, serviceName, configFile, image=None, launchCommand=None, montage
 		yaml_config_file = None
 	# Construct the docker command
 	# snakemake --configfile can't be empty ; if not set it will use the default yaml file in the docker container
-	#TODO add the mountage
 	if yaml_config_file:
 		cmd = "docker run --rm " +image+ " " +launchCommand+ " --config run=" +run+ " --configfile " +yaml_config_file
 	else:
-		cmd = "docker run --rm " +image+ " " +launchCommand+ " --config run=" +run
+	cmd = "docker run --rm " +image+ " " +launchCommand+ " --config run=" +run
+	print(cmd)
 	# launch the cmd to the shell 
 	subprocess.call(cmd, shell = True)
 	# Create a log file
+	#if not containersFile:
+	containersFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES')
+	print(containersFile)
 	#createlog(containersFile, run, containerName)
-
-# Volumes for access, deposit and store results
-#- ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:rw
-#- ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_DEPOSITORY}:rw
-#- ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:rw
-
-# Volumes for config and services folders
-#- ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG}:ro
-#- ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}:rw
-
-# Volumes for databases access (ro only)
-#- ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
-# for AnnotSV databases access (ro only)
-#- ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_ANNOTSV_HOST_PATTERN}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_ANNOTSV_INNER}:ro
-# for AnnotSV OMIM replacement database (use the most current database available) (ro only)
-#- ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_OMIM_HOST_PATTERN}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_OMIM_INNER}:ro
-
 
 
 def myoptions():
@@ -142,7 +122,7 @@ def myoptions():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-r", "--run", type = str, default = " ", help = "Run to launch", dest = 'run')
 	parser.add_argument("-s", "--service", type = str, default = " ", help = "Service name", dest = 'serviceName')
-	parser.add_argument("-log", "--log", type = str, default = " ", help = "Log file", dest = 'containersFile')
+	parser.add_argument("-log", "--log", type = str, default = " ", help = "Path for the log file", dest = 'containersFile')
 	parser.add_argument("-v", "--volume", type = str, default = " ", help = "Docker volume to add", dest = 'montage')
 	parser.add_argument("-i", "--image", type = str, default = " ", help = "Docker image to use", dest = 'image')
 	parser.add_argument("-l", "--launchcommand", type = str, default = " ", help = "Command to launch inside the container", dest = 'launchCommand')
