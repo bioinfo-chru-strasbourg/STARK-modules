@@ -40,9 +40,9 @@ services:
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_ANNOTSV_HOST_PATTERN}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_ANNOTSV_INNER}:ro
             #- ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/OMIMannotations/current/:/tools/AnnotSV/2.1/Annotations/Genes-based/OMIM/:rw
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/AnnotSV/3.0.9/Annotations_Human:/tools/AnnotSV/3.1/share/AnnotSV/Annotations_Human:rw
-            - /home1/bin/STARK-modules/dev.jb.canoes/services/structuralvariation/canoes/cli/dockerfile:/app
+            - /home1/bin/STARK-modules/dev.jb.canoes.modules/services/structuralvariation/canoes/cli/dockerfile:/app
             - /home1/TOOLS/tools/toolkit/current/lib:/toolkit:ro
-            - /home1/L/NGS/Qualite/Sets_de_validation/SET_MODULES/SET_CANOES:/datasets:ro
+            - /home1/L/NGS/Qualite/Sets_de_validation/SET_CNV/SET_CNV_POUR_VALIDATION:/datasets:ro
             - /home1/L/NGS/Qualite/Preuves_validation/modules/canoes:/validationcanoes:rw
             - ${DOCKER_STARK_SOCK_MOUNT}
         networks: 

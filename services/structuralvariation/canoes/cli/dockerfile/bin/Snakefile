@@ -53,13 +53,13 @@ onstart:
 	with open(anaconfig, "w+") as f:
 		json.dump(config, f)
 onsuccess:
-	print("#[INFO] Analysis reach then end")
+	print("#[INFO] Analysis reach the end")
 onerror:
-	if "repositoryPath" in config:
+	if config["repositoryPath"]:
 		print("ERROR snakemake execution launch handling error")
 		copylog()
 	else:
-		print("ERROR snakemake")
+		print("ERROR snakemake Exiting ...")
 
 ########################
 ###   Python Func   ####
@@ -645,6 +645,10 @@ if config['repositoryPath']:
 						#log folder
 						log_out = modifyfilename(osj(config['repositoryPath'], sample, "CANOES", "logs" ), 'folder')
 						shutil.copytree(osj(config['outputPath'], "logs"), log_out)
+
+						#if run is DIAGGEN copy plot in folder
+						if config['copyplot']:
+							shutil.copy(osj(config['outputPath'], sample, "CANOES", sample+'.canoes.boxplot.png'), osj(config['repositoryPath'], sample, "CANOES"))
 					else:
 						print("WARNING "+sample+" in "+config['repositoryPath']+" does not exist or is not a directory")
 						break
@@ -1123,16 +1127,16 @@ rule AnnotSV:
 		#-svtBEDcol 4 -samplesidBEDcol 5 
 	shell:
 		"""
-		{params.annotsv}/bin/AnnotSV -SVinputFile {input} -outputFile {output} -bedtools {params.bedtools} -genomeBuild {params.genomebuild} &>{log} && 
-		if grep -q 'ERROR' {log}
+		if grep -q 'No data to annotate' {input}
 		then
-			exit 1;
-		elif [[ -s {output} ]]
+			echo "#[INFO] No variants detected" && echo "No data to annotate" > {output}
+		elif grep -q '#CHROM' {input}
 		then
-			echo "No data to annotate" > {output}
+			echo "#[INFO] Got Variant and VCF is ok, launch AnnotSV" && {params.annotsv}/bin/AnnotSV -SVinputFile {input} -outputFile {output} -bedtools {params.bedtools} -genomeBuild {params.genomebuild} &>{log} 
 		else
-			echo "#[INFO] AnnotSV OK" > {output}
+			exit 1;
 		fi
+
 		"""
 
 rule split_annotations:
