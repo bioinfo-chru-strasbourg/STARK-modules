@@ -86,9 +86,9 @@ services:
             - ${DOCKER_STARK_MODULE_SUBMODULE_ENV}
             - ${DOCKER_STARK_MODULE_ENV}
         environment:
-            # Those variables are the inputs of the common listener
-            # Each line is an argument of listener.py
-            # ('MICROSERVICE_MONTAGE'), os.getenv('MICROSERVICE_IMAGE'), os.getenv('MICROSERVICE_LAUNCH')
+            - MICROSERVICE_MONTAGE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONTAINER_MOUNT}
+            # - MICROSERVICE_IMAGE # we use .conf file
+            # - MICROSERVICE_LAUNCH # we use .conf file
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_LAUNCH}
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_NAME}
