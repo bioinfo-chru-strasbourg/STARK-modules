@@ -34,27 +34,30 @@ from shutil import move
 ################## Configuration file and PATHS ##################
 configfile: "/app/config/default.yaml"
 
+### COMMON VARIABLES ###
+# Analysis only validation bam/cram files
+validation_only = config['VALIDATION_ONLY']
+
+# Debug mode
+debug = config['DEBUG_MODE']
+
 # Subdir of module results
 serviceName = config['serviceName']
 
 # Datas directory
 rundir = config['run']
 
-# Refgene variable
-refgene = config['REFGENEFA_PATH']
-# Scripts path
-scriptspath = config['SCRIPTS_PATH']
+# Repository/depository directories
+repositorydir = config['repository']
+depositorydir = config['depository']
+outputdir = config['OUTPUT_DIR']
 
-# Sample to remove, set in config_scramble.yaml file
-sample_exclude_list = config['EXCLUDE_SAMPLE_LIST']
-filter_sample_list = config['FILTER_SAMPLE_LIST']
+# Copy to depot (archive)
+depotcopy = config['DEPOT_COPY']
 
-# Ext to index
-ext_list = config['EXT_INDEX_LIST']
-
-# Search options
-recursive_search = config['RECURSIVE_SEARCH']
-search_argument = config['SEARCH_ARGUMENT']
+# Group and app name to construct output
+group_name = config['GROUP_NAME']
+app_name = config['APP_NAME']
 
 # Design.bed or SAMPLE.bed or SAMPLE.aligner.design.bed in STARK folder
 bed_file = config['BED_FILE']
@@ -65,33 +68,36 @@ transcripts_file = config['TRANSCRIPTS_FILE']
 # List genes contains list of gene's files
 list_genes = config['LIST_GENES']
 
-#Analysis option
-validation_only = config['VALIDATION_ONLY']
+# Search options to find files to process
+recursive_search = config['RECURSIVE_SEARCH']
+search_argument = config['SEARCH_ARGUMENT']
 
+# Sample to remove, set in config_scramble.yaml file
+sample_exclude_list = config['EXCLUDE_SAMPLE_LIST']
+filter_sample_list = config['FILTER_SAMPLE_LIST']
+
+# Ext to index into dictionary
+ext_list = config['EXT_INDEX_LIST']
 # Option for processing (cp/ls/samtools)
 process_cmd = config['PROCESS_CMD']
 # Option for processing bam or cram
 process_file = config['PROCESS_FILE']
 
-# Rsync options
+# Option to append an aligner name to a file (case if the bam don't have an aligner name == sample.bam)
+aligner_name = config['ALIGNER_NAME']
+
+# Rsync options for copying results/log
 include_file = config['INCLUDE_RSYNC']
 exclude_file = config['EXCLUDE_RSYNC']
 include_file_log = config['INCLUDE_LOG_RSYNC']
 
-# Repository/depository directories
-repositorydir = config['repository']
-depositorydir = config['depository']
-outputdir = config['OUTPUT_DIR']
-
-# Group and app name to construct output
-group_name = config['GROUP_NAME']
-app_name = config['APP_NAME']
-
-# Copy to depot (archive)
-depotcopy = config['DEPOT_COPY']
-
-# Debug mode
-debug = config['DEBUG_MODE']
+### Variables specific for the tools ###
+# RefSeq variable
+refseqgene = config['REFSEQGENE_PATH']
+# Refgene variable
+refgene = config['REFGENEFA_PATH']
+# Scripts path
+scriptspath = config['SCRIPTS_PATH']
 
 ### FUNCTIONS ###
 
@@ -113,16 +119,16 @@ def searchfiles(directory, search_arg, recursive_arg):
 	""" Function to search all files in a directory, addind a search arguement append to the directory and a recursive_search options (True/False) """
 	return sorted(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
 
-def processalignedfiles(storedir, dictonnary, sample, ext, aligner_list, process_cmd, append, aligner_name):
+def processalignedfiles(storedir, dictonnary, sample, ext, aligner_list, process_cmd, name=None):
 	""" Function to process bam or cram files who's path are stored in a dictionary by sample/ext name"""
 	""" You can either cp, ls bam files ; or use samtools to extract bam from a cram file into a storedir"""
-	""" You can append a name to the files with the append (True/False) option """
+	""" You can append a name to the files if you specify a name """
 	inputfile = dictonnary[sample][ext]
 	file_without_ext = os.path.splitext((os.path.basename(inputfile)))[0]
 	# option to append name file with an aligner name (if file is sample.bam we need to rename it to sample.aligner.bam for the pipeline)
-	if append == True:
-		outputfile = storedir + "/" + file_without_ext + aligner_name
-		aligner_list.append(aligner_name)
+	if name:
+		outputfile = storedir + "/" + file_without_ext + name
+		aligner_list.append(name)
 	else:
 		outputfile = storedir + "/" + file_without_ext
 	for aligner in aligner_list:
@@ -259,7 +265,7 @@ for samples in sample_list:
 # for cram extract to bam into the input directory
 # for bam copy or symlink the bam files to input directory
 for sample in sample_list:
-	processalignedfiles(inputdir, dico_run, sample, process_file, aligner_list, process_cmd, append_name, aligner_name)
+	processalignedfiles(inputdir, dico_run, sample, process_file, aligner_list, process_cmd, name=aligner_name)
 
 # Create the file_list by searching the depot directory
 files_list_depot = searchfiles(inputdir, '/*', False)
