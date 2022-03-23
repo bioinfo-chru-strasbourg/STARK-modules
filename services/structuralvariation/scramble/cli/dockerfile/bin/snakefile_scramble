@@ -92,8 +92,6 @@ exclude_file = config['EXCLUDE_RSYNC']
 include_file_log = config['INCLUDE_LOG_RSYNC']
 
 ### Variables specific for the tools ###
-# RefSeq variable
-refseqgene = config['REFSEQGENE_PATH']
 # Refgene variable
 refgene = config['REFGENEFA_PATH']
 # Scripts path

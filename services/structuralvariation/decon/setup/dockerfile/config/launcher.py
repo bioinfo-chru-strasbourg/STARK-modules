@@ -70,9 +70,9 @@ def createlog(containersFile, run, containerName):
 	file.write("ID: "+containerName+"\n")
 	file.close()
 
-def readconfig(configfile, serviceName, configkey):
+def readconfig(configFile, serviceName, configkey):
 	""" Function to extract a specific key configuration variable from a json configuration file"""
-	with open(configfile,'r') as f:
+	with open(configFile,'r') as f:
 		json_config = json.load(f)
 	outputconfig = json_config['services'][serviceName][configkey]
 	return outputconfig
@@ -80,10 +80,16 @@ def readconfig(configfile, serviceName, configkey):
 # need to test the default argument with the listener.py
 def launch(run, serviceName, configFile, image=None, launchCommand=None, montage=None, containersFile=None):
 	""" Function to start a docker container with a specific command """
+	""" See help (-h) for details """
 	# Variables get from env
 	configFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONF')
-	serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_NAME')
-	image = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME')
+	print(configFile)
+	if not serviceName:
+		serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_NAME')
+	if not image:
+		image = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME')
+	if not montage:
+		montage = os.getenv('MICROSERVICE_MONTAGE')
 	# Variables get from config file
 	if configFile:
 		launchCommand = readconfig(configFile, serviceName, 'launch')
@@ -100,18 +106,18 @@ def launch(run, serviceName, configFile, image=None, launchCommand=None, montage
 		yaml_config_file = None
 	# Construct the docker command
 	# snakemake --configfile can't be empty ; if not set it will use the default yaml file in the docker container
-	if yaml_config_file:
-		cmd = "docker run --rm " +image+ " " +launchCommand+ " --config run=" +run+ " --configfile " +yaml_config_file
+	if yaml_config_file and os.path.exists(yaml_config_file):
+		cmd = "docker run --rm "+montage+" "+image+" "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file
 	else:
-	cmd = "docker run --rm " +image+ " " +launchCommand+ " --config run=" +run
-	print(cmd)
+		cmd = "docker run --rm "+montage+" "+image+" "+launchCommand+" --config run="+run
 	# launch the cmd to the shell 
 	subprocess.call(cmd, shell = True)
 	# Create a log file
-	#if not containersFile:
-	containersFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES')
-	print(containersFile)
-	#createlog(containersFile, run, containerName)
+	if not containersFile:
+		containersFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES')
+		print(containersFile)
+	if os.path.exists(containersFile):
+		createlog(containersFile, run, containerName)
 
 
 def myoptions():
@@ -120,13 +126,13 @@ def myoptions():
 	*return options*
 	'''
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-r", "--run", type = str, default = " ", help = "Run to launch", dest = 'run')
-	parser.add_argument("-s", "--service", type = str, default = " ", help = "Service name", dest = 'serviceName')
-	parser.add_argument("-log", "--log", type = str, default = " ", help = "Path for the log file", dest = 'containersFile')
-	parser.add_argument("-v", "--volume", type = str, default = " ", help = "Docker volume to add", dest = 'montage')
-	parser.add_argument("-i", "--image", type = str, default = " ", help = "Docker image to use", dest = 'image')
-	parser.add_argument("-l", "--launchcommand", type = str, default = " ", help = "Command to launch inside the container", dest = 'launchCommand')
-	parser.add_argument("-c", "--config", type = str, default = " ", help = "Config file to read from", dest = 'configFile')
+	parser.add_argument("-r", "--run", type = str, default = "", help = "Run to launch", dest = 'run')
+	parser.add_argument("-s", "--service", type = str, default = "", help = "Service name", dest = 'serviceName')
+	parser.add_argument("-log", "--log", type = str, default = "", help = "Path for the log file", dest = 'containersFile')
+	parser.add_argument("-v", "--volume", type = str, default = "", help = "Docker volume to add", dest = 'montage')
+	parser.add_argument("-i", "--image", type = str, default = "", help = "Docker image to use", dest = 'image')
+	parser.add_argument("-l", "--launchcommand", type = str, default = "", help = "Command to launch inside the container", dest = 'launchCommand')
+	parser.add_argument("-c", "--config", type = str, default = "", help = "Config file to read from", dest = 'configFile')
 	return parser.parse_args()
 
 if __name__ == "__main__":
