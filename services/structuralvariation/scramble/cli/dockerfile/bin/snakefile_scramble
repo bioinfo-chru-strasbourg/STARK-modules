@@ -361,7 +361,7 @@ if debug:
 sample_count = len(sample_list) 
 
 # add more input with expand to display rules help
-if genes_file:
+if bed_file and genes_file:
 	rule all:
 		"""
 		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
@@ -370,7 +370,7 @@ if genes_file:
 			vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panel_list_trunc),
 			vcfgzallpanel = expand(tmpdir + "/" + serviceName + "." + date_time + ".all.Panel.{panel}.vcf.gz",  panel=panel_list_trunc)
 
-if bed_file:
+if bed_file and not genes_file:
 	rule all:
 		"""
 		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
