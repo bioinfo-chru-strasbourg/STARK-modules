@@ -379,7 +379,7 @@ if bed_file and not genes_file:
 			vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", sample=sample_list, aligner=aligner_list),
 			vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
 
-else:
+if not bed_file and not genes_file:
 	rule all:
 		"""
 		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
