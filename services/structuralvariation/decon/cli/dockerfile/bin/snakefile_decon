@@ -588,16 +588,16 @@ rule IdentifyFailures:
 		customplot = config['custom'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".Identify" # DECON.datetime.Identify_Failures.txt
 	output:
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + "_Failures.txt"
+		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_coverage_Failures.txt"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.err"
 	shell:
 		"""
 		if [ {params.customplot} ];
 		then
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {params.output}_Failures.txt ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}_Failures.txt
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {params.output} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 		else
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {params.output}_Failures.txt ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {params.output}_Failures.txt
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {params.output} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {params.output}
 		fi
 		"""
 
