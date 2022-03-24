@@ -10,7 +10,7 @@
 ################## Context ##################
 # type python launcher.py -h for help
 #
-# ex of command :python launcher.py -r run
+# ex of command : python launcher.py -r run
 #
 ####################################
 
@@ -55,7 +55,6 @@ def readconfig(configFile, serviceName, configkey):
 	outputconfig = json_config['services'][serviceName][configkey]
 	return outputconfig
 
-# TODO need to test the default argument with the listener.py
 def launch(run, serviceName, configFile, image=None, launchCommand=None, montage=None, containersFile=None):
 	""" Function to start a docker container with a specific command """
 	""" See help (-h) for details """
@@ -96,7 +95,6 @@ def launch(run, serviceName, configFile, image=None, launchCommand=None, montage
 	subprocess.call(cmd, shell = True)
 
 
-
 def myoptions():
 	'''
 	*arg parser*
@@ -105,11 +103,11 @@ def myoptions():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-r", "--run", type = str, default = "", help = "Run to launch", dest = 'run')
 	parser.add_argument("-s", "--service", type = str, default = "", help = "Service name", dest = 'serviceName')
-	parser.add_argument("-log", "--log", type = str, default = "", help = "Path for the log file", dest = 'containersFile')
+	parser.add_argument("-log", "--log", type = str, default = "", help = "Path for storing log file", dest = 'containersFile')
 	parser.add_argument("-v", "--volume", type = str, default = "", help = "Docker volume to add", dest = 'montage')
 	parser.add_argument("-i", "--image", type = str, default = "", help = "Docker image to use", dest = 'image')
-	parser.add_argument("-l", "--launchcommand", type = str, default = "", help = "Command to launch inside the container", dest = 'launchCommand')
-	parser.add_argument("-c", "--config", type = str, default = "", help = "Config file to read from", dest = 'configFile')
+	parser.add_argument("-l", "--launchcommand", type = str, default = "", help = "Command that will be launch inside the container", dest = 'launchCommand')
+	parser.add_argument("-c", "--config", type = str, default = "", help = "Config file path, containing image name and launch command information", dest = 'configFile')
 	return parser.parse_args()
 
 if __name__ == "__main__":

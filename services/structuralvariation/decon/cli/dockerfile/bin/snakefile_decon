@@ -28,6 +28,7 @@ import pandas as pd
 from datetime import datetime
 from shutil import copy2
 from shutil import move
+
 ################## Configuration file and PATHS ##################
 configfile: "/app/config/default.yaml"
 
@@ -185,28 +186,6 @@ def aligned_list(txtlistoutput, file_list, ext, pattern):
 			if pattern in files and files.endswith(ext):
 				f.write(str(files) + "\n")
 
-def makedictionary(dictionary, firstkey_list, secondkey_list, files_list, exclude_pattern, specific_ext, option_validation):
-	""" Function to create a dictionary """
-	# Init dictionary
-	dictionary = {}
-	for firstkey in firstkey_list:
-		dictionary[firstkey] = {}
-	# Populating dictionary
-	for firstkey in firstkey_list:
-		for secondkey in secondkey_list:
-			for files in files_list:
-				if os.path.basename(files).startswith(firstkey) and os.path.basename(files).endswith(secondkey):
-					if option_validation == False:
-						if secondkey == specific_ext and not exclude_pattern in files:
-							dico_run[firstkey][secondkey] = files
-						if secondkey != specific_ext and not exclude_pattern in files:
-							dico_run[firstkey][secondkey] = files
-					if option_validation == True:
-						if secondkey == specific_ext and exclude_pattern in files:
-							dico_run[firstkey][secondkey] = files
-						if secondkey != specific_ext and not exclude_pattern in files:
-							dico_run[firstkey][secondkey] = files
-
 ### END OF FUNCTIONS ###
 
 # Variables initialisation
@@ -270,6 +249,7 @@ for sample_exclude in sample_exclude_list:
 # If filter_sample_list variable is not empty, it will force the sample list
 if filter_sample_list:
 	sample_list = list(filter_sample_list)
+
 # For validation analyse bam will be sample.aligner.validation.bam
 if validation_only == True:
 	append_aligner = '.validation'
@@ -777,7 +757,6 @@ onsuccess:
 		f.write((date_time_end) + "\n")
 	# Copy files to final destination
 	shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
-		
 	if depotcopy == True:
 		shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {depotdir}")
 
