@@ -30,6 +30,8 @@ services:
         volumes:
             # Services
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_SERVICES}:rw
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}:rw
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}:rw
             # Config
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG}:rw
             # Volumes for databases access
@@ -72,7 +74,11 @@ services:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_OMIM_HOST_PATTERN}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_OMIM_INNER}:ro
         networks: 
             - ${DOCKER_STARK_MAIN_NETWORK}
-
+        healthcheck:
+            test: ["CMD", "test -f ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt || exit 1"]
+            timeout: 30s
+            interval: 1m
+            retries: 3
 
     # listener
     stark-module-structuralvariation-submodule-decon-service-listener:
@@ -118,6 +124,11 @@ services:
             - ${DOCKER_STARK_SOCK_MOUNT}
         networks: 
             - ${DOCKER_STARK_MAIN_NETWORK}
+        healthcheck:
+            test: ["CMD", "test -f ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}/SETUPComplete.txt || exit 1"]
+            timeout: 30s
+            interval: 1m
+            retries: 3
 
 ###########
 # NETWORK #

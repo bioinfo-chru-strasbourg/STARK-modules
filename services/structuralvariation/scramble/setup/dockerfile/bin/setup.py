@@ -176,3 +176,7 @@ if serviceName and moduleName:
 	systemcall("\cp -r /app/config/* /STARK/config/"+moduleName+"/"+serviceName+"/listener/ 1>> "+logfile+" 2>> "+errfile+" ")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
+
+# SETUPComplete listener & cli services
+systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
+systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")

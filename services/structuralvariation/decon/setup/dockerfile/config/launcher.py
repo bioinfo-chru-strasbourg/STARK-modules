@@ -8,44 +8,22 @@
 # Authoring : Thomas LAVAUX
 
 ################## Context ##################
-# launch command exemple (-p to display shell command)
-# snakemake -p -s /app/bin/snakefile_decon -c1 --config run=/STARK/output/repository/GROUP/APP/run
+# type python launcher.py -h for help
+#
+# ex of command :python launcher.py -r run
+#
 ####################################
 
 # From listener.py
 # launch(run, serviceName, containersFile, os.getenv('MICROSERVICE_MONTAGE'), os.getenv('MICROSERVICE_IMAGE'), os.getenv('MICROSERVICE_LAUNCH'), configFile, os.getenv('MICROSERVICE_REPOSITORY'))
-
 # run = path of the run to analyse
 # serviceName = name of the service (ex DECON)
 # containersFile = part name of a log file
 # configFile = config json with .conf ext containing launch command (= MICROSERVICE_LAUNCH) and image name of the docker ( = MICROSERVICE_IMAGE)
-
 # MICROSERVICE_MONTAGE = additional volume to mount
 # MICROSERVICE_IMAGE = cf. supra
 # MICROSERVICE_LAUNCH = cf. supra
 # MICROSERVICE_REPOSITORY = path to the repository folder
-
-# Add the default.yaml config to the cmd and specific yaml file depending on the APP and/or GROUP tag
-# Find the GROUP or AP tag and then add an GROUP.yaml or a APP.yaml to the cmd after --config
-# get group [4] and app [5] name from rundir == /stark/output/repository/group/app/run
-# Path of the yaml config file == /home1/data)/STARK/config/structuralvariation/decon/cli/*.yaml
-# option is only for GROUP NAME
-# snakefile command options after --config should be separated by a space
-# to exclude sample = EXCLUDE_SAMPLE_LIST=["SGT2101772","SGT2101762"]
-# exemple : snakemake -s snakefile_decon -c1 --config run=/STARK/data/run EXCLUDE_SAMPLE_LIST=["SGT2101769","SGT2101772"] --configfile default.yaml
-# docker-compose -f to specify an alternate compose file (default: docker-compose.yml) ; --env-file PATH to specify an alternate environment file
-
-#### Options if we use docker-compose instead of docker run ####
-# Construct the docker-compose command
-# we use docker-compose run to launch an analysis, the -f argument can be use to specify a specific docker-compose.yml
-# we can pass arguements like a classic docker run
-# docker-compose -f test.docker-compose.yml  run  stark-module-structuralvariation-submodule-decon-service-listener
-# --name assign a name to the container 
-# -v, --volume=[] Bind mount a volume (default []) can be empty
-#	if yaml_config_file:
-#		cmd = "docker-compose -f ./STARK.docker-compose.yml -env-file ./STARK.env run -rm -v "+ montage + " " +image+ " " +launchCommand+ " --config run=" +run+ " --configfile " +yaml_config_file
-#	else:
-#		cmd = "docker-compose -f ./STARK.docker-compose.yml -env-file ./STARK.env run -rm -v "+ montage + " " +image+ " " +launchCommand+ " --config run=" +run
 
 ################## Import libraries ##################
 
@@ -77,13 +55,12 @@ def readconfig(configFile, serviceName, configkey):
 	outputconfig = json_config['services'][serviceName][configkey]
 	return outputconfig
 
-# need to test the default argument with the listener.py
+# TODO need to test the default argument with the listener.py
 def launch(run, serviceName, configFile, image=None, launchCommand=None, montage=None, containersFile=None):
 	""" Function to start a docker container with a specific command """
 	""" See help (-h) for details """
 	# Variables get from env
 	configFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONF')
-	print(configFile)
 	if not serviceName:
 		serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_NAME')
 	if not image:
@@ -110,14 +87,14 @@ def launch(run, serviceName, configFile, image=None, launchCommand=None, montage
 		cmd = "docker run --rm "+montage+" "+image+" "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file
 	else:
 		cmd = "docker run --rm "+montage+" "+image+" "+launchCommand+" --config run="+run
-	# launch the cmd to the shell 
-	subprocess.call(cmd, shell = True)
 	# Create a log file
 	if not containersFile:
-		containersFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES')
-		print(containersFile)
+		containersFile = os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES') + "/" + os.getenv('DOCKER_STARK_MODULE_NAME') + "/" + os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') +"/" + os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_NAME') # /STARK/services/structuralvariation/serviceName/listener/
 	if os.path.exists(containersFile):
 		createlog(containersFile, run, containerName)
+	# launch the cmd to the shell 
+	subprocess.call(cmd, shell = True)
+
 
 
 def myoptions():
