@@ -276,11 +276,13 @@ RUN echo "#[INFO] System installation" && \
 	echo "#";
 
 ##############
-# Python 3.9 #
+# Python 3.x #
 ##############
 
-RUN wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz && tar xvf Python-3.9.9.tgz ;
-RUN cd Python-3.9*/ && ./configure --enable-optimizations && make altinstall ;
+ENV PYTHON_VERSION="3.9.9"
+
+RUN wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz && tar xvf Python-$PYTHON_VERSION.tgz ;
+RUN cd Python-$PYTHON_VERSION && ./configure --enable-optimizations && make altinstall ;
 
 
 #############
