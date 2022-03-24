@@ -506,7 +506,7 @@ rule AnnotSV:
 		mode = config['annotationMode']
 	shell:
 		"""
-		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsv} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsv} ]] || cat emptyAnnotSV | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.tsv}
+		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsv} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsv} ]] || cat {scriptspath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.tsv}
 		"""
 
 rule AnnotSV2vcf:
@@ -516,7 +516,7 @@ rule AnnotSV2vcf:
 		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Fullunsort.vcf"
 	shell:
 		"""
-		python3.9 {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json && [[ -s {output.vcfunsort} ]] || cat emptyAnnotSVvcf | sed 's/NAMEOFTHEINPUTFILE/{input.tsv}/g' | sed 's/DATE/${{date +%d/%m/%Y}}/g' | sed 's /REFNAME/{refgene}/g' | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
+		python3.9 {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json && [[ -s {output.vcfunsort} ]] || cat {scriptspath}/emptyAnnotSV.vcf | sed 's/NAMEOFTHEINPUTFILE/{input.tsv}/g' | sed 's/DATE/${{date +%d/%m/%Y}}/g' | sed 's /REFNAME/{refgene}/g' | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
 		"""
 
 # bcftools sort don't sort correctly
