@@ -75,8 +75,8 @@ services:
             - ${DOCKER_STARK_MAIN_NETWORK}
         healthcheck:
             test: ["CMD", "test", "-f ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt"]
-            timeout: 10s
-            interval: 10s
+            timeout: 30s
+            interval: 30s
             retries: 3
 
     # listener
@@ -121,11 +121,9 @@ services:
             - ${DOCKER_STARK_SOCK_MOUNT}
         networks: 
             - ${DOCKER_STARK_MAIN_NETWORK}
-        healthcheck:
-            test: ["CMD", "test", "-f ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}/SETUPComplete.txt"]
-            timeout: 10s
-            interval: 10s
-            retries: 3
+        depends_on:
+            stark-module-structuralvariation-submodule-scramble-service-cli:
+                condition: service_healthy
 
 
 ###########
