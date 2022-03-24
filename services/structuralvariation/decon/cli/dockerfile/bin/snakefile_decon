@@ -475,7 +475,7 @@ if genes_file:
 		"""
 		input:
 			bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
-			failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_coverage_Failures.txt",
+			failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt",
 			vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panel_list_trunc),
 			vcfgzallpanel = expand(tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Panel.{panel}.vcf.gz", panel=panel_list_trunc)
 
@@ -486,7 +486,7 @@ else:
 		"""
 		input:
 			bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
-			failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_coverage_Failures.txt",
+			failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt",
 			vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 			vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.vcf.gz"
 
@@ -546,7 +546,7 @@ rule makeCNVcalls:
 	"""
 	This step calls exon CNVs in each sample by selecting reference samples from all other samples contained in the input summary .RData file. The correlation between samples and the number of samples used as a reference are thus calculated and outputted to aid interpretation of call quality
 	Rscript makeCNVcalls.R --Rdata summary.file --transProb 0.01 (default) --exons listofexonsforspecificannotation --custom TRUE/FALSE --out output.prefix –-plot  None, Custom or All --plotFolder Plotfoldertoset
-	output is _results_all.txt and a summary Rdata associated
+	output is _all.txt and a summary Rdata associated ; if custom is true, a second file is ouputed named _custom.txt
 	"""
 	input:
 		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".RData"
@@ -556,7 +556,7 @@ rule makeCNVcalls:
 		exons = customnumberingfile,
 		plot = config['plot'],
 		customplot = config['custom'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".Design"
+		output = tmpdir + "/" + serviceName + "." + date_time + ".Design_results"
 	output:
 		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt",
 	log: 
@@ -577,7 +577,7 @@ rule IdentifyFailures:
 	"""
 	The summary .RData file outputted can be used to flag any samples or exons where exon CNV calling may be suboptimal. Both exons and samples are evaluated based on their median coverage level. When coverage is low, accuracy of detection will be compromised and caution should be exercised when interpreting results. Samples are also evaluated based on their correlation with other samples. Samples which do not have a high correlation with other samples in the set are likely to have suboptimal detection across the entire target
 	Rscript IdentifyFailures.R --Rdata file.RData --mincorr .98 --mincov 100 --exons listofexonsforspecificannotation --custom TRUE/FALSE --out output.prefix
-	output is _coverage_Failures.txt ; if --custom is true file name is _custom_Failures.txt
+	output is _Failures.txt ; if --custom is true a second file is output named _custom_Failures.txt
 	"""
 	input:
 		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".RData"
@@ -588,7 +588,7 @@ rule IdentifyFailures:
 		customplot = config['custom'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".Identify" # DECON.datetime.Identify_Failures.txt
 	output:
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_coverage_Failures.txt"
+		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.err"
 	shell:
