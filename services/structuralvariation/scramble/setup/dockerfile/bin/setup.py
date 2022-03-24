@@ -178,5 +178,4 @@ if serviceName and moduleName:
 	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
 
 # SETUPComplete listener & cli services
-systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
 systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
