@@ -35,7 +35,7 @@ j: number of jobs to run in parallele
 Configfile: contains all default config to run CANOES analysis, on start create a json file containing config used for this analysis
 '''
 
-configfile: "/app/config/default.yaml"
+#configfile: "/app/config/default.yaml"
 date = datetime.now().strftime("%Y%m%d-%H%M%S")
 
 onstart:
@@ -494,16 +494,16 @@ def copylog():
 	in case of SNAKEMAKE crash copy log folder in each samples
 	'''
 	if os.path.exists(osj(config['outputPath'], "logs")):
-		print("WARNING Error in Snakemake execution Copy logs in "+config['outputPath']+" samples")
+		print("WARNING Error in Snakemake execution Copy logs in "+config['repositoryPath']+" samples")
 		for sample in infos:
 			if os.path.isdir(osj(config['repositoryPath'], sample)):
 				print("INFO ",sample)
 				if not os.path.exists(osj(config['repositoryPath'], sample, 'CANOES')):
 					os.mkdir(osj(config['repositoryPath'], sample, 'CANOES'))
-					shutil.copytree()
+					shutil.copytree(osj(config['outputPath'], "logs"), osj(config['repositoryPath'], sample, 'CANOES', 'logs'))
 				else:
-					listfile = [folder for folder in os.listdir(osj(config['repositoryPath'], sample, "CANOES")) if os.path.isdir(osj(config['repositoryPath'], sample, 		"CANOES", 	folder)) and 'logs' in folder]
-					print("#[INFO] Listfie ", listfile)
+					listfile = [folder for folder in os.listdir(osj(config['repositoryPath'], sample, "CANOES")) if os.path.isdir(osj(config['repositoryPath'], sample, "CANOES", folder)) and 'logs' in folder]
+					print("#[INFO] Listfile ", listfile)
 					old = sample+'.'+listfile[0].split('.')[-1]
 					print("#[INFO] Create "+osj(config['repositoryPath'], sample, "CANOES", old))
 					os.mkdir(osj(config['repositoryPath'], sample, "CANOES", old))
@@ -520,6 +520,8 @@ def copylog():
 def createbedigv():
 	#TODO
 	return
+
+
 
 ##############################
 ####   Global Variables   ####
@@ -1106,7 +1108,7 @@ rule bedtovcf:
 		convertscript = config["convertscript"]
 	shell:
 		"""
-			docker run --rm -v /home1:/home1 -v /home1/data/STARK/data:/STARK/data tsvconvert:latest {params.convertscript} -i {input} -o {output} -fo {params.convertype} -fi tsv -c {params.bed2vcfjson} 2>{log} && [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
+			python {params.convertscript} -i {input} -o {output} -fo {params.convertype} -fi tsv -c {params.bed2vcfjson} 2>{log} && [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
 		"""
 
 rule AnnotSV:
@@ -1183,12 +1185,12 @@ rule AnnotSV2vcf:
 		convertype = config["convertype"],
 		annotsvconf = config["annotsvconf"],
 		convertscript = config["convertscript"]
-		#versionannotsv = config["versionannotsv"]
+		#versionannotsv = config["versionannotsv"]	
 	log:
 		output+"/logs/{sample}.fileconversion.log"
 	shell:
 		"""
-		docker run --rm -v /home1:/home1 -v /home1/data/STARK/data:/STARK/data tsvconvert:latest {params.convertscript} -i {input.tsvtmp} -o {output} -fo {params.convertype} -fi annotsv -c {params.annotsvconf} 2>{log} && [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
+		python {params.convertscript} -i {input.tsvtmp} -o {output} -fo {params.convertype} -fi annotsv -c {params.annotsvconf} 2>{log} && [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
 		"""
 
 rule AnnotSV2vcf_all:
@@ -1207,5 +1209,5 @@ rule AnnotSV2vcf_all:
 		output+"/logs/all.fileconversion.log"
 	shell:
 		"""
-		docker run --rm -v /home1:/home1 -v /home1/data/STARK/data:/STARK/data tsvconvert:latest {params.convertscript} -i {input.tsvtmp} -o {output} -fo {params.convertype} -fi annotsv -c {params.annotsvconf} 2>{log} && [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
+		python {params.convertscript} -i {input.tsvtmp} -o {output} -fo {params.convertype} -fi annotsv -c {params.annotsvconf} 2>{log} && [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
 		"""
