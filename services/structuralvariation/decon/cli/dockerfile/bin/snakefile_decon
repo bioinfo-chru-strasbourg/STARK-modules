@@ -601,6 +601,8 @@ rule IdentifyFailures:
 		fi
 		"""
 
+# will crash if conversion goes wrong 
+# && [[ -s {output.vcfunsort} ]] || cat {scriptspath}/empty.vcf > {output.vcfunsort}
 rule Decon_tsv2vcf:
 	input:
 		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt"
@@ -610,7 +612,7 @@ rule Decon_tsv2vcf:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".DeconTsv2Vcf.log"
 	shell:
 		"""
-		python3.9 {scriptspath}/file_converter.py -i {input.txt} -o {output.vcfunsort} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log1} && [[ -s {output.vcfunsort} ]] || cat {scriptspath}/empty.vcf > {output.vcfunsort} 
+		python3.9 {scriptspath}/file_converter.py -i {input.txt} -o {output.vcfunsort} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log1}
 		"""
 
 # bcftools sort don't sort correctly
