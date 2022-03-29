@@ -152,6 +152,11 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 	# curl "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData"
 # You do not need to supply the authentication header on this request. Download links are valid for one hour. 
 
+
+# systemcall("mdkir /databases/AnnotSV/current/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/ ")
+# systemcall("cp CosmicCompleteCNA.tsv.gz /databases/AnnotSV/current/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/ ")
+# systemcall("AnnotSV dummy file...
+
 ##############
 # GeneHancer #
 ##############
@@ -177,5 +182,5 @@ if serviceName and moduleName:
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
 
-# SETUPComplete listener & cli services
+# SETUPComplete cli services
 systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")

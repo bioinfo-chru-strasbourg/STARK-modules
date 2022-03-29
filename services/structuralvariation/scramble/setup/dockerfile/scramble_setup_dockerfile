@@ -107,7 +107,9 @@ RUN echo "#[INFO] Setup module installation configuration" && echo "#" ;
 
 # This will install system packages, python packages and scripts to install tools
 
-ENV YUM_INSTALL="automake htop bc bzip2 bzip2-devel libffi-devel rsync wget which xz xz-devel zlib zlib-devel openssl-devel sqlite-devel"
+ENV YUM_INSTALL="automake make htop bc gcc gcc-c++ bzip2 bzip2-devel rsync wget which xz xz-devel zlib zlib-devel unzip openssl-devel tbb-devel sqlite-devel libffi-devel curl-devel libcurl tcl"
+
+# perl perl-Data-Dumper perl-Digest-MD5 perl-Switch perl-devel perl-Tk perl-Archive-Tar perl-List-MoreUtils
 
 ENV YUM_REMOVE="automake"
 
@@ -272,20 +274,115 @@ RUN echo "#[INFO] System installation" && \
 	echo "#[INFO] System Clean" && \
 	echo "#";
 
-RUN yum groupinstall "Development Tools" -y;
 
 ##############
-# Python 3.9 #
+# Python 3.x #
 ##############
 
-RUN wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz && tar xvf Python-3.9.9.tgz ;
-RUN cd Python-3.9*/ && ./configure --enable-optimizations && make altinstall ;
+ENV PYTHON_VERSION="3.9.9"
+
+# 3.10 need openSSL > 1.1.1
+
+RUN wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz && tar xvf Python-$PYTHON_VERSION.tgz ;
+RUN cd Python-$PYTHON_VERSION && ./configure --enable-optimizations && make altinstall ;
 
 
 # Export LANG
 RUN export LANG="en_US.UTF-8" ;
 RUN export LC_ALL="en_US.UTF-8" ;
 
+##########
+# HTSLIB #
+##########
+
+# TOOL INFO
+ENV TOOL_NAME="htslib"
+ENV TOOL_VERSION="1.15"
+ENV TOOL_TARBALL="$TOOL_NAME-$TOOL_VERSION.tar.bz2"
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/samtools/$TOOL_NAME/releases/download/$TOOL_VERSION/$TOOL_TARBALL"
+ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+
+# TOOL INSTALLATION
+RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+	source $TOOL_INIT && \
+	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
+	make install --quiet -j $THREADS -C $(ls -d $TOOL_SOURCE_BUILD/*) prefix=$TOOL_DEST && \
+	# ln -s /STARK/tools/htslib/current/include/htslib/ /usr/local/include/ && \
+	ln -s $TOOL_DEST/include/htslib/ /usr/local/include/ && \
+	$TOOL_CHECK ;
+
+############
+# BCFTOOLS #
+############
+
+# Depend on Htslib
+
+# TOOL INFO
+ENV TOOL_NAME="bcftools"
+ENV TOOL_VERSION="1.15"
+ENV TOOL_TARBALL="$TOOL_NAME-$TOOL_VERSION.tar.bz2"
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/samtools/$TOOL_NAME/releases/download/$TOOL_VERSION/$TOOL_TARBALL"
+ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+
+# TOOL INSTALLATION
+RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+	source $TOOL_INIT && \
+	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
+	make install --quiet -j $THREADS -C $(ls -d $TOOL_SOURCE_BUILD/*) prefix=$TOOL_DEST && \
+	$TOOL_CHECK ;
+
+############
+# BEDTOOLS #
+############
+
+# TOOL INFO
+ENV TOOL_NAME="bedtools"
+ENV TOOL_VERSION="2.30.0"
+ENV TOOL_TARBALL="$TOOL_NAME-$TOOL_VERSION.tar.gz"
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/arq5x/bedtools2/releases/download/v$TOOL_VERSION/$TOOL_TARBALL"
+ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+
+# TOOL INSTALLATION
+RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+	source $TOOL_INIT && \
+	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
+	# ln -s /usr/bin/python3 /usr/bin/python && \
+	make install --quiet -j $THREADS -C $(ls -d $TOOL_SOURCE_BUILD/*) prefix=$TOOL_DEST && \
+	$TOOL_CHECK ;
+
+#############
+#  AnnotSV  #
+#############
+
+# https://github.com/lgmgeo/AnnotSV/archive/refs/tags/v3.1.zip
+
+ENV TOOL_NAME="AnnotSV"
+ENV TOOL_VERSION="3.1"
+ENV TOOL_TARBALL="v$TOOL_VERSION.zip"
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/lgmgeo/$TOOL_NAME/archive/refs/tags/$TOOL_TARBALL"
+ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+ENV TOOL_PARAM_DATABASE_FOLDER_LINK=$DATABASES/AnnotSV/$TOOL_VERSION/
+
+
+# TOOL INSTALLATION
+RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+	source $TOOL_INIT && \
+	unzip -q $TOOL_SOURCE -d $TOOL_SOURCE_BUILD && \
+	mkdir -p $TOOL_DEST/share/tcl/AnnotSV/ && \
+	mkdir -p $TOOL_DEST/etc/AnnotSV/ && \
+	mkdir -p $TOOL_DEST/share/AnnotSV/jar/ && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/share/tcl/* $TOOL_DEST/share/tcl/ && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/share/AnnotSV/jar/*jar $TOOL_DEST/share/AnnotSV/jar/ && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/etc/AnnotSV/* $TOOL_DEST/etc/AnnotSV/ && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/bin/* $TOOL_DEST/bin && \
+	mkdir -p $TOOL_PARAM_DATABASE_FOLDER_LINK && \
+	$TOOL_CHECK ;
+
+ENV ANNOTSV="$TOOLS/$TOOL_NAME/$TOOL_VERSION"
 
 ######################
 # YUM REMOVE & CLEAR #
