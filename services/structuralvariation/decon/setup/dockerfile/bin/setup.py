@@ -153,9 +153,17 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 # You do not need to supply the authentication header on this request. Download links are valid for one hour. 
 
 
-# systemcall("mdkir /databases/AnnotSV/current/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/ ")
-# systemcall("cp CosmicCompleteCNA.tsv.gz /databases/AnnotSV/current/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/ ")
-# systemcall("AnnotSV dummy file...
+# Install COSMIC SV database (file is CosmicCompleteCNA.tsv.gz) 
+COSMIC_source = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG')+"/COSMIC/CosmicCompleteCNA.tsv.gz" # /STARK/config/structuralvariation/serviceName/setup
+COSMIC_install_path = "/databases/AnnotSV/current/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37"
+if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
+	systemcall("mdkir "+COSMIC_install_path+" ")
+	systemcall("cp "+COSMIC_source+" "+COSMIC_install_path+" ")
+# AnnotSV dummy vcf in /app/src/dummy.vcf to process COSMIC database (need rw database for that)
+	bedtools_path = "/tools/bedtools/current/bin/bedtools"
+	genomeBuild_version = "GRCh37"
+	systemcall("AnnotSV -SVinputFile /app/src/dummy.vcf -outputFile "+setup_config_path+"/dummy.tsv -bedtools "+bedtools_path+" -genomeBuild "+genomeBuild_version+" ")
+
 
 ##############
 # GeneHancer #

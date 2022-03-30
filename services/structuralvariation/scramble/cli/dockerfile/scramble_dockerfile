@@ -302,7 +302,8 @@ RUN pip3.9 install snakemake ;
 ######################
 
 RUN pip3.9 install Biopython && pip3.9 install pandas ;
-RUN pip3.9 install -U setuptools && pip3.9 install pyfaidx ;
+RUN pip3.9 install -U setuptools ;
+RUN pip3.9 install ./src/lib/pyfasta-0.5.2.tar.gz ;
 
 # Export LANG
 RUN export LANG="en_US.UTF-8" ;
@@ -313,11 +314,11 @@ RUN export LC_ALL="en_US.UTF-8" ;
 #####
 
 ## Install R packages for SCRAMBLE
-RUN R -e "install.packages(c('BiocManager', 'stringr' ,'optparse'), dependencies=TRUE, repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages(c('BiocManager', 'stringr' ,'optparse'), dependencies=TRUE, repos = 'http://cran.r-project.org')"
 RUN R -e 'BiocManager::install(ask = F)' && R -e 'BiocManager::install(c("Biostrings", "Rsamtools"), ask = F)'
 ## Install R packages for SCRAMBLE for BLAST + (indels option)
-# RUN R -e "install.packages('devtools', dependencies=TRUE, repos = 'http://cran.us.r-project.org')"
-# RUN echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile
+# RUN R -e "install.packages('devtools', dependencies=TRUE, repos = 'http://cran.r-project.org')"
+# RUN echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.r-project.org'; options(repos = r);" > ~/.Rprofile
 # RUN Rscript -e "library(devtools); install_github('mhahsler/rBLAST')"
 
 ############

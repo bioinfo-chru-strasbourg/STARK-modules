@@ -98,7 +98,8 @@ DEBUG_MODE: True
 EXON_REGEN: False
 # Keep intergenic region when exon regen is done
 KEEP_INTERGENIC: False
-
+# Patch for some gene name
+EXON_SEP: False
 
 ############## Tools specific parameters ##############
 

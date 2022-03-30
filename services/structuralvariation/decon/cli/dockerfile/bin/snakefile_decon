@@ -107,6 +107,9 @@ custom_exon = config['custom']
 # Regen exon number with IntersectBed and a refseqgene reference 
 customexon_regen = config['EXON_REGEN']
 keep_intergenic = config['KEEP_INTERGENIC']
+# Patch for some gene name formatting
+exon_sep = config['EXON_SEP']
+
 
 ### FUNCTIONS ###
 
@@ -423,8 +426,8 @@ if bed_file and genes_file and customexon_regen == False:
 	df = df[pd.to_numeric(df['Custom.Exon'], errors='coerce').notnull()] # value is NaN if errors
 	df.to_csv(customnumberingfile, sep='\t', index=False)
 
-#if bed_file and customexon_regen == False:
-#	deconbedfromdesign(bed_file, deconbed_file, '_chr')
+if bed_file and customexon_regen == False and exon_sep == True:
+	deconbedfromdesign(bed_file, deconbed_file, '_chr')
 
 if not bed_file:
 	logsomefile(logfile, 'No bed found, DECON cannot continue, exiting', "\n")
@@ -565,9 +568,9 @@ rule makeCNVcalls:
 		"""
 		if [ {params.customplot} ];
 		then
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} –-plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 		else
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} –-plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 		fi
 		"""
 
@@ -609,10 +612,10 @@ rule Decon_tsv2vcf:
 	output:
 		vcfunsort = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.unsort.vcf"
 	log:
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".DeconTsv2Vcf.log"
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".DeconTsv2Vcf.log"
 	shell:
 		"""
-		python3.9 {scriptspath}/file_converter.py -i {input.txt} -o {output.vcfunsort} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log1}
+		python3.9 {scriptspath}/file_converter.py -i {input.txt} -o {output.vcfunsort} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log2}
 		"""
 
 # bcftools sort don't sort correctly
@@ -701,10 +704,10 @@ rule AnnotSV2vcf:
 	output:
 		vcfanot = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf"
 	log:
-		log1 = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV2vcf.log"
+		log2 = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV2vcf.log"
 	shell:
 		"""
-		python3.9 {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfanot} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json 2> {log.log1} && [[ -s {output.vcfanot} ]] || echo "No data to annotate" > {output.vcfanot}
+		python3.9 {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfanot} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json 2> {log.log2} && [[ -s {output.vcfanot} ]] || echo "No data to annotate" > {output.vcfanot}
 		"""
 
 rule vcf2gzsample:
