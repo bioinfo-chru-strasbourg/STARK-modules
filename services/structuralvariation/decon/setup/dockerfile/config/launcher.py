@@ -10,7 +10,7 @@
 ################## Context ##################
 # type python launcher.py -h for help
 #
-# ex of command : python launcher.py -r run
+# ex of command :python launcher.py -r run
 #
 ####################################
 
@@ -55,7 +55,8 @@ def readconfig(configFile, serviceName, configkey):
 	outputconfig = json_config['services'][serviceName][configkey]
 	return outputconfig
 
-def launch(run, serviceName, configFile, image=None, launchCommand=None, montage=None, containersFile=None):
+# TODO need to test the default argument with the listener.py
+def launch(run, serviceName, configFile, image, launchCommand, montage, containersFile):
 	""" Function to start a docker container with a specific command """
 	""" See help (-h) for details """
 	# Variables get from env
@@ -86,13 +87,14 @@ def launch(run, serviceName, configFile, image=None, launchCommand=None, montage
 		cmd = "docker run --rm "+montage+" "+image+" "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file
 	else:
 		cmd = "docker run --rm "+montage+" "+image+" "+launchCommand+" --config run="+run
-	# Create a log file
-	if not containersFile:
-		containersFile = os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES') + "/" + os.getenv('DOCKER_STARK_MODULE_NAME') + "/" + os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') +"/" + os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_NAME') # /STARK/services/structuralvariation/serviceName/listener/
-	if os.path.exists(containersFile):
-		createlog(containersFile, run, containerName)
 	# launch the cmd to the shell 
 	subprocess.call(cmd, shell = True)
+	# Create a log file
+	if not containersFile:
+		containersFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES') # /structuralvariation/scramble/listener should be /home1/STARK/services/structuralvariation/scramble/listener/
+		print(containersFile)
+	if os.path.exists(containersFile):
+		createlog(containersFile, run, containerName)
 
 
 def myoptions():
@@ -103,11 +105,11 @@ def myoptions():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-r", "--run", type = str, default = "", help = "Run to launch", dest = 'run')
 	parser.add_argument("-s", "--service", type = str, default = "", help = "Service name", dest = 'serviceName')
-	parser.add_argument("-log", "--log", type = str, default = "", help = "Path for storing log file", dest = 'containersFile')
+	parser.add_argument("-log", "--log", type = str, default = "", help = "Path for the log file", dest = 'containersFile')
 	parser.add_argument("-v", "--volume", type = str, default = "", help = "Docker volume to add", dest = 'montage')
 	parser.add_argument("-i", "--image", type = str, default = "", help = "Docker image to use", dest = 'image')
-	parser.add_argument("-l", "--launchcommand", type = str, default = "", help = "Command that will be launch inside the container", dest = 'launchCommand')
-	parser.add_argument("-c", "--config", type = str, default = "", help = "Config file path, containing image name and launch command information", dest = 'configFile')
+	parser.add_argument("-l", "--launchcommand", type = str, default = "", help = "Command to launch inside the container", dest = 'launchCommand')
+	parser.add_argument("-c", "--config", type = str, default = "", help = "Config file to read from", dest = 'configFile')
 	return parser.parse_args()
 
 if __name__ == "__main__":
