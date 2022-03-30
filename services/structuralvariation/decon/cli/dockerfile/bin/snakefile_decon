@@ -684,7 +684,7 @@ rule AnnotSV:
 	input:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.Noannotation.vcf.gz"
 	output:
-		tsv = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv"
+		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design_uncorr.tsv"
 	log:
 		txt = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.log"
 	params:
@@ -697,6 +697,18 @@ rule AnnotSV:
 		"""
 		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsv} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsv} ]] || echo "No data to annotate" > {output.tsv}
 		"""
+
+# AnnotSV drop chr from input 
+# we need to re-add chr to the SV_chrom column
+rule patchchr:
+	input:
+		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design_uncorr.tsv"
+	output:
+		tsv = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv"
+	run:
+		df = pd.read_csv({input.tsvuncorr},  sep='\t')
+		df['SV_chrom'] = 'chr' + df['SV_chrom'].astype(str)
+		df.to_csv({output.tsv}, sep='\t', index=False)
 
 rule AnnotSV2vcf:
 	input:
