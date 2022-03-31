@@ -1,8 +1,0 @@
-{
-  "code" : "structuralvariation",
-  "name": "Structural Variation",
-  "fullname": "Structural Variation analyses",
-  "description": "Detection of structural variations such as CNV (Copy Number Variation)",
-  "release": "1.0",
-  "available": true
-}
