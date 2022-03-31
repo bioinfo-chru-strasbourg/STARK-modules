@@ -695,20 +695,20 @@ rule AnnotSV:
 		mode = config['annotationMode']
 	shell:
 		"""
-		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsv} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsv} ]] || echo "No data to annotate" > {output.tsv}
+		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsvuncorr} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsvuncorr} ]] || echo "No data to annotate" > {output.tsvuncorr}
 		"""
 
 # AnnotSV drop chr from input 
-# we need to re-add chr to the SV_chrom column
+#  we need to re-add chr to the SV_chrom column (column number 2)
 rule patchchr:
 	input:
 		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design_uncorr.tsv"
 	output:
 		tsv = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv"
-	run:
-		df = pd.read_csv({input.tsvuncorr},  sep='\t')
-		df['SV_chrom'] = 'chr' + df['SV_chrom'].astype(str)
-		df.to_csv({output.tsv}, sep='\t', index=False)
+	shell:
+		"""
+		awk '{{if(NR==1){{print; next}}; $2="chr"$2; print}}' {input.tsvuncorr} > {output.tsv}
+		"""
 
 rule AnnotSV2vcf:
 	input:

@@ -105,9 +105,9 @@ RUN echo "#[INFO] DEcON module installation configuration" && echo "#" ;
 
 # This will install system packages, python packages and scripts to install tools
 
-ENV YUM_INSTALL="automake htop bc bzip2 bzip2-devel curl-devel gcc gcc-c++ git lzma make ncurses-devel perl perl-Data-Dumper perl-Digest-MD5 perl-Switch perl-devel perl-Tk perl-Archive-Tar perl-List-MoreUtils tbb-devel unzip which xz-devel zlib-devel java-1.8.0 openssl-devel libcurl-devel htslib htslib-devel libxml2-devel harfbuzz-devel fribidi-devel udunits2-devel libjpeg freetype-devel libpng-devel libtiff-devel libjpeg-turbo-devel openssl geos geos-devel proj-epsg libffi-devel sqlite-devel"
+ENV YUM_INSTALL="automake htop bc bzip2 bzip2-devel curl-devel gcc gcc-c++ git lzma make ncurses-devel perl perl-Data-Dumper perl-Digest-MD5 perl-Switch perl-devel perl-Tk perl-Archive-Tar perl-List-MoreUtils tbb-devel unzip which xz-devel zlib-devel java-1.8.0 openssl-devel libcurl libcurl-devel htslib htslib-devel libxml2-devel harfbuzz-devel fribidi-devel udunits2-devel libjpeg freetype-devel libpng-devel libtiff-devel libjpeg-turbo-devel openssl geos geos-devel proj-epsg libffi-devel sqlite-devel"
 
-# ENV YUM_INSTALL="curl rsync wget zlib zlib2 zlib2-devel libcurl libcurl-openssl-devel xz zlib python3 python3-pip python3-devel"
+# ENV YUM_INSTALL=""
 
 
 ENV YUM_REMOVE="automake"
@@ -311,14 +311,30 @@ RUN pip3.9 install /tmp/pyfasta-0.5.2.zip ;
 RUN export LANG="en_US.UTF-8" ;
 RUN export LC_ALL="en_US.UTF-8" ;
 
+############
+# gdal > 2 #
+############
+
+RUN yum-builddep -y gdal ;
+RUN wget http://download.osgeo.org/gdal/2.4.0/gdal-2.4.0.tar.gz && \
+tar xf gdal-2.4.0.tar.gz && \
+cd gdal-2.4.0/ && \
+./configure && \
+make -j4 && \
+make install ;
+# make sure the library can be found
+RUN echo /usr/local/lib | tee -a /etc/ld.so.conf.d/local.conf && \ 
+ldconfig ;
+
 ##############
 # R install #
 ##############
+
 # Enable the Extra Packages for Enterprise Linux (EPEL) repository
 # yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm ;
 # Need EPEL depot installed for Centos 7
 # Choose R version and distribution
-ENV R_VERSION="3.1.2"
+ENV R_VERSION="4.1.3"
 # Run download and install
 RUN curl -O https://cdn.rstudio.com/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm && \
 yum install -y R-${R_VERSION}-1-1.x86_64.rpm ;
@@ -328,11 +344,22 @@ RUN /opt/R/${R_VERSION}/bin/R --version ;
 RUN ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
 ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript ;
 
+
+##############
+# R packages #
+##############
+
+# For basic DeCON scripts
+RUN R -e  "install.packages(c('R.utils', 'reshape', 'ggplot2', 'BiocManager'), dependencies = TRUE, repos = 'http://cran.r-project.org')"
+# ExomeDepth dependencies
+RUN R -e 'BiocManager::install(ask = F)' && R -e 'BiocManager::install(c("Biostrings", "Rsamtools", "GenomicRanges", "GenomicAlignments", "IRanges"), ask = F)'
+RUN R -e  "install.packages('ExomeDepth', dependencies = TRUE, repos = 'http://cran.r-project.org')"
+
+
 #########
 # DECON #
 #########
 
-# TODO install fork https://github.com/pdl30/DECoN
 
 # https://github.com/RahmanTeam/DECoN/archive/v1.0.2.tar.gz
 
@@ -343,28 +370,68 @@ ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript ;
 #RUN wget https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_1.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/ggplot2/ggplot2_1.0.1.tar.gz
 
 # TOOL INFO
+#ENV TOOL_NAME="DECoN"
+#ENV TOOL_VERSION="1.0.2"
+#ENV TOOL_TARBALL=v$TOOL_VERSION.tar.gz
+#ENV TOOL_SOURCE_EXTERNAL="https://github.com/RahmanTeam/$TOOL_NAME/archive/$TOOL_TARBALL"
+#ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+
+# TOOL INSTALLATION
+#RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+#	source $TOOL_INIT && \
+#	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
+#	rsync -a $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/ $TOOL_DEST/bin/ && \
+#	mkdir -p $TOOL_DEST/bin/packrat/src/VGAM/ && \
+#	mkdir -p $TOOL_DEST/bin/packrat/src/digest/ && \
+#	mkdir -p $TOOL_DEST/bin/packrat/src/scales/ && \
+#	mkdir -p $TOOL_DEST/bin/packrat/src/ggplot2/ && \
+#	wget https://cran.r-project.org/src/contrib/Archive/VGAM/VGAM_0.9-8.tar.gz -O $TOOL_DEST/bin/packrat/src/VGAM/VGAM_0.9-8.tar.gz && \
+#	wget https://cran.r-project.org/src/contrib/Archive/scales/scales_0.2.4.tar.gz -O $TOOL_DEST/bin/packrat/src/scales/scales_0.2.4.tar.gz && \
+#	wget https://cran.r-project.org/src/contrib/Archive/digest/digest_0.6.8.tar.gz -O $TOOL_DEST/bin/packrat/src/digest/digest_0.6.8.tar.gz && \
+#	wget https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_1.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/ggplot2/ggplot2_1.0.1.tar.gz && \
+#	cd $TOOL_DEST/bin/ && \
+#	./setup.sh && \
+#	$TOOL_CHECK ;
+
+# TOOL INSTALLATION
+#RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+#	source $TOOL_INIT && \
+#	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
+#	mkdir -p $TOOL_DEST/src && \
+#	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/IdentifyFailures.R $TOOL_DEST/src && \
+#	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/ReadInBams.R $TOOL_DEST/src && \
+#	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/makeCNVcalls.R $TOOL_DEST/src && \
+#	sed '1d' $TOOL_DEST/src/IdentifyFailures.R > $TOOL_DEST/bin/IdentifyFailures.R && \
+#	sed '1d' $TOOL_DEST/src/ReadInBams.R > $TOOL_DEST/bin/ReadInBams.R && \
+#	sed '1d' $TOOL_DEST/src/makeCNVcalls.R > $TOOL_DEST/bin/makeCNVcalls.R && \
+#	$TOOL_CHECK ;
+
+# sed '1d' get rid of the packrat function : remove packrat::on() from the scripts
+
+
+# or 
+
+# Fork update
+# https://github.com/pdl30/DECoN/archive/refs/heads/remove_packrat_webapp.zip
+
+# or https://github.com/pdl30/DECoN/archive/refs/heads/increase_panel_size.zip no packrat either
+
+# TOOL INFO
 ENV TOOL_NAME="DECoN"
-ENV TOOL_VERSION="1.0.2"
-ENV TOOL_TARBALL=v$TOOL_VERSION.tar.gz
-ENV TOOL_SOURCE_EXTERNAL="https://github.com/RahmanTeam/$TOOL_NAME/archive/$TOOL_TARBALL"
+ENV TOOL_VERSION="increase_panel_size"
+ENV TOOL_TARBALL="$TOOL_VERSION.zip"
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/pdl30/$TOOL_NAME/archive/refs/heads/$TOOL_TARBALL"
 ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
 # TOOL PARAMETERS
 
 # TOOL INSTALLATION
 RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	source $TOOL_INIT && \
-	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
-	rsync -a $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/ $TOOL_DEST/bin/ && \
-	mkdir -p $TOOL_DEST/bin/packrat/src/VGAM/ && \
-	mkdir -p $TOOL_DEST/bin/packrat/src/digest/ && \
-	mkdir -p $TOOL_DEST/bin/packrat/src/scales/ && \
-	mkdir -p $TOOL_DEST/bin/packrat/src/ggplot2/ && \
-	wget https://cran.r-project.org/src/contrib/Archive/VGAM/VGAM_0.9-8.tar.gz -O $TOOL_DEST/bin/packrat/src/VGAM/VGAM_0.9-8.tar.gz && \
-	wget https://cran.r-project.org/src/contrib/Archive/scales/scales_0.2.4.tar.gz -O $TOOL_DEST/bin/packrat/src/scales/scales_0.2.4.tar.gz && \
-	wget https://cran.r-project.org/src/contrib/Archive/digest/digest_0.6.8.tar.gz -O $TOOL_DEST/bin/packrat/src/digest/digest_0.6.8.tar.gz && \
-	wget https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_1.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/ggplot2/ggplot2_1.0.1.tar.gz && \
-	cd $TOOL_DEST/bin/ && \
-	./setup.sh && \
+	unzip -q $TOOL_SOURCE -d $TOOL_SOURCE_BUILD && \
+#	mkdir -p $TOOL_DEST/shinyGUI && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/*.R $TOOL_DEST/bin && \
+#	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/shinyGUI/*.R $TOOL_DEST/shinyGUI && \
 	$TOOL_CHECK ;
 
 WORKDIR $WORKDIR
