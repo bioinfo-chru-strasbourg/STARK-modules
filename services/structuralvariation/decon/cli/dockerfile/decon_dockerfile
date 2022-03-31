@@ -350,7 +350,7 @@ ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript ;
 ##############
 
 # For basic DeCON scripts
-RUN R -e  "install.packages(c('R.utils', 'reshape', 'ggplot2', 'BiocManager'), dependencies = TRUE, repos = 'http://cran.r-project.org')"
+RUN R -e  "install.packages(c('R.utils', 'reshape', 'foreach', 'ggplot2', 'BiocManager'), dependencies = TRUE, repos = 'http://cran.r-project.org')"
 # ExomeDepth dependencies
 RUN R -e 'BiocManager::install(ask = F)' && R -e 'BiocManager::install(c("Biostrings", "Rsamtools", "GenomicRanges", "GenomicAlignments", "IRanges"), ask = F)'
 RUN R -e  "install.packages('ExomeDepth', dependencies = TRUE, repos = 'http://cran.r-project.org')"

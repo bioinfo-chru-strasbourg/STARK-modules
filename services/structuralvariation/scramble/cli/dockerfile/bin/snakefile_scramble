@@ -533,8 +533,9 @@ rule AnnotSV2vcf:
 		log2 = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV2vcf.log"
 	shell:
 		"""
-		python3.9 {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json 2> {log.log2} && [[ -s {output.vcfunsort} ]] || echo "No data to annotate" > {output.vcfunsort}
+		python3.9 {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json 2> {log.log2} && [[ -s {output.vcfunsort} ]] || cat {scriptspath}/emptyAnnotSV.vcf | sed 's/NAMEOFTHEINPUTFILE/{input.tsv}/g' | sed 's/DATE/${{date +%d/%m/%Y}}/g' | sed 's /REFNAME/{refgene}/g' | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
 		"""
+
 
 # bcftools sort don't sort correctly
 rule sortvcf:
