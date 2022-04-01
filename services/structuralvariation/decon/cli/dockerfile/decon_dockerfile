@@ -334,7 +334,7 @@ ldconfig ;
 # yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm ;
 # Need EPEL depot installed for Centos 7
 # Choose R version and distribution
-ENV R_VERSION="4.1.3"
+ENV R_VERSION="4.0.2"
 # Run download and install
 RUN curl -O https://cdn.rstudio.com/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm && \
 yum install -y R-${R_VERSION}-1-1.x86_64.rpm ;
@@ -344,22 +344,15 @@ RUN /opt/R/${R_VERSION}/bin/R --version ;
 RUN ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
 ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript ;
 
+#########
+# R lib #
+#########
 
-##############
-# R packages #
-##############
-
-# For basic DeCON scripts
-RUN R -e  "install.packages(c('R.utils', 'reshape', 'foreach', 'ggplot2', 'BiocManager'), dependencies = TRUE, repos = 'http://cran.r-project.org')"
-# ExomeDepth dependencies
-RUN R -e 'BiocManager::install(ask = F)' && R -e 'BiocManager::install(c("Biostrings", "Rsamtools", "GenomicRanges", "GenomicAlignments", "IRanges"), ask = F)'
-RUN R -e  "install.packages('ExomeDepth', dependencies = TRUE, repos = 'http://cran.r-project.org')"
-
+RUN R -e "install.packages('packrat', dependencies=TRUE, repos = 'http://cran.r-project.org')"
 
 #########
 # DECON #
 #########
-
 
 # https://github.com/RahmanTeam/DECoN/archive/v1.0.2.tar.gz
 
@@ -369,19 +362,9 @@ RUN R -e  "install.packages('ExomeDepth', dependencies = TRUE, repos = 'http://c
 #RUN wget https://cran.r-project.org/src/contrib/Archive/digest/digest_0.6.8.tar.gz -O $TOOL_DEST/bin/packrat/src/digest/digest_0.6.8.tar.gz 
 #RUN wget https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_1.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/ggplot2/ggplot2_1.0.1.tar.gz
 
-# TOOL INFO
-#ENV TOOL_NAME="DECoN"
-#ENV TOOL_VERSION="1.0.2"
-#ENV TOOL_TARBALL=v$TOOL_VERSION.tar.gz
-#ENV TOOL_SOURCE_EXTERNAL="https://github.com/RahmanTeam/$TOOL_NAME/archive/$TOOL_TARBALL"
-#ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
-# TOOL PARAMETERS
 
-# TOOL INSTALLATION
-#RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
-#	source $TOOL_INIT && \
-#	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
-#	rsync -a $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/ $TOOL_DEST/bin/ && \
+# https://github.com/pdl30/DECoN/archive/refs/tags/webapp_v1.0.5.zip
+
 #	mkdir -p $TOOL_DEST/bin/packrat/src/VGAM/ && \
 #	mkdir -p $TOOL_DEST/bin/packrat/src/digest/ && \
 #	mkdir -p $TOOL_DEST/bin/packrat/src/scales/ && \
@@ -390,9 +373,11 @@ RUN R -e  "install.packages('ExomeDepth', dependencies = TRUE, repos = 'http://c
 #	wget https://cran.r-project.org/src/contrib/Archive/scales/scales_0.2.4.tar.gz -O $TOOL_DEST/bin/packrat/src/scales/scales_0.2.4.tar.gz && \
 #	wget https://cran.r-project.org/src/contrib/Archive/digest/digest_0.6.8.tar.gz -O $TOOL_DEST/bin/packrat/src/digest/digest_0.6.8.tar.gz && \
 #	wget https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_1.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/ggplot2/ggplot2_1.0.1.tar.gz && \
-#	cd $TOOL_DEST/bin/ && \
-#	./setup.sh && \
-#	$TOOL_CHECK ;
+
+
+#ENV TOOL_VERSION="1.0.2"
+#ENV TOOL_TARBALL=v$TOOL_VERSION.tar.gz
+#ENV TOOL_SOURCE_EXTERNAL="https://github.com/RahmanTeam/$TOOL_NAME/archive/$TOOL_TARBALL"
 
 # TOOL INSTALLATION
 #RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
@@ -409,19 +394,35 @@ RUN R -e  "install.packages('ExomeDepth', dependencies = TRUE, repos = 'http://c
 
 # sed '1d' get rid of the packrat function : remove packrat::on() from the scripts
 
-
-# or 
-
 # Fork update
 # https://github.com/pdl30/DECoN/archive/refs/heads/remove_packrat_webapp.zip
 
 # or https://github.com/pdl30/DECoN/archive/refs/heads/increase_panel_size.zip no packrat either
 
 # TOOL INFO
+#ENV TOOL_NAME="DECoN"
+#ENV TOOL_VERSION="increase_panel_size"
+#ENV TOOL_TARBALL="$TOOL_VERSION.zip"
+#ENV TOOL_SOURCE_EXTERNAL="https://github.com/pdl30/$TOOL_NAME/archive/refs/heads/$TOOL_TARBALL"
+#ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+
+# TOOL INSTALLATION
+#RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+#	source $TOOL_INIT && \
+#	unzip -q $TOOL_SOURCE -d $TOOL_SOURCE_BUILD && \
+#	mkdir -p $TOOL_DEST/shinyGUI && \
+#	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/*.R $TOOL_DEST/bin && \
+#	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/shinyGUI/*.R $TOOL_DEST/shinyGUI && \
+#	$TOOL_CHECK ;
+
+#WORKDIR $WORKDIR
+
+# TOOL INFO
 ENV TOOL_NAME="DECoN"
-ENV TOOL_VERSION="increase_panel_size"
+ENV TOOL_VERSION="webapp_v1.0.5"
 ENV TOOL_TARBALL="$TOOL_VERSION.zip"
-ENV TOOL_SOURCE_EXTERNAL="https://github.com/pdl30/$TOOL_NAME/archive/refs/heads/$TOOL_TARBALL"
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/pdl30/$TOOL_NAME/archive/refs/tags/$TOOL_TARBALL"
 ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
 # TOOL PARAMETERS
 
@@ -429,12 +430,10 @@ ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
 RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	source $TOOL_INIT && \
 	unzip -q $TOOL_SOURCE -d $TOOL_SOURCE_BUILD && \
-#	mkdir -p $TOOL_DEST/shinyGUI && \
-	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/*.R $TOOL_DEST/bin && \
-#	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/shinyGUI/*.R $TOOL_DEST/shinyGUI && \
+	rsync -a $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/ $TOOL_DEST/bin/ && \
+	cd $TOOL_DEST/bin/ && \
+	./setup.sh && \
 	$TOOL_CHECK ;
-
-WORKDIR $WORKDIR
 
 #############
 #  AnnotSV  #
@@ -444,7 +443,6 @@ WORKDIR $WORKDIR
 
 # https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_3.1.tar.gz
 # https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_$TOOL_VERSION.tar.gz
-
 
 
 ENV TOOL_NAME="AnnotSV"
