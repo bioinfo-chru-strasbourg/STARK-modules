@@ -273,38 +273,20 @@ RUN echo "#[INFO] System installation" && \
 	echo "#[INFO] System Clean" && \
 	echo "#";
 
-##############
-# R install #
-##############
+############
+# gdal > 2 #
+############
 
-# Enable the Extra Packages for Enterprise Linux (EPEL) repository
-# yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm ;
-# Need EPEL depot installed for Centos 7
-# Choose R version and distribution
-ENV R_VERSION="4.0.2"
-# Run download and install
-RUN curl -O https://cdn.rstudio.com/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm && \
-yum install -y R-${R_VERSION}-1-1.x86_64.rpm ;
-# Verify installation
-RUN /opt/R/${R_VERSION}/bin/R --version ;
-# Create symlink to R
-RUN ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
-ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript ;
-
-#########
-# R lib #
-#########
-
-# RUN R -e "install.packages('packrat', dependencies=TRUE, repos = 'http://cran.r-project.org')"
-
-# For basic DeCON scripts
-RUN R -e  "install.packages(c('R.utils', 'foreach', 'reshape', 'ggplot2', 'BiocManager'), dependencies = TRUE, repos = 'http://cran.r-project.org')"
-# ExomeDepth dependencies
-RUN R -e 'BiocManager::install(ask = F)' && RUN R -e 'BiocManager::install("IRanges", version = "2.22.0", ask = F)' # IRanges <= 2.22.0 for IRanges::RangedData function
-# Other dependencies
-RUN R -e 'BiocManager::install(ask = F)' && R -e 'BiocManager::install(c("Biostrings", "Rsamtools", "GenomicRanges", "GenomicAlignments"), ask = F)'
-RUN R -e  "install.packages('ExomeDepth', dependencies = TRUE, repos = 'http://cran.r-project.org')"
-
+RUN yum-builddep -y gdal ;
+RUN wget http://download.osgeo.org/gdal/2.4.0/gdal-2.4.0.tar.gz && \
+tar xf gdal-2.4.0.tar.gz && \
+cd gdal-2.4.0/ && \
+./configure && \
+make -j4 && \
+make install ;
+# make sure the library can be found
+RUN echo /usr/local/lib | tee -a /etc/ld.so.conf.d/local.conf && \ 
+ldconfig ;
 
 ##############
 # Python 3.x #
@@ -344,20 +326,33 @@ RUN pip3.9 install /tmp/pyfasta-0.5.2.zip ;
 RUN export LANG="en_US.UTF-8" ;
 RUN export LC_ALL="en_US.UTF-8" ;
 
-############
-# gdal > 2 #
-############
+#############
+# R install #
+#############
 
-RUN yum-builddep -y gdal ;
-RUN wget http://download.osgeo.org/gdal/2.4.0/gdal-2.4.0.tar.gz && \
-tar xf gdal-2.4.0.tar.gz && \
-cd gdal-2.4.0/ && \
-./configure && \
-make -j4 && \
-make install ;
-# make sure the library can be found
-RUN echo /usr/local/lib | tee -a /etc/ld.so.conf.d/local.conf && \ 
-ldconfig ;
+# Enable the Extra Packages for Enterprise Linux (EPEL) repository
+# yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm ;
+# Need EPEL depot installed for Centos 7
+# Choose R version and distribution
+ENV R_VERSION="4.0.2"
+# Run download and install
+RUN curl -O https://cdn.rstudio.com/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm && \
+yum install -y R-${R_VERSION}-1-1.x86_64.rpm ;
+# Verify installation
+RUN /opt/R/${R_VERSION}/bin/R --version ;
+# Create symlink to R
+RUN ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
+ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript ;
+
+##############
+# R packages #
+##############
+
+# For basic DeCON scripts
+RUN R -e  "install.packages(c('R.utils', 'foreach', 'reshape', 'ggplot2', 'BiocManager'), dependencies = TRUE, repos = 'http://cran.r-project.org')"
+# ExomeDepth dependencies
+RUN R -e 'BiocManager::install(ask = F)' && R -e 'BiocManager::install(c("Biostrings", "Rsamtools", "GenomicRanges", "GenomicAlignments", "IRanges"), ask = F)'
+RUN R -e  "install.packages('ExomeDepth', dependencies = TRUE, repos = 'http://cran.r-project.org')"
 
 
 #########
@@ -366,52 +361,30 @@ ldconfig ;
 
 # https://github.com/RahmanTeam/DECoN/archive/v1.0.2.tar.gz
 
-#ENV TOOL_VERSION="1.0.2"
-#ENV TOOL_TARBALL=v$TOOL_VERSION.tar.gz
-#ENV TOOL_SOURCE_EXTERNAL="https://github.com/RahmanTeam/$TOOL_NAME/archive/$TOOL_TARBALL"
-
-#WORKDIR $WORKDIR
-
-# https://github.com/pdl30/DECoN/archive/refs/tags/webapp_v1.0.5.zip
-# TOOL INFO
-#ENV TOOL_NAME="DECoN"
-#ENV TOOL_VERSION="webapp_v1.0.5"
-#ENV TOOL_TARBALL="$TOOL_VERSION.zip"
-#ENV TOOL_SOURCE_EXTERNAL="https://github.com/pdl30/$TOOL_NAME/archive/refs/tags/$TOOL_TARBALL"
-#ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
-# TOOL PARAMETERS
-
-# TOOL INSTALLATION
-#RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
-#	source $TOOL_INIT && \
-#	unzip -q $TOOL_SOURCE -d $TOOL_SOURCE_BUILD && \
-#	rsync -a $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/ $TOOL_DEST/bin/ && \
-#	cd $TOOL_DEST/bin/ && \
-#	./setup.sh && \
-#	$TOOL_CHECK ;
-
-
-# Fork update no packrat
-# https://github.com/pdl30/DECoN/archive/refs/heads/remove_packrat_webapp.zip
-# https://github.com/pdl30/DECoN/archive/refs/heads/increase_panel_size.zip
+# We remove packrat manager, because we don't use shinyR function and packrat list of packages was not updated
 
 # TOOL INFO
 ENV TOOL_NAME="DECoN"
-ENV TOOL_VERSION="increase_panel_size"
-ENV TOOL_TARBALL="$TOOL_VERSION.zip"
-ENV TOOL_SOURCE_EXTERNAL="https://github.com/pdl30/$TOOL_NAME/archive/refs/heads/$TOOL_TARBALL"
+ENV TOOL_VERSION="1.0.2"
+ENV TOOL_TARBALL=v$TOOL_VERSION.tar.gz
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/RahmanTeam/$TOOL_NAME/archive/$TOOL_TARBALL"
 ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
 # TOOL PARAMETERS
 
 # TOOL INSTALLATION
 RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	source $TOOL_INIT && \
-	unzip -q $TOOL_SOURCE -d $TOOL_SOURCE_BUILD && \
-#	mkdir -p $TOOL_DEST/shinyGUI && \
-	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/*.R $TOOL_DEST/bin && \
-#	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/shinyGUI/*.R $TOOL_DEST/shinyGUI && \
+	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
+	mkdir -p $TOOL_DEST/src && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/IdentifyFailures.R $TOOL_DEST/src && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/ReadInBams.R $TOOL_DEST/src && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/Linux/makeCNVcalls.R $TOOL_DEST/src && \
+	sed '1d' $TOOL_DEST/src/IdentifyFailures.R > $TOOL_DEST/bin/IdentifyFailures.R && \
+	sed '1d' $TOOL_DEST/src/ReadInBams.R > $TOOL_DEST/bin/ReadInBams.R && \
+	sed '1d' $TOOL_DEST/src/makeCNVcalls.R > $TOOL_DEST/bin/makeCNVcalls.R && \
 	$TOOL_CHECK ;
 
+# sed '1d' get rid of the packrat function : remove packrat::on() from the scripts
 
 #############
 #  AnnotSV  #
