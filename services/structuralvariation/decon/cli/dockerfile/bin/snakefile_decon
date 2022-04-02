@@ -358,10 +358,10 @@ if panel_list:
 # We create a custom exon file from the design bed and intersectBed with a refseqgene database to get the exon number
 # Warning the refseqgene must be generated before
 if bed_file and customexon_regen == True:
-	# Generating the custom.exon file from scratch (intersectBed with refgene file)
+	# Generating the custom.exon file from scratch (intersectBed with refseqgene file)
 	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
 	df.to_csv(inputdir + "/" + serviceName + '.custom.bed', sep='\t', index=False, header=False)
-	# Intersect bed with refgene using bedtools
+	# Intersect bed with refseqgene using bedtools
 	shell("intersectBed -a "+inputdir+"/"+serviceName+".custom.bed -b "+refseqgene+" -loj > "+inputdir+"/"+serviceName+".customtemp.bed")
 	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "Tosplit", "Gene", "9"])
 	df = df.drop(['4', '5', '6', '9'], 1)
@@ -669,7 +669,7 @@ rule splitvcf:
 		path = tmpdir + "/{sample}/" + serviceName + "/"
 	shell:
 		"""
-		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgzdesign} && [[ -s {output.vcfgzsplit} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzsplit}  ; tabix {output.vcfgzsplit}
+		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgzdesign} && [[ -s {output.vcfgzsplit} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzsplit} ; tabix {output.vcfgzsplit}
 		"""
 
 # AnnotSV need bedtools to work ie you have to specify the directory of bedtools binaries in -bedtools argument
@@ -707,7 +707,7 @@ rule patchchr:
 		tsv = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv"
 	shell:
 		"""
-		awk '{{if(NR==1){{print; next}}; $2="chr"$2; print}}' {input.tsvuncorr} > {output.tsv}
+		awk -F'\t' '{{if(NR==1){{print; next}}; $2="chr"$2; print}}' {input.tsvuncorr} > {output.tsv}
 		"""
 
 rule AnnotSV2vcf:

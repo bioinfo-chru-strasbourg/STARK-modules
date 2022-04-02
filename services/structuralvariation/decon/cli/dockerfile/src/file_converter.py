@@ -41,8 +41,8 @@ import time
 from functools import lru_cache
 from os.path import join as osj
 import pandas as pd
-#from pyfaidx import Fasta # bug so revert to pyfasta
-from pyfasta import Fasta
+#from pyfasta import Fasta
+import fasta
 
 class Converter:
 	"""

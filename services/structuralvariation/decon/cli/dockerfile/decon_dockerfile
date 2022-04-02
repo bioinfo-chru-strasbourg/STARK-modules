@@ -319,9 +319,12 @@ RUN pip3.9 install -U setuptools ;
 
 WORKDIR $WORKDIR
 RUN wget https://github.com/brentp/pyfasta/archive/refs/heads/master.zip ;
-RUN mv /tmp/master.zip /tmp/pyfasta-0.5.2.zip
+RUN mv /tmp/master.zip /tmp/pyfasta-0.5.2.zip ;
 RUN pip3.9 install /tmp/pyfasta-0.5.2.zip ;
 
+RUN wget https://github.com/xapple/fasta/archive/refs/heads/master.zip ;
+RUN mv /tmp/master.zip /tmp/fasta-2.2.13.tar.gz ;
+RUN pip3.9 install /tmp/fasta-2.2.13.tar.gz ;
 # Export LANG
 RUN export LANG="en_US.UTF-8" ;
 RUN export LC_ALL="en_US.UTF-8" ;

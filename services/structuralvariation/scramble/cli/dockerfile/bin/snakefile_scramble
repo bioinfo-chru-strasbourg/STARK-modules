@@ -521,7 +521,7 @@ rule patchchr:
 		tsv = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.tsv"
 	shell:
 		"""
-		awk '{{if(NR==1){{print; next}}; $2="chr"$2; print}}' {input.tsvuncorr} > {output.tsv}
+		awk -F'\t' '{{if(NR==1){{print; next}}; $2="chr"$2; print}}' {input.tsvuncorr} > {output.tsv}
 		"""
 
 rule AnnotSV2vcf:
