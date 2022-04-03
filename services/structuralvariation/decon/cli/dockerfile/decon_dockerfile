@@ -303,9 +303,13 @@ RUN pip3.9 install Biopython && pip3.9 install pandas ;
 RUN pip3.9 install -U setuptools ;
 
 WORKDIR $WORKDIR
-RUN wget https://github.com/brentp/pyfasta/archive/refs/heads/master.zip ;
-RUN mv /tmp/master.zip /tmp/pyfasta-0.5.2.zip
-RUN pip3.9 install /tmp/pyfasta-0.5.2.zip ;
+#RUN wget https://github.com/brentp/pyfasta/archive/refs/heads/master.zip ;
+#RUN mv /tmp/master.zip /tmp/pyfasta-0.5.2.zip
+#RUN pip3.9 install /tmp/pyfasta-0.5.2.zip ;
+
+RUN wget https://github.com/xapple/fasta/archive/refs/heads/master.zip ;
+RUN mv /tmp/master.zip /tmp/fasta-2.2.13.tar.gz ;
+RUN pip3.9 install /tmp/fasta-2.2.13.tar.gz ;
 
 # Export LANG
 RUN export LANG="en_US.UTF-8" ;
@@ -332,15 +336,8 @@ ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript ;
 # DECON #
 #########
 
-# TODO install fork https://github.com/pdl30/DECoN
-
+# fork https://github.com/pdl30/DECoN
 # https://github.com/RahmanTeam/DECoN/archive/v1.0.2.tar.gz
-
-# Add some missing packages for packrat install
-#RUN wget https://cran.r-project.org/src/contrib/Archive/VGAM/VGAM_0.9-8.tar.gz -O $TOOL_DEST/bin/packrat/src/VGAM/VGAM_0.9-8.tar.gz 
-#RUN wget https://cran.r-project.org/src/contrib/Archive/scales/scales_0.2.4.tar.gz -O $TOOL_DEST/bin/packrat/src/scales/scales_0.2.4.tar.gz 
-#RUN wget https://cran.r-project.org/src/contrib/Archive/digest/digest_0.6.8.tar.gz -O $TOOL_DEST/bin/packrat/src/digest/digest_0.6.8.tar.gz 
-#RUN wget https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_1.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/ggplot2/ggplot2_1.0.1.tar.gz
 
 # TOOL INFO
 ENV TOOL_NAME="DECoN"
@@ -351,6 +348,7 @@ ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
 # TOOL PARAMETERS
 
 # TOOL INSTALLATION
+# Add some missing packages for packrat install
 RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	source $TOOL_INIT && \
 	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
@@ -375,10 +373,8 @@ WORKDIR $WORKDIR
 
 # https://github.com/lgmgeo/AnnotSV/archive/refs/tags/v3.1.zip
 
+# Annotation are installed with the docker setup
 # https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_3.1.tar.gz
-# https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_$TOOL_VERSION.tar.gz
-
-
 
 ENV TOOL_NAME="AnnotSV"
 ENV TOOL_VERSION="3.1"
