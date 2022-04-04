@@ -33,6 +33,8 @@ def systemcall(command):
 
 def logsomefile(logfile, text, sep, items_list=None, items=None):
 	""" Function to log variable value or list values into a log file """
+	pathlog = os.path.dirname(logfile)
+	os.makedirs(pathlog, exist_ok = True)
 	with open(logfile, 'a+') as f:
 		f.write(text + sep)
 		if items_list:
@@ -64,6 +66,9 @@ date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 STARK_FOLDER = "/STARK"
 DATABASES = STARK_FOLDER+ "/databases"
 
+serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')
+moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')
+
 ####################
 # DATABASE ANNOTSV #
 ####################
@@ -72,7 +77,7 @@ DATABASES = STARK_FOLDER+ "/databases"
 
 ANNOTSV_NAME = "AnnotSV"
 ANNOTSV_VERSION = "3.1"
-ANNOTSV_TARBALL = "Annotations_Human_+"ANNOTSV_VERSION+".tar.gz"
+ANNOTSV_TARBALL = "Annotations_Human_"+ANNOTSV_VERSION+".tar.gz"
 ANNOTSV_SOURCE_EXTERNAL = "https://www.lbgi.fr/~geoffroy/Annotations/"+ANNOTSV_TARBALL
 ANNOTSV_PARAM_DATABASE_FOLDER_LINK = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/"
 
@@ -82,7 +87,8 @@ errfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".da
 # Check if a directory exist
 # os.path.isdir('folder') will return true if exist
 if os.path.isdir(ANNOTSV_PARAM_DATABASE_FOLDER_LINK) == False:
-	logsomefile(logfile, 'Setup start:', "\n", items = date_time)
+	os.makedirs(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
+	logsomefile(logfile, 'AnnotSV version '+ANNOTSV_VERSION+' installation start:', "\n", items = date_time)
 	installdatabase(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, ANNOTSV_SOURCE_EXTERNAL, ANNOTSV_TARBALL, logfile, errfile)
 
 #####################
@@ -177,9 +183,6 @@ if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 #######################
 # Copy config files (service.conf & service.json) and launcher.py from app/config to /config/module/servicename/listener/
 #######################
-
-serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')
-moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')
 
 if serviceName and moduleName:
 	logfile = "/STARK/config/"+moduleName+"/"+serviceName+"/listener/" + serviceName + "." +date_time+".setup.log"
