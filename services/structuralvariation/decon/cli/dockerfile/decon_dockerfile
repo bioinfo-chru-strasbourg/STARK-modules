@@ -357,22 +357,26 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/digest/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/scales/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/ggplot2/ && \
-	mkdir -p $TOOL_DEST/bin/packrat/src/BiocGenerics/ && \
-	mkdir -p $TOOL_DEST/bin/packrat/src/DBI/ && \
-	mkdir -p $TOOL_DEST/bin/packrat/src/R.methodsS3/ && \
-	mkdir -p $TOOL_DEST/bin/packrat/src/R6/ && \
-	mkdir -p $TOOL_DEST/bin/packrat/src/RColorBrewer/ && \
-	mkdir -p $TOOL_DEST/bin/packrat/src/RJSONIO/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/magrittr/ && \
+	#mkdir -p $TOOL_DEST/bin/packrat/src/BiocGenerics/ && \
+	#mkdir -p $TOOL_DEST/bin/packrat/src/DBI/ && \
+	#mkdir -p $TOOL_DEST/bin/packrat/src/R.methodsS3/ && \
+	#mkdir -p $TOOL_DEST/bin/packrat/src/R6/ && \
+	#mkdir -p $TOOL_DEST/bin/packrat/src/RColorBrewer/ && \
+	#mkdir -p $TOOL_DEST/bin/packrat/src/RJSONIO/ && \
+	#mkdir -p $TOOL_DEST/bin/packrat/src/Rcpp/ && \
 	wget https://cran.r-project.org/src/contrib/Archive/VGAM/VGAM_0.9-8.tar.gz -O $TOOL_DEST/bin/packrat/src/VGAM/VGAM_0.9-8.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/scales/scales_0.2.4.tar.gz -O $TOOL_DEST/bin/packrat/src/scales/scales_0.2.4.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/digest/digest_0.6.8.tar.gz -O $TOOL_DEST/bin/packrat/src/digest/digest_0.6.8.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_1.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/ggplot2/ggplot2_1.0.1.tar.gz && \
-	wget https://depot.galaxyproject.org/package/noarch/bg/BiocGenerics_0.12.1.tar.gz - O $TOOL_DEST/bin/packrat/src/BiocGenerics/BiocGenerics_0.12.1.tar.gz && \
-	wget https://cran.r-project.org/src/contrib/Archive/DBI/DBI_0.3.1.tar.gz -O $TOOL_DEST/bin/packrat/src/DBI/DBI_0.3.1.tar.gz && \
-	wget https://cran.r-project.org/src/contrib/Archive/R.methodsS3/R.methodsS3_1.7.0.tar.gz -O $TOOL_DEST/bin/packrat/src/R.methodsS3/R.methodsS3_1.7.0.tar.gz && \
-	wget https://cran.r-project.org/src/contrib/Archive/R6/R6_2.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/R6/R6_2.0.1.tar.gz && \
-	wget https://cran.r-project.org/src/contrib/Archive/RColorBrewer/RColorBrewer_1.1-2.tar.gz -O $TOOL_DEST/bin/packrat/src/RColorBrewer/RColorBrewer_1.1-2.tar.gz && \
-	wget https://cran.r-project.org/src/contrib/Archive/RJSONIO/RJSONIO_1.3-0.tar.gz -O $TOOL_DEST/bin/packrat/src/RJSONIO/RJSONIO_1.3-0.tar.gz && \
+	wget https://cran.r-project.org/src/contrib/Archive/magrittr/magrittr_1.5.tar.gz -O $TOOL_DEST/bin/packrat/src/magrittr/magrittr_1.5.tar.gz && \
+	#wget https://depot.galaxyproject.org/package/noarch/bg/BiocGenerics_0.12.1.tar.gz - O $TOOL_DEST/bin/packrat/src/BiocGenerics/BiocGenerics_0.12.1.tar.gz && \
+	#wget https://cran.r-project.org/src/contrib/Archive/DBI/DBI_0.3.1.tar.gz -O $TOOL_DEST/bin/packrat/src/DBI/DBI_0.3.1.tar.gz && \
+	#wget https://cran.r-project.org/src/contrib/Archive/R.methodsS3/R.methodsS3_1.7.0.tar.gz -O $TOOL_DEST/bin/packrat/src/R.methodsS3/R.methodsS3_1.7.0.tar.gz && \
+	#wget https://cran.r-project.org/src/contrib/Archive/R6/R6_2.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/R6/R6_2.0.1.tar.gz && \
+	#wget https://cran.r-project.org/src/contrib/Archive/RColorBrewer/RColorBrewer_1.1-2.tar.gz -O $TOOL_DEST/bin/packrat/src/RColorBrewer/RColorBrewer_1.1-2.tar.gz && \
+	#wget https://cran.r-project.org/src/contrib/Archive/RJSONIO/RJSONIO_1.3-0.tar.gz -O $TOOL_DEST/bin/packrat/src/RJSONIO/RJSONIO_1.3-0.tar.gz && \
+	#wget https://cran.r-project.org/src/contrib/Archive/Rcpp/Rcpp_0.11.6.tar.gz -O $TOOL_DEST/bin/packrat/src/Rcpp/Rcpp_0.11.6.tar.gz && \
 	cd $TOOL_DEST/bin/ && \
 	./setup.sh && \
 	$TOOL_CHECK ;
