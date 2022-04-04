@@ -701,6 +701,9 @@ rule AnnotSV:
 # AnnotSV drop chr from input 
 #  we need to re-add chr to the SV_chrom column (column number 2)
 rule patchchr:
+	"""
+	Add chr to the SV_chrom column
+	"""
 	input:
 		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design_uncorr.tsv"
 	output:
@@ -711,6 +714,9 @@ rule patchchr:
 		"""
 
 rule AnnotSV2vcf:
+	"""
+	File converter will convert tsv AnnotSV into vcf
+	"""
 	input:
 		tsv = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv"
 	output:
@@ -723,6 +729,9 @@ rule AnnotSV2vcf:
 		"""
 
 rule vcf2gzsample:
+	"""
+	Compress vcf with bgzip
+	"""
 	input:
 		vcfanot = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf"
 	output:
@@ -733,6 +742,9 @@ rule vcf2gzsample:
 		"""
 
 rule filtervcfpanel:
+	"""
+	Filter vcf with a bed file
+	"""
 	input:
 		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
 	output:

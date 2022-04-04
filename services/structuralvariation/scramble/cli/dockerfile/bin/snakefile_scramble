@@ -515,6 +515,9 @@ rule AnnotSV:
 # AnnotSV drop chr from input 
 # we need to re-add chr to the SV_chrom column (column number 2)
 rule patchchr:
+	"""
+	Add chr to the SV_chrom column
+	"""
 	input:
 		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV_uncorr.tsv"
 	output:
@@ -525,6 +528,9 @@ rule patchchr:
 		"""
 
 rule AnnotSV2vcf:
+	"""
+	File converter will convert tsv AnnotSV into vcf
+	"""
 	input:
 		tsv = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.tsv"
 	output:
@@ -536,9 +542,11 @@ rule AnnotSV2vcf:
 		python3.9 {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json 2> {log.log2} && [[ -s {output.vcfunsort} ]] || cat {scriptspath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
 		"""
 
-
 # bcftools sort don't sort correctly
 rule sortvcf:
+	"""
+	Bash script to sort a vcf
+	"""
 	input:
 		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Fullunsort.vcf"
 	output:
@@ -550,6 +558,9 @@ rule sortvcf:
 
 # bcftools need vcf.gz.tbi index for the merge all
 rule vcf2gz:
+	"""
+	Compress vcf with bgzip
+	"""
 	input:
 		vcfsort = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf"
 	output:
@@ -560,6 +571,9 @@ rule vcf2gz:
 		"""
 
 rule cpvcffull:
+	"""
+	Copy or merge with bcftools several vcfs
+	"""
 	input:
 		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
 	output:
@@ -576,6 +590,9 @@ rule cpvcffull:
 
 # bcftools need vcf.gz.tbi index
 rule filtervcfdesign:
+	"""
+	Filter vcf with a bed file
+	"""
 	input:
 		vcfgz = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf.gz"
 	output:
@@ -588,6 +605,9 @@ rule filtervcfdesign:
 		"""
 
 rule cpvcfdesign:
+	"""
+	Copy or merge with bcftools several vcfs
+	"""
 	input:
 		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output:
@@ -603,6 +623,9 @@ rule cpvcfdesign:
 		"""
 
 rule filtervcfpanel:
+	"""
+	Filter vcf with a bed file
+	"""
 	input:
 		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
 	output:
@@ -615,6 +638,9 @@ rule filtervcfpanel:
 		"""
 
 rule cpvcfpanel:
+	"""
+	Copy or merge with bcftools several vcfs
+	"""
 	input:
 		vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panel_list_trunc)
 	output:
