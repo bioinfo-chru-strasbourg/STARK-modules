@@ -38,7 +38,7 @@ RUN yum -y install https://repo.ius.io/ius-release-el7.rpm  && \
 # Snakemake #
 #############
 RUN cd /tmp  && \
-	wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh  && \
+	wget --no-check-certificate https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh  && \
 	bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/lib/miniconda3/ && \
 	echo 'export PATH="$PATH:/usr/local/lib/miniconda3/bin"' > /etc/profile.d/miniconda.sh && \
 	chmod 755 /etc/profile.d/miniconda.sh && \
@@ -63,7 +63,7 @@ RUN Rscript -e 'install.packages("nnls",repos="http://cran.us.r-project.org")' &
 #########
 #  TCL  #
 #########
-RUN wget "https://sourceforge.net/projects/tcl/files/Tcl/8.6.9/tcl8.6.9-src.tar.gz/download?use_mirror=netcologne" && \
+RUN wget --no-check-certificate "https://sourceforge.net/projects/tcl/files/Tcl/8.6.9/tcl8.6.9-src.tar.gz/download?use_mirror=netcologne" && \
 		tar -xf download?use_mirror=netcologne && \
 		rm -f download?use_mirror=netcologne && \
 		cd tcl8.6.9/unix && \
@@ -78,7 +78,7 @@ ENV PATH="$SRC/tcl/bin:$PATH"
 ##############
 #  Bedtools  #
 ##############
-RUN wget https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz  && \
+RUN wget --no-check-certificate https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz  && \
 	tar xf bedtools-2.27.1.tar.gz  && \
 	rm -rf bedtools-2.27.1.tar.gz  && \
 	cd bedtools2  && \
@@ -90,7 +90,7 @@ ENV BEDTOOLS=$SRC/bedtools/2.27.1/bin
 ##########
 #  GATK  #
 ##########
-RUN  wget "https://github.com/broadinstitute/gatk/releases/download/4.1.4.0/gatk-4.1.4.0.zip" -O GenomeAnalysisTK-4.1.4.0.zip && \
+RUN  wget --no-check-certificate "https://github.com/broadinstitute/gatk/releases/download/4.1.4.0/gatk-4.1.4.0.zip" -O GenomeAnalysisTK-4.1.4.0.zip && \
 	unzip GenomeAnalysisTK-4.1.4.0.zip  && \
 	rm -rf GenomeAnalysisTK-4.1.4.0.zip  && \
 	cd gatk-4.1.4.0  && \
@@ -102,13 +102,13 @@ RUN  wget "https://github.com/broadinstitute/gatk/releases/download/4.1.4.0/gatk
 #############
 #  AnnotSV  #
 #############
-RUN wget https://lbgi.fr/AnnotSV/Sources/AnnotSV_2.1.tar.gz && \
+RUN wget --no-check-certificate https://lbgi.fr/AnnotSV/Sources/AnnotSV_2.1.tar.gz && \
 		tar -xf AnnotSV_2.1.tar.gz && \
 		rm -rf AnnotSV_2.1.tar.gz && \
 		mkdir -p $SRC/AnnotSV/2.1 && \
 		rm -rf AnnotSV_2.1/Annotations && \
 		mv AnnotSV_2.1/* $SRC/AnnotSV/2.1 && \
-		rm -rf AnnotSV_2.1;
+		rm -rf AnnotSV_2.1; \
 		rm -rf $SRC/AnnotSV/2.1/Annotations/Genes-based/OMIM/*
 RUN mkdir -p $SRC/AnnotSV/2.1
 ENV ANNOTSV=$SRC/AnnotSV/2.1
