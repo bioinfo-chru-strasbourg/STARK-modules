@@ -7,19 +7,15 @@
 # INT version 0.1 : 17/03/2022
 # Authoring : Thomas LAVAUX
 
-# TODO make a function for the install part
-# Improve comments
-
 ################## Context ##################
 #
-# This scrpit will setup a cli ie checking and installing databases if needed ; copying launcher.py, .conf and .json files in the specific directory
+# This script will setup a cli ie checking and installing proper databases if needed ; copying launcher.py, .conf and .json files in the specific directory
 #
 ####################################
 
-
-########################
-###   Python Func   ####
-########################
+###############
+# Python Func #
+###############
 
 import os
 import subprocess
@@ -45,6 +41,15 @@ def logsomefile(logfile, text, sep, items_list=None, items=None):
 		else:
 			f.write(str(items) + sep)
 
+def installdatabase(destination, source, archive_name, logfile, errfile):
+	""" Function to download and install an archive (zip or tar.gz) """
+	os.makedirs(destination, exist_ok = True)
+	systemcall("wget "+ source+" 1>> "+logfile+" 2>> "+errfile+" ")
+	if archive_name.endswith('.zip'):
+		systemcall("unzip -q "+archive_name+" -d " +destination+" 1>> "+logfile+" 2>> "+errfile+" ")
+	if archive_name.endswith('.tar.gz'):
+		systemcall("tar xzf "+archive_name+" -C "+destination+" 1>> "+logfile+" 2>> "+errfile+" ")
+
 
 # Variables initialisation
 # set datetime to add to output file name
@@ -67,21 +72,18 @@ DATABASES = STARK_FOLDER+ "/databases"
 
 ANNOTSV_NAME = "AnnotSV"
 ANNOTSV_VERSION = "3.1"
-ANNOTSV_TARBALL = ANNOTSV_VERSION+".tar.gz"
-ANNOTSV_SOURCE_EXTERNAL = "https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_"+ANNOTSV_TARBALL
+ANNOTSV_TARBALL = "Annotations_Human_+"ANNOTSV_VERSION+".tar.gz"
+ANNOTSV_SOURCE_EXTERNAL = "https://www.lbgi.fr/~geoffroy/Annotations/"+ANNOTSV_TARBALL
 ANNOTSV_PARAM_DATABASE_FOLDER_LINK = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/"
+
+logfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.log"
+errfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.err"
 
 # Check if a directory exist
 # os.path.isdir('folder') will return true if exist
 if os.path.isdir(ANNOTSV_PARAM_DATABASE_FOLDER_LINK) == False:
-	logfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.log"
-	errfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.err"
 	logsomefile(logfile, 'Setup start:', "\n", items = date_time)
-	try:
-		os.makedirs(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
-		systemcall("wget "+ ANNOTSV_SOURCE_EXTERNAL+" 1>> "+logfile+" 2>> "+errfile+" ")
-		systemcall("tar xzf Annotations_Human_"+ANNOTSV_TARBALL+" -C "+ANNOTSV_PARAM_DATABASE_FOLDER_LINK+" 1>> "+logfile+" 2>> "+errfile+" ")
-	except: pass
+	installdatabase(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, ANNOTSV_SOURCE_EXTERNAL, ANNOTSV_TARBALL, logfile, errfile)
 
 #####################
 # DATABASE EXOMISER #
@@ -101,25 +103,22 @@ TOOL_TARBALL= TOOL_VERSION+"_"+TOOL_NAME+".tar.gz"
 TOOL_SOURCE_EXTERNAL="https://www.lbgi.fr/~geoffroy/Annotations/"+TOOL_TARBALL
 TOOL_PARAM_DATABASE_FOLDER_LINK= DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/Annotations_Exomiser/"+ TOOL_VERSION+"/"
 
+logfile = TOOL_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.log"
+errfile = TOOL_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.err"
+
 if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
-	try:
-		os.makedirs(TOOL_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
-		systemcall("wget "+ TOOL_SOURCE_EXTERNAL+" 1>> "+logfile+" 2>> "+errfile+" ")
-		systemcall("tar -xzf "+TOOL_TARBALL+" -C " +TOOL_PARAM_DATABASE_FOLDER_LINK+" 1>> "+logfile+" 2>> "+errfile+" ")
-	except: pass
+	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile)
+	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
+	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
 
 # https://data.monarchinitiative.org/exomiser/data/2109_phenotype.zip
 
 	TOOL_NAME = "phenotype"
 	TOOL_TARBALL = TOOL_VERSION+"_"+TOOL_NAME+".zip"
 	TOOL_SOURCE_EXTERNAL = "https://data.monarchinitiative.org/exomiser/data/"+TOOL_TARBALL
-
-	try:
-		systemcall("wget "+ TOOL_SOURCE_EXTERNAL+" 1>> "+logfile+" 2>> "+errfile+" ")
-		systemcall("unzip -q "+TOOL_TARBALL+" -d " +TOOL_PARAM_DATABASE_FOLDER_LINK+" 1>> "+logfile+" 2>> "+errfile+" ")
-		date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
-		logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
-	except : pass
+	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile)
+	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
+	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
 
 
 ##########
@@ -153,7 +152,7 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 # You do not need to supply the authentication header on this request. Download links are valid for one hour. 
 
 
-# Install COSMIC SV database (file is CosmicCompleteCNA.tsv.gz) 
+# Install COSMIC SV database (file is CosmicCompleteCNA.tsv.gz placed in /STARK/config/structuralvariation/serviceName/setup/COSMIC/ directory)
 COSMIC_source = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG')+"/COSMIC/CosmicCompleteCNA.tsv.gz" # /STARK/config/structuralvariation/serviceName/setup
 COSMIC_install_path = "/databases/AnnotSV/current/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37"
 if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
@@ -190,5 +189,5 @@ if serviceName and moduleName:
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
 
-# SETUPComplete cli services
+# SETUPComplete cli services (condition for healthy cli)
 systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
