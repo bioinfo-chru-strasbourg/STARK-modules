@@ -73,7 +73,7 @@ moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')
 # DATABASE ANNOTSV #
 ####################
 
-# https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_3.0.9.tar.gz
+# https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_3.1.tar.gz
 
 ANNOTSV_NAME = "AnnotSV"
 ANNOTSV_VERSION = "3.1"
@@ -83,6 +83,12 @@ ANNOTSV_PARAM_DATABASE_FOLDER_LINK = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/"
 
 logfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.log"
 errfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.err"
+
+# export http_proxy=
+# export https_proxy=
+# export ftp_proxy=
+
+sytemcall("export https_proxy=http://hux144_proxy:proxysurf@cyclope:8080 ")
 
 # Check if a directory exist
 # os.path.isdir('folder') will return true if exist

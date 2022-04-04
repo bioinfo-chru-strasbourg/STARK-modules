@@ -304,7 +304,7 @@ RUN pip3.9 install snakemake ;
 
 RUN pip3.9 install Biopython && pip3.9 install pandas ;
 RUN pip3.9 install -U setuptools ;
-RUN pip3.9 install pyfsta ;
+RUN pip3.9 install pyfasta ;
 
 WORKDIR $WORKDIR
 #RUN wget https://github.com/brentp/pyfasta/archive/refs/heads/master.zip ;
