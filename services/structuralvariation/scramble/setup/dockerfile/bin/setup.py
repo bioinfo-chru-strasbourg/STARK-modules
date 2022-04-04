@@ -88,7 +88,7 @@ errfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".da
 # export https_proxy=
 # export ftp_proxy=
 
-sytemcall("export https_proxy=http://hux144_proxy:proxysurf@cyclope:8080 ")
+systemcall("export https_proxy=http://hux144_proxy:proxysurf@cyclope:8080 ")
 
 # Check if a directory exist
 # os.path.isdir('folder') will return true if exist
@@ -165,12 +165,13 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 
 
 # Install COSMIC SV database (file is CosmicCompleteCNA.tsv.gz placed in /STARK/config/structuralvariation/serviceName/setup/COSMIC/ directory)
-COSMIC_source = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG')+"/COSMIC/CosmicCompleteCNA.tsv.gz" # /STARK/config/structuralvariation/serviceName/setup
-COSMIC_install_path = "/databases/AnnotSV/current/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37"
+COSMIC_source = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG')+"/setup/COSMIC/CosmicCompleteCNA.tsv.gz" # /STARK/config/structuralvariation/serviceName/setup
+COSMIC_install_path = "/STARK/databases/AnnotSV/3.1/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37"
 if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
-	systemcall("mdkir "+COSMIC_install_path+" ")
+	os.makedirs(COSMIC_install_path, exist_ok = True)
 	systemcall("cp "+COSMIC_source+" "+COSMIC_install_path+" ")
 # AnnotSV dummy vcf in /app/src/dummy.vcf to process COSMIC database (need rw database for that)
+	setup_config_path = "/STARK/databases/AnnotSV/3.1/Annotations_Human/"
 	bedtools_path = "/tools/bedtools/current/bin/bedtools"
 	genomeBuild_version = "GRCh37"
 	systemcall("AnnotSV -SVinputFile /app/src/dummy.vcf -outputFile "+setup_config_path+"/dummy.tsv -bedtools "+bedtools_path+" -genomeBuild "+genomeBuild_version+" ")
@@ -199,4 +200,4 @@ if serviceName and moduleName:
 	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
 
 # SETUPComplete cli services (condition for healthy cli)
-systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
+systemcall("touch /STARK/config/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
