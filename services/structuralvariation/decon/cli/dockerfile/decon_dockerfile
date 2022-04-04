@@ -282,7 +282,7 @@ ENV PYTHON_VERSION="3.9.9"
 RUN wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz && tar xvf Python-$PYTHON_VERSION.tgz ;
 RUN cd Python-$PYTHON_VERSION && ./configure --enable-optimizations && make altinstall ;
 
-RUN python3.9 -m pip install --upgrade pip
+# RUN python3.9 -m pip install --upgrade pip
 
 #############
 # SNAKEMAKE #
@@ -300,16 +300,17 @@ RUN pip3.9 install snakemake ;
 ######################
 
 RUN pip3.9 install Biopython && pip3.9 install pandas ;
-RUN pip3.9 install -U setuptools ;
+RUN pip3.9 install -U setuptools ; 
+RUN pip3.9 install pyfasta ;
 
 WORKDIR $WORKDIR
 #RUN wget https://github.com/brentp/pyfasta/archive/refs/heads/master.zip ;
 #RUN mv /tmp/master.zip /tmp/pyfasta-0.5.2.zip
 #RUN pip3.9 install /tmp/pyfasta-0.5.2.zip ;
 
-RUN wget https://github.com/xapple/fasta/archive/refs/heads/master.zip ;
-RUN mv /tmp/master.zip /tmp/fasta-2.2.13.tar.gz ;
-RUN pip3.9 install /tmp/fasta-2.2.13.tar.gz ;
+#RUN wget https://github.com/xapple/fasta/archive/refs/heads/master.zip ;
+#RUN mv /tmp/master.zip /tmp/fasta-2.2.13.tar.gz ;
+#RUN pip3.9 install /tmp/fasta-2.2.13.tar.gz ;
 
 # Export LANG
 RUN export LANG="en_US.UTF-8" ;
