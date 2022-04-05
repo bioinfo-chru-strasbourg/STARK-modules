@@ -96,6 +96,8 @@ if os.path.isdir(ANNOTSV_PARAM_DATABASE_FOLDER_LINK) == False:
 	os.makedirs(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
 	logsomefile(logfile, 'AnnotSV version '+ANNOTSV_VERSION+' installation start:', "\n", items = date_time)
 	installdatabase(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, ANNOTSV_SOURCE_EXTERNAL, ANNOTSV_TARBALL, logfile, errfile)
+	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
+	logsomefile(logfile, 'Installation end:', "\n", items = date_time_end)
 
 #####################
 # DATABASE EXOMISER #
@@ -119,9 +121,8 @@ logfile = TOOL_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".datab
 errfile = TOOL_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.err"
 
 if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
+	logsomefile(logfile, 'Exomiser version '+TOOL_VERSION+' installation start:', "\n", items = date_time)
 	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile)
-	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
-	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
 
 # https://data.monarchinitiative.org/exomiser/data/2109_phenotype.zip
 
@@ -130,15 +131,14 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 	TOOL_SOURCE_EXTERNAL = "https://data.monarchinitiative.org/exomiser/data/"+TOOL_TARBALL
 	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile)
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
-	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
-
+	logsomefile(logfile, 'Installation end:', "\n", items = date_time_end)
 
 ##########
 # COSMIC #
 ##########
 
-# AnnotSV needs the “CosmicCompleteCNA.tsv.gz” file from https://cancer.sanger.ac.uk/cosmic/download (Copy Number Variants part, Download Whole file)
-# Put the “CosmicCompleteCNA.tsv.gz” file in the corresponding directory: “$ANNOTSV/share/AnnotSV/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/
+# AnnotSV needs the "CosmicCompleteCNA.tsv.gz" file from https://cancer.sanger.ac.uk/cosmic/download (Copy Number Variants part, Download Whole file)
+# Put the "CosmicCompleteCNA.tsv.gz" file in the corresponding directory: "$ANNOTSV/share/AnnotSV/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/
 # create the directory is necessary (./Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/)
 # These files will be reprocessed and then removed the first time AnnotSV is executed.
 
@@ -163,18 +163,21 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 	# curl "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData"
 # You do not need to supply the authentication header on this request. Download links are valid for one hour. 
 
+##################
+# COSMIC install #
+#################
 
 # Install COSMIC SV database (file is CosmicCompleteCNA.tsv.gz placed in /STARK/config/structuralvariation/serviceName/setup/COSMIC/ directory)
-COSMIC_source = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG')+"/setup/COSMIC/CosmicCompleteCNA.tsv.gz" # /STARK/config/structuralvariation/serviceName/setup
-COSMIC_install_path = "/STARK/databases/AnnotSV/3.1/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37"
+# /STARK/config/structuralvariation/serviceName/setup
+genomeBuild_version = "GRCh37"
+COSMIC_source = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG')+"/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
+COSMIC_install_path = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/Annotations_Human/FtIncludedInSV/COSMIC/"+genomeBuild_version
 if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 	os.makedirs(COSMIC_install_path, exist_ok = True)
-	systemcall("cp "+COSMIC_source+" "+COSMIC_install_path+" ")
-# AnnotSV dummy vcf in /app/src/dummy.vcf to process COSMIC database (need rw database for that)
-	setup_config_path = "/STARK/databases/AnnotSV/3.1/Annotations_Human/"
-	bedtools_path = "/tools/bedtools/current/bin/bedtools"
-	genomeBuild_version = "GRCh37"
-	systemcall("AnnotSV -SVinputFile /app/src/dummy.vcf -outputFile "+setup_config_path+"/dummy.tsv -bedtools "+bedtools_path+" -genomeBuild "+genomeBuild_version+" ")
+	systemcall("mv "+COSMIC_source+" "+COSMIC_install_path+" ")
+	# AnnotSV dummy vcf in /app/src/dummy.vcf to process COSMIC database (need rw databases access for that)
+	setup_config_path = DATABASES+"AnnotSV/"+ANNOTSV_VERSION
+	systemcall("AnnotSV -SVinputFile /app/src/dummy.vcf -outputFile "+setup_config_path+"/AnnotSV.dummyannotation.tsv -genomeBuild "+genomeBuild_version+" 1> "+setup_config_path+"/AnnotSV.dummyannotation.log" ")
 
 
 ##############
