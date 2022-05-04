@@ -1,0 +1,14 @@
+name: variantconvert
+channels:
+  - bioconda
+  - conda-forge
+  - biobuilds
+dependencies:
+  - python=3.9.7
+  - pandas
+  - pysam
+  - biopython
+  - fasta
+  - pyfasta
+  - requests
+prefix: ./envs

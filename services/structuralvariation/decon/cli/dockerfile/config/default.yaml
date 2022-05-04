@@ -1,0 +1,125 @@
+##########################################################################
+# Config Yaml Version:     0.1
+# Description:             Yaml file to run DECON Snakefile module
+##########################################################################
+
+# DEV version 0.1 : 10/11/2021
+# INT version 0.1 : 17/03/2022
+# Authoring : Thomas LAVAUX
+
+# Add here variables that will extend default configuration yaml file.
+# If a variable was already defined in the default configuration yaml file, it will be replace.
+# launch snakemake -s snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory var1=0.05 var2=12
+# separate multiple variable with a space
+################## Directories and variables ##################
+
+# Default repository/depository path from listener.py/launcher.py
+repository: "/STARK/output/repository"
+depository: "/STARK/output/depository"
+# Output directory if not repository
+OUTPUT_DIR: ""
+# Path to a folder where intermediate files will be written
+TMP_DIR: "tmp"
+
+# Copy to depot directory (archive)
+DEPOT_COPY: False
+
+# Group and App default name
+GROUP_NAME: "UNKNOWN"
+APP_NAME: "UNKNOWN"
+
+# Default path to the input datas == {run} from listener.py/launcher.py
+run: ""
+# Bed file
+BED_FILE: ""
+# Genes file
+GENES_FILE: ""
+# Transcripts file
+TRANSCRIPTS_FILE: ""
+# List genes
+LIST_GENES: ""
+
+# Name of the module = {serviceName} from listener.py/launcher.py
+serviceName: "DECON"
+
+### TOOLS PATH ###
+# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
+REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+# Default path to Refgene file
+REFSEQGENE_PATH: "/STARK/databases/refGene/current/formated_refgene.tsv"
+# Path to Decon R directory
+DECON_PATH: "/tools/DECoN/current/bin/"
+# Path to Bedtools
+BEDTOOLS_PATH: "/tools/bedtools/current/bin/bedtools"
+# Path to Bcftools
+BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
+# Path to scripts
+SCRIPTS_PATH: "/app/src"
+# Samples list exclusion (not to be analyse) (startswith)
+EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
+# Sample filter
+FILTER_SAMPLE: []
+
+### Indexing files options
+# Ext to index (endwith)
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai", ".list.genes"]
+
+# Only analyse validation.bam/cram files
+VALIDATION_ONLY: False
+
+# Process .bam or .cram
+PROCESS_FILE: ".bam"
+# Process input files : cram/cp/ls/filter
+PROCESS_CMD: 'ls'
+
+# Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
+ALIGNER_NAME:
+
+# Rsync options : if several files are added add {} at the start and end of the list
+# include_rsync must have more than one arguement
+INCLUDE_RSYNC: "{'*.tsv','*.vcf.gz','*.vcf.gz.tbi','*.pdf','*.txt','*.bed','*/'}"
+# exclude_rsync can only take on arguement
+EXCLUDE_RSYNC: "'*'"
+# for log file copy if pipeline failed
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
+
+##### Search parameters of input for the search function #####
+RECURSIVE_SEARCH: False
+SEARCH_ARGUMENT: "/*/STARK/*"
+
+# MISC
+THREADS: "4"
+
+## DEBUG ##
+DEBUG_MODE: True
+
+### DECON BED processing ###
+# Regen exon number with IntersectBed and a refseqgene reference (True/False)
+EXON_REGEN: False
+# Keep intergenic region when exon regen is done
+KEEP_UNKNOWN: False
+
+# Patch for some gene name
+EXON_SEP: False
+# Old Bed formating
+OLD_BED: False
+# Remove Y ref
+REMOVE_Y: False
+
+############## Tools specific parameters ##############
+
+############# IdentifyFailures params
+mincorr: 0.98 # Minimum correlation threshold – the minimum correlation between a test sample and any other sample for the test sample to be considered well-correlated (default 0.98)
+mincov: 100 # Minimum coverage threshold – the minimum median coverage for any sample (measured across all exons in the target) or exon (measured across all samples) to be considered well-covered (default 100)
+
+############# makeCNVcalls params
+transProb: 0.01 # Transition probability – the transition probability between normal copy number state and either deletion or duplication state in the hidden Markov model, 0.01 is a high threshold value to increase sensitivity (default 0.01)
+customexon: False # default False
+plot: None # default (plot argument should be one of: None, Custom or All)
+plotFolder: # default DECoNPlots folder
+
+############# AnnotSV params
+hpo: # HPO terms list describing the phenotype of the individual being investigated Values: use comma, semicolon or space separated class values Default = "" (e.g.: "HP:0001156,HP:0001363,HP:0011304") = only for individual analysis
+genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
+overlap: 100 # default 100
+annotationMode: split # split, full or both (defaut both)
