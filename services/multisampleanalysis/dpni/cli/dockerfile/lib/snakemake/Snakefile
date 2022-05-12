@@ -572,14 +572,29 @@ rule compress_index_vcf:
 			{params.bgzip} -c {input} > {output.gz} && {params.tabix} -p vcf {output.gz}
 		"""
 
+rule reheader_sample:
+	params:
+		bcftools=config["tools"]["bcftools"],
+		tabix = config["tools"]["tabix"]
+	input:
+		sample_vcf = expand(output+"/{sample}.renamed.vcf.gz", sample=config["family"]),
+	output:
+		rename = output+"/{sample}.rename",
+		correct = output+"/{sample}.renamed.correct.vcf.gz"
+	shell:
+		"""
+			echo {wildcards.sample} > {output.rename} && {params.bcftools} reheader --samples={output.rename} {input.sample_vcf} -o {output.correct} && {params.tabix} -p vcf {output.correct}
+		"""
+
 rule merge_vcf:
 	params:
 		bcftools=config["tools"]["bcftools"]
 	input:
-		sample_vcf = expand(output+"/{sample}.renamed.vcf.gz", sample=config["family"]),
+		sample_vcf = expand(output+"/{sample}.renamed.correct.vcf.gz", sample=config["family"]),
 		pool_vcf = output+"/pool.renamed.vcf.gz"
 	output:
 		output+"/{sample}.merged.vcf"
+
 	log:
 		log+"/{sample}.bcftools.log"
 	shell:
