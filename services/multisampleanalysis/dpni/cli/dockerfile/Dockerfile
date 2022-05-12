@@ -1,21 +1,21 @@
 ##########################################################################
-# Dockerfile Version:   1.2
-# Software:             POOL
-# Software Version:     1.2
-# Description:          Dockerfile to build POOL analysis container image
+# Dockerfile Version:   0.1
+# Software:             DPNI
+# Software Version:     0.1
+# Description:          Dockerfile to build DPNI analysis container image
 ##########################################################################
 
-ARG STARK_IMAGE="stark/stark:0.9.18.2"
+ARG STARK_IMAGE="stark/stark:0.9.18.3"
 
 ########
 # FROM #
 ########
 
 FROM $STARK_IMAGE
-LABEL maintainer="NICAISE Samuel <samuel.nicaise@chru-strasbourg.fr>" \
-    Software="DEJAVU" \
-	Version="1.2" \
-	Description="POOL"
+LABEL maintainer="LAMOUCHE Jean-Baptiste <jean-baptiste.lamouche@chru-strasbourg.fr>" \
+    Software="DPNI" \
+	Version="0.1" \
+	Description="DPNI"
 
 
 ENV SRC=/src
