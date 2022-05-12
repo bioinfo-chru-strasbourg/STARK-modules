@@ -234,42 +234,44 @@ def parseFile(folder, df, unique):
 	return final
 	#time.sleep(10)
 
-def addFrequence(df):
+def addFrequence(df, sample, s_list):
 	#df.sort_values(by=['#CHROM', 'POS'], ascending=[False, True], key=lambda x: np.argsort(index_natsorted(df['#CHROM'] 
-	
+	locus = 'Locus_'+sample
 	data = []
 	#print(df.columns)
 	#print(df.head())
 	for i, values in df.iterrows():
 		#print(values)
 		last = {}
-		last['#CHROM'] = values['Locus'].strip().split(':')[0]
-		last['POSITION'] = values['Locus'].strip().split(':')[1]
-		tmp = values['Base_counts'].strip().split()
-		tmp_data = {}
-		tmp2_data = {}
-		for bases in tmp:
-			base = bases.split(':')
-			tmp_data[base[0]] = base[1]
-			#print(tmp_data)
-		for count in tmp_data.items():
-			#print(count)
-			try:
-				tmp2_data[count[0]] = str(round(float(count[1]) / values['Total_Depth'], 2))
-			except:
-				print("#[INFO] Depth is 0 for ", values['Locus'])
-				tmp2_data[count[0]] = "0"
-				
-		count = '|'.join(':'.join((key,val)) for (key,val) in tmp_data.items())
-		freq = '|'.join(':'.join((key,val)) for (key,val) in tmp2_data.items())
-		
-		last['Depth'] = values['Depth']
-		last['Base_counts'] = count
-		last['Base_frequence'] = freq
-			
+		last['#CHROM'] = values[locus].strip().split(':')[0]
+		last['POSITION'] = values[locus].strip().split(':')[1]
+		#for each indivi stats
+		for indiv in s_list:
+			tmp = values['Base_counts_'+indiv].strip().split()
+			tmp_data = {}
+			tmp2_data = {}
+			#details of each bases count
+			for bases in tmp:
+				base = bases.split(':')
+				tmp_data[base[0]] = base[1]
+				#print(tmp_data)
+			for count in tmp_data.items():
+				#print(count)
+				try:
+					tmp2_data[count[0]] = str(round(float(count[1]) / values['Total_Depth_'+indiv], 2))
+				except:
+					print("#[INFO] Depth is 0 for ", values['Locus_'+indiv])
+					tmp2_data[count[0]] = "0"
+
+			count = '|'.join(':'.join((key,val)) for (key,val) in tmp_data.items())
+			freq = '|'.join(':'.join((key,val)) for (key,val) in tmp2_data.items())
+
+			last['Depth_'+indiv] = values['Depth_'+indiv]
+			last['Base_counts_'+indiv] = count
+			last['Base_frequence_'+indiv] = freq
+
 		data.append(last)
 	final = pd.DataFrame(data)
-		
 	return final
 
 
@@ -333,7 +335,7 @@ def createFinaldf(df, header, oup):
 	raw.to_csv(oup, mode='a', index=False, header=False, sep='\t')
 	return raw
 	
-def parseSpeed(covfiles, df, col):
+def parseSpeed(covfiles, df, col, sample):
 	'''
 	input: folder containing cov depth file by chr, vcf of the sample and list of unique chr
 	'''
@@ -345,38 +347,38 @@ def parseSpeed(covfiles, df, col):
 	print("#[INFO] chr "+covfiles)
 	#print("#[INFO] Chrcov "+covfiles)
 	data = []
-	#read cov file results from gatk depth coverage
+	#read cov file results from gatk depth coverage to dataframe
 	tmp = pd.read_csv(covfiles, sep='\t', names=col)
 
-	#print(tmp.columns)
-	#print(tmp.head())
 	#chr number
 	chr = os.path.basename(covfiles)[7:]
-	cov = tmp.loc[tmp['Locus'].str.startswith(chr+':')]#.to_dict('records')
+
+	locus_name = 'Locus_'+sample
+
+	cov = tmp.loc[tmp[locus_name].str.startswith(chr+':')]#.to_dict('records')
 	print("INFO COV", cov.head())
 
+	#select only one chromosome (cut by starmap func to multiprocess)
 	df_tmp = df.loc[df['#CHROM'] == chr]
-	#print(df_tmp.head())
 	
+	#to match depth coverage informations
+	df_tmp.loc[:, locus_name] = df.loc[:,'#CHROM'].astype(str)+':'+df.loc[:,'POS'].astype(str)
 
-	df_tmp.loc[:, 'Locus'] = df.loc[:,'#CHROM'].astype(str)+':'+df.loc[:,'POS'].astype(str)
+	#Locus column as index for both variant and depthcoverage file 
+	df_tmp = df_tmp.set_index(locus_name)
+	cov = cov.set_index(locus_name)
 
-	df_tmp = df_tmp.set_index('Locus')
-	cov = cov.set_index('Locus')
-
-	print(cov.head())
-	
-	print("INFO DF_TMP "+covfiles, df_tmp)
+	#print("INFO DF_TMP "+covfiles, df_tmp)
 	print("INFO length dftmp ", len(df_tmp.index))
-	#final_tmp = df_tmp.merge(cov, on='Locus', how='left')
 
+	#Merge variants df and depthcov df in index Locus for each variants position we get the values of cov
 	final = df_tmp.merge(cov, left_index=True, right_index=True, how='left')
 
-	#final = pd.merge(df_tmp, tmp, on=['Locus'])
+	#reset index and reinsert Locus columns ex chr1:5667097 at good column position
 	final.reset_index(level=0, inplace=True)
-	locus = final['Locus']
-	final.drop(columns='Locus', inplace=True)
-	final.insert(10, "Locus", locus)
+	locus = final[locus_name]
+	final.drop(columns=locus_name, inplace=True)
+	final.insert(10, locus_name, locus)
 	final = final.iloc[:, 1:]
 	print("#[INFO] Length variants "+os.path.basename(covfiles), len(final.index))
 	return final
@@ -454,14 +456,14 @@ rule add_info:
 	input:
 		vcf = output+"/{sample}.norm.uniq.sorted.vcf",
 		cov = output+"/all.gatk.cov"
-		cov_sample = output+"/sample.gatk.cov"
 	output:
 		vcf = temp(output+"/{sample}.final.vcf")
 	threads: config['tools']['threads']
 	run:
 		subprocess.call("mkdir -p "+output.vcf+".dict", shell=True)
-		subprocess.call("awk -F \":\" '{print $0 >> (\""+output.vcf+".dict/COVFILE\" $1)}' "+input.cov, shell=True)
+		subprocess.call("awk -F \":\" 'NR>1{print $0 >> (\""+output.vcf+".dict/COVFILE\" $1)}' "+input.cov, shell=True)
 		#####new
+		sample_name = os.path.basename(input.vcf).split('.')[0]
 		#transform raw vcf into dataframe and insert header in list
 		df, head = vcfTodataframe(input.vcf, True)
 		
@@ -469,12 +471,16 @@ rule add_info:
 		unique = uniqueChr(df)
 		list_var = []
 		
-		col = ['Locus', 'Total_Depth', 'Average_Depth', 'Depth', 'Base_counts']
+		#columns of cov file
+		with open(input.cov) as f:
+			col = f.readline().strip().split('\t')
+		print("#[INFO] Columns depthcov ", col)
+		#col = ['Locus', 'Total_Depth', 'Average_Depth', 'Depth', 'Base_counts']
 		#parse variants by chr to speed up analysis
 		#prepare args for multiprocessing
 		print("#[INFO] Parse variants by chr")
-		list_cov = [(osj(output.vcf+'.dict', covfiles), df, col) for covfiles in os.listdir(output.vcf+'.dict') if not covfiles.startswith('COVFILELocus')]
-		print("INFO LISTCV", list_cov)
+		list_cov = [(osj(output.vcf+'.dict', covfiles), df, col, sample_name) for covfiles in os.listdir(output.vcf+'.dict') if not covfiles.startswith('COVFILELocus')]
+		#print("#[INFO] LISTCV", list_cov)
 		print("#[INFO] chr nbr", len(list_cov))
 		with Pool(config['tools']['threads']) as pool:
 			result = pool.starmap(parseSpeed, list_cov)
@@ -490,18 +496,24 @@ rule add_info:
 		print(metrics.columns)
 		print(len(metrics.index))
 
-		frequence = addFrequence(metrics)
+		#calculate frequence regarding depth and base identification
+		s_list = ['foetus']
+		s_list.extend(config['family'])
+		print("#[INFO] Family people ", s_list)
+		frequence = addFrequence(metrics, sample_name, s_list)
 		print(frequence.columns)
 		print(len(frequence.index))
 		
 		dfinal = pd.concat([metrics.reset_index(drop=True), frequence.reset_index(drop=True)], axis=1)
 		print("#[INFO] length df merge "+str(len(dfinal.index)))
 		print(dfinal.columns)
-		info = frequence.loc[:, ['Depth', 'Base_counts', 'Base_frequence']]
+		info = frequence.iloc[:, 2:]
+		print("#[INFO] info columns", info.columns)
+		print(len(info.columns))
 
 		for items in list(info.columns):
 			info[items] = items+'='+info[items].astype(str)
-		info['INFOS'] = info[['Depth', 'Base_counts', 'Base_frequence']].agg(';'.join, axis=1)
+		info['INFOS'] = info.agg(';'.join, axis=1)
 		dfinal['INFO'] = dfinal['INFO']+';'+info['INFOS']
 		print(dfinal)
 		print(dfinal.columns)
@@ -640,16 +652,16 @@ rule depth_of_coverage_v2:
 	input:
 		genome  = config["env"]["genome"],
 		bed     = config["env"]["bed"],
-		bam     = config["foetus"]["bam"]
+		bam     = config["foetus"]["bam"],
 		
 	output:
-		temp(output+"/foetus.gatk.cov"),
-		temp(output+"/foetus.gatk.cov.sample_cumulative_coverage_counts"),
-		temp(output+"/foetus.gatk.cov.sample_cumulative_coverage_proportions"),
-		temp(output+"/foetus.gatk.cov.sample_statistics"),
-		temp(output+"/foetus.gatk.cov.sample_summary")
+		temp(output+"/foetus_tmp.gatk.cov"),
+		temp(output+"/foetus_tmp.gatk.cov.sample_cumulative_coverage_counts"),
+		temp(output+"/foetus_tmp.gatk.cov.sample_cumulative_coverage_proportions"),
+		temp(output+"/foetus_tmp.gatk.cov.sample_statistics"),
+		temp(output+"/foetus_tmp.gatk.cov.sample_summary")
 	log:
-		log+"/foetus.gatk.cov.log"
+		log+"/foetus_tmp.gatk.cov.log"
 	shell:
 		"""
 			{params.java} -jar {params.gatk} -nt {params.cpu} -omitIntervals -T DepthOfCoverage -R {input.genome} -o {output[0]} -I {input.bam} --includeDeletions --minMappingQuality 10 --printBaseCounts -L {input.bed} --interval_padding {params.padding} &>> {log};
@@ -657,12 +669,12 @@ rule depth_of_coverage_v2:
 
 rule rename_pool_coverage_v2:
 	input:
-		output+"/foetus.gatk.cov"
+		output+"/foetus_tmp.gatk.cov"
 	output:
-		output+"/all.gatk.cov"
+		output+"/foetus.gatk.cov"
 	shell:
 		"""
-			sed '1 s/^.*$/Locus\tTotal_Depth\tAverage_Depth\tDepth\tBase_counts/' {input} > {output}
+			sed '1 s/^.*$/Locus_foetus\tTotal_Depth_foetus\tAverage_Depth_foetus\tDepth_foetus\tBase_counts_foetus/' {input} > {output}
 		"""
 
 rule depth_of_coverage_sample:
@@ -670,31 +682,42 @@ rule depth_of_coverage_sample:
 		cpu     = config["tools"]["threads"],
 		padding = interval_padding,
 		java    = config["tools"]["java"],
-		gatk    = config["tools"]["gatk"]
+		gatk    = config["tools"]["gatk"],
+		bam     = lambda values: config["family"][values.samples]["bam"]
 	input:
 		genome  = config["env"]["genome"],
-		bed     = config["env"]["bed"],
-		lambda wildcards: config["family"][wildcards.sample]["bam"]
-		
+		bed     = config["env"]["bed"]
 	output:
-		temp(output+"/{sample}.gatk.cov"),
-		temp(output+"/{sample}.gatk.cov.sample_cumulative_coverage_counts"),
-		temp(output+"/{sample}.gatk.cov.sample_cumulative_coverage_proportions"),
-		temp(output+"/{sample}.gatk.cov.sample_statistics"),
-		temp(output+"/{sample}.gatk.cov.sample_summary")
+		temp(output+"/{samples}.gatk.cov"),
+		temp(output+"/{samples}.gatk.cov.sample_cumulative_coverage_counts"),
+		temp(output+"/{samples}.gatk.cov.sample_cumulative_coverage_proportions"),
+		temp(output+"/{samples}.gatk.cov.sample_statistics"),
+		temp(output+"/{samples}.gatk.cov.sample_summary")
 	log:
-		log+"/{sample}.gatk.cov.log"
+		log+"/{samples}.gatk.cov.log"
 	shell:
 		"""
-			{params.java} -jar {params.gatk} -nt {params.cpu} -omitIntervals -T DepthOfCoverage -R {input.genome} -o {output[0]} -I {input.bam} --includeDeletions --minMappingQuality 10 --printBaseCounts -L {input.bed} --interval_padding {params.padding} &>> {log};
+			{params.java} -jar {params.gatk} -nt {params.cpu} -omitIntervals -T DepthOfCoverage -R {input.genome} -o {output[0]} -I {params.bam} --includeDeletions --minMappingQuality 10 --printBaseCounts -L {input.bed} --interval_padding {params.padding} &>> {log};
+		"""
+
+rule rename_pool_coverage_sample:
+	input:
+		output+"/{samples}.gatk.cov"
+	output:
+		output+"/{samples}.gatk.renamed.cov"
+	shell:
+		"""
+			sed '1 s/^.*$/Locus_{wildcards.samples}\tTotal_Depth_{wildcards.samples}\tAverage_Depth_{wildcards.samples}\tDepth_{wildcards.samples}\tBase_counts_{wildcards.samples}/' {input} > {output}
 		"""
 
 rule merge_coverage_v2:
 	input:
-		expand(output+"/{sample}.gatk.renamed.cov", sample=config["family"])
+		samples = expand(output+"/{samples}.gatk.renamed.cov", samples=config['family']),
+		foetus = output+"/foetus.gatk.cov"
 	output:
-		output+"/sample.gatk.cov"
+		output+"/all.gatk.cov"
 	shell:
 		"""
-			paste {input} > {output}
+			paste {input.samples} {input.foetus} > {output}
 		"""
+
