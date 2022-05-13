@@ -104,7 +104,7 @@ EXON_SEP: False
 # Old Bed formating
 OLD_BED: False
 # Remove Y ref
-REMOVE_Y: False
+REMOVE_XY: False
 
 ############## Tools specific parameters ##############
 
