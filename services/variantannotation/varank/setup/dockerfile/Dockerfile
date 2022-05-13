@@ -59,6 +59,7 @@ ENV PATH="/usr/local/python-3.10.4/bin:$PATH"
 
 # copy app binaries
 COPY bin/setup.py /setup/setup.py
+COPY config/* /setup/
 
 # ##########################################################################
 
