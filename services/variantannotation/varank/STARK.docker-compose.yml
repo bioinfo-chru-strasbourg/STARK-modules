@@ -9,11 +9,32 @@ version: '3'
 ############
 
 services:
+    # setup
+    stark-module-variantannotation-submodule-varank-service-setup:
+        image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_IMAGE}
+        build:
+            context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_IMAGE_CONTEXT}
+            dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_IMAGE_CONTEXT_DOCKERFILE}
+        entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_ENTRYPOINT}
+        command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_COMMAND}
+        container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_NAME}
+        restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_RESTART}
+        env_file:
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_ENV_FILE}
+        environment:
+            - DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG}
+            - DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG}
+        volumes:
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG}:rw
+            - /home1/bin/STARK-modules/dev.MR/services/variantannotation/varank/setup/dockerfile/bin/setup.py:/setup/setup.py:rw
+        networks:
+            - ${DOCKER_STARK_MAIN_NETWORK}
 
     # cli
     stark-module-variantannotation-submodule-varank-service-cli:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
-        # depends_on: stark-module-variantannotation-submodule-varank-service-service-setup
+        depends_on:
+            - stark-module-variantannotation-submodule-varank-service-setup
         build:
             context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT}
             dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT_DOCKERFILE}
@@ -34,24 +55,26 @@ services:
             - DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_DEPOSITORY=${DOCKER_STARK_INNER_FOLDER_OUTPUT_DEPOSITORY}
             - DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_DATABASES=${DOCKER_STARK_INNER_FOLDER_DATABASES}
         volumes:
-        # Volumes for generating, deposing and archiving results
-        - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:rw
-        - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:rw
-        - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_SERVICES}:${DOCKER_STARK_INNER_FOLDER_SERVICES}:rw
-        - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_DEPOSITORY}:rw
-        - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATA}:${DOCKER_STARK_INNER_FOLDER_DATA}:rw
-        # Volumes for VaRank configuration and licence
-        - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}:${DOCKER_STARK_INNER_FOLDER_CONFIG}:rw
-        # Volumes for databases
-        - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
-        # File for developing, to comment if not used
-        #- /home1/bin/STARK-modules/current/services/variantannotation/varank/cli/dockerfile/bin/newVaRank.py:/tools/varank/current/scripts/newVaRank.py:rw
-        networks: 
+            # Volumes for generating, deposing and archiving results
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_SERVICES}:${DOCKER_STARK_INNER_FOLDER_SERVICES}:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_DEPOSITORY}:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATA}:${DOCKER_STARK_INNER_FOLDER_DATA}:rw
+            # Volumes for VaRank configuration and licence
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}:${DOCKER_STARK_INNER_FOLDER_CONFIG}:rw
+            # Volumes for databases
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
+            # Volume for developing, to comment if not used
+            - /home1/bin/STARK-modules/dev.MR/services/variantannotation/varank/cli/dockerfile/bin/varank_wrapper.py:/tools/varank/current/scripts/varank_wrapper.py:rw
+        networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
 
     # listener
     stark-module-variantannotation-submodule-varank-service-listener:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE}
+        depends_on:
+            - stark-module-variantannotation-submodule-varank-service-setup
         # build:
         # context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE_CONTEXT}
         # dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE_CONTEXT_DOCKERFILE}
@@ -69,7 +92,7 @@ services:
             # Main configuration
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_CONFIG}:ro
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}:rw
-            
+
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:rw
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_DEPOSITORY}:rw
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:ro
@@ -78,13 +101,13 @@ services:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_CONFIG}/launcher.py:/app/bin/config/launcher.py:rw
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_ENV_FILE}:/app/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_NAME}/STARK.env:rw
 
-        networks: 
+        networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
 
 # NETWORK
 ###########
 
 networks:
-    
+
     stark_stark:
         external: true
