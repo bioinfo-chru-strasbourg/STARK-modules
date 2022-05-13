@@ -111,8 +111,8 @@ keep_unknown = config['KEEP_UNKNOWN']
 exon_sep = config['EXON_SEP']
 # Formatting Bed old style
 old_bed = config['OLD_BED']
-# Remove chrY ref
-remove_y = config['REMOVE_Y']
+# Remove chrXY ref
+remove_xy = config['REMOVE_XY']
 
 ### FUNCTIONS ###
 
@@ -205,7 +205,7 @@ date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 nameoftherun = os.path.basename(rundir)
 
 # Set directories to save tempory results and input files
-inputdir = "/app/res/" + nameoftherun + "/input"
+inputdir = "/app/res/" + nameoftherun + "/input/"+ date_time
 tmpdir = "/app/res/" + nameoftherun + "/tmp"
 
 # Get group [4] and app [5] name from run (or -1 and -2 ?)
@@ -396,8 +396,9 @@ if bed_file and customexon_regen == True and old_bed == False:
 			df = df[df['NM'].isin(NM_list)]
 	df = df.drop(['NM'], 1)
 	df = df.drop_duplicates() # remove duplicate
-	if remove_y == True:
+	if remove_xy == True:
 		df = df[df["Chr"].str.contains("chrY") == False] #removing all chrY reference
+		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrX reference
 	df.to_csv(customnumberingfile, sep='\t', index=False)
 	# DECON.bed from custom.exon : if Gene name is missing from bed file, it will be extract from the customnumbering file
 	# Assuming that the custom exon file is tab separated	:	'Chr'	'Start'	'End'	'Gene'	'Custom.Exon'
@@ -435,8 +436,9 @@ if bed_file and genes_file and customexon_regen == False and old_bed == False:
 	df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12', "Custom.Exon"], 1)
 	df = df.replace('\.', 'Unknown', regex=True)
 	df = df.drop_duplicates() # remove duplicate
-	if remove_y == True:
+	if remove_xy == True:
 		df = df[df["Chr"].str.contains("chrY") == False] #removing all chrY reference
+		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrX reference
 	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
 	# Generate custom numbering file only if customexon is True
 	if custom_exon == True:
@@ -481,8 +483,9 @@ if bed_file and genes_file and customexon_regen == False and old_bed == True and
 	if exon_sep == True: # fix for some bed that remove _ex part if gene is noted genename_ex
 		df['Gene'] = df['Gene'].str.split('_ex').str[0]
 	df = df.drop_duplicates() # remove duplicate
-	if remove_y == True:
+	if remove_xy == True:
 		df = df[df["Chr"].str.contains("chrY") == False] #removing all chrY reference
+		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrX reference
 	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
 
 if not bed_file:
@@ -855,7 +858,7 @@ onstart:
 
 onsuccess:
 	shell("touch " + outputdir + "/" + serviceName + "Complete.txt")
-	shell("rm " + outputdir + "/" + serviceName + "Running.txt")
+	shell("rm -f " + outputdir + "/" + serviceName + "Running.txt")
 	# Sort pdfs file into each sample directory
 	pdf_list = os.listdir(tmpdir+"/pdfs")
 	for sample in sample_list:
@@ -866,9 +869,7 @@ onsuccess:
 				shell("mkdir -p " + outputdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/pdfs")
 				shell("mv "+tmpdir+ "/pdfs/"+pdf+" " +outputdir+"/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/pdfs/")
 	# if move rmdir the /pdfs dir
-	try:
-		shell("rmdir "+tmpdir+"/pdfs")
-	except subprocess.CalledProcessError: pass
+	shell("rmdir -rf "+tmpdir+"/pdfs")
 	# Add end time of the analysis to the log file
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
@@ -881,5 +882,5 @@ onsuccess:
 
 onerror:
 	shell("touch " + outputdir + "/" + serviceName + "Failed.txt")
-	shell("rm " + outputdir + "/" + serviceName + "Running.txt")
+	shell("rm -f" + outputdir + "/" + serviceName + "Running.txt")
 	shell("rsync -azvh --include={include_file_log} --exclude {exclude_file} {tmpdir}/ {outputdir}")
