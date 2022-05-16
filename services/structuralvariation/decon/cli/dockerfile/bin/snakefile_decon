@@ -111,9 +111,9 @@ keep_unknown = config['KEEP_UNKNOWN']
 exon_sep = config['EXON_SEP']
 # Formatting Bed old style
 old_bed = config['OLD_BED']
-# Remove chrXY ref
-remove_xy = config['REMOVE_XY']
-
+# Remove chrX or Y ref
+remove_x = config['REMOVE_X']
+remove_y = config['REMOVE_Y']
 ### FUNCTIONS ###
 
 def finditemindico(sample_list, ext_list, dictionary, include_ext, exclude_ext):
@@ -396,9 +396,10 @@ if bed_file and customexon_regen == True and old_bed == False:
 			df = df[df['NM'].isin(NM_list)]
 	df = df.drop(['NM'], 1)
 	df = df.drop_duplicates() # remove duplicate
-	if remove_xy == True:
+	if remove_x == True:
+		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrY reference
+	if remove_y == True:
 		df = df[df["Chr"].str.contains("chrY") == False] #removing all chrY reference
-		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrX reference
 	df.to_csv(customnumberingfile, sep='\t', index=False)
 	# DECON.bed from custom.exon : if Gene name is missing from bed file, it will be extract from the customnumbering file
 	# Assuming that the custom exon file is tab separated	:	'Chr'	'Start'	'End'	'Gene'	'Custom.Exon'
@@ -436,9 +437,10 @@ if bed_file and genes_file and customexon_regen == False and old_bed == False:
 	df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12', "Custom.Exon"], 1)
 	df = df.replace('\.', 'Unknown', regex=True)
 	df = df.drop_duplicates() # remove duplicate
-	if remove_xy == True:
+	if remove_x == True:
+		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrY reference
+	if remove_y == True:
 		df = df[df["Chr"].str.contains("chrY") == False] #removing all chrY reference
-		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrX reference
 	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
 	# Generate custom numbering file only if customexon is True
 	if custom_exon == True:
@@ -483,9 +485,10 @@ if bed_file and genes_file and customexon_regen == False and old_bed == True and
 	if exon_sep == True: # fix for some bed that remove _ex part if gene is noted genename_ex
 		df['Gene'] = df['Gene'].str.split('_ex').str[0]
 	df = df.drop_duplicates() # remove duplicate
-	if remove_xy == True:
+	if remove_x == True:
+		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrY reference
+	if remove_y == True:
 		df = df[df["Chr"].str.contains("chrY") == False] #removing all chrY reference
-		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrX reference
 	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
 
 if not bed_file:
