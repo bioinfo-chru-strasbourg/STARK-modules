@@ -1,0 +1,53 @@
+{
+   "services":{
+      "VARANK":{
+         "infos":{
+            "name":"VaRank",
+            "description":"VaRank analysis",
+            "triggers-description":"((STARKCopyComplete.txt AND NOT (VARANKRunning.txt, VARANKComplete.txt, POOLRunning.txt, POOLComplete.txt) AND NOT #POOL) AND (#VARANK OR (GROUP DIAG AND NOT GROUP HUSDIAGGEN))) OR ((STARKCopyComplete.txt AND POOLComplete.txt AND NOT (VARANKRunning.txt, VARANKComplete.txt, POOLRunning.txt) AND #POOL) AND (#VARANK OR (GROUP DIAG AND NOT GROUP HUSDIAGGEN)))"
+         },
+         "triggers":{
+            "OR_1":{
+               "AND_1":{
+                  "file":[
+                     "STARKCopyComplete.txt",
+                     "!VARANKRunning.txt",
+                     "!VARANKComplete.txt"
+                  ],
+                  "tags":[
+                     "!POOL"
+                  ],
+                  "OR_2":{
+                     "tags":[
+                        "VARANK"
+                     ],
+                     "group":[
+                        "DIAG"
+                     ]
+                  }
+               },
+               "AND_2":{
+                  "file":[
+                     "STARKCopyComplete.txt",
+                     "!VARANKRunning.txt",
+                     "!VARANKComplete.txt",
+                     "!POOLRunning.txt",
+                     "POOLComplete.txt"
+                  ],
+                  "tags":[
+                     "POOL"
+                  ],
+                  "OR_3":{
+                     "tags":[
+                        "VARANK"
+                     ],
+                     "group":[
+                        "DIAG"
+                     ]
+                  }
+               }
+            }
+         }
+      }
+   }
+}

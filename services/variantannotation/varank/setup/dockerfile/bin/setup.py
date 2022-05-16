@@ -18,33 +18,48 @@ from os.path import join as osj
 
 def main():
     global_config()
-    # alamut_licence()
-    # varank_configuration()
-    # varank_listener_configuration()
+    alamut_licence()
+    varank_configuration()
+    varank_listener_configuration()
 
 
 def global_config():
-    if not os.path.isdir(osj(config_varank, "alamut-batch-license")):
-        os.mkdir(osj(config_varank, "alamut-batch-license"))
-
-    if not os.path.isdir(osj(config_varank, "configfiles")):
-        os.mkdir(osj(config_varank, "configfiles"))
-
-    if not os.path.isdir(osj(config_varank, "listener")):
-        os.mkdir(osj(config_varank, "listener"))
+    main_folders = ["alamut-batch-license", "configfiles", "listener"]
+    for i in main_folders:
+        if not os.path.isdir(osj(config_varank, i)):
+            os.mkdir(osj(config_varank, i))
 
 
 def alamut_licence():
-    if not os.path.isfile(osj(config_varank, "alamut-batch.ini")):
+    if_not_file_copy("alamut-batch-license", "alamut-batch.ini")
+
+
+def varank_configuration():
+    if not os.path.isdir(osj(config_varank, "configfiles", "extanns")):
+        os.mkdir(osj(config_varank, "configfiles", "extanns"))
+
+    configuration_files = [
+        "configfile.default",
+        "non_redundant_config.txt",
+        "extann_config_file.tsv",
+        "deleted_samples_config.tsv",
+    ]
+    for i in configuration_files:
+        if_not_file_copy("configfiles", i)
+
+
+def varank_listener_configuration():
+    configuration_files = ["launcher.py", "varank.json"]
+    for i in configuration_files:
+        if_not_file_copy("listener", i)
+
+
+def if_not_file_copy(inner_folder, inner_file):
+    if not os.path.isfile(osj(inner_folder, inner_file)):
         shutil.copy(
-            osj("/setup", "alamut-batch.ini"),
-            osj(config_varank, "alamut-batch-license"),
+            osj("/setup", inner_file),
+            osj(config_varank, inner_folder),
         )
-
-
-# def varank_configuration():
-
-# def varank_listener_configuration():
 
 
 if __name__ == "__main__":
