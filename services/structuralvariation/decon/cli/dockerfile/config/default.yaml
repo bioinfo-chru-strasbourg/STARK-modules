@@ -103,8 +103,9 @@ KEEP_UNKNOWN: False
 EXON_SEP: False
 # Old Bed formating
 OLD_BED: False
-# Remove Y ref
-REMOVE_XY: False
+# Remove Y or Y ref
+REMOVE_X: True
+REMOVE_Y: True
 
 ############## Tools specific parameters ##############
 
