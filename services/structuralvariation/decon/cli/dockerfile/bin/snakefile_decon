@@ -872,7 +872,7 @@ onsuccess:
 				shell("mkdir -p " + outputdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/pdfs")
 				shell("mv "+tmpdir+ "/pdfs/"+pdf+" " +outputdir+"/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/pdfs/")
 	# if move rmdir the /pdfs dir
-	shell("rmdir -rf "+tmpdir+"/pdfs")
+	shell("rm -rf "+tmpdir+"/pdfs")
 	# Add end time of the analysis to the log file
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
@@ -885,5 +885,5 @@ onsuccess:
 
 onerror:
 	shell("touch " + outputdir + "/" + serviceName + "Failed.txt")
-	shell("rm -f" + outputdir + "/" + serviceName + "Running.txt")
+	shell("rm -f " + outputdir + "/" + serviceName + "Running.txt")
 	shell("rsync -azvh --include={include_file_log} --exclude {exclude_file} {tmpdir}/ {outputdir}")
