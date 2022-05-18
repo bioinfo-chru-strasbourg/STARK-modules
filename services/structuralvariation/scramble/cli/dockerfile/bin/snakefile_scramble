@@ -117,11 +117,11 @@ def searchfiles(directory, search_arg, recursive_arg):
 	""" Function to search all files in a directory, addind a search arguement append to the directory and a recursive_search options (True/False) """
 	return sorted(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
 
-def processalignedfiles(storedir, dictonnary, sample, ext, aligner_list, process_cmd, name=None):
+def processalignedfiles(storedir, dictionary, sample, ext, aligner_list, process_cmd, name=None):
 	""" Function to process bam or cram files who's path are stored in a dictionary by sample/ext name"""
 	""" You can either cp, ls bam files ; or use samtools to extract bam from a cram file into a storedir"""
 	""" You can append a name to the files if you specify a name """
-	inputfile = dictonnary[sample][ext]
+	inputfile = dictionary[sample][ext]
 	file_without_ext = os.path.splitext((os.path.basename(inputfile)))[0]
 	# option to append name file with an aligner name (if file is sample.bam we need to rename it to sample.aligner.bam for the pipeline)
 	if name:
@@ -247,7 +247,7 @@ for samples in sample_list:
 for samples in sample_list:
 	for ext in ext_list:
 		for files in files_list:
-			if os.path.basename(files).startswith(samples) and os.path.basename(files).endswith(ext):
+			if os.path.basename(files).split(".")[0] == samples and os.path.basename(files).endswith(ext):
 				if validation_only == False:
 					if ext == process_file and not 'validation' in files:
 						dico_run[samples][ext] = files
