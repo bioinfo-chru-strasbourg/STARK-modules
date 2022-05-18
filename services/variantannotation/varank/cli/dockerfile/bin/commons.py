@@ -26,6 +26,8 @@ def set_log_level(verbosity):
             + configs.keys()
         )
     log.basicConfig(
+        filename="",
+        filemode="a",
         format="%(asctime)s [%(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
         level=configs[verbosity],
