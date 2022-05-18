@@ -15,14 +15,14 @@ RUN yum -y update
 RUN yum -y install epel-release
 RUN yum -y install wget
 RUN yum -y install make
-# python, 
+# python
 RUN yum -y install gcc
-# python, 
+# python
 RUN yum -y install bzip2 bzip2-devel
 RUN yum -y install zlib-devel
-# varank, 
+# varank
 RUN yum -y install git
-# pandas
+# panda
 RUN yum clean all
 
 # ##########################################################################
@@ -86,7 +86,7 @@ RUN git clone https://github.com/lgmgeo/VaRank.git
 RUN	ln -s VaRank current
 
 ENV VARANK=/tools/varank/current/
-ENV varank="python3 /tools/varank/current/scripts/varank.py"
+ENV varank="python3 /tools/varank/current/scripts/__main__.py"
 
 # Alamut-Batch
 RUN mkdir /tools/alamut_batch
@@ -101,16 +101,17 @@ RUN mv ancillary ancillary.original
 COPY src/ancillary.tar.gz /tools/alamut_batch/current/
 RUN tar -xvf ancillary.tar.gz
 RUN chmod -R 777 /tools/alamut_batch/current/ancillary/
+RUN rm -rf alamut-batch.ini
 ENV ALAMUT=/tools/alamut_batch/current/
 
 # ##########################################################################
 
 # copy app binaries
-COPY bin/varank_wrapper.py /tools/varank/current/scripts/varank_wrapper.py
+COPY bin/* /tools/varank/current/scripts/
 
 # ##########################################################################
 
 RUN chmod -R 777 /tools/
 
-ENTRYPOINT ["python3.10 /tools/varank/current/scripts/varank_wrapper.py"]
+ENTRYPOINT ["python3.10 /tools/varank/current/scripts/__main__.py"]
 WORKDIR /
