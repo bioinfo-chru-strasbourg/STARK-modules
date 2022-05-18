@@ -134,15 +134,15 @@ def searchfiles(directory, search_arg, recursive_arg):
 	""" Function to search all files in a directory, addind a search arguement append to the directory and a recursive_search options (True/False) """
 	return sorted(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
 
-def processalignedfiles(storedir, dictonnary, sample, ext, aligner_list, process_cmd, name=None):
-	""" Function to process bam or cram files who's path are stored in a dictionary by sample/ext name"""
-	""" You can either cp, ls bam files ; or use samtools to extract bam from a cram file into a storedir"""
+def processalignedfiles(storedir, dictionary, sample, ext, aligner_list, process_cmd, name=None):
+	""" Function to process bam or cram files who's path are stored in a dictionary by sample/ext name """
+	""" You can either cp, ls bam files ; or use samtools to extract bam from a cram file into a storedir or filter a bam with a specific bed """
 	""" You can append a name to the files if you specify a name """
-	inputfile = dictonnary[sample][ext]
+	inputfile = dictionary[sample][ext]
 	file_without_ext = os.path.splitext((os.path.basename(inputfile)))[0]
 	# option to append name file with an aligner name (if file is sample.bam we need to rename it to sample.aligner.bam for the pipeline)
 	if name:
-		outputfile = storedir + "/" + file_without_ext + name
+		outputfile = storedir + "/" + file_without_ext + "." + name
 		aligner_list.append(name)
 	else:
 		outputfile = storedir + "/" + file_without_ext
@@ -271,7 +271,7 @@ for samples in sample_list:
 for samples in sample_list:
 	for ext in ext_list:
 		for files in files_list:
-			if os.path.basename(files).startswith(samples) and os.path.basename(files).endswith(ext):
+			if os.path.basename(files).split(".")[0] == samples and os.path.basename(files).endswith(ext):
 				if validation_only == False:
 					if ext == process_file and not 'validation' in files:
 						dico_run[samples][ext] = files
@@ -391,7 +391,7 @@ if bed_file and customexon_regen == True and old_bed == False:
 			df = df[df['NM'].isin(NM_list)]
 			df = df.replace('0', '', regex=True) # will replace 0 numeration with NA
 	else:
-		df = df[df.Gene != '.'] # Remove row that don't have gene name (unknown regions are noted .) if not DECON will crash
+		df = df[df.Gene != '-1'] # Remove row that don't have gene name (unknown regions are noted .) if not DECON will crash
 		if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0: # Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
 			df = df[df['NM'].isin(NM_list)]
 	df = df.drop(['NM'], 1)
@@ -481,7 +481,7 @@ if bed_file and genes_file and customexon_regen == False and old_bed == True and
 				df.at[j, 'Gene'] = 'Unknown'+str(i)
 			i+=1
 	else:
-		df = df[df.Gene != '.'] # Remove row that don't have gene name (unknown regions are noted ".") if not DECON will crash
+		df = df[df.Gene != '-1'] # Remove row that don't have gene name (unknown regions are noted ".") if not DECON will crash
 	if exon_sep == True: # fix for some bed that remove _ex part if gene is noted genename_ex
 		df['Gene'] = df['Gene'].str.split('_ex').str[0]
 	df = df.drop_duplicates() # remove duplicate
