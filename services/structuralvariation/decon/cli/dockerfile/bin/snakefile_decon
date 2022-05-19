@@ -381,10 +381,9 @@ if bed_file and customexon_regen == True and old_bed == False:
 	# Formating unknown coords name: intersect will output -1 if no NM exist, replace with "Unknown"
 	if keep_unknown == True:
 		for j, gene in df['Gene'].items():
-			if gene == '.':
+			if gene == '-1':
 				df.at[j, 'Gene'] = 'Unknown'+str(i)
 			i+=1
-		#df = df.replace('.', '0', regex=True)
 		if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0: # Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
 			numbertofilter = '0'
 			NM_list.append(numbertofilter)
@@ -425,7 +424,7 @@ if bed_file and genes_file and customexon_regen == False and old_bed == False:
 		shell(" xargs --delimiter='\\n' cat <"+cat_list_genes+" >> "+cat_panels_bed+" ")
 	else:
 		shell(" xargs --delimiter='\\n' cat <"+genes_file+" >> "+cat_panels_bed+" ")
-	df = pd.read_csv(inputdir + "/" + serviceName + '.concatenatepanels.bed',  sep='\t')
+	df = pd.read_csv(cat_panels_bed, sep='\t')
 	df = df.drop_duplicates() # remove duplicate
 	cat_noduplicate_panels_bed = inputdir+"/"+serviceName+".concatenatepanelsnoduplicate.bed"
 	df.to_csv(cat_noduplicate_panels_bed, sep='\t', index=False, header=False)
@@ -464,7 +463,7 @@ if bed_file and genes_file and customexon_regen == False and old_bed == True and
 		shell(" xargs --delimiter='\\n' cat <"+cat_list_genes+" >> "+cat_panels_bed+" ")
 	else:
 		shell(" xargs --delimiter='\\n' cat <"+genes_file+" >> "+cat_panels_bed+" ")
-	df = pd.read_csv(inputdir + "/" + serviceName + '.concatenatepanels.bed',  sep='\t')
+	df = pd.read_csv(cat_panels_bed, sep='\t')
 	df = df.drop_duplicates() # remove duplicate
 	cat_noduplicate_panels_bed = inputdir+"/"+serviceName+".concatenatepanelsnoduplicate.bed"
 	df.to_csv(cat_noduplicate_panels_bed, sep='\t', index=False, header=False)
@@ -481,7 +480,7 @@ if bed_file and genes_file and customexon_regen == False and old_bed == True and
 				df.at[j, 'Gene'] = 'Unknown'+str(i)
 			i+=1
 	else:
-		df = df[df.Gene != '-1'] # Remove row that don't have gene name (unknown regions are noted ".") if not DECON will crash
+		df = df[df.Gene != '.'] # Remove row that don't have gene name (unknown regions are noted ".") if not DECON will crash
 	if exon_sep == True: # fix for some bed that remove _ex part if gene is noted genename_ex
 		df['Gene'] = df['Gene'].str.split('_ex').str[0]
 	df = df.drop_duplicates() # remove duplicate
