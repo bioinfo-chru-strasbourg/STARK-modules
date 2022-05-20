@@ -42,12 +42,12 @@ service: ""
 plotscript: "/app/src/plotCoverage.R"
 #Copy plot, basically only for HUSDIAGGEN, it's enable when repository copy is activate
 copyplot: False
-#config SAM script 
-annotsvconf: "/home1/L/NGS/BIO_INFO/BIO_INFO_Sam/scripts/tsvConversion/fileconversion/config_annotsv3.json"
+#config SAM script
+annotsvconf: "/tools/variantconvert/configs/config_annotsv3.json"
 #Localisation of SAM script converter
-convertscript: "/home1/L/NGS/BIO_INFO/BIO_INFO_Sam/scripts/tsvConversion/file_converter.py"
+convertscript: "/tools/variantconvert/variantconvert/__main__.py convert"
 #config for SAM script
-bed2vcfjson: "/home1/L/NGS/BIO_INFO/BIO_INFO_Sam/scripts/tsvConversion/fileconversion/config_canoes_bed.json"
+bed2vcfjson: "/tools/variantconvert/configs/config_canoes_bed.json"
 #old converter
 #fileconvert: "/app/src/fileconversion/file_conversion_v2.0.2.py"
 
@@ -66,6 +66,6 @@ dist: "70000"
 tnum: "6"
 #   numref
 #     maximum number of reference samples to use (integer) default is 30
-#     the weighted variance calculations will take a long time if too 
+#     the weighted variance calculations will take a long time if too
 #     many reference samples are used
 numref: "30"
