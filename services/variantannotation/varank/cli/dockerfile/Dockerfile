@@ -20,6 +20,7 @@ RUN yum -y install gcc
 # python
 RUN yum -y install bzip2 bzip2-devel
 RUN yum -y install zlib-devel
+RUN yum -y install libffi-devel
 # varank
 RUN yum -y install git
 # panda
@@ -56,6 +57,9 @@ RUN	make altinstall
 ENV PATH="/usr/local/python-3.10.4/bin:$PATH"
 
 RUN pip3.10 install pandas
+ENV PYTHONDONTWRITEBYTECODE=1
+
+
 
 # TCL
 WORKDIR /usr/src
@@ -107,7 +111,7 @@ ENV ALAMUT=/tools/alamut_batch/current/
 # ##########################################################################
 
 # copy app binaries
-COPY bin/* /tools/varank/current/scripts/
+COPY bin/*.py /tools/varank/current/scripts/
 
 # ##########################################################################
 

@@ -16,19 +16,32 @@ import argparse
 import sys
 import os
 from commons import set_log_level
-from checker import absolute_dir_path
+import checker
+import run_processing
 
 
 def main(args):
     original_umask = os.umask(0o000)
     set_log_level(args.verbosity)
+    checker.varank_config_json_checker()
+    checker.alamut_license_checker()
+
+    if args.run:
+        run_processing(args)
+
+    # elif args.varank_folder:
+    # 	launch_folder_analysis(args)
+    # elif args.allsync18:
+    # 	pattern = pattern_generator(args)
+    # 	launch_universal_sync18(pattern)
+    os.umask(original_umask)
 
 
 def parse_args():
-    """Main parser"""
+    # Main parser
     main_parser = argparse.ArgumentParser(prog="varank")
 
-    """Secondary parsers with global arguments"""
+    # Secondary parsers with global arguments
     verbosity_parser = argparse.ArgumentParser(add_help=False)
     verbosity_parser.add_argument(
         "-v",
@@ -46,7 +59,7 @@ def parse_args():
         help="pattern describing which vcf files to synchronize in STARK folders, actual patterns : */STARK/*.reports/*.final.vcf.gz (default), */POOL/*.final.vcf.gz. You can use two patterns with space as separator",
     )
 
-    """Subparser definition"""
+    # Subparser definition
     subparsers = main_parser.add_subparsers(help="sub-command help")
 
     parser_folder = subparsers.add_parser(
@@ -58,7 +71,7 @@ def parse_args():
         "-f",
         "--folder",
         required=True,
-        type=absolute_dir_path,
+        type=checker.absolute_folder_path,
         help="absolute path to the folder where you want to launch VaRank analysis",
     )
 
@@ -71,7 +84,7 @@ def parse_args():
         "-r",
         "--run",
         required=True,
-        type=absolute_dir_path,
+        type=checker.absolute_run_path,
         help="absolute path to STARK run for which you want to launch VaRank analysis",
     )
 

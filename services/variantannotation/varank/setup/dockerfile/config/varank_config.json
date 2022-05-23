@@ -1,0 +1,9 @@
+{
+    "proxy": {
+        "proxy_user": "...",
+        "proxy_passwd": "...",
+        "proxy_server": "...",
+        "proxy_port": "..."
+    },
+    "threads": "all"
+}
