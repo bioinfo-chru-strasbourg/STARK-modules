@@ -43,11 +43,11 @@ plotscript: "/app/src/plotCoverage.R"
 #Copy plot, basically only for HUSDIAGGEN, it's enable when repository copy is activate
 copyplot: False
 #config SAM script
-annotsvconf: "/tools/variantconvert/configs/config_annotsv3.json"
+annotsvconf: "/STARK/config/structuralvariation/canoes/cli/variantconvert/config_annotsv3.json"
 #Localisation of SAM script converter
 convertscript: "/tools/variantconvert/variantconvert/__main__.py convert"
 #config for SAM script
-bed2vcfjson: "/tools/variantconvert/configs/config_canoes_bed.json"
+bed2vcfjson: "/STARK/config/structuralvariation/canoes/cli/variantconvert/config_canoes_bed.json"
 #old converter
 #fileconvert: "/app/src/fileconversion/file_conversion_v2.0.2.py"
 
