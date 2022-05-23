@@ -100,7 +100,7 @@
 #zygosity
 #totalReadDepth
 #varReadDepth
-#readsVariationPercent
+#varReadPercent
 #QUALphred
 #varType
 #codingEffect

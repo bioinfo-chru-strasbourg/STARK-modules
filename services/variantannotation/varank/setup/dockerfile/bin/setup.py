@@ -28,6 +28,7 @@ def global_config():
     for i in main_folders:
         if not os.path.isdir(osj(config_varank, i)):
             os.mkdir(osj(config_varank, i))
+    if_not_file_copy("", "varank_config.json")
 
 
 def alamut_licence():
@@ -55,7 +56,7 @@ def varank_listener_configuration():
 
 
 def if_not_file_copy(inner_folder, inner_file):
-    if not os.path.isfile(osj(inner_folder, inner_file)):
+    if not os.path.isfile(osj(config_varank, inner_folder, inner_file)):
         shutil.copy(
             osj("/setup", inner_file),
             osj(config_varank, inner_folder),
