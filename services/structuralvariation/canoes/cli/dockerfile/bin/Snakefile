@@ -152,7 +152,6 @@ def getSampleInfos(samplesheet, runPath):
 					else:
 						sex = ''
 						infos[sampleID]['sex'] = sex
-						break
 					
 	print("INFO OK",infos)
 	return infos
