@@ -26,8 +26,7 @@ def main():
 def global_config():
     main_folders = ["alamut-batch-license", "configfiles", "listener"]
     for i in main_folders:
-        if not os.path.isdir(osj(config_varank, i)):
-            os.mkdir(osj(config_varank, i))
+        if_not_folder_create(config_varank, i)
     if_not_file_copy("", "varank_config.json")
 
 
@@ -36,8 +35,7 @@ def alamut_licence():
 
 
 def varank_configuration():
-    if not os.path.isdir(osj(config_varank, "configfiles", "extanns")):
-        os.mkdir(osj(config_varank, "configfiles", "extanns"))
+    if_not_folder_create(osj(config_varank, "configfiles"), "extanns")
 
     configuration_files = [
         "configfile.default",
@@ -61,6 +59,11 @@ def if_not_file_copy(inner_folder, inner_file):
             osj("/setup", inner_file),
             osj(config_varank, inner_folder),
         )
+
+
+def if_not_folder_create(path, new_folder):
+    if not os.path.isdir(osj(path, new_folder)):
+        os.mkdir(osj(path, new_folder))
 
 
 if __name__ == "__main__":
