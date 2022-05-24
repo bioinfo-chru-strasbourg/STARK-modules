@@ -22,9 +22,13 @@ services:
         environment:
             - DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG}
             - DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG}
+            - DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_DATABASES=${DOCKER_STARK_INNER_FOLDER_DATABASES}
+
         volumes:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG}:rw
             - /home1/bin/STARK-modules/dev.MR/services/variantannotation/varank/setup/dockerfile/bin/setup.py:/setup/setup.py:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:rw
+
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
 
@@ -61,6 +65,8 @@ services:
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}:${DOCKER_STARK_INNER_FOLDER_CONFIG}:rw
             # Volumes for databases
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/alamutDB:${DOCKER_STARK_INNER_FOLDER_DATABASES}/alamutDB:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/OMIMannotations:${DOCKER_STARK_INNER_FOLDER_DATABASES}/OMIMannotations:rw
             # Volume for developing, to comment if not used
             - /home1/bin/STARK-modules/dev.MR/services/variantannotation/varank/cli/dockerfile/bin/:/tools/varank/current/scripts/:rw
         networks:

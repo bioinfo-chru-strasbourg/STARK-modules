@@ -7,4 +7,6 @@ __all__ = [
     "non_redundant_generator",
     "pedigree_processing",
     "run_processing",
+    "alamutdb_downloader",
+    "omim_downloader",
 ]

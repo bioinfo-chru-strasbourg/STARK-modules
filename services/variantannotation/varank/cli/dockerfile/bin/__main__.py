@@ -23,11 +23,12 @@ import run_processing
 def main(args):
     original_umask = os.umask(0o000)
     set_log_level(args.verbosity)
+    checker.alamutdb_checker()
     checker.varank_config_json_checker()
-    checker.alamut_license_checker()
+    # checker.omim()
 
-    if args.run:
-        run_processing(args)
+    # if args.run:
+    #     run_processing(args)
 
     # elif args.varank_folder:
     # 	launch_folder_analysis(args)
