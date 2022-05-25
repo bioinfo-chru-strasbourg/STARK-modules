@@ -1,0 +1,410 @@
+##############################################################
+# Module :             Setup Structural Variation
+# Submodule :          Setup
+# Services :           cli
+# Version :            1.0.0
+# Description:         Dockerfile to build container image
+##############################################################
+
+
+##########
+# README #
+##########
+
+# Config parameters
+#    identify yum packages for installation
+#    identify yum packages to remove
+#
+# Dependecies installation
+#    identify tools dependences
+#    config each tool
+#    write installation procedure for each tools
+#
+# Tool
+#    configure tool
+#    write isntallation procedure for the tool
+#    add link to current and root tool folder
+#
+# Workdir / Entrypoint / Cmd
+#    configure workdir, endpoint and command
+#    /!\ no variables in endpoint
+
+
+
+########
+# FROM #
+########
+
+FROM centos:7
+LABEL Software="setup" \
+	Version="0" \
+	Website="" \
+	maintainer="" \
+	Description="setup" \
+	License="" \
+	Usage="docker run setup:version"
+
+
+
+########
+# ARGS #
+#######
+
+ARG THREADS="1"
+#ARG REPO_SOURCES=""
+ARG REMOVE_SOURCES="1"
+
+
+
+##############
+# PARAMETERS #
+##############
+
+ENV STARK_FOLDER="/STARK"
+# ENV TOOLS="$STARK_FOLDER/tools"
+ENV TOOLS="/tools"
+ENV DATA="$STARK_FOLDER/data"
+ENV TOOL="$STARK_FOLDER/tool"
+ENV REPO="$REPO_SOURCES"
+ENV SOURCES_FOLDER="sources"
+ENV SOURCES="$STARK_FOLDER/$SOURCES_FOLDER"
+ENV DATABASES="$STARK_FOLDER/databases"
+ENV WORKDIR="/tmp"
+ENV YUM_PARAM=" "
+ENV WGET_PARAM=" "
+ENV TAR_PARAM=" "
+ENV ZIP_PARAM=" "
+ENV MAKE_PARAM=" "
+
+
+
+###########
+# SOURCES #
+###########
+
+# Copy sources packages, scripts and tools
+ADD ./ $SOURCES
+
+
+
+###########
+# WORKDIR #
+###########
+
+WORKDIR $WORKDIR
+
+
+
+##########
+# HEADER #
+##########
+
+RUN echo "#[INFO] Setup module installation configuration" && echo "#" ;
+
+##################
+# SYSTEM INSTALL #
+##################
+
+# This will install system packages, python packages and scripts to install tools
+
+ENV YUM_INSTALL="automake make htop bc gcc gcc-c++ bzip2 bzip2-devel rsync wget which xz xz-devel zlib zlib-devel unzip tcl curl-devel libcurl"
+
+# sqlite-devel libffi-devel tbb-devel openssl-devel 
+
+ENV YUM_REMOVE="automake"
+
+ENV REPO_SYSTEM_GIT="$REPO/sources.system.tar.gz?path=sources/system"
+ENV REPO_SYSTEM_HTTP="$REPO/sources/system/"
+
+ENV GET_TOOL_SOURCE=$SOURCES/$SOURCES_FOLDER/get_tool_source.sh
+ENV TOOL_INIT=$SOURCES/$SOURCES_FOLDER/tool_init.sh
+ENV TOOL_CHECK=$SOURCES/$SOURCES_FOLDER/tool_check.sh
+
+
+RUN echo "#[INFO] Sources scripts" && \
+	if [ -e $GET_TOOL_SOURCE ]; then \
+	echo "#[INFO] GET TOOL SOURCE script exists" ; \
+	elif $(wget --no-cache --progress=bar:force -nv --quiet "$REPO/$SOURCES_FOLDER/$(basename $GET_TOOL_SOURCE)" -O $GET_TOOL_SOURCE); then \
+	echo "#[INFO] GET TOOL SOURCE script downloaded from REPO '$REPO/$SOURCES_FOLDER/$(basename $GET_TOOL_SOURCE)'" ; \
+	else \
+	mkdir -p $(dirname $GET_TOOL_SOURCE) ; \
+	echo 'echo "#[INFO] TOOL source" && \
+	mkdir -p $(dirname $TOOL_SOURCE) && \
+	if [ -e $TOOL_SOURCE ]; then \
+	echo "#[INFO] TOOL TARBALL already in $TOOL_SOURCE"; \
+	elif $(wget --no-cache --progress=bar:force "$TOOL_SOURCE_REPO" -O $TOOL_SOURCE); then \
+	echo "#[INFO] TOOL TARBALL downloaded from STARK REPO $TOOL_SOURCE_REPO"; \
+	if $(wget --no-cache --progress=bar:force -nv --quiet "$(dirname $TOOL_SOURCE_REPO)/source.info" -O $(dirname $TOOL_SOURCE)/source.info); then \
+	echo "#[INFO] TOOL TARBALL external source information downloaded from STARK REPO $TOOL_SOURCE_REPO " ; \
+	fi ; \
+	elif $(wget --no-cache --progress=bar:force "$TOOL_SOURCE_EXTERNAL" -O $TOOL_SOURCE); then \
+	echo "#[INFO] TOOL TARBALL downloaded from EXTERNAL SOURCE $TOOL_SOURCE_EXTERNAL"; \
+	echo "$TOOL_SOURCE_EXTERNAL" > $(dirname $TOOL_SOURCE)/source.info; \
+	else \
+	echo "#[ERROR] TOOL TARBALL NOT FOUND"; \
+	exit 1; \
+	fi && \
+	if [ -e $(dirname $TOOL_SOURCE)/source.info ]; then \
+	echo "#[INFO] TOOL TARBALL external source: "$(cat $(dirname $TOOL_SOURCE)/source.info) ; \
+	fi && \
+	exit 0;' > $GET_TOOL_SOURCE ; \
+	echo "#[INFO] GET TOOL SOURCE script written" ; \
+	fi && \
+	chmod u+x $GET_TOOL_SOURCE && \
+	if [ -e $TOOL_INIT ]; then \
+	echo "#[INFO] TOOL INIT script exists" ; \
+	elif $(wget --no-cache --progress=bar:force -nv --quiet "$REPO/$SOURCES_FOLDER/$(basename $TOOL_INIT)" -O $TOOL_INIT); then \
+	echo "#[INFO] TOOLS INIT script downloaded from REPO '$REPO/$SOURCES_FOLDER/$(basename $TOOL_INIT)'" ; \
+	else \
+	mkdir -p $(dirname $TOOL_INIT) ; \
+	echo 'echo "#[INFO] TOOL $TOOL_NAME/$TOOL_VERSION" && \
+	export TOOL_SOURCE=$SOURCES/$SOURCES_FOLDER/tools/$TOOL_NAME/$TOOL_VERSION/$TOOL_TARBALL && \
+	export TOOL_SOURCE_REPO=$REPO/$SOURCES_FOLDER/tools/$TOOL_NAME/$TOOL_VERSION/$TOOL_TARBALL && \
+	export TOOL_SOURCE_BUILD=$SOURCES/$SOURCES_FOLDER/tools/$TOOL_NAME/$TOOL_VERSION/build && \
+	export TOOL_DEST=$TOOLS/$TOOL_NAME/$TOOL_VERSION && \
+	export PATH=$TOOL_DEST/bin:$PATH && \
+	# Get TOOL SOURCE && \
+	$GET_TOOL_SOURCE $TOOL_SOURCE $TOOL_SOURCE_REPO $TOOL_SOURCE_EXTERNAL && \
+	# TOOL folder preparation \
+	echo "#[INFO] TOOL preparation" && \
+	mkdir -p $TOOL_SOURCE_BUILD && \
+	mkdir -p $TOOL_DEST/bin && \
+	echo "#[INFO] TOOL release as current (forced)" && \
+	ln -snf $TOOL_VERSION/ $TOOLS/$TOOL_NAME/previous && \
+	if [ -e $TOOLS/$TOOL_NAME/current ]; then ln -snf $(basename $(realpath $TOOLS/$TOOL_NAME/current))/ $TOOLS/$TOOL_NAME/previous; fi && \
+	ln -snf $TOOL_VERSION/ $TOOLS/$TOOL_NAME/current && \
+	ln -snf $TOOL_VERSION/ $TOOLS/$TOOL_NAME/latest' > $TOOL_INIT ; \
+	echo "#[INFO] TOOLS INIT script written" ; \
+	fi && \
+	chmod u+x $TOOL_INIT && \
+	if [ -e $TOOL_CHECK ]; then \
+	echo "#[INFO] TOOLS CHECK script exists" ; \
+	elif $(wget --no-cache --progress=bar:force -nv --quiet "$REPO/$SOURCES_FOLDER/$(basename $TOOL_CHECK)" -O $TOOL_CHECK); then \
+	echo "#[INFO] TOOLS CHECK script downloaded from REPO '$REPO/$SOURCES_FOLDER/$(basename $TOOL_CHECK)'" ; \
+	else \
+	mkdir -p $(dirname $TOOL_CHECK) ; \
+	echo 'echo "#[INFO] TOOL cleaning" && \
+	rm -rf $TOOL_SOURCE_BUILD && \
+	if (($REMOVE_SOURCES)); then rm -rf $SOURCES/$SOURCES_FOLDER/tools/$TOOL_NAME; fi && \
+	echo "#[INFO] TOOL $TOOL_NAME/$TOOL_VERSION installed" ;' > $TOOL_CHECK ; \
+	echo "#[INFO] TOOLS CHECK script written" ; \
+	fi && \
+	chmod u+x $TOOL_CHECK && \
+	echo "#";
+
+# System installation
+RUN echo "#[INFO] System installation" && \
+	# Create system repository \
+	mkdir -p $SOURCES/$SOURCES_FOLDER/system && \
+	# INSTALL WGET \
+	echo "#[INFO] System install wget package" && \
+	if ! ls $SOURCES/$SOURCES_FOLDER/system/wget-*.rpm 1> /dev/null 2>&1; then \
+		echo "#[INFO] System wget package not locally available"; \
+		yum $YUM_PARAM install -y --nogpgcheck --downloadonly --downloaddir=$SOURCES/$SOURCES_FOLDER/system/ wget; \
+		echo "#[INFO] System wget package downloaded from YUM Repository"; \
+	fi && \
+	echo "#[INFO] System install rsync package" && \
+	if ! ls $SOURCES/$SOURCES_FOLDER/system/rsync-*.rpm 1> /dev/null 2>&1; then \
+		echo "#[INFO] System rsync package not locally available"; \
+		yum $YUM_PARAM install -y --nogpgcheck --downloadonly --downloaddir=$SOURCES/$SOURCES_FOLDER/system/ rsync; \
+		echo "#[INFO] System rsync package downloaded from YUM Repository"; \
+	fi && \
+	# Install packages locally \
+	echo "#[INFO] System packages installation locally" && \
+	yum $YUM_PARAM localinstall -y --nogpgcheck $SOURCES/$SOURCES_FOLDER/system/wget-*.rpm $SOURCES/$SOURCES_FOLDER/system/rsync-*.rpm && \
+	# Test WGET installation \
+	if ! command -v wget 1>/dev/null 2>/dev/null; then \
+		echo "#[ERROR] System wget package not installed (Please open Internet connexion or provide WGET rpm in sources/system folder)"; \
+		exit 1; \
+	fi && \
+	if ! command -v rsync 1>/dev/null 2>/dev/null; then \
+		echo "#[ERROR] System rsync package not installed (Please open Internet connexion or provide RSYNC rpm in sources/system folder)"; \
+		exit 1; \
+	fi && \
+	# DOWNLOAD packages from repository \
+	echo "#[INFO] System packages download from REPO '$REPO'"; \
+	mkdir -p $SOURCES/$SOURCES_FOLDER/system/build && \
+	# in GIT mode
+	if wget -q --progress=bar:force --tries=3 $REPO_SYSTEM_GIT -O $SOURCES/$SOURCES_FOLDER/system/build/STARK-repo.sources.system.tar.gz; then \
+		if tar xf $SOURCES/$SOURCES_FOLDER/system/build/STARK-repo.sources.system.tar.gz -C $SOURCES/$SOURCES_FOLDER/system/build/; then \
+			rsync -auczqAXhi --no-links --no-perms --no-owner --no-group $SOURCES/$SOURCES_FOLDER/system/build/STARK-repo.sources.system*/sources/system/*rpm $SOURCES/$SOURCES_FOLDER/system/; \
+			echo "#[INFO] System packages downloaded from REPO '$REPO' (GIT)"; \
+		else \
+			echo "#[WARNING] System fail to uncompress packages from REPO '$REPO'"; \
+		fi; \
+	# in HTTP mode
+	elif wget -q --progress=bar:force --tries=3 -r --no-parent $REPO_SYSTEM_HTTP -x --directory-prefix=$SOURCES/$SOURCES_FOLDER/system/build/STARK-repo.sources.system/; then \
+		rsync -auczqAXhi --no-links --no-perms --no-owner --no-group $SOURCES/$SOURCES_FOLDER/system/build/STARK-repo.sources.system/*/sources/system/*rpm $SOURCES/$SOURCES_FOLDER/system/; \
+		echo "#[INFO] System packages downloaded from REPO '$REPO' (FTP/HTTP)"; \
+	else \
+		echo "#[WARNING] System fail packages download from REPO '$REPO'"; \
+	fi && \
+	rm -rf $SOURCES/$SOURCES_FOLDER/system/build && \
+	# Install packages locally \
+	echo "#[INFO] System packages installation locally" && \
+	yum $YUM_PARAM localinstall -y --nogpgcheck $SOURCES/$SOURCES_FOLDER/system/*.rpm && \
+	# Install EPEL Repository \
+	echo "#[INFO] System EPEL Repository package" && \
+	if ! ls $SOURCES/$SOURCES_FOLDER/system/epel-release-*.rpm 1> /dev/null 2>&1; then \
+		yum $YUM_PARAM install -y --nogpgcheck --downloadonly --downloaddir=$SOURCES/$SOURCES_FOLDER/system/ epel-release; \
+		echo "#[INFO] System EPEL Repository package downloaded from YUM repository"; \
+	fi && \
+	if ls $SOURCES/$SOURCES_FOLDER/system/epel-release-*.rpm 1> /dev/null 2>&1; then \
+		yum $YUM_PARAM localinstall -y --nogpgcheck $SOURCES/$SOURCES_FOLDER/system/epel-release-*.rpm; \
+		echo "#[INFO] System EPEL Repository package enabled"; \
+	else \
+		echo "#[WARNING] System fail enable EPEL Repository"; \
+	fi && \
+	# Update YUM \
+	echo "#[INFO] System packages update from YUM Repository" && \
+	mkdir -p $SOURCES/$SOURCES_FOLDER/system/build/update && \
+	yum $YUM_PARAM update -y --downloadonly --downloaddir=$SOURCES/$SOURCES_FOLDER/system/build/update && \
+	yum $YUM_PARAM update -y && \
+	rsync -auczqAXhi --no-links --no-perms --no-owner --no-group $SOURCES/$SOURCES_FOLDER/system/build/update/*rpm $SOURCES/$SOURCES_FOLDER/system/ && \
+	echo "#[INFO] System packages downloaded & updated from YUM Repository"; \
+	echo "#[INFO] System packages install from YUM Repository" && \
+	mkdir -p $SOURCES/$SOURCES_FOLDER/system/build/install && \
+	yum $YUM_PARAM install -y --downloadonly --downloaddir=$SOURCES/$SOURCES_FOLDER/system/build/install/ $YUM_INSTALL && \
+	yum $YUM_PARAM install -y $YUM_INSTALL && \
+	rsync -auczqAXhi --no-links --no-perms --no-owner --no-group $SOURCES/$SOURCES_FOLDER/system/build/install/*rpm $SOURCES/$SOURCES_FOLDER/system/ && \
+	echo "#[INFO] System packages downloaded & installed from YUM Repository" && \
+	rm -rf $SOURCES/$SOURCES_FOLDER/system/build && \
+	yum clean -y all && \
+	rm -rf /var/cache/yum && \
+	echo "#[INFO] System Clean" && \
+	echo "#";
+
+#########
+# CONDA #
+#########
+
+WORKDIR $WORKDIR
+RUN wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+	sh Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/lib/miniconda3 ;
+ENV PATH="/usr/local/lib/miniconda3/bin:$PATH"
+RUN source ~/.bashrc
+
+# Copy application files (/app)
+COPY ./ /app
+
+RUN conda env create -f /app/config/conda/python3.yml
+RUN echo "source activate variantconvert" >> ~/.bashrc
+ENV PATH="/opt/conda/envs/env/bin:$PATH"
+RUN chmod -R +x /app
+ENV PATH="/app/bin:$PATH"
+
+
+
+##########
+# HTSLIB #
+##########
+
+# TOOL INFO
+ENV TOOL_NAME="htslib"
+ENV TOOL_VERSION="1.15"
+ENV TOOL_TARBALL="$TOOL_NAME-$TOOL_VERSION.tar.bz2"
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/samtools/$TOOL_NAME/releases/download/$TOOL_VERSION/$TOOL_TARBALL"
+ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+
+# TOOL INSTALLATION
+RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+	source $TOOL_INIT && \
+	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
+	make install --quiet -j $THREADS -C $(ls -d $TOOL_SOURCE_BUILD/*) prefix=$TOOL_DEST && \
+	# ln -s /STARK/tools/htslib/current/include/htslib/ /usr/local/include/ && \
+	ln -s $TOOL_DEST/include/htslib/ /usr/local/include/ && \
+	$TOOL_CHECK ;
+
+############
+# BCFTOOLS #
+############
+
+# Depend on Htslib
+
+# TOOL INFO
+ENV TOOL_NAME="bcftools"
+ENV TOOL_VERSION="1.15"
+ENV TOOL_TARBALL="$TOOL_NAME-$TOOL_VERSION.tar.bz2"
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/samtools/$TOOL_NAME/releases/download/$TOOL_VERSION/$TOOL_TARBALL"
+ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+
+# TOOL INSTALLATION
+RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+	source $TOOL_INIT && \
+	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
+	make install --quiet -j $THREADS -C $(ls -d $TOOL_SOURCE_BUILD/*) prefix=$TOOL_DEST && \
+	$TOOL_CHECK ;
+
+############
+# BEDTOOLS #
+############
+
+# TOOL INFO
+ENV TOOL_NAME="bedtools"
+ENV TOOL_VERSION="2.30.0"
+ENV TOOL_TARBALL="$TOOL_NAME-$TOOL_VERSION.tar.gz"
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/arq5x/bedtools2/releases/download/v$TOOL_VERSION/$TOOL_TARBALL"
+ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+
+# TOOL INSTALLATION
+RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+	source $TOOL_INIT && \
+	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
+	# ln -s /usr/bin/python3 /usr/bin/python && \
+	make install --quiet -j $THREADS -C $(ls -d $TOOL_SOURCE_BUILD/*) prefix=$TOOL_DEST && \
+	$TOOL_CHECK ;
+
+#############
+#  AnnotSV  #
+#############
+
+# https://github.com/lgmgeo/AnnotSV/archive/refs/tags/v3.1.zip
+
+ENV TOOL_NAME="AnnotSV"
+ENV TOOL_VERSION="3.1"
+ENV TOOL_TARBALL="v$TOOL_VERSION.zip"
+ENV TOOL_SOURCE_EXTERNAL="https://github.com/lgmgeo/$TOOL_NAME/archive/refs/tags/$TOOL_TARBALL"
+ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+ENV TOOL_PARAM_DATABASE_FOLDER_LINK=$DATABASES/AnnotSV/$TOOL_VERSION/
+
+
+# TOOL INSTALLATION
+RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+	source $TOOL_INIT && \
+	unzip -q $TOOL_SOURCE -d $TOOL_SOURCE_BUILD && \
+	mkdir -p $TOOL_DEST/share/tcl/AnnotSV/ && \
+	mkdir -p $TOOL_DEST/etc/AnnotSV/ && \
+	mkdir -p $TOOL_DEST/share/AnnotSV/jar/ && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/share/tcl/* $TOOL_DEST/share/tcl/ && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/share/AnnotSV/jar/*jar $TOOL_DEST/share/AnnotSV/jar/ && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/etc/AnnotSV/* $TOOL_DEST/etc/AnnotSV/ && \
+	cp -R $TOOL_SOURCE_BUILD/$TOOL_NAME-$TOOL_VERSION/bin/* $TOOL_DEST/bin && \
+	mkdir -p $TOOL_PARAM_DATABASE_FOLDER_LINK && \
+	$TOOL_CHECK ;
+
+ENV ANNOTSV="$TOOLS/$TOOL_NAME/$TOOL_VERSION"
+
+######################
+# YUM REMOVE & CLEAR #
+######################
+
+RUN echo "#[INFO] Cleaning" && \
+	yum erase -y $YUM_REMOVE && \
+	yum clean all && \
+	rm -rf /var/cache/yum && \
+	rm -rf $WORKDIR/* && \
+	rm -rf /tmp/* && \
+	if (($REMOVE_SOURCES)); then rm -rf $SOURCES; fi;
+
+
+##############################
+# WORKDIR / ENTRYPOINT / CMD #
+##############################
+
+WORKDIR "/app"
+
+CMD ["python", "/app/bin/setup.py"]
