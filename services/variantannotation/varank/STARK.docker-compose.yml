@@ -23,20 +23,16 @@ services:
             - DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG}
             - DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG}
             - DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_DATABASES=${DOCKER_STARK_INNER_FOLDER_DATABASES}
-
         volumes:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG}:rw
             - /home1/bin/STARK-modules/dev.MR/services/variantannotation/varank/setup/dockerfile/bin/setup.py:/setup/setup.py:rw
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:rw
-
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
 
     # cli
     stark-module-variantannotation-submodule-varank-service-cli:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
-        depends_on:
-            - stark-module-variantannotation-submodule-varank-service-setup
         build:
             context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT}
             dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT_DOCKERFILE}
@@ -65,21 +61,28 @@ services:
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}:${DOCKER_STARK_INNER_FOLDER_CONFIG}:rw
             # Volumes for databases
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/alamutDB:${DOCKER_STARK_INNER_FOLDER_DATABASES}/alamutDB:rw
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}/OMIMannotations:${DOCKER_STARK_INNER_FOLDER_DATABASES}/OMIMannotations:rw
             # Volume for developing, to comment if not used
             - /home1/bin/STARK-modules/dev.MR/services/variantannotation/varank/cli/dockerfile/bin/:/tools/varank/current/scripts/:rw
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "test",
+                    "-f",
+                    "${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG}/SetupComplete.txt"
+                ]
+            timeout: 10s
+            interval: 10s
+            retries: 3600
 
     # listener
     stark-module-variantannotation-submodule-varank-service-listener:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE}
         depends_on:
-            - stark-module-variantannotation-submodule-varank-service-setup
-        # build:
-        # context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE_CONTEXT}
-        # dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE_CONTEXT_DOCKERFILE}
+            stark-module-variantannotation-submodule-varank-service-cli:
+                condition: service_healthy
         container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_NAME}
         entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_ENTRYPOINT}
         command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_COMMAND}
