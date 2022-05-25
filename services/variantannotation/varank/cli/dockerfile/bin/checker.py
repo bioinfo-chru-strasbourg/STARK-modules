@@ -2,8 +2,6 @@
 import os
 import json
 import logging as log
-import requests
-import subprocess
 from os.path import join as osj
 
 
@@ -57,54 +55,6 @@ def absolute_run_path(path):
         raise ValueError(path)
 
 
-def alamutdb_checker():
-    alamutdb_folder = osj(
-        os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_DATABASES"],
-        "alamutDB",
-    )
-
-    if not os.path.isdir(alamutdb_folder):
-        os.mkdir(alamutdb_folder)
-        log.warning(
-            "AlamutDB do not exist, the newer version will be downloaded, the process can take few hours"
-        )
-        alamut_source = osj(alamutdb_folder, "source.txt")
-        alamut_req = requests.get(
-            "https://downloads.interactive-biosoftware.com/", "html.parser"
-        )
-        with open(alamut_source, "w") as write_file:
-            write_file.write(alamut_req.text)
-
-        with open(alamut_source, "r") as read_file:
-            for line in read_file:
-                line.rstrip()
-                if (
-                    "http://downloads.interactive-biosoftware.com/sources/files/Alamut-batch-standalone/"
-                    in line
-                ):
-                    alamut_download_url = line.split("'")[1]
-                    version = alamut_download_url.split("/")[6].split("-")[2]
-                    year = version.split(".")[0]
-                    month = version.split(".")[1]
-                    day = version.split(".")[2]
-                    version = year + month + day
-
-        subprocess.run(
-            [
-                "wget",
-                alamut_download_url,
-                osj(alamutdb_folder, version),
-            ]
-        )
-
-    if not os.path.isfile(osj(alamutdb_folder, "STARK.database")):
-        with open(osj(alamutdb_folder, "STARK.database"), "w") as write_file:
-            write_file.write("coucou")
-
-
-# def omim_checker():
-
-
 def varank_config_json_checker():
     varank_json = osj(
         os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_CONFIG"],
@@ -114,11 +64,6 @@ def varank_config_json_checker():
     )
     with open(varank_json, "r") as read_file:
         data = json.load(read_file)
-        for i in data["proxy"]:
-            if data["proxy"][i] == "...":
-                log.warning(
-                    f"{i} is not defined, if you are using a proxy, please modify values in {varank_json}"
-                )
 
         threads = data.get("threads")
         if threads == "all":
@@ -131,26 +76,38 @@ def varank_config_json_checker():
             log.info(f"{threads} threads will be used according to {varank_json}")
 
         for i in data["databases"]:
-            if i == "OMIM":
-                print(data["databases"]["OMIM"])
-            elif i == "alamutDB":
+            if i == "alamutDB":
                 if not os.path.isfile(data["databases"]["alamutDB"]):
                     log.error(f"{i} file do not exists, please modify in {varank_json}")
                     raise ValueError(data["databases"]["alamutDB"])
                 else:
                     alamutdb_path = data["databases"]["alamutDB"]
+                    log.info(f"Alamut database file {alamutdb_path} exists")
 
-        # for i in data["databases"]:
-        #     print(data["databases"][i])
+            elif i == "OMIM":
+                api_token = data["databases"]["OMIM"]["api_token"]
+                OMIM_1 = data["databases"]["OMIM"]["OMIM_1"]
+                OMIM_2 = data["databases"]["OMIM"]["OMIM_2"]
+                # if api_token == "...":
+                #     log.error(
+                #         f"{i} license was not parametered, please modify in {varank_json}"
+                #     )
+                #     raise ValueError(data["databases"]["alamutDB"]["api_token"])
+                if not os.path.isfile(OMIM_1):
+                    log.error(
+                        f"{OMIM_1} file do not exists, please modify the path in {varank_json} or download the latest version with the omim command"
+                    )
+                    raise ValueError(OMIM_1)
+                else:
+                    log.info(f"OMIM database file {OMIM_1} exists")
 
-        # for i in data["databases"]:
-        #     value = data["databases"][i]
-        #     if value == "...":
-        #         log.error(f"{i} path is not defined, please modify in {varank_json}")
-        #         raise ValueError(value)
-        #     elif not os.path.isfile(value):
-        #         log.error(f"{i} file do not exists, please modify in {varank_json}")
-        #         raise ValueError(value)
+                if not os.path.isfile(OMIM_2):
+                    log.error(
+                        f"{OMIM_2} file do not exists, please modify the path in {varank_json} or download the latest version with the omim command"
+                    )
+                    raise ValueError(OMIM_2)
+                else:
+                    log.info(f"OMIM database file {OMIM_2} exists")
 
         alamut_license_checker(alamutdb_path)
 
@@ -192,8 +149,6 @@ def alamut_license_checker(alamutdb_path):
                     log.warning(
                         f"AlamutDB database file {line} was not found, it was replace with the data in the varank_config.json"
                     )
-                else:
-                    log.info(f"AlamutDB database file {line} exists")
 
     with open(alamut_license, "r") as read_file:
         for line in read_file:

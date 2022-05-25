@@ -57,7 +57,6 @@ RUN	make altinstall
 ENV PATH="/usr/local/python-3.10.4/bin:$PATH"
 
 RUN pip3.10 install pandas
-RUN pip3.10 install requests
 ENV PYTHONDONTWRITEBYTECODE=1
 
 

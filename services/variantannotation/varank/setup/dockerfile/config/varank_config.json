@@ -1,15 +1,9 @@
 {
-    "proxy": {
-        "proxy_user": "...",
-        "proxy_passwd": "...",
-        "proxy_server": "...",
-        "proxy_port": "..."
-    },
     "threads": "all",
     "databases": {
         "alamutDB": "/STARK/databases/alamutDB/current/alamut_db",
         "OMIM": {
-            "license": "...",
+            "api_token": "...",
             "OMIM_1": "/STARK/databases/OMIMannotations/current/OMIM-1-annotations.tsv.gz",
             "OMIM_2": "/STARK/databases/OMIMannotations/current/OMIM-2-annotations.tsv.gz"
         }
