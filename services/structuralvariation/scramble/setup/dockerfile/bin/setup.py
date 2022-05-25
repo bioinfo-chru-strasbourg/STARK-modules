@@ -177,7 +177,7 @@ if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 	systemcall("mv "+COSMIC_source+" "+COSMIC_install_path+" ")
 	# AnnotSV dummy vcf in /app/src/dummy.vcf to process COSMIC database (need rw databases access for that)
 	setup_config_path = DATABASES+"AnnotSV/"+ANNOTSV_VERSION
-	systemcall("AnnotSV -SVinputFile /app/src/dummy.vcf -outputFile "+setup_config_path+"/AnnotSV.dummyannotation.tsv -genomeBuild "+genomeBuild_version+" 1> "+setup_config_path+"/AnnotSV.dummyannotation.log" ")
+	systemcall("AnnotSV -SVinputFile /app/src/dummy.vcf -outputFile "+setup_config_path+"/AnnotSV.dummyannotation.tsv -genomeBuild "+genomeBuild_version+" 1> "+setup_config_path+"/AnnotSV.dummyannotation.log")
 
 
 ##############
@@ -193,6 +193,7 @@ GENEHANCER_install_path = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/Annotations_Hu
 if not os.path.exists(GENEHANCER_install_path) and os.path.exists(GENEHANCER_source):
 	os.makedirs(GENEHANCER_install_path, exist_ok = True)
 	systemcall("unzip -q "+GENEHANCER_source+" -d "+GENEHANCER_install_path+" ")
+
 
 #######################
 # Copy config files (service.conf & service.json) and launcher.py from app/config to /config/module/servicename/listener/

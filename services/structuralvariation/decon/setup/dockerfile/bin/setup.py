@@ -177,7 +177,7 @@ if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 	systemcall("mv "+COSMIC_source+" "+COSMIC_install_path+" ")
 	# AnnotSV dummy vcf in /app/src/dummy.vcf to process COSMIC database (need rw databases access for that)
 	setup_config_path = DATABASES+"AnnotSV/"+ANNOTSV_VERSION
-	systemcall("AnnotSV -SVinputFile /app/src/dummy.vcf -outputFile "+setup_config_path+"/AnnotSV.dummyannotation.tsv -genomeBuild "+genomeBuild_version+" 1> "+setup_config_path+"/AnnotSV.dummyannotation.log" ")
+	systemcall("AnnotSV -SVinputFile /app/src/dummy.vcf -outputFile "+setup_config_path+"/AnnotSV.dummyannotation.tsv -genomeBuild "+genomeBuild_version+" 1> "+setup_config_path+"/AnnotSV.dummyannotation.log")
 
 
 ##############
