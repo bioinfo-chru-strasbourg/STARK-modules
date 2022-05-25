@@ -1,7 +1,7 @@
 ##########################################################################
-# Dockerfile Version:   1.1.1
+# Dockerfile Version:   1.2
 # Software:             CANOES
-# Software Version:     1.1.1
+# Software Version:     2.0.1
 # Software Website:     http://www.columbia.edu/~ys2411/canoes/CANOES.R
 # Description:          Dockerfile to build CANOES container image
 ##########################################################################
@@ -14,7 +14,7 @@
 FROM centos:7
 LABEL maintainer="LAMOUCHE Jean-Baptiste <jbaptiste.lamouche@gmail.com>" \
     Software="CANOES" \
-    Version="1.1.1" \
+    Version="1.2" \
     Description="CANOES"
 
 
