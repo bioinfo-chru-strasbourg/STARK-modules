@@ -194,7 +194,6 @@ if not os.path.exists(GENEHANCER_install_path) and os.path.exists(GENEHANCER_sou
 	os.makedirs(GENEHANCER_install_path, exist_ok = True)
 	systemcall("unzip -q "+GENEHANCER_source+" -d "+GENEHANCER_install_path+" ")
 
-
 #######################
 # Copy config files (service.conf & service.json) and launcher.py from app/config to /config/module/servicename/listener/
 #######################
@@ -208,4 +207,4 @@ if serviceName and moduleName:
 	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
 
 # SETUPComplete cli services (condition for healthy cli)
-systemcall("touch /STARK/services/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
+systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")

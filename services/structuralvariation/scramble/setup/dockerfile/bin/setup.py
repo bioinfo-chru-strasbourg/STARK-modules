@@ -207,4 +207,4 @@ if serviceName and moduleName:
 	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
 
 # SETUPComplete cli services (condition for healthy cli)
-systemcall("touch /STARK/services/${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
+systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
