@@ -188,7 +188,6 @@ def getSampleInfosFromRun(runPath):
 								else:
 									sex = ''
 									infos[sampleID]['sex'] = sex
-									break
 				else:
 					#print("WARNING "+sampleID+" does not have a tag file")
 					infos[sampleID]['sex'] = ''
@@ -918,7 +917,7 @@ rule create_plot:
 		log+"/{sample}.plots_coverage.log"
 	shell:
 		"""
-			{params.Rscript} {input} &> {log} && touch {output}
+			{params.Rscript} {input} &> {log} || touch {output}
 		"""
 
 rule sex_analysis_reads:
