@@ -500,16 +500,16 @@ def copylog():
 					os.mkdir(osj(config['repositoryPath'], sample, 'CANOES'))
 					shutil.copytree(osj(config['outputPath'], "logs"), osj(config['repositoryPath'], sample, 'CANOES', 'logs'))
 				else:
-					listfile = [folder for folder in os.listdir(osj(config['repositoryPath'], sample, "CANOES")) if os.path.isdir(osj(config['repositoryPath'], sample, "CANOES", folder)) and 'logs' in folder]
-					print("#[INFO] Listfile ", listfile)
-					old = sample+'.'+listfile[0].split('.')[-1]
+					#listfile = [folder for folder in os.listdir(osj(config['repositoryPath'], sample, "CANOES")) if os.path.isdir(osj(config['repositoryPath'], sample, "CANOES", folder)) and 'logs' in folder]
+					#print("#[INFO] Listfile ", listfile)
+					#old = sample+'.'+listfile[0].split('.')[-1]
+					old = sample+'.'+date
 					print("#[INFO] Create "+osj(config['repositoryPath'], sample, "CANOES", old))
 					os.mkdir(osj(config['repositoryPath'], sample, "CANOES", old))
-
 					for content in os.listdir(osj(config['repositoryPath'], sample, "CANOES" )):
 						if os.path.isfile(osj(config['repositoryPath'], sample, "CANOES", content)):
 							shutil.move(osj(config['repositoryPath'], sample, "CANOES", content), osj(config['repositoryPath'], sample, "CANOES", old))
-						else:
+						elif os.path.isdir(osj(config['repositoryPath'], sample, "CANOES", content)) and not content.startswith(sample):
 							shutil.move(osj(config['repositoryPath'], sample, "CANOES", content), osj(config['repositoryPath'], sample, "CANOES", old))
 					
 	else:
@@ -606,7 +606,8 @@ if config['repositoryPath']:
 							listfile = [folder for folder in os.listdir(osj(config['repositoryPath'], sample, "CANOES")) if os.path.isdir(osj(config['repositoryPath'], sample, "CANOES", folder)) and 'logs' in folder]
 							print("#[INFO] Listfile ", listfile)
 							#old = listfile[0].split('.')[-1]
-							old = sample+'.'+listfile[0].split('.')[-1]
+							#old = sample+'.'+listfile[0].split('.')[-1]
+							old = sample+'.'+date
 
 
 							print("#[INFO] Create "+osj(config['repositoryPath'], sample, "CANOES", old))
@@ -615,7 +616,8 @@ if config['repositoryPath']:
 								if content != old:
 									if os.path.isfile(osj(config['repositoryPath'], sample, "CANOES", content)):
 										shutil.move(osj(config['repositoryPath'], sample, "CANOES", content), osj(config['repositoryPath'], sample, "CANOES", old))
-									elif os.path.isdir(osj(config['repositoryPath'], sample, "CANOES", content)) and content.startswith('logs'):
+									#elif os.path.isdir(osj(config['repositoryPath'], sample, "CANOES", content)) and content.startswith('logs'):
+									elif os.path.isdir(osj(config['repositoryPath'], sample, "CANOES", content)) and not content.startswith(sample):
 										shutil.move(osj(config['repositoryPath'], sample, "CANOES", content), osj(config['repositoryPath'], sample, "CANOES", old))
 							#move old file
 							print("#[INFO] Cleaning "+config['repositoryPath'])
