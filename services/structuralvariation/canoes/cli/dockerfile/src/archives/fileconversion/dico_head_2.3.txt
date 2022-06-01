@@ -1,0 +1,91 @@
+AnnotSV ID:AnnotSV ID
+SV chrom:Name of the chromosome
+SV start:Starting position of the SV in the chromosome
+SV end:Ending position of the SV in the chromosome
+SV length:Length of the SV (bp)(deletions have negative values)
+SV type:Type of the SV (DEL DUP …)
+REF:Nucleotide sequence in the reference genome
+ALT:Alternate nucleotide sequence
+FORMAT:The FORMAT column from a VCF file
+Sample ID:The sample ID column from a VCF file
+AnnotSV type:indicate the type of annotation lines generated (full or split)
+Gene name:Gene symbol
+NM:Transcript symbol
+CDS length:Length of the CoDing Sequence (CDS) (bp) overlapped with the SV
+tx length:Length of the transcript (bp) overlapping with the SV
+location:SV location in the gene’s
+location2:SV location in the gene’s coding regions
+intersectStart:Start position of the intersection between the SV and a transcript
+intersectEnd:End position of the intersection between the SV and a transcript
+DGV_GAIN_IDs:DGV Gold Standard GAIN IDs overlapping the annotated SV
+DGV_GAIN_n_samples_with_SV:Number of individuals with a shared DGV_GAIN_ID
+DGV_GAIN_n_samples_tested:Number of individuals tested
+DGV_GAIN_Frequency:Relative GAIN frequency=DGV_GAIN_n_samples_with_SV/DGV_GAIN_n_samples_tested
+DGV_LOSS_IDs:DGV Gold Standard LOSS IDs overlapping the annotated SV
+DGV_LOSS_n_samples_with_SV:Number of individuals with a shared DGV_LOSS_ID
+DGV_LOSS_n_samples_tested:Number of individuals tested
+DGV_LOSS_Frequency:Relative LOSS frequency=DGV_LOSS_n_samples_with_SV/DGV_LOSS_n_samples_tested
+DDD_SV:List of the DDD SV coordinates from the DDD study (data control sets) overlapping the annotated SV
+DDD_DUP_n_samples_with_SV:Maximum number of individuals with a shared DDD_DUP (among the DDD_SV)
+DDD_DUP_Frequency:Maximum DUP Frequency (among the DDD_SV)
+DDD_DEL_n_samples_with_SV:Maximum number of individuals with a shared DDD_DEL (among the DDD_SV)
+DDD_DEL_Frequency:Maximum DEL Frequency (among the DDD_SV)
+DDD_status:DDD category (e.g. confirmed, probable, possible…)
+GD_ID:gnomAD IDs overlapping the annotated SV with the same SV type
+GD_AN:gnomAD total number of alleles genotyped (for biallelic sites) or individuals with copy-state estimates (for multiallelic sites)
+GD_N_HET:gnomAD number of individuals with heterozygous genotypes
+GD_N_HOMALT:gnomAD number of individuals with homozygous alternate genotypes
+GD_AF:Maximum of the gnomAD allele frequency (for biallelic sites) and copy-state frequency (for multiallelic sites)
+GD_POPMAX:Maximum of the gnomAD maximum allele frequency across any population
+GD_ID_others:Other gnomAD IDs overlapping the annotated SV (with a different SV type)
+1000g_event:List of the 1000 genomes event types (e.g. DEL, DUP, <CN3>...)
+1000g_AF:Estimated global allele frequency among the 1000g_event
+1000g_max_AF:Highest observed allele frequency across all the 1000g populations
+IMH_ID:Ira M. Hall’s lab IDs overlapping the annotated SV
+IMH_AF:IMH Allele Frequency
+IMH_ID_others:Other IMH IDs overlapping the annotated SV (with a different SV type)
+promoters:List of the genes whose promoters are overlapped by the SV
+GHid_elite:List of the GeneHancer (GH) IDs for each “elite” element overlapped with the annotated SV
+GHid_not_elite:List of the GeneHancer (GH) IDs for each “not elite” element overlapped with the annotated SV
+GHtype:Type of the overlapped GH element(s) (Enhancer or Promoter)
+GHgene_elite:List of the genes for which an “elite” element-gene relation was identified
+GHgene_not_elite:List of the genes for which a “not elite” element-gene relation was identified
+GHtissue:List of the tissues in which elements were identified
+TADcoordinates:Coordinates of the TAD whose boundaries overlapped with the annotated SV (boundaries included in the coordinates)
+ENCODEexperiments:ENCODE experiments used to define the TAD
+GCcontent_left:GC content around the left SV breakpoint (+/- 100bp)
+GCcontent_right:GC content around the right SV breakpoint (+/- 100bp)
+Repeat_coord_left:Repeats coordinates around the left SV breakpoint (+/- 100bp)
+Repeat_type_left:Repeats type around the left SV breakpoint (+/- 100bp)
+Repeat_coord_right:Repeats coordinates around the right SV breakpoint (+/- 100bp)
+Repeat_type_right:Repeats type around the right SV breakpoint (+/- 100bp)
+ACMG:ACMG genes
+HI_CGscore:ClinGen Haploinsufficiency Score
+TriS_CGscore:ClinGen Triplosensitivity Score
+DDD_mode:DDD allelic requirement
+DDD_consequence:DDD mutation consequence
+DDD_disease:DDD disease name
+DDD_pmid:DDD Pubmed Id
+HI_DDDpercent:Haploinsufficiency ranks from DDD
+synZ_ExAC:Positive synZ_ExAC (Z score) from ExAC indicate gene intolerance to synonymous variation
+misZ_ExAC:Positive misZ_ExAC (Z score) from ExAC indicate gene intolerance to missense variation
+pLI_ExAC:PScore computed by ExAC indicating the probability that a gene is intolerant to a loss of function variation
+delZ_ExAC:Positive delZ_ExAC (Z score) from ExAC indicate gene intolerance to deletion
+dupZ_ExAC:Positive dupZ_ExAC (Z score) from ExAC indicate gene intolerance to duplication
+cnvZ_ExAC:Positive cnvZ_ExAC (Z score) from ExAC indicate gene intolerance to CNV
+morbidGenes:Set to 'yes' if the SV overlaps an OMIM morbid gene
+morbidGenesCandidates:Set to 'yes' if the SV overlaps an OMIM morbid gene candidate
+Mim Number:OMIM unique six-digit identifier
+Phenotypes:e.g. Charcot-Marie-Tooth disease
+Inheritance:e.g. AD (='Autosomal dominant')
+EXOMISER_GENE_PHENO_SCORE:Exomiser score for how close each overlapped gene is to the phenotype
+HUMAN_PHENO_EVIDENCE:Phenotypic evidence from Human model
+MOUSE_PHENO_EVIDENCE:Phenotypic evidence from Mouse model
+FISH_PHENO_EVIDENCE:Phenotypic evidence from Fish model
+compound-htz(sample):List of heterozygous SNV/indel presents in the gene overlapped by the annotated SV
+#hom(sample):Number of homozygous SNV/indel in the individual 'sample' which are presents in the deletion SV ('full' annotation) and between intersectStart and intersectEnd ('split' annotation)
+#htz(sample):Number of heterozygous SNV/indel in the individual 'sample' which are presents in the SV ('full' annotation) and between intersectStart and intersectEnd ('split' annotation)
+#htz/allHom(sample):Ratio for QC filtering, #htz(sample)/#allHom(sample)
+#htz/total(cohort):Ratio for QC filtering, #htz(sample)/#total(cohort)
+#total(cohort):Total count of SNV/indel called from all the samples of the cohort and present in the interval of the deletion
+AnnotSV ranking:SV ranking class into 1 of 5, class 1 (benign) class 2 (likely benign) class 3 (variant of unknown significance) class 4 (likely pathogenic) class 5 (pathogenic)}
