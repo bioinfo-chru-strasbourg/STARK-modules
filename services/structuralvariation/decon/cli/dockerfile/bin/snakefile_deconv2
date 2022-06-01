@@ -194,18 +194,21 @@ def create_list(txtlistoutput, file_list, ext, pattern):
 			if pattern in files and files.endswith(ext):
 				f.write(str(files) + "\n")
 
-def extractfromtag(inputfile, sample, key, dictionary, tag, tagsep, globalsep):
+# tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
+# extractfromtag(tagfile, 'gender', dico_run, 'SEX', '#', '!')
+def extractfromtag(tagfile, key, dictionary, tag, tagsep, globalsep):
 	""" Function to extract a specific tag in a tag file """
 	""" ex : SEX#M! or SEX#F! tag is SEX, tagsep is #, globalsep is ! """
-	with open(inputfile, 'r') as f:
-		row = f.strip().split(tagsep)
-		for tag in row:
-			if tag in f and globalsep in f:
-				tag = tag.split(globalsep)[-1]
-				tag = dictionary[sample][key]
-			else:
-				tag = ''
-				tag = dictionary[sample][key]
+	with open(tagfile, 'r') as f:
+		row = f.read()
+		sample = os.path.basename(tagfile).split(".")[0]
+		if tag in row and globalsep in row:
+			tagfirst = row.split(globalsep)[0]
+			tagfinal = tagfirst.split(tagsep)[1]
+			dictionary[sample][key] = tagfinal
+		else:
+			tagfinal = None
+			dictionary[sample][key] = tagfinal
 
 def intersectbed(inputbed, refbed, outputbed):
 	""" Function to intersect a bed with a ref bed using bedtools """
@@ -215,7 +218,7 @@ def concatenatelist(inputlist, outputfile):
 	""" Function to concatenate lines tab separated in a file """
 	shell(" xargs --delimiter='\\n' cat <"+inputlist+" >> "+outputfile+" ")
 
-def keepunknown(columnname, pattern, prefix):
+def keep_unknown(columnname, pattern, prefix):
 	""" Function to rename gene """
 	i=0
 	for j, gene in df[columnname].items():
@@ -316,13 +319,28 @@ for samples in sample_list:
 					if ext != process_file and not 'validation' in files:
 						dico_run[samples][ext] = files
 
-for samples in sample_list:
-	extractfromtag(inputfile, samples, 'gender', dico_run, 'SEX', '#', '!')
+# Create an iteration over tagfiles containing the tags
+# File format is sample.tag
+# Set a filelist with all the file tags
+tagfile_list = []
+for sample in sample_list:
+	tagfile_list.append(dico_run[sample]['.tag'])
+
+for tagfile in tagfile_list:
+	extractfromtag(tagfile, 'gender', dico_run, 'SEX', '#', '!')
+
+for sample in sample_list:
+	print(sample)
+	print(dico_run[sample]['gender'])
 
 # extract the gender_list from key gender
-# gender_list = ["A","F","M"]
-gender_list_dup = dico_run.get('gender')
-gender_list = list(set(gender_list_dup))
+gender_list = ['A']
+for sample in sample_list:
+	if dico_run[sample]['gender'] == 'F':
+		gender_list.append('F')
+	if dico_run[sample]['gender'] == 'M':
+		gender_list.append('M')
+gender_list = list(set(gender_list))
 
 # Find bed file (Design)
 if not bed_file:
@@ -343,31 +361,35 @@ if not transcripts_file:
 for sample in sample_list:
 	processalignedfiles(inputdir, dico_run, sample, process_file, aligner_list, process_cmd, name=aligner_name)
 
-# Create file_list by gender by searching the depot directory, depending on the gender_list
+# Create file_list of bam by gender by searching the depot directory, depending on the gender_list
 # A = all ; F = Female only ; M = Male only
 # files_list_A contains the full path of files (bam files)
 files_list_A = searchfiles(inputdir, '/*', False)
+files_list_M = []
+files_list_F = []
+for files in files_list_A:
+	sample = os.path.basename(files).split(".")[0]
+	if dico_run[sample]['gender'] == 'F':
+		files_list_F.append(files)
+	if dico_run[sample]['gender'] == 'M':
+		files_list_M.append(files)
 
-# Retaining only F or M samples from the dico_run
-dico_M = [i for i in dico_run if i['gender'] == 'M']
-dico_F = [i for i in dico_run if i['gender'] == 'F']
-for samples in sample_list:
-	files_list_M = dico_M[samples]['bam']
-	files_list_F = dico_F[samples]['bam']
+#print(files_list_M)
+#print(files_list_F)
 
 # log
-logsomefile(logfile, 'Input file:', "\n", items_list = files_list_depot)
+logsomefile(logfile, 'Input file:', "\n", items_list = files_list_A)
 
 # Creating a txt list for the bam files per aligner per gender (A, M & F)
 for aligner in aligner_list:
 	for gender in gender_list:
-		if gender = A:
+		if gender == 'A':
 			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + "." + gender + '.list.txt'
 			create_list(bamlist, files_list_A, process_file, aligner)
-		if gender = F:
+		if gender == 'F':
 			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + "." + gender + '.list.txt'
 			create_list(bamlist, files_list_F, process_file, aligner)
-		if gender = M:
+		if gender == 'M':
 			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + "." + gender + '.list.txt'
 			create_list(bamlist, files_list_M, process_file, aligner)
 
@@ -425,7 +447,7 @@ if bed_file and customexon_regen == True:
 		df = df[df['NM'].isin(NM_list)]
 	# Formating unknown gene name: intersect will output -1 if no gene name exist, replace with "Unknown"
 	if keep_unknown == True:
-		keepunknown('Gene', '-1', 'Unknown')
+		keep_unknown('Gene', '-1', 'Unknown')
 	else:
 		df = df[df.Gene != '-1']
 	df = df.drop_duplicates()
@@ -454,21 +476,21 @@ if bed_file and genes_file and customexon_regen == False:
 	df.to_csv(cat_noduplicate_panels_bed, sep='\t', index=False, header=False)
 	####### Intersect bed with genes files using bedtools #######
 	intersectbed(bed_file, cat_noduplicate_panels_bed, outputbed)
-	if old_bed == False
+	if old_bed == False:
 		df = pd.read_csv(outputbed, sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "Custom.Exon"])
 		df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12'], 1)
-	else
+	else:
 		df = pd.read_csv(outputbed, sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12"])
 		df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12'], 1)
 	# Keep unknown option
 	if keep_unknown == True:
-		keepunknown('Gene', '.', 'Unknown')
+		keep_unknown('Gene', '.', 'Unknown')
 	else:
 		df = df[df.Gene != '.']
 	# Fix for some bed that remove _ex part if gene is noted genename_ex
 	if exon_sep == True: 
 		df['Gene'] = df['Gene'].str.split('_ex').str[0]
-	df = df[pd.to_numeric(df['Custom.Exon'], errors='coerce').notnull()] # value is NaN if errors
+	#df = df[pd.to_numeric(df['Custom.Exon'], errors='coerce').notnull()] # value is NaN if errors
 	df = df.drop_duplicates()
 	df.to_csv(intermediatebed, sep='\t', index=False, header=True)
 
@@ -556,7 +578,7 @@ rule all:
 	input:
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
 		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt",
-		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + .{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
+		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
 
 rule help:
