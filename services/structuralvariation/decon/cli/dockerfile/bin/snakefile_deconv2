@@ -570,14 +570,14 @@ if debug:
 
 ruleorder: indexing > ReadInBams
 
-
 rule all:
 	"""
 	Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
 	"""
 	input:
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt",
+		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt", gender=gender_list),
+		txt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt", gender=gender_list),
 		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
 
@@ -622,22 +622,22 @@ rule ReadInBams:
 		bamlist = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.list.txt", aligner=aligner_list, gender=gender_list),
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", sample=sample_list, aligner=aligner_list)
 	output:
-		expand(rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData", gender=gender_list)
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData"
 	params:
 		output = tmpdir + "/" + serviceName + '.' + date_time
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.ReadInBams.err"
 	shell:
 		"""
-		if [ {gender} = A ];
+		if [ {gender} = "A" ];
 		then
 			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_autosome} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		fi;
-		if [ {gender} = F ];
+		if [ {gender} = "F" ];
 		then
 			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_gonosome_X} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		fi;
-		if [ {gender} = M ];
+		if [ {gender} = "M" ];
 		then
 			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_gonosome_Y} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		fi;
@@ -663,22 +663,22 @@ rule makeCNVcalls:
 		customplot = config['customexon'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".Design_results"
 	output:
-		expand(txt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt", gender=gender_list)
+		txt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".makeCNVcalls.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.makeCNVcalls.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			if [ {gender} = A ];
+			if [ {gender} = "A" ];
 			then
 				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_A} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 			fi;
-			if [ {gender} = F ] ;
+			if [ {gender} = "F" ] ;
 			then
 				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_X} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 			fi;
-			if [ {gender} = M ] ;
+			if [ {gender} = "M" ] ;
 			then
 				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_Y} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 			fi;
@@ -696,7 +696,7 @@ rule IdentifyFailures:
 	output is _Failures.txt ; if --custom is true a second file is output named _custom_Failures.txt
 	"""
 	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData"
 	params:
 		exons_A = customnumberingfile_autosome,
 		exons_X = customnumberingfile_gonosome_X,
@@ -706,22 +706,22 @@ rule IdentifyFailures:
 		customplot = config['customexon'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".Identify" # DECON.datetime.Identify_Failures.txt
 	output:
-		expand(failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt", gender=gender_list)
+		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			if [ {gender} = A ];
+			if [ {gender} = "A" ];
 			then
 				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_A} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 			fi;
-			if [ {gender} = F ] ;
+			if [ {gender} = "F" ] ;
 			then
 				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_X} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 			fi;
-			if [ {gender} = M ] ;
+			if [ {gender} = "M" ] ;
 			then
 				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_Y} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 			fi;
@@ -736,7 +736,7 @@ rule merge_makeCNVcalls:
 	Merge all results
 	"""
 	input:
-		expand(txt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt", gender=gender_list)
+		txt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt", gender=gender_list)
 	output:
 		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt"
 	shell:
@@ -750,7 +750,7 @@ rule merge_IdentifyFailures:
 	Merge all results
 	"""
 	input:
-		expand(failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt", gender=gender_list)
+		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt", gender=gender_list)
 	output:
 		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt"
 	shell:
