@@ -160,14 +160,20 @@ def processalignedfiles(storedir, dictionary, sample, ext, aligner_list, process
 				shell("samtools view -b -T "+refgene+" -L "+bed_file+" -o "+outputfile+".bam "+inputfile)	# samtools view -b -h -L bedfile.bed -o newbam.bam originalbam.bam
 
 def logsomefile(logfile, text, sep, items_list=None, items=None):
-	""" Function to log variable value or list values into a log file """
+	""" Function to log a variable value or a list of values into a log file """
 	with open(logfile, 'a+') as f:
 		f.write(text + sep)
 		if items_list:
 			for items in items_list:
-				f.write(str(items) + sep)
+				if items == '':
+					f.write(str('None') + sep)
+				else:
+					f.write(str(items) + sep)
 		else:
-			f.write(str(items) + sep)
+			if items == '':
+				f.write(str('None') + sep)
+			else:
+				f.write(str(items) + sep)
 
 # structure of bam files are sample.aligner.(validation).bam or sample.archive.cram
 # samples name are taken from bam files
@@ -311,8 +317,8 @@ for samples in sample_list:
 					if ext != process_file and not 'validation' in files:
 						dico_run[samples][ext] = files
 
-# File format is sample.tag
 # Set a filelist with all the files tag
+# File format is sample.tag
 tagfile_list = []
 for sample in sample_list:
 	tagfile_list.append(dico_run[sample]['.tag'])
@@ -321,7 +327,7 @@ for sample in sample_list:
 for tagfile in tagfile_list:
 	extractfromtag(tagfile, 'gender', dico_run, 'SEX', '#', '!')
 
-# extract the gender_list from key gender
+# Extract the gender_list from dictionary with the key gender
 gender_list = ['A'] # should be in config ?
 for sample in sample_list:
 	if dico_run[sample]['gender'] == 'F':
@@ -487,7 +493,7 @@ if bed_file and genes_file and customexon_regen == False:
 	deconbed_file_F = tmpdir + "/" + serviceName + "." + date_time + '.F.bed'
 	deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M.bed'
 
-	# Set the customnumbering files for makeCNVcalls
+	# Set the customnumbering files for makeCNVcalls& Identify_failures
 	customnumberingfile_A = tmpdir + "/" + serviceName + "." +  date_time + '.A.CustomNumbering.txt'
 	customnumberingfile_F = tmpdir + "/" + serviceName + "." +  date_time + '.F.CustomNumbering.txt'
 	customnumberingfile_M = tmpdir + "/" + serviceName + "." +  date_time + '.M.CustomNumbering.txt'
@@ -532,6 +538,7 @@ if not bed_file:
 # Log
 logsomefile(logfile, 'Start of the analysis:', "\n", items = date_time)
 logsomefile(logfile, 'List of samples:', "\n", items_list = sample_list)
+logsomefile(logfile, 'List of gender:', "\n", items_list = gender_list)
 logsomefile(logfile, 'Aligner list:', "\n", items_list = aligner_list)
 logsomefile(logfile, 'Analyse run:', "\n", items = nameoftherun)
 logsomefile(logfile, 'Design Bed:', "\n", items = bed_file)
