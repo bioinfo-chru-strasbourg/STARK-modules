@@ -629,15 +629,15 @@ rule ReadInBams:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.ReadInBams.err"
 	shell:
 		"""
-		if [ {gender} = "A" ];
+		if [ wildcards.gender = "A" ];
 		then
 			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_autosome} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		fi;
-		if [ {gender} = "F" ];
+		if [ wildcards.gender = "F" ];
 		then
 			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_gonosome_X} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		fi;
-		if [ {gender} = "M" ];
+		if [ wildcards.gender = "M" ];
 		then
 			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_gonosome_Y} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		fi;
@@ -670,15 +670,15 @@ rule makeCNVcalls:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			if [ {gender} = "A" ];
+			if [ wildcards.gender  = "A" ];
 			then
 				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_A} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 			fi;
-			if [ {gender} = "F" ] ;
+			if [ wildcards.gender  = "F" ] ;
 			then
 				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_X} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 			fi;
-			if [ {gender} = "M" ] ;
+			if [ wildcards.gender  = "M" ] ;
 			then
 				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_Y} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 			fi;
@@ -713,15 +713,15 @@ rule IdentifyFailures:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			if [ {gender} = "A" ];
+			if [ wildcards.gender  = "A" ];
 			then
 				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_A} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 			fi;
-			if [ {gender} = "F" ] ;
+			if [ wildcards.gender  = "F" ] ;
 			then
 				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_X} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 			fi;
-			if [ {gender} = "M" ] ;
+			if [ wildcards.gender  = "M" ] ;
 			then
 				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_Y} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 			fi;
