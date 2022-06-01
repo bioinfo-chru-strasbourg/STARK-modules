@@ -118,7 +118,7 @@ ENV ANNOTSV=$SRC/AnnotSV/2.1
 ############
 
 COPY . /app
-RUN echo -e '{\n\t"bedtools":"/src/bedtools/2.27.1/bin",\n\t"gatk":"/src/gatk/4.1.4.0/bin/gatk-package-4.1.4.0-local.jar",\n\t"java":"/usr/bin/java",\n\t"annotsv":"/src/AnnotSV/2.1.1",\n\t"R":"/usr/bin/R"\n}' > /app/config/config.json
+RUN echo -e '{\n\t"bedtools":"/src/bedtools/2.27.1/bin",\n\t"gatk":"/src/gatk/4.1.4.0/bin/gatk-package-4.1.4.0-local.jar",\n\t"java":"/usr/bin/java",\n\t"annotsv":"/src/AnnotSV/2.1",\n\t"R":"/usr/bin/R"\n}' > /app/config/config.json
 
 RUN chmod -R +x /app
 ENV PATH="/app/bin:$PATH"
