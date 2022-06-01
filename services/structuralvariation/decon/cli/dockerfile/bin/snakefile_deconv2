@@ -114,6 +114,8 @@ old_bed = config['OLD_BED']
 # Remove chrX or Y ref
 remove_x = config['REMOVE_X']
 remove_y = config['REMOVE_Y']
+
+
 ### FUNCTIONS ###
 
 def finditemindico(sample_list, ext_list, dictionary, include_ext, exclude_ext):
@@ -260,16 +262,6 @@ logfile = tmpdir + "/" + serviceName + "." + date_time + '.parameters.log'
 # Set annotation file path
 annotation_file = tmpdir + "/" + serviceName + "." + date_time + '.AnnotSV.txt'
 
-# Set Decon Bed files
-deconbed_file_autosome = tmpdir + "/" + serviceName + "." + date_time + '.A.bed'
-deconbed_file_gonosome_X = tmpdir + "/" + serviceName + "." + date_time + '.X.bed'
-deconbed_file_gonosome_Y = tmpdir + "/" + serviceName + "." + date_time + '.Y.bed'
-
-# Set the customnumbering files for makeCNVcalls
-customnumberingfile_autosome = tmpdir + "/" + serviceName + "." +  date_time + '.A.CustomNumbering.txt'
-customnumberingfile_gonosome_X = tmpdir + "/" + serviceName + "." +  date_time + '.X.CustomNumbering.txt'
-customnumberingfile_gonosome_Y = tmpdir + "/" + serviceName + "." +  date_time + '.Y.CustomNumbering.txt'
-
 # Create directories
 os.makedirs(inputdir, exist_ok = True)
 os.makedirs(tmpdir, exist_ok = True)
@@ -319,27 +311,24 @@ for samples in sample_list:
 					if ext != process_file and not 'validation' in files:
 						dico_run[samples][ext] = files
 
-# Create an iteration over tagfiles containing the tags
 # File format is sample.tag
-# Set a filelist with all the file tags
+# Set a filelist with all the files tag
 tagfile_list = []
 for sample in sample_list:
 	tagfile_list.append(dico_run[sample]['.tag'])
 
+# Extract the tags from the list
 for tagfile in tagfile_list:
 	extractfromtag(tagfile, 'gender', dico_run, 'SEX', '#', '!')
 
-for sample in sample_list:
-	print(sample)
-	print(dico_run[sample]['gender'])
-
 # extract the gender_list from key gender
-gender_list = ['A']
+gender_list = ['A'] # should be in config ?
 for sample in sample_list:
 	if dico_run[sample]['gender'] == 'F':
 		gender_list.append('F')
 	if dico_run[sample]['gender'] == 'M':
 		gender_list.append('M')
+# Removing duplicate
 gender_list = list(set(gender_list))
 
 # Find bed file (Design)
@@ -363,7 +352,7 @@ for sample in sample_list:
 
 # Create file_list of bam by gender by searching the depot directory, depending on the gender_list
 # A = all ; F = Female only ; M = Male only
-# files_list_A contains the full path of files (bam files)
+# files_list_A contains the full path of all files (bam files for ex)
 files_list_A = searchfiles(inputdir, '/*', False)
 files_list_M = []
 files_list_F = []
@@ -374,13 +363,13 @@ for files in files_list_A:
 	if dico_run[sample]['gender'] == 'M':
 		files_list_M.append(files)
 
-#print(files_list_M)
-#print(files_list_F)
-
-# log
-logsomefile(logfile, 'Input file:', "\n", items_list = files_list_A)
+# log the file lists
+logsomefile(logfile, 'Input for all files:', "\n", items_list = files_list_A)
+logsomefile(logfile, 'Input files for male analysis:', "\n", items_list = files_list_F)
+logsomefile(logfile, 'Input files for female analysis:', "\n", items_list = files_list_M)
 
 # Creating a txt list for the bam files per aligner per gender (A, M & F)
+# the file_list_whatever must be prefiltered
 for aligner in aligner_list:
 	for gender in gender_list:
 		if gender == 'A':
@@ -392,7 +381,6 @@ for aligner in aligner_list:
 		if gender == 'M':
 			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + "." + gender + '.list.txt'
 			create_list(bamlist, files_list_M, process_file, aligner)
-
 
 # If transcript file exist, create the annotation file for AnnotSV
 if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
@@ -494,38 +482,47 @@ if bed_file and genes_file and customexon_regen == False:
 	df = df.drop_duplicates()
 	df.to_csv(intermediatebed, sep='\t', index=False, header=True)
 
+	# Set Decon Bed files
+	deconbed_file_A = tmpdir + "/" + serviceName + "." + date_time + '.A.bed'
+	deconbed_file_F = tmpdir + "/" + serviceName + "." + date_time + '.F.bed'
+	deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M.bed'
+
+	# Set the customnumbering files for makeCNVcalls
+	customnumberingfile_A = tmpdir + "/" + serviceName + "." +  date_time + '.A.CustomNumbering.txt'
+	customnumberingfile_F = tmpdir + "/" + serviceName + "." +  date_time + '.F.CustomNumbering.txt'
+	customnumberingfile_M = tmpdir + "/" + serviceName + "." +  date_time + '.M.CustomNumbering.txt'
 
 #### TODO : functions for both decon.bed and customnumberingfile formating ####
 	# Autosome
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
 	df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
 	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-	df.to_csv(customnumberingfile_autosome, sep='\t', index=False, header=True) # for custom.exon file, need a header
+	df.to_csv(customnumberingfile_A, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
 	# Gonosome X
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
 	df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
 	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-	df.to_csv(customnumberingfile_gonosome_X, sep='\t', index=False, header=True) # for custom.exon file, need a header
+	df.to_csv(customnumberingfile_F, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
 	# Gonosome Y
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
 	df = df[df['Chr'].isin(['chrY'])] # keep only chrY ref
 	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-	df.to_csv(customnumberingfile_gonosome_Y, sep='\t', index=False, header=True) # for custom.exon file, need a header
+	df.to_csv(customnumberingfile_M, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
 	# DECON bed formating from intermediatebed file
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 	df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
-	df.to_csv(deconbed_file_autosome, sep='\t', index=False, header=False) # for decon.be no header
+	df.to_csv(deconbed_file_A, sep='\t', index=False, header=False) # for decon.be no header
 
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 	df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
-	df.to_csv(deconbed_file_gonosome_X, sep='\t', index=False, header=False) # for decon.be no header
+	df.to_csv(deconbed_file_F, sep='\t', index=False, header=False) # for decon.be no header
 
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 	df = df[df['Chr'].isin(['chrY'])] # keep only chrY ref
-	df.to_csv(deconbed_file_gonosome_Y, sep='\t', index=False, header=False) # for decon.be no header
+	df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.be no header
 
 
 if not bed_file:
@@ -591,7 +588,7 @@ rule help:
 	Also use option --configfile another.yaml to replace and merge existing config.yaml file variables
 	Use -p to display shell commands
 	Use --lt to display docstrings of rules
-	Input file = bam files (if bai is needed, it will be generate)
+	Input file = bam or cram files (if bai is needed, it will be generate)
 	Output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of vcf files by design/panel
 	"""
 
@@ -622,25 +619,15 @@ rule ReadInBams:
 		bamlist = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.list.txt", aligner=aligner_list, gender=gender_list),
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", sample=sample_list, aligner=aligner_list)
 	output:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
 	params:
-		output = tmpdir + "/" + serviceName + '.' + date_time
+		output = tmpdir + "/" + serviceName + '.' + date_time,
+		deconbed_file = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.bed"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.ReadInBams.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.ReadInBams.err"
 	shell:
 		"""
-		if [ wildcards.gender = "A" ];
-		then
-			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_autosome} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
-		fi;
-		if [ wildcards.gender = "F" ];
-		then
-			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_gonosome_X} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
-		fi;
-		if [ wildcards.gender = "M" ];
-		then
-			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_gonosome_Y} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
-		fi;
+		cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {params.deconbed_file} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		"""
 
 # makeCNVcalls must run R in the decondir directory to be able to load packrat
@@ -652,35 +639,22 @@ rule makeCNVcalls:
 	output is _all.txt and a summary Rdata associated ; if custom is true, a second file is ouputed named _custom.txt
 	"""
 	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
 	params:
 		prob = config['transProb'],
 		pdf = tmpdir + "/pdfs/",
-		exons_A = customnumberingfile_autosome,
-		exons_X = customnumberingfile_gonosome_X,
-		exons_Y = customnumberingfile_gonosome_Y,
+		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{gender}.CustomNumbering.txt",
 		plot = config['plot'],
 		customplot = config['customexon'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".Design_results"
+		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results"
 	output:
-		txt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt"
+		txt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.makeCNVcalls.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
-		then
-			if [ wildcards.gender  = "A" ];
-			then
-				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_A} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
-			fi;
-			if [ wildcards.gender  = "F" ] ;
-			then
-				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_X} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
-			fi;
-			if [ wildcards.gender  = "M" ] ;
-			then
-				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_Y} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 			fi;
 		else
 			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
@@ -696,34 +670,22 @@ rule IdentifyFailures:
 	output is _Failures.txt ; if --custom is true a second file is output named _custom_Failures.txt
 	"""
 	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
 	params:
-		exons_A = customnumberingfile_autosome,
-		exons_X = customnumberingfile_gonosome_X,
-		exons_Y = customnumberingfile_gonosome_Y,
+		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{gender}.CustomNumbering.txt",
 		mincorr = config['mincorr'],
 		mincov = config['mincov'],
 		customplot = config['customexon'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".Identify" # DECON.datetime.Identify_Failures.txt
+		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify"
 	output:
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt"
+		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			if [ wildcards.gender  = "A" ];
-			then
-				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_A} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
-			fi;
-			if [ wildcards.gender  = "F" ] ;
-			then
-				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_X} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
-			fi;
-			if [ wildcards.gender  = "M" ] ;
-			then
-				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_Y} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 			fi;
 		else
 			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
@@ -736,9 +698,9 @@ rule merge_makeCNVcalls:
 	Merge all results
 	"""
 	input:
-		txt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt", gender=gender_list)
+		txt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt", gender=gender_list, aligner=aligner_list)
 	output:
-		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt"
+		txt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.txt"
 	shell:
 		"""
 		cat {input.txt} | sort -u >> {output.txt}
@@ -750,24 +712,22 @@ rule merge_IdentifyFailures:
 	Merge all results
 	"""
 	input:
-		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt", gender=gender_list)
+		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt", gender=gender_list, aligner=aligner_list)
 	output:
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt"
+		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.txt"
 	shell:
 		"""
 		cat {input.txt} | sort -u >> {output.txt}
 		"""
 
-
-# will crash if conversion goes wrong
-# && [[ -s {output.vcfunsort} ]] || cat {scriptspath}/empty.vcf > {output.vcfunsort}
+# crash if conversion goes wrong
 rule Decon_tsv2vcf:
 	input:
-		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt"
+		txt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.txt"
 	output:
-		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.unsort.vcf"
+		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Design.unsort.vcf"
 	log:
-		log2 = tmpdir + "/" + serviceName + "." + date_time + ".DeconTsv2Vcf.log"
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.DeconTsv2Vcf.log"
 	shell:
 		"""
 		python {scriptspath}/file_converter.py -i {input.txt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log2}
@@ -776,9 +736,9 @@ rule Decon_tsv2vcf:
 # bcftools sort don't sort correctly
 rule sortvcfall:
 	input:
-		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.unsort.vcf"
+		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Design.unsort.vcf"
 	output:
-		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf"
+		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf"
 	shell:
 		"""
 		grep \"^#\" {input.vcfunsortall} > {output.vcfsortall} && grep -v \"^#\" {input.vcfunsortall} | sort -k1,1V -k2,2g >> {output.vcfsortall} && [[ -s {output.vcfsortall} ]] || cat {scriptspath}/empty.vcf > {output.vcfsortall}
@@ -787,9 +747,9 @@ rule sortvcfall:
 # bgzip -c to keep input file
 rule vcf2gzall:
 	input:
-		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf"
+		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf"
 	output:
-		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf.gz"
+		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf.gz"
 	shell:
 		"""
 		bgzip -c {input.vcfsortall} > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign}
@@ -805,7 +765,7 @@ rule splitvcf:
 	-c1 : minimum allele count (INFO/AC) of sites to be printed
 	"""
 	input:
-		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf.gz"
+		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf.gz"
 	output:
 		vcfgzsplit = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.Noannotation.vcf.gz"
 	params:
