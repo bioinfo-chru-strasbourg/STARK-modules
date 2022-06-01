@@ -187,7 +187,7 @@ def deconbedfromdesign(inputbed, outputbed, sepgenecolumn):
 	df['Gene'] = df['Gene'].str.split(sepgenecolumn).str[0] # we extract the gene name == string before separator (ex TP73_chr1_3598878_3599018 sep is _chr to get TP73)
 	df.to_csv(outputbed, sep='\t', index=False, header=False)
 
-def aligned_list(txtlistoutput, file_list, ext, pattern):
+def create_list(txtlistoutput, file_list, ext, pattern):
 	""" Function to create a txt file from a list of files filtered by extension and pattern """
 	with open(txtlistoutput, 'a+') as f:
 		for files in file_list:
@@ -204,7 +204,7 @@ def extractfromtag(inputfile, sample, key, dictionary, tag, tagsep, globalsep):
 				tag = tag.split(globalsep)[-1]
 				tag = dictionary[sample][key]
 			else:
-				sex = ''
+				tag = ''
 				tag = dictionary[sample][key]
 
 def intersectbed(inputbed, refbed, outputbed):
@@ -317,12 +317,12 @@ for samples in sample_list:
 						dico_run[samples][ext] = files
 
 for samples in sample_list:
-	extractfromtag(inputfile, samples, 'sex', dico_run, 'SEX', '#', '!')
+	extractfromtag(inputfile, samples, 'gender', dico_run, 'SEX', '#', '!')
 
-# extract the sex_list from key sex
-#sex_list = ["A","F","M"]
-sex_list_dup = dico_run.get('sex')
-sex_list = list(set(sex_list_dup))
+# extract the gender_list from key gender
+# gender_list = ["A","F","M"]
+gender_list_dup = dico_run.get('gender')
+gender_list = list(set(gender_list_dup))
 
 # Find bed file (Design)
 if not bed_file:
@@ -343,16 +343,34 @@ if not transcripts_file:
 for sample in sample_list:
 	processalignedfiles(inputdir, dico_run, sample, process_file, aligner_list, process_cmd, name=aligner_name)
 
-# Create the file_list by sex by searching the depot directory
-files_list_depot = searchfiles(inputdir, '/*', False)
+# Create file_list by gender by searching the depot directory, depending on the gender_list
+# A = all ; F = Female only ; M = Male only
+# files_list_A contains the full path of files (bam files)
+files_list_A = searchfiles(inputdir, '/*', False)
+
+# Retaining only F or M samples from the dico_run
+dico_M = [i for i in dico_run if i['gender'] == 'M']
+dico_F = [i for i in dico_run if i['gender'] == 'F']
+for samples in sample_list:
+	files_list_M = dico_M[samples]['bam']
+	files_list_F = dico_F[samples]['bam']
 
 # log
 logsomefile(logfile, 'Input file:', "\n", items_list = files_list_depot)
 
-# Creating a txt list for the bam files per aligner
+# Creating a txt list for the bam files per aligner per gender (A, M & F)
 for aligner in aligner_list:
-	bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + '.list.txt'
-	aligned_list(bamlist, files_list_depot, process_file, aligner)
+	for gender in gender_list:
+		if gender = A:
+			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + "." + gender + '.list.txt'
+			create_list(bamlist, files_list_A, process_file, aligner)
+		if gender = F:
+			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + "." + gender + '.list.txt'
+			create_list(bamlist, files_list_F, process_file, aligner)
+		if gender = M:
+			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + "." + gender + '.list.txt'
+			create_list(bamlist, files_list_M, process_file, aligner)
+
 
 # If transcript file exist, create the annotation file for AnnotSV
 if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
@@ -579,25 +597,25 @@ rule ReadInBams:
 	Requirement : all .bam files must have a .bai file associated with in the same folder
 	"""
 	input:
-		bamlist = expand(tmpdir + "/" + serviceName + "." + date_time + ".{sex}.{aligner}.list.txt", aligner=aligner_list, sex=sex_list),
+		bamlist = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.list.txt", aligner=aligner_list, gender=gender_list),
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", sample=sample_list, aligner=aligner_list)
 	output:
-		expand(rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{sex}.RData", sex=sex_list)
+		expand(rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData", gender=gender_list)
 	params:
 		output = tmpdir + "/" + serviceName + '.' + date_time
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{sex}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{sex}.ReadInBams.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.ReadInBams.err"
 	shell:
 		"""
-		if [ {sex} = A ];
+		if [ {gender} = A ];
 		then
 			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_autosome} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		fi;
-		if [ {sex} = F ];
+		if [ {gender} = F ];
 		then
 			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_gonosome_X} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		fi;
-		if [ {sex} = M ];
+		if [ {gender} = M ];
 		then
 			cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file_gonosome_Y} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		fi;
@@ -612,7 +630,7 @@ rule makeCNVcalls:
 	output is _all.txt and a summary Rdata associated ; if custom is true, a second file is ouputed named _custom.txt
 	"""
 	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{sex}.RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData"
 	params:
 		prob = config['transProb'],
 		pdf = tmpdir + "/pdfs/",
@@ -623,22 +641,22 @@ rule makeCNVcalls:
 		customplot = config['customexon'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".Design_results"
 	output:
-		expand(txt = tmpdir + "/" + serviceName + "." + date_time + ".{sex}.Design_results_all.txt", sex=sex_list)
+		expand(txt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt", gender=gender_list)
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".makeCNVcalls.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			if [ {sex} = A ];
+			if [ {gender} = A ];
 			then
 				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_A} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 			fi;
-			if [ {sex} = F ] ;
+			if [ {gender} = F ] ;
 			then
 				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_X} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 			fi;
-			if [ {sex} = M ] ;
+			if [ {gender} = M ] ;
 			then
 				cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons_Y} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 			fi;
@@ -666,22 +684,22 @@ rule IdentifyFailures:
 		customplot = config['customexon'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".Identify" # DECON.datetime.Identify_Failures.txt
 	output:
-		expand(failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{sex}.Identify_Failures.txt", sex=sex_list)
+		expand(failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt", gender=gender_list)
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			if [ {sex} = A ];
+			if [ {gender} = A ];
 			then
 				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_A} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 			fi;
-			if [ {sex} = F ] ;
+			if [ {gender} = F ] ;
 			then
 				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_X} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 			fi;
-			if [ {sex} = M ] ;
+			if [ {gender} = M ] ;
 			then
 				cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons_Y} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 			fi;
@@ -696,7 +714,7 @@ rule merge_makeCNVcalls:
 	Merge all results
 	"""
 	input:
-		expand(txt = tmpdir + "/" + serviceName + "." + date_time + ".{sex}.Design_results_all.txt", sex=sex_list)
+		expand(txt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt", gender=gender_list)
 	output:
 		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt"
 	shell:
@@ -710,7 +728,7 @@ rule merge_IdentifyFailures:
 	Merge all results
 	"""
 	input:
-		expand(failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{sex}.Identify_Failures.txt", sex=sex_list)
+		expand(failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt", gender=gender_list)
 	output:
 		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt"
 	shell:
