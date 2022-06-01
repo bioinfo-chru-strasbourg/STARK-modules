@@ -76,8 +76,10 @@ class Run():
 					for tag in tags:
 						if "SEX#" in tag:
 							sex[ID] = tag.split("#")[-1]
+							break
 						elif "SEX_" in tag:
 							sex[ID] = tag.split("_")[-1]
+							break
 						else:
 							sex[ID] = ""
 		for sample in sample_list:
