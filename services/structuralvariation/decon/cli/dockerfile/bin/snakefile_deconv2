@@ -111,9 +111,10 @@ keep_unknown = config['KEEP_UNKNOWN']
 exon_sep = config['EXON_SEP']
 # Formatting Bed old style
 old_bed = config['OLD_BED']
-# Remove chrX or Y ref
-remove_x = config['REMOVE_X']
-remove_y = config['REMOVE_Y']
+# Gene filter option
+gene_filter = config['GENE_FILTER]
+# List of gene to analysis
+gene_list_restrict = config['GENE_LIST_RESTRICT']
 
 
 ### FUNCTIONS ###
@@ -445,6 +446,9 @@ if bed_file and customexon_regen == True:
 	else:
 		df = df[df.Gene != '-1']
 	df = df.drop_duplicates()
+	if gene_filter == True:
+		for gene in gene_list_restrict:
+			df = df[df['Chr'].isin([gene])]
 	df.to_csv(intermediatebed, sep='\t', index=False, header=True)
 
 # Old bed compatibility
@@ -486,6 +490,10 @@ if bed_file and genes_file and customexon_regen == False:
 		df['Gene'] = df['Gene'].str.split('_ex').str[0]
 	#df = df[pd.to_numeric(df['Custom.Exon'], errors='coerce').notnull()] # value is NaN if errors
 	df = df.drop_duplicates()
+	# Option to filter the bed to analyse only certain genes
+	if gene_filter == True:
+		for gene in gene_list_restrict:
+			df = df[df['Chr'].isin([gene])]
 	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
 
 	# Set Decon Bed files
@@ -503,7 +511,7 @@ if bed_file and genes_file and customexon_regen == False:
 	df.to_csv(deconbed_file_F, sep='\t', index=False, header=False) # for decon.be no header
 
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-	df = df[df['Chr'].isin(['chrY'])] # keep only chrY ref
+	df = df[df['Chr'].isin(['chrX', 'chrY'])] # keep only chrY & chrX ref
 	df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.be no header
 
 	if custom_exon == True:
@@ -533,6 +541,17 @@ if bed_file and genes_file and customexon_regen == False:
 if not bed_file:
 	logsomefile(logfile, 'No bed found, DECON cannot continue, exiting', "\n")
 	exit()
+
+# Option to remove gender in the gender_list to force A, M or F analysis only
+remove_F = config['REMOVE_X']
+remove_M = config['REMOVE_Y']
+#remove_A = config['REMOVE_A']
+if remove_M == True:
+	gender_list.remove('M')
+if remove_F == True:
+	gender_list.remove('F')
+#if remove_A == True:
+#	gender_list.remove('A')
 
 # Log
 logsomefile(logfile, 'Start of the analysis:', "\n", items = date_time)
@@ -656,7 +675,8 @@ rule makeCNVcalls:
 		customplot = config['customexon'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results"
 	output:
-		txt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt"
+		txt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt",
+		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.AnalysisFailed.txt"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.makeCNVcalls.err"
 	shell:
@@ -665,7 +685,7 @@ rule makeCNVcalls:
 		then
 			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
 		else
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.txt} ]] || echo "makeCNVcalls failed" > {output.txt}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.txt} ]] || touch {output.txt} || touch {output.analysisfailure}
 		fi
 		"""
 
@@ -686,7 +706,8 @@ rule IdentifyFailures:
 		customplot = config['customexon'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify"
 	output:
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt"
+		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt",
+		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.AnalysisFailed.txt"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.err"
 	shell:
@@ -695,11 +716,11 @@ rule IdentifyFailures:
 		then
 			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
 		else
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} || touch {output.analysisfailure}
 		fi
 		"""
 
-# TODO Check if header is not duplicate
+# head -n1 or (sed -u 1q; sort)
 rule merge_makeCNVcalls:
 	"""
 	Merge all results
@@ -713,7 +734,6 @@ rule merge_makeCNVcalls:
 		cat {input.txt} | sort -u >> {output.txt}
 		"""
 
-# TODO Check if header is not duplicate
 rule merge_IdentifyFailures:
 	"""
 	Merge all results

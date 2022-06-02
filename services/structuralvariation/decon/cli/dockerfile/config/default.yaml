@@ -103,9 +103,15 @@ KEEP_UNKNOWN: False
 EXON_SEP: False
 # Old Bed formating
 OLD_BED: False
-# Remove Y or Y ref
+# Remove Y or Y or Autosome analysis
 REMOVE_X: True
 REMOVE_Y: True
+REMOVE_A: False
+
+# Filter the gene list
+GENE_FILTER: False
+# Limit the analysis to a list of genes
+GENE_LIST_RESTRICT: []
 
 ############## Tools specific parameters ##############
 
