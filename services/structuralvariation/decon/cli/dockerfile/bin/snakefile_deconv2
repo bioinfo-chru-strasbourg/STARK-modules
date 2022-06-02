@@ -112,7 +112,7 @@ exon_sep = config['EXON_SEP']
 # Formatting Bed old style
 old_bed = config['OLD_BED']
 # Gene filter option
-gene_filter = config['GENE_FILTER]
+gene_filter = config['GENE_FILTER']
 # List of gene to analysis
 gene_list_restrict = config['GENE_LIST_RESTRICT']
 
@@ -448,7 +448,7 @@ if bed_file and customexon_regen == True:
 	df = df.drop_duplicates()
 	if gene_filter == True:
 		for gene in gene_list_restrict:
-			df = df[df['Chr'].isin([gene])]
+			df = df[df['Chr'].isin(gene)]
 	df.to_csv(intermediatebed, sep='\t', index=False, header=True)
 
 # Old bed compatibility
@@ -493,7 +493,7 @@ if bed_file and genes_file and customexon_regen == False:
 	# Option to filter the bed to analyse only certain genes
 	if gene_filter == True:
 		for gene in gene_list_restrict:
-			df = df[df['Chr'].isin([gene])]
+			df = df[df['Chr'].isin(gene)]
 	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
 
 	# Set Decon Bed files
@@ -673,19 +673,19 @@ rule makeCNVcalls:
 		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{gender}.CustomNumbering.txt",
 		plot = config['plot'],
 		customplot = config['customexon'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results"
-	output:
-		txt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt",
+		output = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results",
 		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.AnalysisFailed.txt"
+	output:
+		txt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.makeCNVcalls.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}  && [[ -s {output.txt} ]] || touch {output.txt} || touch {params.analysisfailure}
 		else
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.txt} ]] || touch {output.txt} || touch {output.analysisfailure}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.txt} ]] || touch {output.txt} || touch {params.analysisfailure}
 		fi
 		"""
 
@@ -704,23 +704,24 @@ rule IdentifyFailures:
 		mincorr = config['mincorr'],
 		mincov = config['mincov'],
 		customplot = config['customexon'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify"
+		output = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify",
+		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.MetricsFailed.txt"
 	output:
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt",
-		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.AnalysisFailed.txt"
+		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} || touch {params.analysisfailure}
 		else
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} || touch {output.analysisfailure}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} || touch {params.analysisfailure}
 		fi
 		"""
 
 # head -n1 or (sed -u 1q; sort)
+# BUG header is at the tail
 rule merge_makeCNVcalls:
 	"""
 	Merge all results
