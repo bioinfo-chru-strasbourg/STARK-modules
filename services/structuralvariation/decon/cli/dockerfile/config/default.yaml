@@ -5,8 +5,14 @@
 
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
+# PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
 
+# PROD version 2 : 16/06/2022 changelog
+	# add the possibility to analyse gender separately, extract gender from tag files ; gender analysis can be set with REMOVE_X & REMOVE_Y & REMOVE_A options
+	# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_FILTER & GENE_LIST_RESTRICT)
+
+##########################################################################
 # Add here variables that will extend default configuration yaml file.
 # If a variable was already defined in the default configuration yaml file, it will be replace.
 # launch snakemake -s snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory var1=0.05 var2=12
@@ -62,7 +68,7 @@ FILTER_SAMPLE: []
 
 ### Indexing files options
 # Ext to index (endwith)
-EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai", ".list.genes"]
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai", ".list.genes", "*.tag"]
 
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False
@@ -77,7 +83,7 @@ ALIGNER_NAME:
 
 # Rsync options : if several files are added add {} at the start and end of the list
 # include_rsync must have more than one arguement
-INCLUDE_RSYNC: "{'*.tsv','*.vcf.gz','*.vcf.gz.tbi','*.pdf','*.txt','*.bed','*/'}"
+INCLUDE_RSYNC: "{'*.tsv','*.vcf.gz','*.vcf.gz.tbi','*.pdf','*.txt','*.bed','*.tsv','*/'}"
 # exclude_rsync can only take on arguement
 EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed
@@ -103,9 +109,10 @@ KEEP_UNKNOWN: False
 EXON_SEP: False
 # Old Bed formating
 OLD_BED: False
+
 # Remove Y or Y or Autosome analysis
-REMOVE_X: True
-REMOVE_Y: True
+REMOVE_X: False
+REMOVE_Y: False
 REMOVE_A: False
 
 # Filter the gene list

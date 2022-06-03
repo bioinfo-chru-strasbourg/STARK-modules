@@ -5,7 +5,17 @@
 
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
+# PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
+
+# PROD version 2 : 16/06/2022 changelog
+	# add the possibility to analyse gender separately, extract gender from tag files ; gender analysis can be set with REMOVE_X & REMOVE_Y & REMOVE_A options
+	# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_FILTER & GENE_LIST_RESTRICT)
+	# rewrite DECON bed / custom numbering formating
+	# remove panel vcf filtering (output was essentially empty)
+
+	# TOTEST merge tsv from AnnotSV in one file
+	# TODO copy results files in DECON dir
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -545,13 +555,13 @@ if not bed_file:
 # Option to remove gender in the gender_list to force A, M or F analysis only
 remove_F = config['REMOVE_X']
 remove_M = config['REMOVE_Y']
-#remove_A = config['REMOVE_A']
+remove_A = config['REMOVE_A']
 if remove_M == True:
 	gender_list.remove('M')
 if remove_F == True:
 	gender_list.remove('F')
-#if remove_A == True:
-#	gender_list.remove('A')
+if remove_A == True:
+	gender_list.remove('A')
 
 # Log
 logsomefile(logfile, 'Start of the analysis:', "\n", items = date_time)
@@ -598,12 +608,9 @@ rule all:
 	"""
 	input:
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
-		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt", gender=gender_list),
-		txt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt", gender=gender_list),
-		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf.gz",
-		rdata = expand(tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData", gender=gender_list)
-		#vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
-		#vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
+		allfailtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt",
+		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
+		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
 
 rule help:
 	"""
@@ -646,12 +653,12 @@ rule ReadInBams:
 		bamlist = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.list.txt",
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", sample=sample_list, aligner=aligner_list)
 	output:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
 	params:
-		output = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}",
+		output = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}",
 		deconbed_file = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.bed"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.ReadInBams.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.ReadInBams.err"
 	shell:
 		"""
 		cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {params.deconbed_file} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
@@ -666,26 +673,26 @@ rule makeCNVcalls:
 	output is _all.txt and a summary Rdata associated ; if custom is true, a second file is ouputed named _custom.txt
 	"""
 	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
 	params:
 		prob = config['transProb'],
 		pdf = tmpdir + "/pdfs/",
-		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{gender}.CustomNumbering.txt",
+		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{aligner}.{gender}.CustomNumbering.txt",
 		plot = config['plot'],
 		customplot = config['customexon'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results",
+		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results",
 		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.AnalysisFailed.txt"
 	output:
-		txt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt"
+		calltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.makeCNVcalls.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}  && [[ -s {output.txt} ]] || touch {output.txt} || touch {params.analysisfailure}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}  && [[ -s {output.calltxt} ]] || touch {output.calltxt} || touch {params.analysisfailure}
 		else
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.txt} ]] || touch {output.txt} || touch {params.analysisfailure}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {output.calltxt} || touch {params.analysisfailure}
 		fi
 		"""
 
@@ -698,18 +705,18 @@ rule IdentifyFailures:
 	output is _Failures.txt ; if --custom is true a second file is output named _custom_Failures.txt
 	"""
 	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{gender}.RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
 	params:
-		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{gender}.CustomNumbering.txt",
+		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{aligner}.{gender}.CustomNumbering.txt",
 		mincorr = config['mincorr'],
 		mincov = config['mincov'],
 		customplot = config['customexon'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify",
-		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.MetricsFailed.txt"
+		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify",
+		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.MetricsFailed.txt"
 	output:
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt"
+		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
@@ -727,46 +734,47 @@ rule merge_makeCNVcalls:
 	Merge all results
 	"""
 	input:
-		txt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Design_results_all.txt", gender=gender_list, aligner=aligner_list)
+		calltxt =  expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt", gender=gender_list, aligner=aligner_list)
 	output:
-		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt"
+		allcalltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.txt"
 	shell:
 		"""
-		cat {input.txt} | sort -u >> {output.txt}
+		cat {input.calltxt} | sort -u >> {output.allcalltxt}
 		"""
 
-rule merge_IdentifyFailures:
+# keep checkpoint ?
+checkpoint merge_IdentifyFailures:
 	"""
 	Merge all results
 	"""
 	input:
-		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{gender}.Identify_Failures.txt", gender=gender_list, aligner=aligner_list)
+		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt", gender=gender_list, aligner=aligner_list)
 	output:
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt"
+		allfailtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt"
 	shell:
 		"""
-		cat {input.txt} | sort -u >> {output.txt}
+		cat {input.failtxt} | sort -u >> {output.allfailtxt}
 		"""
 
 # crash if conversion goes wrong
 rule Decon_tsv2vcf:
 	input:
-		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt"
+		allcalltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.txt"
 	output:
-		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.unsort.vcf"
+		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Design.unsort.vcf"
 	log:
-		log2 = tmpdir + "/" + serviceName + "." + date_time + ".DeconTsv2Vcf.log"
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.DeconTsv2Vcf.log"
 	shell:
 		"""
-		python {scriptspath}/file_converter.py -i {input.txt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log2}
+		python {scriptspath}/file_converter.py -i {input.allcalltxt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log2}
 		"""
 
 # bcftools sort don't sort correctly
 rule sortvcfall:
 	input:
-		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.unsort.vcf"
+		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Design.unsort.vcf"
 	output:
-		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf"
+		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf"
 	shell:
 		"""
 		grep \"^#\" {input.vcfunsortall} > {output.vcfsortall} && grep -v \"^#\" {input.vcfunsortall} | sort -k1,1V -k2,2g >> {output.vcfsortall} && [[ -s {output.vcfsortall} ]] || cat {scriptspath}/empty.vcf > {output.vcfsortall}
@@ -775,9 +783,9 @@ rule sortvcfall:
 # bgzip -c to keep input file
 rule vcf2gzall:
 	input:
-		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf"
+		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf"
 	output:
-		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf.gz"
+		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf.gz"
 	shell:
 		"""
 		bgzip -c {input.vcfsortall} > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign}
@@ -793,9 +801,9 @@ rule splitvcf:
 	-c1 : minimum allele count (INFO/AC) of sites to be printed
 	"""
 	input:
-		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf.gz"
+		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf.gz"
 	output:
-		vcfgzsplit = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.Design.Noannotation.vcf.gz"
+		vcfgzsplit = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.Noannotation.vcf.gz"
 	params:
 		path = tmpdir + "/{sample}/" + serviceName + "/"
 	shell:
@@ -899,6 +907,19 @@ rule mergedesign:
 	shell:
 		"""
 		bcftools merge {input.vcfgzdesign} -O z -o {output.vcfgzalldesign} && tabix {output.vcfgzalldesign}
+		"""
+
+rule AnnotSV_tsv:
+	"""
+	Merge AnnotSV results
+	"""
+	input:
+		tsv = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv",sample=sample_list, aligner=aligner_list)
+	output:
+		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.tsv"
+	shell:
+		"""
+		cat {input.tsv} | sort -u >> {output.alltsv}
 		"""
 
 
