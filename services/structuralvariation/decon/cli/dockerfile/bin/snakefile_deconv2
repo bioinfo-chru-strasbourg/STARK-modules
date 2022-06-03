@@ -727,8 +727,7 @@ rule IdentifyFailures:
 		fi
 		"""
 
-# head -n1 or (sed -u 1q; sort)
-# BUG header is at the tail
+
 rule merge_makeCNVcalls:
 	"""
 	Merge all results
@@ -739,11 +738,11 @@ rule merge_makeCNVcalls:
 		allcalltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.txt"
 	shell:
 		"""
-		cat {input.calltxt} | sort -u >> {output.allcalltxt}
+		cat {input.calltxt} sort -u | sort -r >> {output.allcalltxt}
 		"""
 
-# keep checkpoint ?
-checkpoint merge_IdentifyFailures:
+
+rule merge_IdentifyFailures:
 	"""
 	Merge all results
 	"""
@@ -753,7 +752,7 @@ checkpoint merge_IdentifyFailures:
 		allfailtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt"
 	shell:
 		"""
-		cat {input.failtxt} | sort -u >> {output.allfailtxt}
+		cat {input.failtxt} | sort -u | sort -r >> {output.allfailtxt}
 		"""
 
 # crash if conversion goes wrong
