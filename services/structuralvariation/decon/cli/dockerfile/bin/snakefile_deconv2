@@ -692,7 +692,7 @@ rule makeCNVcalls:
 		then
 			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}  && [[ -s {output.calltxt} ]] || touch {output.calltxt} || touch {params.analysisfailure}
 		else
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {output.calltxt} || touch {params.analysisfailure}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {output.calltxt} && touch {params.analysisfailure}
 		fi
 		"""
 
@@ -723,14 +723,14 @@ rule IdentifyFailures:
 		then
 			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} || touch {params.analysisfailure}
 		else
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} || touch {params.analysisfailure}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} && touch {params.analysisfailure}
 		fi
 		"""
 
 
 rule merge_makeCNVcalls:
 	"""
-	Merge all results
+	Merge all call results
 	"""
 	input:
 		calltxt =  expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt", gender=gender_list, aligner=aligner_list)
@@ -744,7 +744,7 @@ rule merge_makeCNVcalls:
 
 rule merge_IdentifyFailures:
 	"""
-	Merge all results
+	Merge all metrics results
 	"""
 	input:
 		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt", gender=gender_list, aligner=aligner_list)
@@ -910,7 +910,7 @@ rule mergedesign:
 
 rule AnnotSV_tsv:
 	"""
-	Merge AnnotSV results
+	Merge AnnotSV tsv results
 	"""
 	input:
 		tsv = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv",sample=sample_list, aligner=aligner_list)
@@ -918,7 +918,7 @@ rule AnnotSV_tsv:
 		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.tsv"
 	shell:
 		"""
-		cat {input.tsv} | sort -u >> {output.alltsv}
+		cat {input.tsv} | sort -u | sort -r | >> {output.alltsv}
 		"""
 
 
