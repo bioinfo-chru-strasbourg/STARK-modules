@@ -9,7 +9,7 @@
 # Authoring : Thomas LAVAUX
 
 # PROD version 2 : 16/06/2022 changelog
-	# add the possibility to analyse gender separately, extract gender from tag files ; gender analysis can be set with REMOVE_X & REMOVE_Y & REMOVE_A options
+	# add the possibility to analyse gender separately, extract gender from tag files ; gender analysis can be set with REMOVE_F & REMOVE_M & REMOVE_A options
 	# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_FILTER & GENE_LIST_RESTRICT)
 	# rewrite DECON bed / custom numbering formating
 	# remove panel vcf filtering (output was essentially empty)
@@ -553,8 +553,8 @@ if not bed_file:
 	exit()
 
 # Option to remove gender in the gender_list to force A, M or F analysis only
-remove_F = config['REMOVE_X']
-remove_M = config['REMOVE_Y']
+remove_F = config['REMOVE_F']
+remove_M = config['REMOVE_M']
 remove_A = config['REMOVE_A']
 if remove_M == True:
 	gender_list.remove('M')
@@ -738,7 +738,7 @@ rule merge_makeCNVcalls:
 		allcalltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.txt"
 	shell:
 		"""
-		cat {input.calltxt} sort -u | sort -r >> {output.allcalltxt}
+		cat {input.calltxt} | sort -u | sort -r >> {output.allcalltxt}
 		"""
 
 
@@ -908,14 +908,14 @@ rule mergedesign:
 		bcftools merge {input.vcfgzdesign} -O z -o {output.vcfgzalldesign} && tabix {output.vcfgzalldesign}
 		"""
 
-rule AnnotSV_tsv:
+rule mergeAnnotSV_tsv:
 	"""
 	Merge AnnotSV tsv results
 	"""
 	input:
 		tsv = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv",sample=sample_list, aligner=aligner_list)
 	output:
-		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.tsv"
+		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 	shell:
 		"""
 		cat {input.tsv} | sort -u | sort -r | >> {output.alltsv}
