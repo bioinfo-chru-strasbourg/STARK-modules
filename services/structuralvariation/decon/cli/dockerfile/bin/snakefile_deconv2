@@ -13,9 +13,9 @@
 	# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_FILTER & GENE_LIST_RESTRICT)
 	# rewrite DECON bed / custom numbering formating
 	# remove panel vcf filtering (output was essentially empty)
+	# merge tsv from AnnotSV in one file
 
-	# TOTEST merge tsv from AnnotSV in one file
-	# TODO copy results files in DECON dir
+	# TODO copy last results files in DECON dir
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -608,9 +608,10 @@ rule all:
 	"""
 	input:
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
-		allfailtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt",
+		allfailtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.txt", aligner=aligner_list),
 		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
-		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
+		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
+		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
 rule help:
 	"""
@@ -681,7 +682,7 @@ rule makeCNVcalls:
 		plot = config['plot'],
 		customplot = config['customexon'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results",
-		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.AnalysisFailed.txt"
+		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.AnalysisFailed.txt"
 	output:
 		calltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt"
 	log: 
@@ -749,7 +750,7 @@ rule merge_IdentifyFailures:
 	input:
 		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt", gender=gender_list, aligner=aligner_list)
 	output:
-		allfailtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt"
+		allfailtxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.txt"
 	shell:
 		"""
 		cat {input.failtxt} | sort -u | sort -r >> {output.allfailtxt}

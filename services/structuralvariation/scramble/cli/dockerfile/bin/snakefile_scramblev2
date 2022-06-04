@@ -13,7 +13,7 @@
 	# merge tsv from AnnotSV in one file
 	# remove panel vcf filtering (output was essentially empty)
 
-	# TODO copy results files in DECON dir
+	# TODO copy last results files in DECON dir
 
 ################## Context ##################
 # launch snakemake -s  snakefile_scramble -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -376,7 +376,8 @@ sample_count = len(sample_list)
 		input:
 			vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
 			vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
-			vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Full.vcf.gz"
+			vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Full.vcf.gz",
+			alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
 rule help:
 	"""

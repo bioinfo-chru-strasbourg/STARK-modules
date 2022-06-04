@@ -9,7 +9,7 @@
 # Authoring : Thomas LAVAUX
 
 # PROD version 2 : 16/06/2022 changelog
-	# add the possibility to analyse gender separately, extract gender from tag files ; gender analysis can be set with REMOVE_X & REMOVE_Y & REMOVE_A options
+	# add the possibility to analyse gender separately, extract gender from tag files ; gender analysis can be set with REMOVE_F & REMOVE_M & REMOVE_A options
 	# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_FILTER & GENE_LIST_RESTRICT)
 
 ##########################################################################
@@ -111,8 +111,8 @@ EXON_SEP: False
 OLD_BED: False
 
 # Remove Y or Y or Autosome analysis
-REMOVE_X: False
-REMOVE_Y: False
+REMOVE_F: False
+REMOVE_M: False
 REMOVE_A: False
 
 # Filter the gene list
