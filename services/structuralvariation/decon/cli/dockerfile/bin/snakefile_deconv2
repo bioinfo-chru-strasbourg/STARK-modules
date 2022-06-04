@@ -458,7 +458,7 @@ if bed_file and customexon_regen == True:
 	df = df.drop_duplicates()
 	if gene_filter == True:
 		for gene in gene_list_restrict:
-			df = df[df['Chr'].isin(gene)]
+			df = df[df['Gene'].isin(gene)]
 	df.to_csv(intermediatebed, sep='\t', index=False, header=True)
 
 # Old bed compatibility
@@ -503,7 +503,7 @@ if bed_file and genes_file and customexon_regen == False:
 	# Option to filter the bed to analyse only certain genes
 	if gene_filter == True:
 		for gene in gene_list_restrict:
-			df = df[df['Chr'].isin(gene)]
+			df = df[df['Gene'].isin(gene)]
 	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
 
 	# Set Decon Bed files
