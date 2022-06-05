@@ -691,7 +691,7 @@ rule makeCNVcalls:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}  && [[ -s {output.calltxt} ]] || touch {output.calltxt} || touch {params.analysisfailure}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}  && [[ -s {output.calltxt} ]] || touch {output.calltxt} && touch {params.analysisfailure}
 		else
 			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {output.calltxt} && touch {params.analysisfailure}
 		fi
@@ -722,7 +722,7 @@ rule IdentifyFailures:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} || touch {params.analysisfailure}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} && touch {params.analysisfailure}
 		else
 			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} && touch {params.analysisfailure}
 		fi
@@ -919,7 +919,7 @@ rule mergeAnnotSV_tsv:
 		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 	shell:
 		"""
-		cat {input.tsv} | sort -u | sort -r | >> {output.alltsv}
+		cat {input.tsv} | sort -u | sort -r >> {output.alltsv}
 		"""
 
 
