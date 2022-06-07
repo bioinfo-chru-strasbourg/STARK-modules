@@ -125,7 +125,10 @@ old_bed = config['OLD_BED']
 gene_filter = config['GENE_FILTER']
 # List of gene to analysis
 gene_list_restrict = config['GENE_LIST_RESTRICT']
-
+# Chr remove option
+chr_filter = config['CHR_FILTER']
+# List of chr to remove (essentially for chrY)
+chr_list_remove = config['CHR_LIST_RESTRICT']
 
 ### FUNCTIONS ###
 
@@ -457,8 +460,9 @@ if bed_file and customexon_regen == True:
 		df = df[df.Gene != '-1']
 	df = df.drop_duplicates()
 	if gene_filter == True:
-		for gene in gene_list_restrict:
-			df = df[df['Gene'].isin(gene)]
+		df = df[df['Gene'].isin(gene_list_restrict)]
+	if chr_filter == True:
+		df = df[-df['Chr'].isin(chr_list_remove)]
 	df.to_csv(intermediatebed, sep='\t', index=False, header=True)
 
 # Old bed compatibility
@@ -502,8 +506,9 @@ if bed_file and genes_file and customexon_regen == False:
 	df = df.drop_duplicates()
 	# Option to filter the bed to analyse only certain genes
 	if gene_filter == True:
-		for gene in gene_list_restrict:
-			df = df[df['Gene'].isin(gene)]
+		df = df[df['Gene'].isin(gene_list_restrict)]
+	if chr_filter == True:
+		df = df[-df['Chr'].isin(chr_list_remove)]
 	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
 
 	# Set Decon Bed files
@@ -691,9 +696,9 @@ rule makeCNVcalls:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}  && [[ -s {output.calltxt} ]] || touch {output.calltxt} && touch {params.analysisfailure}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
 		else
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {output.calltxt} && touch {params.analysisfailure}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
 		fi
 		"""
 
@@ -722,9 +727,9 @@ rule IdentifyFailures:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} && touch {params.analysisfailure}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
 		else
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {output.failtxt} && touch {params.analysisfailure}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
 		fi
 		"""
 
