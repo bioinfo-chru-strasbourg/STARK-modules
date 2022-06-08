@@ -514,47 +514,48 @@ if bed_file and genes_file and customexon_regen == False:
 		df = df[-df['Chr'].isin(chr_list_remove)]
 	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
 
-	# Set Decon Bed files
-	deconbed_file_A = tmpdir + "/" + serviceName + "." + date_time + '.A.bed'
-	deconbed_file_F = tmpdir + "/" + serviceName + "." + date_time + '.F.bed'
-	deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M.bed'
+# DECON bed formating from intermediatebed file : always for autosome 
+deconbed_file_A = tmpdir + "/" + serviceName + "." + date_time + '.A.bed'
+df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
+df.to_csv(deconbed_file_A, sep='\t', index=False, header=False) # for decon.be no header
 
-	# DECON bed formating from intermediatebed file
-	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-	df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
-	df.to_csv(deconbed_file_A, sep='\t', index=False, header=False) # for decon.be no header
-
-	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-	df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
-	df.to_csv(deconbed_file_F, sep='\t', index=False, header=False) # for decon.be no header
-
-	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-	df = df[df['Chr'].isin(['chrX', 'chrY'])] # keep only chrY & chrX ref
-	df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.be no header
-
-	if custom_exon == True:
-		# Set the customnumbering files for makeCNVcalls& Identify_failures
-		customnumberingfile_A = tmpdir + "/" + serviceName + "." +  date_time + '.A.CustomNumbering.txt'
-		customnumberingfile_F = tmpdir + "/" + serviceName + "." +  date_time + '.F.CustomNumbering.txt'
-		customnumberingfile_M = tmpdir + "/" + serviceName + "." +  date_time + '.M.CustomNumbering.txt'
-
-		# Autosome
-		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-		df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
-		df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-		df.to_csv(customnumberingfile_A, sep='\t', index=False, header=True) # for custom.exon file, need a header
-
-		# Gonosome X
-		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+#Formating Bed per gender
+for gender in gender_list:
+	if gender == 'F':
+		deconbed_file_F = tmpdir + "/" + serviceName + "." + date_time + '.F.bed'
+		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 		df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
-		df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-		df.to_csv(customnumberingfile_F, sep='\t', index=False, header=True) # for custom.exon file, need a header
+		df.to_csv(deconbed_file_F, sep='\t', index=False, header=False) # for decon.be no header
+	if gender == 'M':
+		deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M.bed'
+		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+		df = df[df['Chr'].isin(['chrX', 'chrY'])] # keep only chrY & chrX ref
+		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.be no header
 
-		# Gonosome Y
-		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-		df = df[df['Chr'].isin(['chrY'])] # keep only chrY ref
-		df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-		df.to_csv(customnumberingfile_M, sep='\t', index=False, header=True) # for custom.exon file, need a header
+if custom_exon == True:
+	# Set the customnumbering files for makeCNVcalls& Identify_failures
+	customnumberingfile_A = tmpdir + "/" + serviceName + "." +  date_time + '.A.CustomNumbering.txt'
+	customnumberingfile_F = tmpdir + "/" + serviceName + "." +  date_time + '.F.CustomNumbering.txt'
+	customnumberingfile_M = tmpdir + "/" + serviceName + "." +  date_time + '.M.CustomNumbering.txt'
+
+	# Autosome
+	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+	df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
+	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+	df.to_csv(customnumberingfile_A, sep='\t', index=False, header=True) # for custom.exon file, need a header
+
+	# Gonosome X
+	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+	df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
+	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+	df.to_csv(customnumberingfile_F, sep='\t', index=False, header=True) # for custom.exon file, need a header
+
+	# Gonosome Y
+	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+	df = df[df['Chr'].isin(['chrY'])] # keep only chrY ref
+	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+	df.to_csv(customnumberingfile_M, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
 if not bed_file:
 	logsomefile(logfile, 'No bed found, DECON cannot continue, exiting', "\n")
