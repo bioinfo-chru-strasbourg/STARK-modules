@@ -338,6 +338,7 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/magrittr/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/BiocGenerics/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/zlibbioc/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/S4Vectors/ && \
 	wget https://cran.r-project.org/src/contrib/Archive/VGAM/VGAM_0.9-8.tar.gz -O $TOOL_DEST/bin/packrat/src/VGAM/VGAM_0.9-8.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/scales/scales_0.2.4.tar.gz -O $TOOL_DEST/bin/packrat/src/scales/scales_0.2.4.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/digest/digest_0.6.8.tar.gz -O $TOOL_DEST/bin/packrat/src/digest/digest_0.6.8.tar.gz && \
@@ -345,6 +346,7 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	wget https://cran.r-project.org/src/contrib/Archive/magrittr/magrittr_1.5.tar.gz -O $TOOL_DEST/bin/packrat/src/magrittr/magrittr_1.5.tar.gz && \
 	wget https://depot.galaxyproject.org/package/noarch/BiocGenerics_0.12.1.tar.gz -O $TOOL_DEST/bin/packrat/src/BiocGenerics/BiocGenerics_0.12.1.tar.gz && \
 	wget https://depot.galaxyproject.org/package/noarch/bg/zlibbioc_1.12.0.tar.gz -O $TOOL_DEST/bin/packrat/src/zlibbioc/zlibbioc_1.12.0.tar.gz && \
+	wget https://depot.galaxyproject.org/package/noarch/S4Vectors_0.4.0.tar.gz -O $TOOL_DEST/bin/packrat/src/S4Vectors/S4Vectors_0.4.0.tar.gz && \
 	cd $TOOL_DEST/bin/ && \
 	./setup.sh && \
 	$TOOL_CHECK ;
