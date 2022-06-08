@@ -5,7 +5,15 @@
 
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
+# PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
+
+
+# PROD version 2 : 16/06/2022 changelog
+	# merge tsv from AnnotSV in one file
+	# remove panel vcf filtering (output was essentially empty)
+
+	# TODO copy last results files in DECON dir
 
 ################## Context ##################
 # launch snakemake -s  snakefile_scramble -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -361,35 +369,15 @@ if debug:
 sample_count = len(sample_list) 
 
 # add more input with expand to display rules help
-if bed_file and genes_file:
-	rule all:
-		"""
-		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
-		"""
-		input:
-			vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panel_list_trunc),
-			vcfgzallpanel = expand(tmpdir + "/" + serviceName + "." + date_time + ".all.Panel.{panel}.vcf.gz",  panel=panel_list_trunc),
-			cfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
-			vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Full.vcf.gz"
-
-if bed_file and not genes_file:
-	rule all:
-		"""
-		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
-		"""
-		input:
-			vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", sample=sample_list, aligner=aligner_list),
-			vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
-			vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Full.vcf.gz"
-
-if not bed_file and not genes_file:
 	rule all:
 		"""
 		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
 		"""
 		input:
 			vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
-			vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Full.vcf.gz"
+			vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
+			vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Full.vcf.gz",
+			alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
 rule help:
 	"""
@@ -644,38 +632,19 @@ rule cpvcfdesign:
 		fi
 		"""
 
-rule filtervcfpanel:
+rule mergeAnnotSV_tsv:
 	"""
-	Filter vcf with a bed file
+	Merge AnnotSV tsv results
 	"""
 	input:
-		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
+		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV_uncorr.tsv" ,sample=sample_list, aligner=aligner_list)
 	output:
-		vcfgzpanel = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz"
-	params:
-		genes = expand(tmpdir + "/{panel}", panel=panel_list_trunc)
+		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv"
 	shell:
 		"""
-		bcftools view {input.vcfgzdesign} -R {params.genes} -O z -o {output.vcfgzpanel} && tabix {output.vcfgzpanel}
+		cat {input.tsv} | sort -u | sort -r >> {output.alltsv}
 		"""
 
-rule cpvcfpanel:
-	"""
-	Copy or merge with bcftools several vcfs
-	"""
-	input:
-		vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panel_list_trunc)
-	output:
-		vcfgzallpanel = expand(tmpdir + "/" + serviceName + "." + date_time + ".all.Panel.{panel}.vcf.gz", panel=panel_list_trunc)
-	shell:
-		"""
-		if [ {sample_count} -eq 1 ]
-		then
-			cp {input.vcfgzpanel} {output.vcfgzallpanel} && tabix {output.vcfgzallpanel}
-		else
-			bcftools merge {input.vcfgzpanel} -O z -o {output.vcfgzallpanel} && tabix {output.vcfgzallpanel}
-		fi
-		"""
 
 onstart:
 	shell("touch " + outputdir + "/" + serviceName + "Running.txt")

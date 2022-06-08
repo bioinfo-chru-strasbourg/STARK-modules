@@ -5,6 +5,7 @@
 
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
+# PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
 
 # Add here variables that will extend default configuration yaml file.
@@ -76,7 +77,7 @@ CRAM_ONLY: False
 
 # Rsync option for copy
 # include_rsync must have more than one arguement
-INCLUDE_RSYNC: "{'*.vcf.gz','*.vcf.gz.tbi','*.bed','*/'}"
+INCLUDE_RSYNC: "{'*.vcf.gz','*.vcf.gz.tbi','*.bed','*.tsv','*/'}"
 # exclude_rsync can only take on arguement
 EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed

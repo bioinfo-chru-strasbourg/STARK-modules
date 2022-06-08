@@ -5,7 +5,18 @@
 
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
+# PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
+
+# PROD version 2 : 16/06/2022 changelog
+	# add the possibility to analyse gender separately, extract gender from tag files ; gender analysis can be set with REMOVE_F & REMOVE_M & REMOVE_A options
+	# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_FILTER & GENE_LIST_RESTRICT)
+	# rewrite DECON bed / custom numbering formating
+	# remove panel vcf filtering (output was essentially empty)
+	# merge tsv from AnnotSV in one file
+	# add a chr filter option to remove chrosome (essentially chrY) CHR_FILTER & CHR_LIST_RESTRICT)
+
+	# TODO copy last results files in DECON dir
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -111,9 +122,15 @@ keep_unknown = config['KEEP_UNKNOWN']
 exon_sep = config['EXON_SEP']
 # Formatting Bed old style
 old_bed = config['OLD_BED']
-# Remove chrX or Y ref
-remove_x = config['REMOVE_X']
-remove_y = config['REMOVE_Y']
+# Gene filter option
+gene_filter = config['GENE_FILTER']
+# List of gene to analysis
+gene_list_restrict = config['GENE_LIST_RESTRICT']
+# Chr remove option
+chr_filter = config['CHR_FILTER']
+# List of chr to remove (essentially for chrY)
+chr_list_remove = config['CHR_LIST_RESTRICT']
+
 ### FUNCTIONS ###
 
 def finditemindico(sample_list, ext_list, dictionary, include_ext, exclude_ext):
@@ -158,14 +175,20 @@ def processalignedfiles(storedir, dictionary, sample, ext, aligner_list, process
 				shell("samtools view -b -T "+refgene+" -L "+bed_file+" -o "+outputfile+".bam "+inputfile)	# samtools view -b -h -L bedfile.bed -o newbam.bam originalbam.bam
 
 def logsomefile(logfile, text, sep, items_list=None, items=None):
-	""" Function to log variable value or list values into a log file """
+	""" Function to log a variable value or a list of values into a log file """
 	with open(logfile, 'a+') as f:
 		f.write(text + sep)
 		if items_list:
 			for items in items_list:
-				f.write(str(items) + sep)
+				if items == '':
+					f.write(str('None') + sep)
+				else:
+					f.write(str(items) + sep)
 		else:
-			f.write(str(items) + sep)
+			if items == '':
+				f.write(str('None') + sep)
+			else:
+				f.write(str(items) + sep)
 
 # structure of bam files are sample.aligner.(validation).bam or sample.archive.cram
 # samples name are taken from bam files
@@ -187,12 +210,44 @@ def deconbedfromdesign(inputbed, outputbed, sepgenecolumn):
 	df['Gene'] = df['Gene'].str.split(sepgenecolumn).str[0] # we extract the gene name == string before separator (ex TP73_chr1_3598878_3599018 sep is _chr to get TP73)
 	df.to_csv(outputbed, sep='\t', index=False, header=False)
 
-def aligned_list(txtlistoutput, file_list, ext, pattern):
+def create_list(txtlistoutput, file_list, ext, pattern):
 	""" Function to create a txt file from a list of files filtered by extension and pattern """
 	with open(txtlistoutput, 'a+') as f:
 		for files in file_list:
 			if pattern in files and files.endswith(ext):
 				f.write(str(files) + "\n")
+
+# tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
+# extractfromtag(tagfile, 'gender', dico_run, 'SEX', '#', '!')
+def extractfromtag(tagfile, key, dictionary, tag, tagsep, globalsep):
+	""" Function to extract a specific tag in a tag file """
+	""" ex : SEX#M! or SEX#F! tag is SEX, tagsep is #, globalsep is ! """
+	with open(tagfile, 'r') as f:
+		row = f.read()
+		sample = os.path.basename(tagfile).split(".")[0]
+		if tag in row and globalsep in row:
+			tagfirst = row.split(globalsep)[0]
+			tagfinal = tagfirst.split(tagsep)[1]
+			dictionary[sample][key] = tagfinal
+		else:
+			tagfinal = None
+			dictionary[sample][key] = tagfinal
+
+def intersectbed(inputbed, refbed, outputbed):
+	""" Function to intersect a bed with a ref bed using bedtools """
+	shell("intersectBed -a "+inputbed+" -b "+refbed+" -loj > "+outputbed+" ")
+
+def concatenatelist(inputlist, outputfile):
+	""" Function to concatenate lines tab separated in a file """
+	shell(" xargs --delimiter='\\n' cat <"+inputlist+" >> "+outputfile+" ")
+
+def keep_unknown(columnname, pattern, prefix):
+	""" Function to rename gene """
+	i=0
+	for j, gene in df[columnname].items():
+		if gene == pattern:
+			df.at[j, columnname] = prefix+str(i)
+		i+=1
 
 ### END OF FUNCTIONS ###
 
@@ -221,18 +276,12 @@ depotdir = depositorydir + "/" + group_name + "/" + app_name + "/" + nameoftheru
 
 if not outputdir:
 	outputdir = repositorydir + "/" + group_name + "/" + app_name + "/" + nameoftherun + "/"
- 
-# Set the path of the customnumberingfile for makeCNVcalls
-customnumberingfile = tmpdir + "/" + serviceName + "." +  date_time + '.CustomNumbering.txt'
 
 # Set log path file
 logfile = tmpdir + "/" + serviceName + "." + date_time + '.parameters.log'
 
 # Set annotation file path
 annotation_file = tmpdir + "/" + serviceName + "." + date_time + '.AnnotSV.txt'
-
-# Set Decon Bed file
-deconbed_file = tmpdir + "/" + serviceName + "." + date_time + '.bed'
 
 # Create directories
 os.makedirs(inputdir, exist_ok = True)
@@ -283,6 +332,26 @@ for samples in sample_list:
 					if ext != process_file and not 'validation' in files:
 						dico_run[samples][ext] = files
 
+# Set a filelist with all the files tag
+# File format is sample.tag
+tagfile_list = []
+for sample in sample_list:
+	tagfile_list.append(dico_run[sample]['.tag'])
+
+# Extract the tags from the list
+for tagfile in tagfile_list:
+	extractfromtag(tagfile, 'gender', dico_run, 'SEX', '#', '!')
+
+# Extract the gender_list from dictionary with the key gender
+gender_list = ['A'] # should be in config ?
+for sample in sample_list:
+	if dico_run[sample]['gender'] == 'F':
+		gender_list.append('F')
+	if dico_run[sample]['gender'] == 'M':
+		gender_list.append('M')
+# Removing duplicate
+gender_list = list(set(gender_list))
+
 # Find bed file (Design)
 if not bed_file:
 	bed_file = finditemindico(sample_list, ext_list, dico_run, '.design.bed', '.genes.bed')
@@ -302,17 +371,37 @@ if not transcripts_file:
 for sample in sample_list:
 	processalignedfiles(inputdir, dico_run, sample, process_file, aligner_list, process_cmd, name=aligner_name)
 
-# Create the file_list by searching the depot directory
-files_list_depot = searchfiles(inputdir, '/*', False)
+# Create file_list of bam by gender by searching the depot directory, depending on the gender_list
+# A = all ; F = Female only ; M = Male only
+# files_list_A contains the full path of all files (bam files for ex)
+files_list_A = searchfiles(inputdir, '/*', False)
+files_list_M = []
+files_list_F = []
+for files in files_list_A:
+	sample = os.path.basename(files).split(".")[0]
+	if dico_run[sample]['gender'] == 'F':
+		files_list_F.append(files)
+	if dico_run[sample]['gender'] == 'M':
+		files_list_M.append(files)
 
-# log
-logsomefile(logfile, 'Input file:', "\n", items_list = files_list_depot)
+# log the file lists
+logsomefile(logfile, 'Input for all files:', "\n", items_list = files_list_A)
+logsomefile(logfile, 'Input files for male analysis:', "\n", items_list = files_list_F)
+logsomefile(logfile, 'Input files for female analysis:', "\n", items_list = files_list_M)
 
-# Creating a txt list for the bam files per aligner
+# Creating a txt list for the bam files per aligner per gender (A, M & F)
+# the file_list_whatever must be prefiltered
 for aligner in aligner_list:
-	bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + '.list.txt'
-	aligned_list(bamlist, files_list_depot, process_file, aligner)
-
+	for gender in gender_list:
+		if gender == 'A':
+			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + gender + '.list.txt'
+			create_list(bamlist, files_list_A, process_file, aligner)
+		if gender == 'F':
+			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + gender + '.list.txt'
+			create_list(bamlist, files_list_F, process_file, aligner)
+		if gender == 'M':
+			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + gender + '.list.txt'
+			create_list(bamlist, files_list_M, process_file, aligner)
 
 # If transcript file exist, create the annotation file for AnnotSV
 if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
@@ -329,92 +418,62 @@ else:
 if not list_genes:
 	list_genes = finditemindico(sample_list, ext_list, dico_run, '.list.genes', '.list.transcripts')
 
-# Transform list_genes into a list if list_genes exist, else use genes_file if exist
-# Trick is that we use list .genes to found the .genes.bed files, so we add .bed to the .genes list
-panel_list = []
-panel_list_trunc = []
-if list_genes:
-	with open(list_genes) as f:
-		panel_list = f.read().splitlines()
-elif genes_file and not list_genes:
-	panel_list.append(os.path.basename(genes_file).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
-# cp files from panel_list to inputdir and rename them
-if panel_list:
-	for panel in panel_list:
-		inputfile = os.path.dirname(list_genes) + "/" + panel + ".bed" # panel_list don't have the bed extension, need that for the copy
-		# cut sample. and .genes from file name so files will have the same name as the truncated name list
-		panel_trunc = panel.split(".", 1)[1].split(".genes",1)[0]
-		outputfile = tmpdir + "/" + panel_trunc
-		copy2(inputfile, outputfile)
-		# Create a new list for expand, names are filenames without sample and .genes.bed ext
-		panel_list_trunc.append(panel_trunc)
-
 ### DECON bed ###
 # DECON need a 4 columns bed for the ReadInBams rule, if bed is not set correctly ReadInBams will crash
 # Chromosome Start End Gene but no header, bed format (tsv)
 # Chr must be formated chr1, Gene column must be a string, no negative numbers
+# ex	:	chr17	4511	4889	BCRA1
 
 ### DECON Custom.Exon ###
 # DECON can use a customNumbering.txt exons description for the accurate formating of pdfs graph (makeCNVcalls) and the IdentifyFailures rule, file is not mandatory
-# Format is tab separated	:	'Chr'	'Start'	'End'	'Gene'	'Custom.Exon'
-# exemple					:	17	4511	4889	BCRA1	26
-# documentation forgot to mention Gene column
+# Format is tab separated with a header	:	'Chr'	'Start'	'End'	'Gene'	'Custom.Exon'
+# exemple	:	17	4511	4889	BCRA1	26
+# ! No chr before chr number & documentation forgot to mention Gene column
 
-## TODO : some code simplification with re-usable functions
+inputbed = inputdir+"/"+serviceName+".input.bed"
+cat_panels_bed = inputdir+"/"+serviceName+".concatenatepanels.bed"
+cat_list_genes = inputdir+"/"+serviceName+".fullpath.genes.list"
+cat_noduplicate_panels_bed = inputdir+"/"+serviceName+".concatenatepanelsnoduplicate.bed"
+outputbed = inputdir + "/" + serviceName + ".output.bed"
+intermediatebed = inputdir + "/" + serviceName + '.intermediate.bed'
 
-# Case if genes file bed don't have exon number
+# Case if genes file bed don't have gene name & exon number
 # We always create a custom exon file from the design bed and intersectBed with a refseqgene database to get the exon number
 # Warning the refseqgene database must be generated before
-if bed_file and customexon_regen == True and old_bed == False:
+if bed_file and customexon_regen == True:
 	# Generating the custom.exon file from scratch (intersectBed with refseqgene file)
 	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
-	df.to_csv(inputdir + "/" + serviceName + '.custom.bed', sep='\t', index=False, header=False)
-	# Intersect bed with refseqgene using bedtools
-	shell("intersectBed -a "+inputdir+"/"+serviceName+".custom.bed -b "+refseqgene+" -loj > "+inputdir+"/"+serviceName+".customtemp.bed")
-	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "Tosplit", "Gene", "9"])
-	df = df.drop(['4', '5', '6', '9'], 1)
-	df['NM'] = df['Tosplit'].str.split(',').str[0]
+	df.to_csv(inputbed, sep='\t', index=False, header=False)
+	####### Intersect bed with refseqgene using bedtools #######
+	intersectbed(inputbed, refseqgene, outputbed)
+	df = pd.read_csv(outputbed, sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "Tosplit", "Gene", "9"])
 	df['Custom.Exon'] = df['Tosplit'].str.split(',').str[-1]
 	df['Custom.Exon'] = df['Custom.Exon'].str.replace('exon','')
-	df['Chr'] = df['Chr'].str.replace('chr','')
-	df = df.drop(['Tosplit'], 1)
-	# Formating unknown coords name: intersect will output -1 if no NM exist, replace with "Unknown"
+	# Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
+	# Specific for customexon_regen == True
+	if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
+		df['NM'] = df['Tosplit'].str.split(',').str[0]
+		df = df[df['NM'].isin(NM_list)]
+	# Formating unknown gene name: intersect will output -1 if no gene name exist, replace with "Unknown"
 	if keep_unknown == True:
-		i = 0
-		for j, gene in df['Gene'].items():
-			if gene == '-1':
-				df.at[j, 'Gene'] = 'Unknown'+str(i)
-			i+=1
-		if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0: # Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
-			numbertofilter = '0'
-			NM_list.append(numbertofilter)
-			df = df[df['NM'].isin(NM_list)]
-			df = df.replace('0', '', regex=True) # will replace 0 numeration with NA
+		keep_unknown('Gene', '-1', 'Unknown')
 	else:
-		df = df[df.Gene != '-1'] # Remove row that don't have gene name (unknown regions are noted .) if not DECON will crash
-		if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0: # Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
-			df = df[df['NM'].isin(NM_list)]
-	df = df.drop(['NM'], 1)
-	df = df.drop_duplicates() # remove duplicate
-	if remove_x == True:
-		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrY reference
-	if remove_y == True:
-		df = df[df["Chr"].str.contains("chrY") == False] #removing all chrY reference
-	df.to_csv(customnumberingfile, sep='\t', index=False)
-	# DECON.bed from custom.exon : if Gene name is missing from bed file, it will be extract from the customnumbering file
-	# Assuming that the custom exon file is tab separated	:	'Chr'	'Start'	'End'	'Gene'	'Custom.Exon'
-	df = pd.read_csv(customnumberingfile, sep='\t', index_col=False)
-	df['Chr'] = 'chr' + df['Chr'].astype(str) # re-add the chr prefix to Chr columns value
-	# Save bed file DECON formated
-	df = df.drop(['Custom.Exon'], 1)
-	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
+		df = df[df.Gene != '-1']
+	df = df.drop_duplicates()
+	if gene_filter == True:
+		df = df[df['Gene'].isin(gene_list_restrict)]
+	if chr_filter == True:
+		df = df[-df['Chr'].isin(chr_list_remove)]
+	df.to_csv(intermediatebed, sep='\t', index=False, header=True)
 
-# Case when we generate a DECON.bed and a custom.exon file with design and panel bed
-# Custom exon generation is optional
-if bed_file and genes_file and customexon_regen == False and old_bed == False:
-	# We concatenate all panels
-	cat_panels_bed = inputdir+"/"+serviceName+".concatenatepanels.bed"
-	cat_list_genes = inputdir+"/"+serviceName+".fullpath.genes.list"
+# Old bed compatibility
+# Intersect bed design with panel intersectBed -a design.bed -b panel.bed -loj > RESULT.bed = columns 1 2 3 and the gene column from the panel is 10
+# chr1	65300206	65300354	JAK1_chr1_65300207_65300354	0	+	chr1	65300240	65300344	JAK1_ex25	0	- (gene is JAK1_ex25)
+# chr1	3598877	3599018	TP73_chr1_3598878_3599018	0	+	.	-1	-1	.	-1	. (gene is .)
+# New bed 13 cols
+# Intersect bed design with panel intersectBed -a design.bed -b panel.bed -loj > RESULT.bed = columns 1 2 3 & 10 are retained for the bed, column 13 for the exon number
+# ex = chr1	27022390	27024129	NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129	0	+	.	-1	-1	.	-1	.
+if bed_file and genes_file and customexon_regen == False:
 	if list_genes:
 		basepath = os. path. dirname(list_genes)
 		with open(list_genes) as f:
@@ -425,80 +484,95 @@ if bed_file and genes_file and customexon_regen == False and old_bed == False:
 		shell(" xargs --delimiter='\\n' cat <"+cat_list_genes+" >> "+cat_panels_bed+" ")
 	else:
 		shell(" xargs --delimiter='\\n' cat <"+genes_file+" >> "+cat_panels_bed+" ")
-	df = pd.read_csv(cat_panels_bed, sep='\t')
-	df = df.drop_duplicates() # remove duplicate
-	cat_noduplicate_panels_bed = inputdir+"/"+serviceName+".concatenatepanelsnoduplicate.bed"
+	df = pd.read_csv(cat_panels_bed,  sep='\t')
+	df = df.drop_duplicates()
 	df.to_csv(cat_noduplicate_panels_bed, sep='\t', index=False, header=False)
-	# Intersect bed design with panel intersectBed -a design.bed -b panel.bed -loj > RESULT.bed = columns 1 2 3 & 10 are retained for the bed, column 13 for the exon number
-	# ex = chr1	27022390	27024129	NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129	0	+	.	-1	-1	.	-1	.
-	shell("intersectBed -a "+bed_file+" -b "+cat_noduplicate_panels_bed+" -loj > "+inputdir+"/"+serviceName+".customtemp.bed")
-	# Generate DECON.bed
-	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "Custom.Exon"])
-	df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12', "Custom.Exon"], 1)
-	df = df.replace('\.', 'Unknown', regex=True)
-	df = df.drop_duplicates() # remove duplicate
-	if remove_x == True:
-		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrY reference
-	if remove_y == True:
-		df = df[df["Chr"].str.contains("chrY") == False] #removing all chrY reference
-	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
-	# Generate custom numbering file only if customexon is True
-	if custom_exon == True:
-		df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "Custom.Exon"])
+	####### Intersect bed with genes files using bedtools #######
+	intersectbed(bed_file, cat_noduplicate_panels_bed, outputbed)
+	if old_bed == False:
+		df = pd.read_csv(outputbed, sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "Custom.Exon"])
 		df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12'], 1)
-		df = df[pd.to_numeric(df['Custom.Exon'], errors='coerce').notnull()] # value is NaN if errors
-		df.to_csv(customnumberingfile, sep='\t', index=False)
-
-# Old bed compatibility, no custom numbering will be generate
-if bed_file and genes_file and customexon_regen == False and old_bed == True and custom_exon == False:
-	# We concatenate all panels
-	cat_panels_bed = inputdir+"/"+serviceName+".concatenatepanels.bed"
-	cat_list_genes = inputdir+"/"+serviceName+".fullpath.genes.list"
-	if list_genes:
-		basepath = os. path. dirname(list_genes)
-		with open(list_genes) as f:
-			cat_panel_list = f.read().splitlines()
-			cat_panel_list = [basepath + "/" + s for s in cat_panel_list]
-		with open(cat_list_genes, 'w+') as f:
-			f.write('\t'.join(cat_panel_list))
-		shell(" xargs --delimiter='\\n' cat <"+cat_list_genes+" >> "+cat_panels_bed+" ")
 	else:
-		shell(" xargs --delimiter='\\n' cat <"+genes_file+" >> "+cat_panels_bed+" ")
-	df = pd.read_csv(cat_panels_bed, sep='\t')
-	df = df.drop_duplicates() # remove duplicate
-	cat_noduplicate_panels_bed = inputdir+"/"+serviceName+".concatenatepanelsnoduplicate.bed"
-	df.to_csv(cat_noduplicate_panels_bed, sep='\t', index=False, header=False)
-	# Intersect bed design with panel intersectBed -a design.bed -b panel.bed -loj > RESULT.bed = columns 1 2 3 and the gene column from the panel is 10
-	# chr1	65300206	65300354	JAK1_chr1_65300207_65300354	0	+	chr1	65300240	65300344	JAK1_ex25	0	- (gene is JAK1_ex25)
-	# chr1	3598877	3599018	TP73_chr1_3598878_3599018	0	+	.	-1	-1	.	-1	. (gene is .)
-	shell("intersectBed -a "+bed_file+" -b "+cat_noduplicate_panels_bed+" -loj > "+inputdir+"/"+serviceName+".customtemp.bed")
-	# Generate DECON.bed
-	df = pd.read_csv(inputdir + "/" + serviceName + '.customtemp.bed', sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12"])
-	df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12'], 1)
+		df = pd.read_csv(outputbed, sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12"])
+		df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12'], 1)
+	# Keep unknown option
 	if keep_unknown == True:
-		i = 0
-		for j, gene in df['Gene'].items():
-			if gene == '.':
-				df.at[j, 'Gene'] = 'Unknown'+str(i)
-			i+=1
+		keep_unknown('Gene', '.', 'Unknown')
 	else:
-		df = df[df.Gene != '.'] # Remove row that don't have gene name (unknown regions are noted ".") if not DECON will crash
-	if exon_sep == True: # fix for some bed that remove _ex part if gene is noted genename_ex
+		df = df[df.Gene != '.']
+	# Fix for some bed that remove _ex part if gene is noted genename_ex
+	if exon_sep == True: 
 		df['Gene'] = df['Gene'].str.split('_ex').str[0]
-	df = df.drop_duplicates() # remove duplicate
-	if remove_x == True:
-		df = df[df["Chr"].str.contains("chrX") == False] #removing all chrY reference
-	if remove_y == True:
-		df = df[df["Chr"].str.contains("chrY") == False] #removing all chrY reference
-	df.to_csv(deconbed_file, sep='\t', index=False, header=False)
+	#df = df[pd.to_numeric(df['Custom.Exon'], errors='coerce').notnull()] # value is NaN if errors
+	df = df.drop_duplicates()
+	# Option to filter the bed to analyse only certain genes
+	if gene_filter == True:
+		df = df[df['Gene'].isin(gene_list_restrict)]
+	if chr_filter == True:
+		df = df[-df['Chr'].isin(chr_list_remove)]
+	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
+
+	# Set Decon Bed files
+	deconbed_file_A = tmpdir + "/" + serviceName + "." + date_time + '.A.bed'
+	deconbed_file_F = tmpdir + "/" + serviceName + "." + date_time + '.F.bed'
+	deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M.bed'
+
+	# DECON bed formating from intermediatebed file
+	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+	df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
+	df.to_csv(deconbed_file_A, sep='\t', index=False, header=False) # for decon.be no header
+
+	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+	df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
+	df.to_csv(deconbed_file_F, sep='\t', index=False, header=False) # for decon.be no header
+
+	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+	df = df[df['Chr'].isin(['chrX', 'chrY'])] # keep only chrY & chrX ref
+	df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.be no header
+
+	if custom_exon == True:
+		# Set the customnumbering files for makeCNVcalls& Identify_failures
+		customnumberingfile_A = tmpdir + "/" + serviceName + "." +  date_time + '.A.CustomNumbering.txt'
+		customnumberingfile_F = tmpdir + "/" + serviceName + "." +  date_time + '.F.CustomNumbering.txt'
+		customnumberingfile_M = tmpdir + "/" + serviceName + "." +  date_time + '.M.CustomNumbering.txt'
+
+		# Autosome
+		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+		df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
+		df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+		df.to_csv(customnumberingfile_A, sep='\t', index=False, header=True) # for custom.exon file, need a header
+
+		# Gonosome X
+		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+		df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
+		df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+		df.to_csv(customnumberingfile_F, sep='\t', index=False, header=True) # for custom.exon file, need a header
+
+		# Gonosome Y
+		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+		df = df[df['Chr'].isin(['chrY'])] # keep only chrY ref
+		df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+		df.to_csv(customnumberingfile_M, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
 if not bed_file:
 	logsomefile(logfile, 'No bed found, DECON cannot continue, exiting', "\n")
 	exit()
 
+# Option to remove gender in the gender_list to force A, M or F analysis only
+remove_F = config['REMOVE_F']
+remove_M = config['REMOVE_M']
+remove_A = config['REMOVE_A']
+if remove_M == True:
+	gender_list.remove('M')
+if remove_F == True:
+	gender_list.remove('F')
+if remove_A == True:
+	gender_list.remove('A')
+
 # Log
 logsomefile(logfile, 'Start of the analysis:', "\n", items = date_time)
 logsomefile(logfile, 'List of samples:', "\n", items_list = sample_list)
+logsomefile(logfile, 'List of gender:', "\n", items_list = gender_list)
 logsomefile(logfile, 'Aligner list:', "\n", items_list = aligner_list)
 logsomefile(logfile, 'Analyse run:', "\n", items = nameoftherun)
 logsomefile(logfile, 'Design Bed:', "\n", items = bed_file)
@@ -534,28 +608,16 @@ if debug:
 
 ruleorder: indexing > ReadInBams
 
-if genes_file:
-	rule all:
-		"""
-		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
-		"""
-		input:
-			bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
-			failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt",
-			vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panel_list_trunc),
-			vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
-			vcfgzallpanel = expand(tmpdir + "/" + serviceName + "." + date_time + ".all.Panel.{panel}.vcf.gz", panel=panel_list_trunc)
-
-else:
-	rule all:
-		"""
-		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
-		"""
-		input:
-			bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
-			failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt",
-			vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
-			vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
+rule all:
+	"""
+	Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
+	"""
+	input:
+		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
+		allfailtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.txt", aligner=aligner_list),
+		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
+		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
+		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
 rule help:
 	"""
@@ -567,7 +629,7 @@ rule help:
 	Also use option --configfile another.yaml to replace and merge existing config.yaml file variables
 	Use -p to display shell commands
 	Use --lt to display docstrings of rules
-	Input file = bam files (if bai is needed, it will be generate)
+	Input file = bam or cram files (if bai is needed, it will be generate)
 	Output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of vcf files by design/panel
 	"""
 
@@ -595,17 +657,18 @@ rule ReadInBams:
 	Requirement : all .bam files must have a .bai file associated with in the same folder
 	"""
 	input:
-		bamlist = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.list.txt", aligner=aligner_list),
+		bamlist = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.list.txt",
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", sample=sample_list, aligner=aligner_list)
 	output:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
 	params:
-		output = tmpdir + "/" + serviceName + '.' + date_time
+		output = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}",
+		deconbed_file = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.bed"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".ReadInBams.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.ReadInBams.err"
 	shell:
 		"""
-		cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {deconbed_file} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
+		cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {params.deconbed_file} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		"""
 
 # makeCNVcalls must run R in the decondir directory to be able to load packrat
@@ -617,25 +680,26 @@ rule makeCNVcalls:
 	output is _all.txt and a summary Rdata associated ; if custom is true, a second file is ouputed named _custom.txt
 	"""
 	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
 	params:
 		prob = config['transProb'],
 		pdf = tmpdir + "/pdfs/",
-		exons = customnumberingfile,
+		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{aligner}.{gender}.CustomNumbering.txt",
 		plot = config['plot'],
 		customplot = config['customexon'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".Design_results"
+		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results",
+		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.AnalysisFailed.txt"
 	output:
-		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt",
+		calltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".makeCNVcalls.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
 		else
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2}
+			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
 		fi
 		"""
 
@@ -648,47 +712,75 @@ rule IdentifyFailures:
 	output is _Failures.txt ; if --custom is true a second file is output named _custom_Failures.txt
 	"""
 	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
 	params:
-		exons = customnumberingfile,
+		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{aligner}.{gender}.CustomNumbering.txt",
 		mincorr = config['mincorr'],
 		mincov = config['mincov'],
 		customplot = config['customexon'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".Identify" # DECON.datetime.Identify_Failures.txt
+		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify",
+		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.MetricsFailed.txt"
 	output:
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.txt"
+		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".Identify_Failures.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.err"
 	shell:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
 		else
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || echo "IdentityFailure failed or no datas are suboptimal ; check .err file for infos" > {output.failtxt}
+			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
 		fi
 		"""
 
-# will crash if conversion goes wrong
-# && [[ -s {output.vcfunsort} ]] || cat {scriptspath}/empty.vcf > {output.vcfunsort}
-rule Decon_tsv2vcf:
+
+rule merge_makeCNVcalls:
+	"""
+	Merge all call results
+	"""
 	input:
-		txt = tmpdir + "/" + serviceName + "." + date_time + ".Design_results_all.txt"
+		calltxt =  expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt", gender=gender_list, aligner=aligner_list)
 	output:
-		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.unsort.vcf"
-	log:
-		log2 = tmpdir + "/" + serviceName + "." + date_time + ".DeconTsv2Vcf.log"
+		allcalltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.txt"
 	shell:
 		"""
-		python {scriptspath}/file_converter.py -i {input.txt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log2}
+		cat {input.calltxt} | sort -u | sort -r >> {output.allcalltxt}
+		"""
+
+
+rule merge_IdentifyFailures:
+	"""
+	Merge all metrics results
+	"""
+	input:
+		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt", gender=gender_list, aligner=aligner_list)
+	output:
+		allfailtxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.txt"
+	shell:
+		"""
+		cat {input.failtxt} | sort -u | sort -r >> {output.allfailtxt}
+		"""
+
+# crash if conversion goes wrong
+rule Decon_tsv2vcf:
+	input:
+		allcalltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.txt"
+	output:
+		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Design.unsort.vcf"
+	log:
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.DeconTsv2Vcf.log"
+	shell:
+		"""
+		python {scriptspath}/file_converter.py -i {input.allcalltxt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log2}
 		"""
 
 # bcftools sort don't sort correctly
 rule sortvcfall:
 	input:
-		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Design.unsort.vcf"
+		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Design.unsort.vcf"
 	output:
-		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf"
+		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf"
 	shell:
 		"""
 		grep \"^#\" {input.vcfunsortall} > {output.vcfsortall} && grep -v \"^#\" {input.vcfunsortall} | sort -k1,1V -k2,2g >> {output.vcfsortall} && [[ -s {output.vcfsortall} ]] || cat {scriptspath}/empty.vcf > {output.vcfsortall}
@@ -697,9 +789,9 @@ rule sortvcfall:
 # bgzip -c to keep input file
 rule vcf2gzall:
 	input:
-		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf"
+		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf"
 	output:
-		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf.gz"
+		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf.gz"
 	shell:
 		"""
 		bgzip -c {input.vcfsortall} > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign}
@@ -715,7 +807,7 @@ rule splitvcf:
 	-c1 : minimum allele count (INFO/AC) of sites to be printed
 	"""
 	input:
-		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".allsamples.Noannotation.vcf.gz"
+		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf.gz"
 	output:
 		vcfgzsplit = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.Noannotation.vcf.gz"
 	params:
@@ -809,21 +901,6 @@ rule vcf2gz:
 		bgzip -c {input.vcfsort} > {output.vcfgzdesign} ; tabix {output.vcfgzdesign}
 		"""
 
-# && [[ -s {output.vcfgzpanel} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzpanel} ; 
-rule filtervcfpanel:
-	"""
-	Filter vcf with a bed file
-	"""
-	input:
-		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
-	output:
-		vcfgzpanel = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz"
-	params:
-		genes = expand(tmpdir + "/{panel}", panel=panel_list_trunc)
-	shell:
-		"""
-		bcftools view {input.vcfgzdesign} -R {params.genes} -O z -o {output.vcfgzpanel} && tabix {output.vcfgzpanel}
-		"""
 
 rule mergedesign:
 	"""
@@ -838,18 +915,17 @@ rule mergedesign:
 		bcftools merge {input.vcfgzdesign} -O z -o {output.vcfgzalldesign} && tabix {output.vcfgzalldesign}
 		"""
 
-
-rule mergepanel:
+rule mergeAnnotSV_tsv:
 	"""
-	Copy or merge with bcftools several vcfs
+	Merge AnnotSV tsv results
 	"""
 	input:
-		vcfgzpanel = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Panel.{panel}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panel_list_trunc)
+		tsv = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv",sample=sample_list, aligner=aligner_list)
 	output:
-		vcfgzallpanel = expand(tmpdir + "/" + serviceName + "." + date_time + ".all.Panel.{panel}.vcf.gz", panel=panel_list_trunc)
+		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 	shell:
 		"""
-		bcftools merge {input.vcfgzpanel} -O z -o {output.vcfgzallpanel} && tabix {output.vcfgzallpanel}
+		cat {input.tsv} | sort -u | sort -r >> {output.alltsv}
 		"""
 
 
