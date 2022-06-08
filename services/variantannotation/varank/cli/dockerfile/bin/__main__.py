@@ -16,6 +16,7 @@ import argparse
 from locale import strcoll
 import sys
 import os
+import logging as log
 import commons
 import checker
 import run_processing
@@ -23,8 +24,11 @@ import run_processing
 
 def main(args):
     original_umask = os.umask(0o000)
-    commons.set_log_level(args.verbosity)
+    commons.set_log_level(args)
     checker.varank_config_json_checker()
+
+    # mylog = log.getLogger()
+    # print(mylog.handlers[0].baseFilename)
 
     if args.run:
         run_processing.launch_run(args)
@@ -59,6 +63,14 @@ def parse_args():
         default=commons.default_pattern,
         help="pattern describing which vcf files to synchronize in STARK folders, actual patterns : */STARK/*.reports/*.final.vcf.gz (default), */POOL/*.final.vcf.gz. You can use two patterns with space as separator",
     )
+    mode_parser = argparse.ArgumentParser(add_help=False)
+    mode_parser.add_argument(
+        "-m",
+        "--mode",
+        type=str,
+        default="manual",
+        help="hidden argument to know if the varank analysis is manual or listener launched",
+    )
 
     # Subparser definition
     subparsers = main_parser.add_subparsers(help="sub-command help")
@@ -79,7 +91,7 @@ def parse_args():
     parser_run = subparsers.add_parser(
         "run",
         help="run VaRank on STARK run repository",
-        parents=[verbosity_parser, pattern_parser],
+        parents=[verbosity_parser, pattern_parser, mode_parser],
     )
     parser_run.add_argument(
         "-r",
@@ -92,7 +104,7 @@ def parse_args():
     parser_sync = subparsers.add_parser(
         "sync",
         help="used to rsync all VCF files in the described STARK repository/archives and defined pattern",
-        parents=[verbosity_parser, pattern_parser],
+        parents=[verbosity_parser, pattern_parser, mode_parser],
     )
     sync_group = parser_sync.add_mutually_exclusive_group(required=True)
     sync_group.add_argument(
