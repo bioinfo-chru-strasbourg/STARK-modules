@@ -334,21 +334,22 @@ for samples in sample_list:
 
 # Set a filelist with all the files tag
 # File format is sample.tag
-tagfile_list = []
-for sample in sample_list:
-	tagfile_list.append(dico_run[sample]['.tag'])
-
+if '.tag' in dico_run:
+	tagfile_list = []
+	for sample in sample_list:
+		tagfile_list.append(dico_run[sample]['.tag'])
 # Extract the tags from the list
-for tagfile in tagfile_list:
-	extractfromtag(tagfile, 'gender', dico_run, 'SEX', '#', '!')
+	for tagfile in tagfile_list:
+		extractfromtag(tagfile, 'gender', dico_run, 'SEX', '#', '!')
 
 # Extract the gender_list from dictionary with the key gender
-gender_list = ['A'] # should be in config ?
-for sample in sample_list:
-	if dico_run[sample]['gender'] == 'F':
-		gender_list.append('F')
-	if dico_run[sample]['gender'] == 'M':
-		gender_list.append('M')
+gender_list = ['A']
+if 'gender' in dico_run:
+	for sample in sample_list:
+		if dico_run[sample]['gender'] == 'F':
+			gender_list.append('F')
+		if dico_run[sample]['gender'] == 'M':
+			gender_list.append('M')
 # Removing duplicate
 gender_list = list(set(gender_list))
 
@@ -377,12 +378,13 @@ for sample in sample_list:
 files_list_A = searchfiles(inputdir, '/*', False)
 files_list_M = []
 files_list_F = []
-for files in files_list_A:
-	sample = os.path.basename(files).split(".")[0]
-	if dico_run[sample]['gender'] == 'F':
-		files_list_F.append(files)
-	if dico_run[sample]['gender'] == 'M':
-		files_list_M.append(files)
+if 'gender' in dico_run:
+	for files in files_list_A:
+		sample = os.path.basename(files).split(".")[0]
+		if dico_run[sample]['gender'] == 'F':
+			files_list_F.append(files)
+		if dico_run[sample]['gender'] == 'M':
+			files_list_M.append(files)
 
 # log the file lists
 logsomefile(logfile, 'Input for all files:', "\n", items_list = files_list_A)
