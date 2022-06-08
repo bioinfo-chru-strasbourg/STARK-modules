@@ -456,6 +456,7 @@ if bed_file and customexon_regen == True:
 	if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
 		df['NM'] = df['Tosplit'].str.split(',').str[0]
 		df = df[df['NM'].isin(NM_list)]
+		df = df.drop(['NM'], 1)
 	# Formating unknown gene name: intersect will output -1 if no gene name exist, replace with "Unknown"
 	if keep_unknown == True:
 		keep_unknown('Gene', '-1', 'Unknown')
@@ -466,6 +467,7 @@ if bed_file and customexon_regen == True:
 		df = df[df['Gene'].isin(gene_list_restrict)]
 	if chr_filter == True:
 		df = df[-df['Chr'].isin(chr_list_remove)]
+	df = df.drop(['4', '5', '6', 'Tosplit', '9'], 1)
 	df.to_csv(intermediatebed, sep='\t', index=False, header=True)
 
 # Old bed compatibility
