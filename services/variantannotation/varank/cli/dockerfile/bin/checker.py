@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
+from multiprocessing.sharedctypes import Value
 import os
 import json
 import logging as log
+import glob
 from os.path import join as osj
+import commons
+
+# from __main__ import default_pattern
 
 
 def absolute_folder_path(path):
@@ -88,11 +93,11 @@ def varank_config_json_checker():
                 api_token = data["databases"]["OMIM"]["api_token"]
                 OMIM_1 = data["databases"]["OMIM"]["OMIM_1"]
                 OMIM_2 = data["databases"]["OMIM"]["OMIM_2"]
-                # if api_token == "...":
-                #     log.error(
-                #         f"{i} license was not parametered, please modify in {varank_json}"
-                #     )
-                #     raise ValueError(data["databases"]["alamutDB"]["api_token"])
+                if api_token == "...":
+                    log.error(
+                        f"{i} license was not parametered, please modify in {varank_json}"
+                    )
+                    raise ValueError(api_token)
                 if not os.path.isfile(OMIM_1):
                     log.error(
                         f"{OMIM_1} file do not exists, please modify the path in {varank_json} or download the latest version with the omim command"
@@ -160,6 +165,42 @@ def alamut_license_checker(alamutdb_path):
                         f"AlamutDB {value} is not set in the license, please check the file in the alamut config file {alamut_license}"
                     )
                     raise ValueError(line)
+
+
+def depository_checker(run_informations):
+    run_repository = run_informations["run_repository"]
+    run_depository = run_informations["run_depository"]
+
+    if not os.path.isdir(run_depository):
+        log.warning(
+            f"Specified depository folder doesn't exists, maybe it was sent to the Archives ? Creating a new folder with all subfolders."
+        )
+        run_repository_sample_folders = glob.glob(osj(run_repository, "*", ""))
+        os.makedirs(run_depository, 0o775)
+
+        for sample_folder in run_repository_sample_folders:
+            sample_folder = osj(run_depository, os.path.basename(sample_folder[:-1]))
+            if not os.path.isdir(sample_folder):
+                os.mkdir(sample_folder, 0o755)
+
+
+def pattern_checker(run_informations):
+    run_repository = run_informations["run_repository"]
+    pattern = run_informations["run_pattern"]
+
+    for element in pattern:
+        vcf_files = glob.glob(osj(run_repository, element))
+        if len(vcf_files) == 0 and element != commons.default_pattern:
+            log.error(
+                f"There is no vcf files with the specified pattern {element}, please check your command-line"
+            )
+            raise ValueError(element)
+
+        elif len(vcf_files) == 0 and element == commons.default_pattern:
+            log.error(
+                f"There is no vcf files with the default STARK analysis pattern {element}, please check the analysis integrity"
+            )
+            raise ValueError(element)
 
 
 if __name__ == "__main__":

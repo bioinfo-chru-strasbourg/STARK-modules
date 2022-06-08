@@ -9,6 +9,8 @@ import glob
 import logging as log
 import time
 
+default_pattern = "*/STARK/*.reports/*.final.vcf.gz"
+
 
 def set_log_level(verbosity):
     configs = {

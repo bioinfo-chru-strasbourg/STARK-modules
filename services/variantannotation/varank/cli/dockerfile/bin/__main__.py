@@ -13,20 +13,21 @@
 """
 
 import argparse
+from locale import strcoll
 import sys
 import os
-from commons import set_log_level
+import commons
 import checker
 import run_processing
 
 
 def main(args):
     original_umask = os.umask(0o000)
-    set_log_level(args.verbosity)
+    commons.set_log_level(args.verbosity)
     checker.varank_config_json_checker()
 
-    # if args.run:
-    #     run_processing(args)
+    if args.run:
+        run_processing.launch_run(args)
 
     # elif args.varank_folder:
     # 	launch_folder_analysis(args)
@@ -37,6 +38,7 @@ def main(args):
 
 
 def parse_args():
+
     # Main parser
     main_parser = argparse.ArgumentParser(prog="varank")
 
@@ -54,7 +56,7 @@ def parse_args():
         "-p",
         "--pattern",
         type=str,
-        default="*/STARK/*.reports/*.final.vcf.gz",
+        default=commons.default_pattern,
         help="pattern describing which vcf files to synchronize in STARK folders, actual patterns : */STARK/*.reports/*.final.vcf.gz (default), */POOL/*.final.vcf.gz. You can use two patterns with space as separator",
     )
 
@@ -105,6 +107,12 @@ def parse_args():
     )
 
     args = main_parser.parse_args()
+
+    if hasattr(args, "pattern"):
+        if commons.default_pattern not in args.pattern:
+            setattr(args, "pattern", [commons.default_pattern, args.pattern])
+        elif args.pattern == commons.default_pattern:
+            setattr(args, "pattern", [commons.default_pattern])
 
     if len(sys.argv) == 1:
         main_parser.print_help(sys.stderr)
