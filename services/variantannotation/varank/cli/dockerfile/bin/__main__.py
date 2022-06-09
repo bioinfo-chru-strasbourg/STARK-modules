@@ -25,6 +25,8 @@ import run_processing
 def main(args):
     original_umask = os.umask(0o000)
     commons.set_log_level(args)
+    commons.set_logger_info(args)
+
     checker.varank_config_json_checker()
 
     # mylog = log.getLogger()
@@ -38,6 +40,7 @@ def main(args):
     # elif args.allsync18:
     # 	pattern = pattern_generator(args)
     # 	launch_universal_sync18(pattern)
+    commons.set_logger_info(args)
     os.umask(original_umask)
 
 

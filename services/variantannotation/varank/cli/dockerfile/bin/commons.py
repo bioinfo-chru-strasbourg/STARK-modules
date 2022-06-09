@@ -3,39 +3,49 @@ import os
 import logging as log
 from os.path import join as osj
 from threading import local
+import sys
 import time
 
 default_pattern = "*/STARK/*.reports/*.final.vcf.gz"
 
 
-# def logger_infos(args, log_file, seconds_start):
-#     info_file = log_file.replace(".log", ".info")
-#     if not os.path.isfile(info_file):
-#         # command =
-#         time_seconds_start = time.time() + 7200
-#         local_time = time.localtime(time_seconds_start)
-#         actual_time = time.strftime("%a %b %d %H:%M:%S %Y", local_time)
-#         start = actual_time
-#         print(start)
+def set_logger_info(args):
+    mylog = log.getLogger()
+    log_file = mylog.handlers[0].baseFilename
+    info_file = log_file.replace(".log", ".info")
 
-#         log = f"""
-#         """
-#         with open(info_file, "a") as write_file:
-#             write_file.write(log)
+    if not os.path.isfile(info_file):
+        python_command = " ".join(sys.argv)
+        python_version = f"{sys.version.split(' ')[0].split('.')[0]}.{sys.version.split(' ')[0].split('.')[1]}"
+        command = f"python{python_version} {python_command}"
+        global time_seconds_start
+        time_seconds_start = time.time() + 7200
+        local_time = time.localtime(time_seconds_start)
+        actual_time = time.strftime("%a %b %d %H:%M:%S %Y", local_time)
+        start = actual_time
 
-#         return info_file, time_seconds_start
+        logging = f"""Command: {command}
+Start time: {start}\n"""
 
-#     else:
-#         time_seconds_end = time.time() + 7200
-#         local_time = time.localtime(time_seconds_end)
-#         actual_time = time.strftime("%a %b %d %H:%M:%S %Y", local_time)
-#         end = actual_time
-#         delta = time_seconds_end - seconds_start
-#         print(delta)
+        with open(info_file, "a") as write_file:
+            write_file.write(logging)
+
+    else:
+        time_seconds_end = time.time() + 7200
+        local_time = time.localtime(time_seconds_end)
+        actual_time = time.strftime("%a %b %d %H:%M:%S %Y", local_time)
+        end = actual_time
+        delta = time_seconds_end - time_seconds_start
+
+        logging = f"""End time: {end}
+Time run: {delta}"""
+
+        with open(info_file, "a") as write_file:
+            write_file.write(logging)
 
 
 def logger_header(log_file):
-    log = f"""#########################
+    logging = f"""#########################
 #     VaRank Wrapper    #
 #    Variants Ranking   #
 # Author: Mateusz Rauch #
@@ -47,7 +57,7 @@ def logger_header(log_file):
 
 """
     with open(log_file, "a") as write_file:
-        write_file.write(log)
+        write_file.write(logging)
 
 
 def set_log_level(args):
@@ -78,6 +88,8 @@ def set_log_level(args):
         log_file,
     )
 
+    logger_header(log_file)
+
     configs = {
         "debug": log.DEBUG,
         "info": log.INFO,
@@ -92,6 +104,7 @@ def set_log_level(args):
             + "\nPlease use any in:"
             + configs.keys()
         )
+
     log.basicConfig(
         filename=log_file,
         filemode="a",
@@ -99,9 +112,6 @@ def set_log_level(args):
         datefmt="%Y-%m-%d %H:%M:%S",
         level=configs[verbosity],
     )
-
-    # mylog = log.getLogger()
-    # print(mylog.handlers[0].baseFilename)
 
 
 if __name__ == "__main__":
