@@ -344,6 +344,8 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/XVector/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/Biostrings/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/GenomicRanges/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/BiocParallel/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/Rsamtools/ && \
 	wget https://cran.r-project.org/src/contrib/Archive/VGAM/VGAM_0.9-8.tar.gz -O $TOOL_DEST/bin/packrat/src/VGAM/VGAM_0.9-8.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/scales/scales_0.2.4.tar.gz -O $TOOL_DEST/bin/packrat/src/scales/scales_0.2.4.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/digest/digest_0.6.8.tar.gz -O $TOOL_DEST/bin/packrat/src/digest/digest_0.6.8.tar.gz && \
@@ -357,7 +359,8 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	wget https://depot.galaxyproject.org/package/noarch/XVector_0.6.0.tar.gz -O $TOOL_DEST/bin/packrat/src/XVector/XVector_0.6.0.tar.gz && \
 	wget https://depot.galaxyproject.org/package/noarch/bg/Biostrings_2.34.1.tar.gz -O $TOOL_DEST/bin/packrat/src/Biostrings/Biostrings_2.34.1.tar.gz && \
 	wget https://depot.galaxyproject.org/package/noarch/GenomicRanges_1.18.4.tar.gz -O $TOOL_DEST/bin/packrat/src/GenomicRanges/GenomicRanges_1.18.4.tar.gz && \
-
+	wget https://depot.galaxyproject.org/package/noarch/BiocParallel_1.0.3.tar.gz -O $TOOL_DEST/bin/packrat/src/BiocParallel/BiocParallel_1.0.3.tar.gz && \
+	wget http://bioconductor.org/packages/3.0/bioc/src/contrib/Rsamtools_1.18.3.tar.gz -O $TOOL_DEST/bin/packrat/src/Rsamtools/Rsamtools_1.18.3.tar.gz && \
 	cd $TOOL_DEST/bin/ && \
 	./setup.sh && \
 	$TOOL_CHECK ;
