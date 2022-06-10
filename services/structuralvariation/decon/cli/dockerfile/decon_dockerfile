@@ -342,6 +342,8 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/IRanges/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/GenomeInfoDb/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/XVector/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/Biostrings/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/GenomicRanges/ && \
 	wget https://cran.r-project.org/src/contrib/Archive/VGAM/VGAM_0.9-8.tar.gz -O $TOOL_DEST/bin/packrat/src/VGAM/VGAM_0.9-8.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/scales/scales_0.2.4.tar.gz -O $TOOL_DEST/bin/packrat/src/scales/scales_0.2.4.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/digest/digest_0.6.8.tar.gz -O $TOOL_DEST/bin/packrat/src/digest/digest_0.6.8.tar.gz && \
@@ -353,6 +355,9 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	wget https://depot.galaxyproject.org/package/noarch/IRanges_2.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/IRanges/IRanges_2.0.1.tar.gz && \
 	wget http://bioconductor.org/packages/3.0/bioc/src/contrib/GenomeInfoDb_1.2.5.tar.gz -O $TOOL_DEST/bin/packrat/src/GenomeInfoDb/GenomeInfoDb_1.2.5.tar.gz && \
 	wget https://depot.galaxyproject.org/package/noarch/XVector_0.6.0.tar.gz -O $TOOL_DEST/bin/packrat/src/XVector/XVector_0.6.0.tar.gz && \
+	wget https://depot.galaxyproject.org/package/noarch/bg/Biostrings_2.34.1.tar.gz -O $TOOL_DEST/bin/packrat/src/Biostrings/Biostrings_2.34.1.tar.gz && \
+	wget https://depot.galaxyproject.org/package/noarch/GenomicRanges_1.18.4.tar.gz -O $TOOL_DEST/bin/packrat/src/GenomicRanges/GenomicRanges_1.18.4.tar.gz && \
+
 	cd $TOOL_DEST/bin/ && \
 	./setup.sh && \
 	$TOOL_CHECK ;
