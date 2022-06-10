@@ -462,12 +462,12 @@ if bed_file and customexon_regen == True:
 		keep_unknown('Gene', '-1', 'Unknown')
 	else:
 		df = df[df.Gene != '-1']
-	df = df.drop_duplicates()
 	if gene_filter == True:
 		df = df[df['Gene'].isin(gene_list_restrict)]
 	if chr_filter == True:
 		df = df[-df['Chr'].isin(chr_list_remove)]
 	df = df.drop(['4', '5', '6', 'Tosplit', '9'], 1)
+	df = df.drop_duplicates()
 	df.to_csv(intermediatebed, sep='\t', index=False, header=True)
 
 # Old bed compatibility
@@ -508,18 +508,19 @@ if bed_file and genes_file and customexon_regen == False:
 	if exon_sep == True: 
 		df['Gene'] = df['Gene'].str.split('_ex').str[0]
 	#df = df[pd.to_numeric(df['Custom.Exon'], errors='coerce').notnull()] # value is NaN if errors
-	df = df.drop_duplicates()
 	# Option to filter the bed to analyse only certain genes
 	if gene_filter == True:
 		df = df[df['Gene'].isin(gene_list_restrict)]
 	if chr_filter == True:
 		df = df[-df['Chr'].isin(chr_list_remove)]
+	df = df.drop_duplicates()
 	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
 
 # DECON bed formating from intermediatebed file : always for autosome 
 deconbed_file_A = tmpdir + "/" + serviceName + "." + date_time + '.A.bed'
 df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
+df = df.drop_duplicates()
 df.to_csv(deconbed_file_A, sep='\t', index=False, header=False) # for decon.be no header
 
 #Formating Bed per gender
@@ -528,11 +529,13 @@ for gender in gender_list:
 		deconbed_file_F = tmpdir + "/" + serviceName + "." + date_time + '.F.bed'
 		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 		df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
+		df = df.drop_duplicates()
 		df.to_csv(deconbed_file_F, sep='\t', index=False, header=False) # for decon.be no header
 	if gender == 'M':
 		deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M.bed'
 		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 		df = df[df['Chr'].isin(['chrX', 'chrY'])] # keep only chrY & chrX ref
+		df = df.drop_duplicates()
 		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.be no header
 
 if custom_exon == True:
@@ -545,18 +548,21 @@ if custom_exon == True:
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
 	df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
 	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+	df = df.drop_duplicates()
 	df.to_csv(customnumberingfile_A, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
 	# Gonosome X
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
 	df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
 	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+	df = df.drop_duplicates()
 	df.to_csv(customnumberingfile_F, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
 	# Gonosome Y
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
 	df = df[df['Chr'].isin(['chrY'])] # keep only chrY ref
 	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+	df = df.drop_duplicates()
 	df.to_csv(customnumberingfile_M, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
 if not bed_file:
