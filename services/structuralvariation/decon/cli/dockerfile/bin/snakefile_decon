@@ -468,7 +468,7 @@ if bed_file and customexon_regen == True:
 		df = df[-df['Chr'].isin(chr_list_remove)]
 	df = df.drop(['4', '5', '6', 'Tosplit', '9'], 1)
 	df = df.drop_duplicates()
-	df.to_csv(intermediatebed, sep='\t', index=False, header=True)
+	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
 
 # Old bed compatibility
 # Intersect bed design with panel intersectBed -a design.bed -b panel.bed -loj > RESULT.bed = columns 1 2 3 and the gene column from the panel is 10
