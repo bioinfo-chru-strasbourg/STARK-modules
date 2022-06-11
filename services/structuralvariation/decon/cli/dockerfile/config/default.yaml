@@ -84,11 +84,11 @@ ALIGNER_NAME:
 
 # Rsync options : if several files are added add {} at the start and end of the list
 # include_rsync must have more than one arguement
-INCLUDE_RSYNC: "{'*.tsv','*.vcf.gz','*.vcf.gz.tbi','*.pdf','*.txt','*.bed','*.tsv','*/'}"
+INCLUDE_RSYNC: "{'*.tsv','*.vcf.gz','*.vcf.gz.tbi','*.pdf','*.txt','*.bed','*/'}"
 # exclude_rsync can only take on arguement
 EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed
-INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed'}"
 
 ##### Search parameters of input for the search function #####
 RECURSIVE_SEARCH: False
