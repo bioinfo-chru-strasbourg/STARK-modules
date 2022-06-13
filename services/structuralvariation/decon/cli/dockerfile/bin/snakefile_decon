@@ -217,22 +217,6 @@ def create_list(txtlistoutput, file_list, ext, pattern):
 			if pattern in files and files.endswith(ext):
 				f.write(str(files) + "\n")
 
-# tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
-# extractfromtag(tagfile, 'gender', dico_run, 'SEX', '#', '!')
-def extractfromtag(tagfile, key, dictionary, tag, tagsep, globalsep):
-	""" Function to extract a specific tag in a tag file """
-	""" ex : SEX#M! or SEX#F! tag is SEX, tagsep is #, globalsep is ! """
-	with open(tagfile, 'r') as f:
-		row = f.read()
-		sample = os.path.basename(tagfile).split(".")[0]
-		if tag in row and globalsep in row:
-			tagfirst = row.split(globalsep)[0]
-			tagfinal = tagfirst.split(tagsep)[1]
-			dictionary[sample][key] = tagfinal
-		else:
-			tagfinal = None
-			dictionary[sample][key] = tagfinal
-
 def intersectbed(inputbed, refbed, outputbed):
 	""" Function to intersect a bed with a ref bed using bedtools """
 	shell("intersectBed -a "+inputbed+" -b "+refbed+" -loj > "+outputbed+" ")
@@ -334,22 +318,35 @@ for samples in sample_list:
 
 # Set a filelist with all the files tag
 # File format is sample.tag
-if '.tag' in dico_run:
-	tagfile_list = []
-	for sample in sample_list:
-		tagfile_list.append(dico_run[sample]['.tag'])
+tagfile_list = []
+for sample in sample_list:
+	try:
+		if dico_run[sample]['.tag']:
+			tagfile_list.append(dico_run[sample]['.tag'])
+	except KeyError: pass
+
 # Extract the tags from the list
-	for tagfile in tagfile_list:
-		extractfromtag(tagfile, 'gender', dico_run, 'SEX', '#', '!')
+# tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
+if tagfile_list:
+	for sample in sample_list:
+		for tagfile in tagfile_list:
+			row = open(tagfile, 'r').readline().strip().split('!')
+			sample = os.path.basename(tagfile).split(".")[0]
+			for tag in row:
+				if 'SEX' in tag and '#' in tag:
+					sex = tag.split('#')[-1]
+					dico_run[sample]['gender'] = sex
 
 # Extract the gender_list from dictionary with the key gender
 gender_list = ['A']
-if 'gender' in dico_run:
+try:
 	for sample in sample_list:
-		if dico_run[sample]['gender'] == 'F':
-			gender_list.append('F')
-		if dico_run[sample]['gender'] == 'M':
-			gender_list.append('M')
+			if dico_run[sample]['gender'] == 'F':
+				gender_list.append('F')
+			if dico_run[sample]['gender'] == 'M':
+				gender_list.append('M')
+except KeyError: pass
+
 # Removing duplicate
 gender_list = list(set(gender_list))
 
@@ -378,13 +375,14 @@ for sample in sample_list:
 files_list_A = searchfiles(inputdir, '/*', False)
 files_list_M = []
 files_list_F = []
-if 'gender' in dico_run:
-	for files in files_list_A:
-		sample = os.path.basename(files).split(".")[0]
+for files in files_list_A:
+	sample = os.path.basename(files).split(".")[0]
+	try:
 		if dico_run[sample]['gender'] == 'F':
 			files_list_F.append(files)
 		if dico_run[sample]['gender'] == 'M':
 			files_list_M.append(files)
+	except KeyError: pass
 
 # log the file lists
 logsomefile(logfile, 'Input for all files:', "\n", items_list = files_list_A)
