@@ -194,6 +194,7 @@ if not os.path.exists(GENEHANCER_install_path) and os.path.exists(GENEHANCER_sou
 	os.makedirs(GENEHANCER_install_path, exist_ok = True)
 	systemcall("unzip -q "+GENEHANCER_source+" -d "+GENEHANCER_install_path+" ")
 
+
 #######################
 # Copy config files (service.conf & service.json) and launcher.py from app/config to /config/module/servicename/listener/
 #######################

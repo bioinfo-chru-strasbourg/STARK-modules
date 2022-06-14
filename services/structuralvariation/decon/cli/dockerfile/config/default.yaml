@@ -115,14 +115,11 @@ OLD_BED: False
 REMOVE_F: False
 REMOVE_M: False
 REMOVE_A: False
+remove_M_noY: False
 
-# Filter the gene list
-GENE_FILTER: False
 # Limit the analysis to a list of genes
 GENE_LIST_RESTRICT: []
 
-# Chr remove option
-CHR_FILTER: False
 # List of chr to remove (essentially for chrY)
 CHR_LIST_RESTRICT: []
 

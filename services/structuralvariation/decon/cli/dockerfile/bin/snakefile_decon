@@ -10,11 +10,11 @@
 
 # PROD version 2 : 16/06/2022 changelog
 	# add the possibility to analyse gender separately, extract gender from tag files ; gender analysis can be set with REMOVE_F & REMOVE_M & REMOVE_A options
-	# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_FILTER & GENE_LIST_RESTRICT)
+	# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_LIST_RESTRICT)
 	# rewrite DECON bed / custom numbering formating
 	# remove panel vcf filtering (output was essentially empty)
 	# merge tsv from AnnotSV in one file
-	# add a chr filter option to remove chrosome (essentially chrY) CHR_FILTER & CHR_LIST_RESTRICT)
+	# add a chr filter option to remove chrosome (essentially chrY) (CHR_LIST_RESTRICT)
 	# add a chrX Male gender analysis only to avoid chrY failure
 
 ################## Context ##################
@@ -121,12 +121,10 @@ keep_unknown = config['KEEP_UNKNOWN']
 exon_sep = config['EXON_SEP']
 # Formatting Bed old style
 old_bed = config['OLD_BED']
-# Gene filter option
-gene_filter = config['GENE_FILTER']
+
 # List of gene to analysis
 gene_list_restrict = config['GENE_LIST_RESTRICT']
-# Chr remove option
-chr_filter = config['CHR_FILTER']
+
 # List of chr to remove (essentially for chrY)
 chr_list_remove = config['CHR_LIST_RESTRICT']
 
@@ -232,6 +230,16 @@ def keep_unknown(columnname, pattern, prefix):
 			df.at[j, columnname] = prefix+str(i)
 		i+=1
 
+def extract_tag(tagfile, tag, tagsep, sep):
+	""" Function to extract a tag """
+	output_tag = ""
+	row = open(tagfile, 'r').readline().strip().split(tagsep)
+	for items in row:
+		if tag in items and sep in items:
+			output_tag = items.split(sep)[-1]
+	return(output_tag)
+
+
 ### END OF FUNCTIONS ###
 
 # Variables initialisation
@@ -329,12 +337,9 @@ for sample in sample_list:
 if tagfile_list:
 	for sample in sample_list:
 		for tagfile in tagfile_list:
-			row = open(tagfile, 'r').readline().strip().split('!')
+			output_tag = extract_tag(tagfile,'SEX', '!', '#')
 			sample = os.path.basename(tagfile).split(".")[0]
-			for tag in row:
-				if 'SEX' in tag and '#' in tag:
-					sex = tag.split('#')[-1]
-					dico_run[sample]['gender'] = sex
+			dico_run[sample]['gender'] = output_tag
 
 # Extract the gender_list from dictionary with the key gender
 gender_list = ['A']
@@ -385,11 +390,6 @@ for files in files_list_A:
 			files_list_M.append(files)
 			files_list_M_noY.append(files)
 	except KeyError: pass
-
-# log the file lists
-logsomefile(logfile, 'Input for all files:', "\n", items_list = files_list_A)
-logsomefile(logfile, 'Input files for male analysis:', "\n", items_list = files_list_F)
-logsomefile(logfile, 'Input files for female analysis:', "\n", items_list = files_list_M)
 
 # Creating a txt list for the bam files per aligner per gender (A, M & F)
 # the file_list_whatever must be prefiltered
@@ -465,9 +465,9 @@ if bed_file and customexon_regen == True:
 		keep_unknown('Gene', '-1', 'Unknown')
 	else:
 		df = df[df.Gene != '-1']
-	if gene_filter == True:
+	if gene_list_restrict:
 		df = df[df['Gene'].isin(gene_list_restrict)]
-	if chr_filter == True:
+	if chr_list_remove:
 		df = df[-df['Chr'].isin(chr_list_remove)]
 	df = df.drop(['4', '5', '6', 'Tosplit', '9'], 1)
 	df = df.drop_duplicates()
@@ -511,9 +511,9 @@ if bed_file and genes_file and customexon_regen == False:
 	if exon_sep == True: 
 		df['Gene'] = df['Gene'].str.split('_ex').str[0]
 	# Option to filter the bed to analyse only certain genes
-	if gene_filter == True:
+	if gene_list_restrict:
 		df = df[df['Gene'].isin(gene_list_restrict)]
-	if chr_filter == True:
+	if chr_list_remove:
 		df = df[-df['Chr'].isin(chr_list_remove)]
 	df = df.drop_duplicates()
 	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
@@ -590,6 +590,7 @@ if not bed_file:
 remove_F = config['REMOVE_F']
 remove_M = config['REMOVE_M']
 remove_A = config['REMOVE_A']
+remove_M_noY = config['REMOVE_M_noY']
 if remove_M == True:
 	gender_list.remove('M')
 if remove_M_noY == True:
@@ -601,6 +602,9 @@ if remove_A == True:
 
 # Log
 logsomefile(logfile, 'Start of the analysis:', "\n", items = date_time)
+logsomefile(logfile, 'Input for all files:', "\n", items_list = files_list_A)
+logsomefile(logfile, 'Input files for male analysis:', "\n", items_list = files_list_F)
+logsomefile(logfile, 'Input files for female analysis:', "\n", items_list = files_list_M)
 logsomefile(logfile, 'List of samples:', "\n", items_list = sample_list)
 logsomefile(logfile, 'List of gender:', "\n", items_list = gender_list)
 logsomefile(logfile, 'Aligner list:', "\n", items_list = aligner_list)
@@ -974,7 +978,7 @@ onsuccess:
 	for sample in sample_list:
 		for pdf in pdf_list:
 			if sample in pdf:
-				shell("mv "+tmpdir+ "/pdfs/"+pdf+" " +outputdir+"/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" ")
+				shell("mv "+tmpdir+ "/pdfs/"+pdf+" " +outputdir+"/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/")
 	# rmdir the /pdfs dir
 	shell("rm -rf "+tmpdir+"/pdfs")
 	# Add end time of the analysis to the log file

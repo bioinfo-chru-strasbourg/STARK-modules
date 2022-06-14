@@ -56,11 +56,12 @@ def readconfig(configFile, serviceName, configkey):
 	return outputconfig
 
 # TODO need to test the default argument with the listener.py
-def launch(run, serviceName, configFile, image, launchCommand, montage, containersFile):
+def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile, microserviceRepo):
 	""" Function to start a docker container with a specific command """
 	""" See help (-h) for details """
 	# Variables get from env
 	configFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONF')
+	microserviceRepo = os.getenv('MICROSERVICE_REPOSITORY')
 	if not serviceName:
 		serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_NAME')
 	if not image:
