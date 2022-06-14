@@ -37,6 +37,11 @@ import doctest
 from datetime import datetime
 from os.path import join as osj
 
+# Variables
+# set datetime to add to container name
+date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+
 ### FUNCTIONS ###
 
 def createlog(containersFile, run, containerName):
@@ -46,6 +51,7 @@ def createlog(containersFile, run, containerName):
 	file.write("FOLDER: "+run+"\n")
 	file.write("EXEC_DATE: "+datetime.now().strftime("%d%m%Y-%H%M%S")+"\n")
 	file.write("ID: "+containerName+"\n")
+	file.write("CMD: "+cmd+"\n")
 	file.close()
 
 def readconfig(configFile, serviceName, configkey):
@@ -56,7 +62,7 @@ def readconfig(configFile, serviceName, configkey):
 	return outputconfig
 
 # TODO need to test the default argument with the listener.py
-def launch(run, serviceName, configFile, image, launchCommand, montage, containersFile):
+def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile, microserviceRepo):
 	""" Function to start a docker container with a specific command """
 	""" See help (-h) for details """
 	# Variables get from env
@@ -72,7 +78,7 @@ def launch(run, serviceName, configFile, image, launchCommand, montage, containe
 		launchCommand = readconfig(configFile, serviceName, 'launch')
 		image = readconfig(configFile, serviceName, 'image')
 	if run:
-		containerName = serviceName + os.path.basename(run)
+		containerName = serviceName + "_" +date_time+"_"+os.path.basename(run)	
 		group_name = run.split('/')[4]
 		app_name = run.split('/')[5]
 	# Config snakefile config file path
@@ -84,15 +90,15 @@ def launch(run, serviceName, configFile, image, launchCommand, montage, containe
 	# Construct the docker command
 	# snakemake --configfile can't be empty ; if not set it will use the default yaml file in the docker container
 	if yaml_config_file and os.path.exists(yaml_config_file):
-		cmd = "docker run --rm "+montage+" "+image+" "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file
+		cmd = "docker run --rm --name="+containerName+" "+montage+" "+image+" "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file
 	else:
-		cmd = "docker run --rm "+montage+" "+image+" "+launchCommand+" --config run="+run
+		cmd = "docker run --rm --name="+containerName+" "+montage+" "+image+" "+launchCommand+" --config run="+run
 	# launch the cmd to the shell 
 	subprocess.call(cmd, shell = True)
-	# Create a log file
+	print(cmd)
+	 Create a log file
 	if not containersFile:
 		containersFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES') # /structuralvariation/scramble/listener should be /home1/STARK/services/structuralvariation/scramble/listener/
-		print(containersFile)
 	if os.path.exists(containersFile):
 		createlog(containersFile, run, containerName)
 

@@ -203,7 +203,7 @@ if serviceName and moduleName:
 	logfile = "/STARK/config/"+moduleName+"/"+serviceName+"/listener/" + serviceName + "." +date_time+".setup.log"
 	errfile = "/STARK/config/"+moduleName+"/"+serviceName+"/listener/" + serviceName + "." +date_time+".setup.err"
 	logsomefile(logfile, 'Setup copying configuration files:', "\n", items = date_time)
-	systemcall("\cp -r /app/config/* /STARK/config/"+moduleName+"/"+serviceName+"/listener/ 1>> "+logfile+" 2>> "+errfile+" ")
+	systemcall("rsync -ar /app/config /STARK/config/"+moduleName+"/"+serviceName+"/listener/ 1>> "+logfile+" 2>> "+errfile+" ")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
 
