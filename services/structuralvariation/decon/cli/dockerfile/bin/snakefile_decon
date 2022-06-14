@@ -15,8 +15,7 @@
 	# remove panel vcf filtering (output was essentially empty)
 	# merge tsv from AnnotSV in one file
 	# add a chr filter option to remove chrosome (essentially chrY) CHR_FILTER & CHR_LIST_RESTRICT)
-
-	# TODO copy last results files in DECON dir
+	# add a chrX Male gender analysis only to avoid chrY failure
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -345,6 +344,7 @@ try:
 				gender_list.append('F')
 			if dico_run[sample]['gender'] == 'M':
 				gender_list.append('M')
+				gender_list.append('M_noY')
 except KeyError: pass
 
 # Removing duplicate
@@ -374,6 +374,7 @@ for sample in sample_list:
 # files_list_A contains the full path of all files (bam files for ex)
 files_list_A = searchfiles(inputdir, '/*', False)
 files_list_M = []
+files_list_M_noY = []
 files_list_F = []
 for files in files_list_A:
 	sample = os.path.basename(files).split(".")[0]
@@ -382,6 +383,7 @@ for files in files_list_A:
 			files_list_F.append(files)
 		if dico_run[sample]['gender'] == 'M':
 			files_list_M.append(files)
+			files_list_M_noY.append(files)
 	except KeyError: pass
 
 # log the file lists
@@ -400,6 +402,9 @@ for aligner in aligner_list:
 			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + gender + '.list.txt'
 			create_list(bamlist, files_list_F, process_file, aligner)
 		if gender == 'M':
+			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + gender + '.list.txt'
+			create_list(bamlist, files_list_M, process_file, aligner)
+		if gender == 'M_noY':
 			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + gender + '.list.txt'
 			create_list(bamlist, files_list_M, process_file, aligner)
 
@@ -505,7 +510,6 @@ if bed_file and genes_file and customexon_regen == False:
 	# Fix for some bed that remove _ex part if gene is noted genename_ex
 	if exon_sep == True: 
 		df['Gene'] = df['Gene'].str.split('_ex').str[0]
-	#df = df[pd.to_numeric(df['Custom.Exon'], errors='coerce').notnull()] # value is NaN if errors
 	# Option to filter the bed to analyse only certain genes
 	if gene_filter == True:
 		df = df[df['Gene'].isin(gene_list_restrict)]
@@ -519,7 +523,7 @@ deconbed_file_A = tmpdir + "/" + serviceName + "." + date_time + '.A.bed'
 df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
 df = df.drop_duplicates()
-df.to_csv(deconbed_file_A, sep='\t', index=False, header=False) # for decon.be no header
+df.to_csv(deconbed_file_A, sep='\t', index=False, header=False) # for decon.bed no header
 
 #Formating Bed per gender
 for gender in gender_list:
@@ -535,12 +539,18 @@ for gender in gender_list:
 		df = df[df['Chr'].isin(['chrX', 'chrY'])] # keep only chrY & chrX ref
 		df = df.drop_duplicates()
 		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.be no header
+		deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M_noY.bed'
+		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+		df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
+		df = df.drop_duplicates()
+		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.be no header
 
 if custom_exon == True:
 	# Set the customnumbering files for makeCNVcalls& Identify_failures
 	customnumberingfile_A = tmpdir + "/" + serviceName + "." +  date_time + '.A.CustomNumbering.txt'
 	customnumberingfile_F = tmpdir + "/" + serviceName + "." +  date_time + '.F.CustomNumbering.txt'
 	customnumberingfile_M = tmpdir + "/" + serviceName + "." +  date_time + '.M.CustomNumbering.txt'
+	customnumberingfile_M_noY = tmpdir + "/" + serviceName + "." +  date_time + '.M_noY.CustomNumbering.txt'
 
 	# Autosome
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
@@ -549,19 +559,28 @@ if custom_exon == True:
 	df = df.drop_duplicates()
 	df.to_csv(customnumberingfile_A, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
-	# Gonosome X
-	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-	df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
-	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-	df = df.drop_duplicates()
-	df.to_csv(customnumberingfile_F, sep='\t', index=False, header=True) # for custom.exon file, need a header
+	# Female
+	for gender in gender_list:
+		if gender == 'F':
+			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+			df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
+			df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+			df = df.drop_duplicates()
+			df.to_csv(customnumberingfile_F, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
-	# Gonosome Y
-	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-	df = df[df['Chr'].isin(['chrY'])] # keep only chrY ref
-	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-	df = df.drop_duplicates()
-	df.to_csv(customnumberingfile_M, sep='\t', index=False, header=True) # for custom.exon file, need a header
+	# Male
+	for gender in gender_list:
+		if gender == 'M':
+			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+			df = df[df['Chr'].isin(['chrX', 'chrY'])]# keep only chrX & ChrY ref
+			df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+			df = df.drop_duplicates()
+			df.to_csv(customnumberingfile_M, sep='\t', index=False, header=True) # for custom.exon file, need a header
+			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+			df = df[df['Chr'].isin(['chrX'])]# keep only chrX ref
+			df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
+			df = df.drop_duplicates()
+			df.to_csv(customnumberingfile_M_noY, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
 if not bed_file:
 	logsomefile(logfile, 'No bed found, DECON cannot continue, exiting', "\n")
@@ -573,6 +592,8 @@ remove_M = config['REMOVE_M']
 remove_A = config['REMOVE_A']
 if remove_M == True:
 	gender_list.remove('M')
+if remove_M_noY == True:
+	gender_list.remove('M_noY')
 if remove_F == True:
 	gender_list.remove('F')
 if remove_A == True:
@@ -948,16 +969,13 @@ onstart:
 onsuccess:
 	shell("touch " + outputdir + "/" + serviceName + "Complete.txt")
 	shell("rm -f " + outputdir + "/" + serviceName + "Running.txt")
-	# Sort pdfs file into each sample directory
+	# Move pdfs file into each sample directory
 	pdf_list = os.listdir(tmpdir+"/pdfs")
 	for sample in sample_list:
 		for pdf in pdf_list:
 			if sample in pdf:
-				# Change directoy for destination
-				# Structure of output is /SAMPLE/ServiceName/pdfs 
-				shell("mkdir -p " + outputdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/pdfs")
-				shell("mv "+tmpdir+ "/pdfs/"+pdf+" " +outputdir+"/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/pdfs/")
-	# if move rmdir the /pdfs dir
+				shell("mv "+tmpdir+ "/pdfs/"+pdf+" " +outputdir+"/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" ")
+	# rmdir the /pdfs dir
 	shell("rm -rf "+tmpdir+"/pdfs")
 	# Add end time of the analysis to the log file
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
