@@ -1,0 +1,46 @@
+{
+	"services": {
+		"DECON": {
+			"infos": {
+				"name": "DECON",
+				"description": "DECON analysis",
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (DECONRunning.txt AND DECONComplete.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
+			},
+			"triggers": {
+				"AND_1":{
+					"file":[
+						"STARKCopyComplete.txt",
+						"!DECONRunning.txt",
+						"!DECONComplete.txt"
+					],
+					"OR_1":{
+						"tags":[
+							"DECON"
+						],
+						"group":[
+							"HUSDIAGGEN"
+						]
+					},
+					"OR_2":{
+						"tags":[
+							"!POOL"
+						],
+						"AND_2":{
+							"tags":[
+								"POOL"
+							],
+							"OR_3":{
+								"file":[
+									"POOLRunning.txt"
+								],
+								"file":[
+									"POOLComplete.txt"
+								]
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
