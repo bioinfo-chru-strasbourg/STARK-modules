@@ -336,11 +336,33 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/scales/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/ggplot2/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/magrittr/ && \
+ 	mkdir -p $TOOL_DEST/bin/packrat/src/BiocGenerics/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/zlibbioc/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/S4Vectors/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/IRanges/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/GenomeInfoDb/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/XVector/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/Biostrings/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/GenomicRanges/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/BiocParallel/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/Rsamtools/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/GenomicAlignments/ && \
 	wget https://cran.r-project.org/src/contrib/Archive/VGAM/VGAM_0.9-8.tar.gz -O $TOOL_DEST/bin/packrat/src/VGAM/VGAM_0.9-8.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/scales/scales_0.2.4.tar.gz -O $TOOL_DEST/bin/packrat/src/scales/scales_0.2.4.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/digest/digest_0.6.8.tar.gz -O $TOOL_DEST/bin/packrat/src/digest/digest_0.6.8.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_1.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/ggplot2/ggplot2_1.0.1.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/magrittr/magrittr_1.5.tar.gz -O $TOOL_DEST/bin/packrat/src/magrittr/magrittr_1.5.tar.gz && \
+ 	wget https://depot.galaxyproject.org/package/noarch/BiocGenerics_0.12.1.tar.gz -O $TOOL_DEST/bin/packrat/src/BiocGenerics/BiocGenerics_0.12.1.tar.gz && \
+	wget https://depot.galaxyproject.org/package/noarch/bg/zlibbioc_1.12.0.tar.gz -O $TOOL_DEST/bin/packrat/src/zlibbioc/zlibbioc_1.12.0.tar.gz && \
+	wget https://depot.galaxyproject.org/package/noarch/S4Vectors_0.4.0.tar.gz -O $TOOL_DEST/bin/packrat/src/S4Vectors/S4Vectors_0.4.0.tar.gz && \
+	wget https://depot.galaxyproject.org/package/noarch/IRanges_2.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/IRanges/IRanges_2.0.1.tar.gz && \
+	wget http://bioconductor.org/packages/3.0/bioc/src/contrib/GenomeInfoDb_1.2.5.tar.gz -O $TOOL_DEST/bin/packrat/src/GenomeInfoDb/GenomeInfoDb_1.2.5.tar.gz && \
+	wget https://depot.galaxyproject.org/package/noarch/XVector_0.6.0.tar.gz -O $TOOL_DEST/bin/packrat/src/XVector/XVector_0.6.0.tar.gz && \
+	wget https://depot.galaxyproject.org/package/noarch/bg/Biostrings_2.34.1.tar.gz -O $TOOL_DEST/bin/packrat/src/Biostrings/Biostrings_2.34.1.tar.gz && \
+	wget https://depot.galaxyproject.org/package/noarch/GenomicRanges_1.18.4.tar.gz -O $TOOL_DEST/bin/packrat/src/GenomicRanges/GenomicRanges_1.18.4.tar.gz && \
+	wget https://depot.galaxyproject.org/package/noarch/BiocParallel_1.0.3.tar.gz -O $TOOL_DEST/bin/packrat/src/BiocParallel/BiocParallel_1.0.3.tar.gz && \
+	wget http://bioconductor.org/packages/3.0/bioc/src/contrib/Rsamtools_1.18.3.tar.gz -O $TOOL_DEST/bin/packrat/src/Rsamtools/Rsamtools_1.18.3.tar.gz && \
+	wget http://bioconductor.org/packages/3.0/bioc/src/contrib/GenomicAlignments_1.2.2.tar.gz -O $TOOL_DEST/bin/packrat/src/GenomicAlignments/GenomicAlignments_1.2.2.tar.gz && \
 	cd $TOOL_DEST/bin/ && \
 	./setup.sh && \
 	$TOOL_CHECK ;

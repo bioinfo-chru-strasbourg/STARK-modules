@@ -4,14 +4,15 @@
 			"infos": {
 				"name": "DECON",
 				"description": "DECON analysis",
-				"triggers-description": "(STARKCopyComplete.txt AND NOT (DECONRunning.txt AND DECONComplete.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (DECONRunning.txt AND DECONComplete.txt AND DECONFailed.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
 			},
 			"triggers": {
 				"AND_1":{
 					"file":[
 						"STARKCopyComplete.txt",
 						"!DECONRunning.txt",
-						"!DECONComplete.txt"
+						"!DECONComplete.txt",
+						"!DECONFailed.txt"
 					],
 					"OR_1":{
 						"tags":[
