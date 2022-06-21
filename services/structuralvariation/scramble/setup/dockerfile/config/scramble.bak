@@ -4,14 +4,15 @@
 			"infos": {
 				"name": "SCRAMBLE",
 				"description": "SCRAMBLE analysis",
-				"triggers-description": "(STARKCopyComplete.txt AND NOT (SCRAMBLERunning.txt AND SCRAMBLEComplete.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (SCRAMBLERunning.txt AND SCRAMBLEComplete.txt AND SCRAMBLEFailed.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
 			},
 			"triggers": {
 				"AND_1":{
 					"file":[
 						"STARKCopyComplete.txt",
 						"!SCRAMBLERunning.txt",
-						"!SCRAMBLEComplete.txt"
+						"!SCRAMBLEComplete.txt",
+						"!SCRAMBLEFailed.txt"
 					],
 					"OR_1":{
 						"tags":[
