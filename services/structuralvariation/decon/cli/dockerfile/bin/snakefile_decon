@@ -16,6 +16,7 @@
 	# merge tsv from AnnotSV in one file
 	# add a chr filter option to remove chrosome (essentially chrY) (CHR_LIST_RESTRICT)
 	# add a chrX Male gender analysis only to avoid chrY failure
+	# rename failures and results_all from txt to tsv
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -722,7 +723,7 @@ rule makeCNVcalls:
 		plot = config['plot'],
 		customplot = config['customexon'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results",
-		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.AnalysisFailed.txt"
+		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.AnalysisFailed"
 	output:
 		calltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt"
 	log: 
@@ -753,7 +754,7 @@ rule IdentifyFailures:
 		mincov = config['mincov'],
 		customplot = config['customexon'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify",
-		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.MetricsFailed.txt"
+		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.MetricsFailed"
 	output:
 		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt"
 	log: 
@@ -776,10 +777,10 @@ rule merge_makeCNVcalls:
 	input:
 		calltxt =  expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt", gender=gender_list, aligner=aligner_list)
 	output:
-		allcalltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.txt"
+		allcalltsv = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.tsv"
 	shell:
 		"""
-		cat {input.calltxt} | sort -u | sort -r >> {output.allcalltxt}
+		cat {input.calltxt} | sort -u | sort -r >> {output.allcalltsv}
 		"""
 
 
@@ -790,10 +791,10 @@ rule merge_IdentifyFailures:
 	input:
 		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt", gender=gender_list, aligner=aligner_list)
 	output:
-		allfailtxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.txt"
+		allfailtsv = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.tsv"
 	shell:
 		"""
-		cat {input.failtxt} | sort -u | sort -r >> {output.allfailtxt}
+		cat {input.failtxt} | sort -u | sort -r >> {output.allfailtsv}
 		"""
 
 # crash if conversion goes wrong
@@ -863,9 +864,9 @@ rule AnnotSV:
 	input:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.Noannotation.vcf.gz"
 	output:
-		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design_uncorr.tsv"
+		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design_uncorr.tsv"
 	log:
-		txt = tmpdir + "/{sample}/" + serviceName +  "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.log"
+		txt = tmpdir + "/{sample}/" + serviceName +  "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.log"
 	params:
 		bedtools = config['BEDTOOLS_PATH'],
 		bcftools = config['BCFTOOLS_PATH'],
@@ -884,9 +885,9 @@ rule patchchr:
 	Add chr to the SV_chrom column
 	"""
 	input:
-		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design_uncorr.tsv"
+		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design_uncorr.tsv"
 	output:
-		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv"
+		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv"
 	shell:
 		"""
 		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input.tsvuncorr} > {output.tsv}
@@ -897,9 +898,9 @@ rule AnnotSV2vcf:
 	File converter will convert tsv AnnotSV into vcf
 	"""
 	input:
-		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv"
+		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv"
 	output:
-		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design_unsort.vcf"
+		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design_unsort.vcf"
 	log:
 		log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV2vcf.log"
 	shell:
@@ -913,7 +914,7 @@ rule sortvcf:
 	Bash script to sort a vcf
 	"""
 	input:
-		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design_unsort.vcf"
+		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design_unsort.vcf"
 	output:
 		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf"
 	shell:
@@ -954,7 +955,7 @@ rule mergeAnnotSV_tsv:
 	Merge AnnotSV tsv results
 	"""
 	input:
-		tsv = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.tsv",sample=sample_list, aligner=aligner_list)
+		tsv = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv",sample=sample_list, aligner=aligner_list)
 	output:
 		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 	shell:

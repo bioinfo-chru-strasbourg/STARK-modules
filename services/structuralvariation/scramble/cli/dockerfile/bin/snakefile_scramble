@@ -12,6 +12,7 @@
 # PROD version 2 : 16/06/2022 changelog
 	# merge tsv from AnnotSV in one file
 	# remove panel vcf filtering (output was essentially empty)
+	# script to convert vcf to tsv
 
 	# TODO copy last results files in DECON dir
 
@@ -356,7 +357,7 @@ if debug:
 # /nameoftherun/global results & global logs with ServiceName index
 #
 # rule all will different depending on the bed files available
-# design = .bed, vcf will be vcf.design ; panel = genes, vcf will be vcf.panel ; not bed or genes = vcf will be vcf.full
+# design = .bed, vcf will be vcf.design ; panel = genes, vcf will be vcf.panel ; not bed or genes = vcf will be vcf.unfiltered
 # warning : bcftools merge will crash if there's only 1 sample
 ############################################################################################################
 
@@ -369,15 +370,15 @@ if debug:
 sample_count = len(sample_list) 
 
 # add more input with expand to display rules help
-	rule all:
-		"""
-		Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
-		"""
-		input:
-			vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
-			vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
-			vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Full.vcf.gz",
-			alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
+rule all:
+	"""
+	Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
+	"""
+	input:
+		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz", sample=sample_list, aligner=aligner_list),
+		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
+		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv",
+		alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
 rule help:
 	"""
@@ -531,7 +532,7 @@ rule patchchr:
 	input:
 		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV_uncorr.tsv"
 	output:
-		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.tsv"
+		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Unfiltered.tsv"
 	shell:
 		"""
 		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input.tsvuncorr} > {output.tsv}
@@ -542,7 +543,7 @@ rule AnnotSV2vcf:
 	File converter will convert tsv AnnotSV into vcf
 	"""
 	input:
-		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.tsv"
+		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Unfiltered.tsv"
 	output:
 		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Fullunsort.vcf"
 	log:
@@ -560,7 +561,7 @@ rule sortvcf:
 	input:
 		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Fullunsort.vcf"
 	output:
-		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf"
+		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf"
 	shell:
 		"""
 		grep \"^#\" {input.vcfunsort} > {output.vcfsort} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfsort} && [[ -s {output.vcfsort} ]] || cat {scriptspath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfsort}
@@ -572,9 +573,9 @@ rule vcf2gz:
 	Compress vcf with bgzip
 	"""
 	input:
-		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf"
+		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf"
 	output:
-		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf.gz"
+		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz"
 	shell:
 		"""
 		bgzip -c {input.vcfsort} > {output.vcfgz} ; tabix {output.vcfgz}
@@ -585,9 +586,9 @@ rule cpvcffull:
 	Copy or merge with bcftools several vcfs
 	"""
 	input:
-		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
+		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz", aligner=aligner_list, sample=sample_list)
 	output:
-		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Full.vcf.gz"
+		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Unfiltered.vcf.gz"
 	shell:
 		"""
 		if [ {sample_count} -eq 1 ]
@@ -604,7 +605,7 @@ rule filtervcfdesign:
 	Filter vcf with a bed file
 	"""
 	input:
-		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Full.vcf.gz"
+		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz"
 	output:
 		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
 	params:
@@ -632,17 +633,48 @@ rule cpvcfdesign:
 		fi
 		"""
 
-rule mergeAnnotSV_tsv:
+
+rule mergeAnnotSVunfiltered_tsv:
 	"""
-	Merge AnnotSV tsv results
+	Merge AnnotSV Unfiltered tsv results
 	"""
 	input:
-		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV_uncorr.tsv" ,sample=sample_list, aligner=aligner_list)
+		tsvuncorr = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Unfiltered.tsv" ,sample=sample_list, aligner=aligner_list)
 	output:
-		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv"
+		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv"
 	shell:
 		"""
 		cat {input.tsv} | sort -u | sort -r >> {output.alltsv}
+		"""
+
+
+rule convertvcf:
+	"""
+	Vcf 2 tsv conversion
+	"""
+	input:
+		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
+	output:
+		tsvdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv"
+	log:
+		log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Vcf2Tsv_converter.log"
+	shell:
+		"""
+		bgzip -cd {input.vcfgzdesign} | python {scriptspath}/ Vcf2Tsv_converter.py -i {input.vcfgzdesign} -o {output.tsvdesign} 2> {log.log2}
+		"""
+
+
+rule mergeAnnotSVDesign_tsv:
+	"""
+	Merge AnnotSV Design tsv results
+	"""
+	input:
+		tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv" ,sample=sample_list, aligner=aligner_list)
+	output:
+		alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
+	shell:
+		"""
+		cat {input.tsvdesign} | sort -u | sort -r >> {output.alltsvdesign}
 		"""
 
 
