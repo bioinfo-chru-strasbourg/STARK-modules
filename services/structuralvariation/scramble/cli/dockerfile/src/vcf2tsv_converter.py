@@ -17,7 +17,9 @@ import sys
 import numpy as np
 import shutil
 import gzip
-
+import doctest
+import argparse
+import os
 
 def _parse_sample_field(dfVar):
 	#############
@@ -243,11 +245,12 @@ def uncompress_file(compress, uncompress):
 
 def main(inputfile, outputfile):
 	if os.path.basename(inputfile).endswith('.vcf.gz'):
+		inputfile_vcf = inputfile.split(".")[0]
 		uncompress_file(inputfile, inputfile_vcf)
-	else
+	else:
 		inputfile_vcf = inputfile
 	df_variants, _, _l = parse_sample_field(preprocess_vcf(inputfile_vcf))
-	tmp = vcf.split(".")[:-1]
+	tmp = inputfile_vcf.split(".")[:-1]
 	out = ".".join(tmp) + ".tsv"
 	df_variants.to_csv(outputfile, sep="\t", header=True, index=False)
 

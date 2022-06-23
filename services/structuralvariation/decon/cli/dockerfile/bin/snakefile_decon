@@ -650,7 +650,7 @@ rule all:
 	"""
 	input:
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
-		allfailtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.txt", aligner=aligner_list),
+		allfailtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.tsv", aligner=aligner_list),
 		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
 		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
@@ -801,7 +801,7 @@ rule merge_IdentifyFailures:
 # crash if conversion goes wrong
 rule Decon_tsv2vcf:
 	input:
-		allcalltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.txt"
+		allcalltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.tsv"
 	output:
 		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Design.unsort.vcf"
 	log:
