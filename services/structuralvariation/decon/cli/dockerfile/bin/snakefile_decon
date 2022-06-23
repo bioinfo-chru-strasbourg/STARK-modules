@@ -13,10 +13,11 @@
 	# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_LIST_RESTRICT)
 	# rewrite DECON bed / custom numbering formating
 	# remove panel vcf filtering (output was essentially empty)
-	# merge tsv from AnnotSV in one file
-	# add a chr filter option to remove chrosome (essentially chrY) (CHR_LIST_RESTRICT)
-	# add a chrX Male gender analysis only to avoid chrY failure
+	# merge AnnotSV tsv from each samples into all samples's file
+	# add a chr filter option to remove chromosome (essentially chrY) (CHR_LIST_RESTRICT)
+	# add a chrX Male gender analysis only to avoid chrY failure (can be configure in the yaml)
 	# rename failures and results_all from txt to tsv
+	# script to convert vcf to tsv & rules
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -875,7 +876,7 @@ rule AnnotSV:
 		mode = config['annotationMode']
 	shell:
 		"""
-		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsvuncorr} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsvuncorr} ]] || echo "No data to annotate" > {output.tsvuncorr}
+		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsvuncorr} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsvuncorr} ]] || echo "#No data to annotate" > {output.tsvuncorr}
 		"""
 
 # AnnotSV drop chr from input 
@@ -905,7 +906,7 @@ rule AnnotSV2vcf:
 		log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV2vcf.log"
 	shell:
 		"""
-		python {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json 2> {log.log2} && [[ -s {output.vcfunsort} ]] || echo "No data to annotate" > {output.vcfunsort}
+		python {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json 2> {log.log2} && [[ -s {output.vcfunsort} ]] || echo "#No data to annotate" > {output.vcfunsort}
 		"""
 
 # bcftools sort don't sort correctly
@@ -950,17 +951,19 @@ rule mergedesign:
 		bcftools merge {input.vcfgzdesign} -O z -o {output.vcfgzalldesign} && tabix {output.vcfgzalldesign}
 		"""
 
-rule mergeAnnotSV_tsv:
+rule convertvcf_alldesign:
 	"""
-	Merge AnnotSV tsv results
+	Vcf 2 tsv conversion
 	"""
 	input:
-		tsv = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv",sample=sample_list, aligner=aligner_list)
+		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
 	output:
-		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
+		tsvalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
+	log:
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.py.log"
 	shell:
 		"""
-		cat {input.tsv} | sort -u | sort -r >> {output.alltsv}
+		python {scriptspath}/vcf2tsv_converter.py -i {input.vcfgzalldesign} -o {output.tsvalldesign} 2> {log.log2}
 		"""
 
 

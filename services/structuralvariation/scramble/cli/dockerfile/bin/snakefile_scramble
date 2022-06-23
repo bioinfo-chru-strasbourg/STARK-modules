@@ -10,11 +10,10 @@
 
 
 # PROD version 2 : 16/06/2022 changelog
-	# merge tsv from AnnotSV in one file
-	# remove panel vcf filtering (output was essentially empty)
-	# script to convert vcf to tsv
+	# merge AnnotSV tsv from each samples into all samples's file
+	# remove panel vcf filtering (output was essentially empty) ; rename full to unfiltered
+	# script to convert vcf to tsv & rules
 
-	# TODO copy last results files in DECON dir
 
 ################## Context ##################
 # launch snakemake -s  snakefile_scramble -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -369,6 +368,9 @@ if debug:
 # check the number of sample for copy or merge vcf rule
 sample_count = len(sample_list) 
 
+# Make a report
+# report: "/app/res/workflow.rst"
+
 # add more input with expand to display rules help
 rule all:
 	"""
@@ -379,6 +381,7 @@ rule all:
 		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
 		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv",
 		alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
+
 
 rule help:
 	"""
@@ -401,6 +404,7 @@ rule indexing:
 	input:
 		bam = inputdir + "/{sample}.{aligner}.bam"
 	output:
+		#bai = report(inputdir + "/{sample}.{aligner}.bai")
 		bai = inputdir + "/{sample}.{aligner}.bai"
 	params:
 		threads = config['THREADS']
@@ -634,21 +638,7 @@ rule cpvcfdesign:
 		"""
 
 
-rule mergeAnnotSVunfiltered_tsv:
-	"""
-	Merge AnnotSV Unfiltered tsv results
-	"""
-	input:
-		tsvuncorr = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Unfiltered.tsv" ,sample=sample_list, aligner=aligner_list)
-	output:
-		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv"
-	shell:
-		"""
-		cat {input.tsv} | sort -u | sort -r >> {output.alltsv}
-		"""
-
-
-rule convertvcf:
+rule convertvcf_sample:
 	"""
 	Vcf 2 tsv conversion
 	"""
@@ -660,22 +650,40 @@ rule convertvcf:
 		log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Vcf2Tsv_converter.log"
 	shell:
 		"""
-		bgzip -cd {input.vcfgzdesign} | python {scriptspath}/ Vcf2Tsv_converter.py -i {input.vcfgzdesign} -o {output.tsvdesign} 2> {log.log2}
+		python {scriptspath}/vcf2tsv_converter.py -i {input.vcfgzdesign} -o {output.tsvdesign} 2> {log.log2}
 		"""
 
-
-rule mergeAnnotSVDesign_tsv:
+rule convertvcf_alldesign:
 	"""
-	Merge AnnotSV Design tsv results
+	Vcf 2 tsv conversion
 	"""
 	input:
-		tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv" ,sample=sample_list, aligner=aligner_list)
+		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
 	output:
-		alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
+		tsvalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
+	log:
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.py.log"
 	shell:
 		"""
-		cat {input.tsvdesign} | sort -u | sort -r >> {output.alltsvdesign}
+		python {scriptspath}/vcf2tsv_converter.py -i {input.vcfgzalldesign} -o {output.tsvalldesign} 2> {log.log2}
 		"""
+
+rule convertvcf_allunfiltered:
+	"""
+	Vcf 2 tsv conversion
+	"""
+	input:
+		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Unfiltered.vcf.gz"
+	output:
+		tsvalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv"
+	log:
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.py.log"
+	shell:
+		"""
+		python {scriptspath}/vcf2tsv_converter.py -i {input.vcfgzallfull} -o {output.tsvalldesign} 2> {log.log2}
+		"""
+
+
 
 
 onstart:
