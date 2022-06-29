@@ -378,7 +378,7 @@ rule all:
 	Rule will create an unfiltered vcf.gz & design vcf.gz and correponding tsv
 	"""
 	input:
-		tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv" sample=sample_list, aligner=aligner_list),
+		tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list),
 		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv",
 		alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
