@@ -12,7 +12,7 @@
 # PROD version 2 : 16/06/2022 changelog
 	# merge AnnotSV tsv from each samples into all samples's file
 	# remove panel vcf filtering (output was essentially empty) ; rename full to unfiltered
-	# script to convert vcf to tsv & rules
+	# script to convert vcf to tsv & corresponding rules
 
 
 ################## Context ##################
@@ -374,13 +374,13 @@ sample_count = len(sample_list)
 # add more input with expand to display rules help
 rule all:
 	"""
-	Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
+	Rule will create an unfiltered vcf.gz & design vcf.gz and correponding tsv
 	"""
 	input:
-		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz", sample=sample_list, aligner=aligner_list),
-		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
+		tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv" sample=sample_list, aligner=aligner_list),
 		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv",
 		alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
+
 
 
 rule help:

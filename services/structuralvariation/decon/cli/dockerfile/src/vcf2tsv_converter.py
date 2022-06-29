@@ -9,6 +9,7 @@
 
 # TL	: Add a input and an output option, argparse
 # 		: Add uncompress function for vcf.gz
+# 		: cleaning
 
 import pandas as pd
 from tqdm import tqdm
@@ -27,10 +28,8 @@ def _parse_sample_field(dfVar):
 	#############
 
 	dico = []
-	# dfTest = pd.Series(dfVar.TEM195660.values,index=dfVar.FORMAT).to_dict()
 	bad_annotation = []
 	sample_list = []
-
 	# Parsing FORMAT field in VCF
 	# print("[#INFO] Parsing FORMAT field")
 	isample = list(dfVar.columns).index("FORMAT") + 1
@@ -81,7 +80,6 @@ def parse_sample_field(dfVar):
 	#############
 
 	dico = []
-	# dfTest = pd.Series(dfVar.TEM195660.values,index=dfVar.FORMAT).to_dict()
 	bad_annotation = []
 	sample_list = []
 
@@ -101,7 +99,6 @@ def parse_sample_field(dfVar):
 		):
 			# print_progress_bar(i, len(dfVar.index)-1)
 			# print('\n')
-			# print(row['FORMAT'].split(':'), row['bwamem.VarScan_HUSTUMSOL.howard'].split(':'))
 			if len(row["FORMAT"].split(":")) != len(row[col].split(":")):
 				bad_annotation.append(pd.Series(row[:], index=dfVar.columns))
 				continue
@@ -154,8 +151,7 @@ def parse_info_field(dfVar):
 	):
 		# print_progress_bar(i, len(dfVar.index)-1)
 		infoList.append([x.split("=", 1) for x in elems["INFO"].split(";")])
-
-	# print("\n")
+		# print("\n")
 
 	[headers.append(elems[0]) for ite in infoList for elems in ite]
 	dfInfo = pd.DataFrame(columns=np.unique(np.array(headers)))
@@ -172,15 +168,12 @@ def parse_info_field(dfVar):
 			else:
 				f = dict([fields])
 				add.update(f)
-
 		dicoInfo.append(add)
 
 	# print("\n")
 	# print(dicoInfo.keys())
 	# print(dict(list(dicoInfo.items())[0:2]))
-
 	df_final = pd.DataFrame(dicoInfo, columns=np.unique(np.array(headers)))
-
 	dfInfo = dfVar.iloc[:, :7].join(df_final, how="inner")
 	# Drop old columns info
 	# dfInfo.drop(columns="INFO", inplace=True)
@@ -222,7 +215,6 @@ def preprocess_vcf(file):
 			if lines.split("\t")[0] != "#CHROM":
 				data["header"].append(lines.strip())
 			else:
-				# data["fields"] = lines.strip().split("\t")
 				data["fields"] = lines.strip()
 				skip.append(i)
 				break
