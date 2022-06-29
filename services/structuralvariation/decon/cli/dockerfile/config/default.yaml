@@ -29,7 +29,7 @@ OUTPUT_DIR: ""
 TMP_DIR: "tmp"
 
 # Copy to depot directory (archive)
-DEPOT_COPY: False
+DEPOT_COPY: True
 
 # Group and App default name
 GROUP_NAME: "UNKNOWN"
@@ -62,14 +62,14 @@ BEDTOOLS_PATH: "/tools/bedtools/current/bin/bedtools"
 BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
 # Path to scripts
 SCRIPTS_PATH: "/app/src"
-# Samples list exclusion (not to be analyse) (startswith)
-EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
+# Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
+EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
 # Sample filter
 FILTER_SAMPLE: []
 
 ### Indexing files options
 # Ext to index (endwith)
-EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai", ".list.genes", ".tag"]
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes", ".tag"]
 
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False
@@ -84,7 +84,7 @@ ALIGNER_NAME:
 
 # Rsync options : if several files are added add {} at the start and end of the list
 # include_rsync must have more than one arguement
-INCLUDE_RSYNC: "{'*.tsv','*.vcf.gz','*.vcf.gz.tbi','*.pdf','*.txt','*.bed','*/'}"
+INCLUDE_RSYNC: "{'*Unfiltered.vcf.gz','*Unfiltered.vcf.gz.tbi','*Design.vcf.gz','Design.vcf.gz.tbi','*AnnotSV.Unfiltered.tsv','*AnnotSV.Design.tsv','*Design_results_all.tsv','*Identify_Failures.tsv','*.bed','*list.txt','*/'}"
 # exclude_rsync can only take on arguement
 EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed
@@ -98,7 +98,7 @@ SEARCH_ARGUMENT: "/*/STARK/*"
 THREADS: "4"
 
 ## DEBUG ##
-DEBUG_MODE: True
+DEBUG_MODE: False
 
 ### DECON BED processing ###
 # Regen exon number with IntersectBed and a refseqgene reference (True/False)
@@ -132,7 +132,7 @@ mincov: 100 # Minimum coverage threshold – the minimum median coverage for any
 ############# makeCNVcalls params
 transProb: 0.01 # Transition probability – the transition probability between normal copy number state and either deletion or duplication state in the hidden Markov model, 0.01 is a high threshold value to increase sensitivity (default 0.01)
 customexon: False # default False
-plot: None # default (plot argument should be one of: None, Custom or All)
+plot: All # default (plot argument should be one of: None, Custom or All)
 plotFolder: # default DECoNPlots folder
 
 ############# AnnotSV params

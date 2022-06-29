@@ -18,6 +18,7 @@
 	# add a chrX Male gender analysis only to avoid chrY failure (can be configure in the yaml)
 	# rename failures and results_all from txt to tsv
 	# script to convert vcf to tsv & rules
+	# exclude samples list case insentitive
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -291,9 +292,10 @@ sample_list = extractlistfromfiles(files_list, process_file, '.', 0)
 aligner_list = extractlistfromfiles(files_list, process_file, '.', 1)
 
 # Exclude samples from the exclude_list
+# Case insensitive
 for sample_exclude in sample_exclude_list:
 	for sample in sample_list:
-		if sample.startswith(sample_exclude):
+		if sample.upper().startswith(sample_exclude.upper()):
 			sample_list.remove(sample)
 
 # If filter_sample_list variable is not empty, it will force the sample list
