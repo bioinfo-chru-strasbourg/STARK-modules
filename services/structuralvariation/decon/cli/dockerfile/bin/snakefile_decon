@@ -722,7 +722,7 @@ rule makeCNVcalls:
 	params:
 		prob = config['transProb'],
 		pdf = tmpdir + "/pdfs/",
-		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{aligner}.{gender}.CustomNumbering.txt",
+		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{gender}.CustomNumbering.txt",
 		plot = config['plot'],
 		customplot = config['customexon'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results",
@@ -752,7 +752,7 @@ rule IdentifyFailures:
 	input:
 		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
 	params:
-		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{aligner}.{gender}.CustomNumbering.txt",
+		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{gender}.CustomNumbering.txt",
 		mincorr = config['mincorr'],
 		mincov = config['mincov'],
 		customplot = config['customexon'],
@@ -984,7 +984,7 @@ onsuccess:
 	for sample in sample_list:
 		for pdf in pdf_list:
 			if sample in pdf:
-				shell("mv "+tmpdir+ "/pdfs/"+pdf+" " +outputdir+"/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/")
+				shell("mv "+tmpdir+ "/pdfs/"+pdf+" " +tmpdir+"/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/")
 	# rmdir the /pdfs dir
 	shell("rm -rf "+tmpdir+"/pdfs")
 	# Add end time of the analysis to the log file
