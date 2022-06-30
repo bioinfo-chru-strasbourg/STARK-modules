@@ -501,8 +501,8 @@ if bed_file and genes_file and customexon_regen == False:
 	####### Intersect bed with genes files using bedtools #######
 	intersectbed(bed_file, cat_noduplicate_panels_bed, outputbed)
 	if old_bed == False:
-		df = pd.read_csv(outputbed, sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "Custom.Exon"])
-		df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12'], 1)
+		df = pd.read_csv(outputbed, sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "13", "14", "15", "16", "17", "18", "Custom.Exon"])
+		df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12','13', '14', '15', '16', '17', '18'], 1)
 	else:
 		df = pd.read_csv(outputbed, sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12"])
 		df = df.drop(['4', '5', '6', '7', '8', '9', '11', '12'], 1)
