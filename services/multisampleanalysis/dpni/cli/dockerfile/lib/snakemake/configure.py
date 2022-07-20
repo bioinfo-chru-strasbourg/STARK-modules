@@ -17,7 +17,7 @@ tools = {
 }
 
 
-def configure(run, trio_tmp, genome, tools, output):
+def configure(run, trio_tmp, genome, tools, output, repository, depository):
     trio = trio_tmp.split(",")
     family = {}
     family["tools"] = tools
@@ -90,6 +90,9 @@ def configure(run, trio_tmp, genome, tools, output):
     family["env"]["output"] = "/app/res"
     family["env"]["genome"] = genome
     family["env"]["bed"] = bed
+    family["env"]["run"] = run
+    family["env"]["repository"] = repository
+    family["env"]["depository"] = depository
 
     config = writejson(family, output)
     # print(json.dumps(family, indent=2))
@@ -155,13 +158,35 @@ def parseargs():
     parser.add_argument(
         "-t", "--trio", type=str, help="List of sample representing example s1,s2,s3"
     )
+    parser.add_argument(
+        "-ry",
+        "--repository",
+        type=str,
+        default="",
+        help="Absolute path of STARK repository",
+    )
+    parser.add_argument(
+        "-dy",
+        "--depository",
+        type=str,
+        default="",
+        help="Absolute path of STARK depository",
+    )
     args = parser.parse_args()
     return args
 
 
 if __name__ == "__main__":
     args = parseargs()
-    configure(args.run, args.trio, args.genome, args.tools, args.output)
+    configure(
+        args.run,
+        args.trio,
+        args.genome,
+        args.tools,
+        args.output,
+        args.repository,
+        args.depository,
+    )
 
 
 # run = "/STARK/data/users/jb/run_bbs"
