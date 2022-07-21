@@ -5,7 +5,9 @@ from os.path import join as osj
 
 
 class config:
-    def __init__(self, run, trio, genome, tools, output, repository, depository):
+    def __init__(
+        self, run, trio, genome, tools, output, repository, depository, config_path
+    ):
         self.run = run
         self.trio = (trio,)
         self.genome = genome
@@ -13,18 +15,23 @@ class config:
         self.output = output
         self.repository = repository
         self.depository = depository
+        self.config_path = config_path
 
-    def configure(self, run, trio_tmp, genome, tools, output, repository, depository):
-        trio = trio_tmp.split(",")
+    def configure(self):
+        trio = self.trio.split(",")
         family = {}
-        family["tools"] = tools
+        if type(self.tools) == dict:
+            family["tools"] = self.tools
+        else:
+            with open(self.tools, "r") as js:
+                self.tools = json.load(js)
         family["family"] = {}
-        for samples in os.listdir(run):
-            if samples in trio and os.path.isdir(osj(run, samples)):
+        for samples in os.listdir(self.run):
+            if samples in trio and os.path.isdir(osj(self.run, samples)):
                 samp = {}
                 tagfile = self.systemcall(
                     "find "
-                    + osj(run, samples)
+                    + osj(self.run, samples)
                     + ' -maxdepth 2  -name "'
                     + samples
                     + '.tag"'
@@ -57,7 +64,7 @@ class config:
                 # Looking for bam files
                 bamfile = self.systemcall(
                     "find "
-                    + osj(run, samples)
+                    + osj(self.run, samples)
                     + ' -maxdepth 3 -name "*.bwamem.bam" ! -name "*.validation.*"'
                 )[0]
                 samp["bam"] = bamfile
@@ -66,7 +73,7 @@ class config:
                     exit()
                 vcfile = self.systemcall(
                     "find "
-                    + osj(run, samples)
+                    + osj(self.run, samples)
                     + ' -maxdepth 3 -name "'
                     + samples
                     + '.final.vcf"'
@@ -84,14 +91,14 @@ class config:
         bed = self.getbed(run)
 
         family["env"] = {}
-        family["env"]["output"] = "/app/res"
-        family["env"]["genome"] = genome
-        family["env"]["bed"] = bed
-        family["env"]["run"] = run
-        family["env"]["repository"] = repository
-        family["env"]["depository"] = depository
+        family["env"]["output"] = self.output
+        family["env"]["genome"] = self.genome
+        family["env"]["bed"] = self.bed
+        family["env"]["run"] = self.run
+        family["env"]["repository"] = self.repository
+        family["env"]["depository"] = self.depository
 
-        config = self.writejson(family, output)
+        config = self.writejson(family, self.config_path)
         # print(json.dumps(family, indent=2))
         return config
 
@@ -100,8 +107,9 @@ class config:
         """
         Read dict, return a json file
         """
-        with open(f, "w") as outfile:
+        with open(f, "w+") as outfile:
             json.dump(d, outfile, indent=4)
+        return f
 
     @staticmethod
     def systemcall(command):
