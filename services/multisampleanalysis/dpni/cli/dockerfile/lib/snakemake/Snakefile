@@ -938,6 +938,22 @@ rule uniq_trio:
         """
             {params.bcftools} view -s {wildcards.sample} {input} | grep -v '^##HOWARD' > {output} 2>> {log}
         """
+rule uniq_trio_foetus:
+    params:
+        bcftools=config["tools"]["bcftools"]
+    input:
+        output+"/MOTHER.norm.vcf",
+
+    output:
+        temp(output+"/FOETUS.norm.uniq.vcf")
+    log:
+        log+"/FOETUS.bcftools.log"
+    params:
+        sample = config["foetus"]["name"]
+    shell:
+        """
+            {params.bcftools} view -s {params.sample} {input} | grep -v '^##HOWARD' > {output} 2>> {log}
+        """
 
 rule sort_vcf:
     input:
