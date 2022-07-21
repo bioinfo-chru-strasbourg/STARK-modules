@@ -945,14 +945,15 @@ rule uniq_trio_foetus:
         output+"/MOTHER.norm.vcf",
 
     output:
-        temp(output+"/FOETUS.norm.uniq.vcf")
+        tmp = temp(output+"/FOETUS.norm.uniq.vcf")
+        sort = output+"/FOETUS.norm.uniq.sorted.vcf"
     log:
         log+"/FOETUS.bcftools.log"
     params:
         sample = config["foetus"]["name"]
     shell:
         """
-            {params.bcftools} view -s {params.sample} {input} | grep -v '^##HOWARD' > {output} 2>> {log}
+            {params.bcftools} view -s {params.sample} {input} | grep -v '^##HOWARD' > {output.tmp} 2>> {log} && grep "^#" {output.tmp} > {output.sort} && grep -v "^#" {output.tmp} | sort -k1,1V -k2,2n >> {output.sort}
         """
 
 rule sort_vcf:
