@@ -18,7 +18,6 @@ from tqdm import tqdm
 from datetime import datetime
 
 
-#Date
 date = datetime.now().strftime("%Y%m%d-%H%M%S")
 
 def systemcall(command):
@@ -265,7 +264,7 @@ def addFrequence(df, sample, s_list):
                 try:
                     tmp2_data[count[0]] = str(round(float(count[1]) / values['Total_Depth_'+indiv], 2))
                 except:
-                    print("#[INFO] Depth is 0 for ", values['Locus_'+indiv])
+                    #print("#[INFO] Depth is 0 for ", values['Locus_'+indiv])
                     tmp2_data[count[0]] = "0"
 
             count = '|'.join(':'.join((key,val)) for (key,val) in tmp_data.items())
@@ -361,11 +360,12 @@ def parseSpeed(covfiles, df, col, sample):
     pd.set_option('mode.chained_assignment', None)
     
     
-    print("#[INFO] chr "+covfiles)
+    #print("#[INFO] chr "+covfiles)
     #print("#[INFO] Chrcov "+covfiles)
     data = []
     #read cov file results from gatk depth coverage to dataframe
-    tmp = pd.read_csv(covfiles, sep='\t', names=col)
+    tmp_chunk = pd.read_csv(covfiles, sep='\t', names=col, chunksize=10000)
+    tmp = pd.concat(tmp_chunk)
 
     #chr number
     chr = os.path.basename(covfiles)[7:]
@@ -373,7 +373,7 @@ def parseSpeed(covfiles, df, col, sample):
     locus_name = 'Locus_'+sample
 
     cov = tmp.loc[tmp[locus_name].str.startswith(chr+':')]#.to_dict('records')
-    print("INFO COV", cov.head())
+    #print("INFO COV", cov.head())
 
     #select only one chromosome (cut by starmap func to multiprocess)
     df_tmp = df.loc[df['#CHROM'] == chr]
@@ -386,7 +386,7 @@ def parseSpeed(covfiles, df, col, sample):
     cov = cov.set_index(locus_name)
 
     #print("INFO DF_TMP "+covfiles, df_tmp)
-    print("INFO length dftmp ", len(df_tmp.index))
+    #print("INFO length dftmp ", len(df_tmp.index))
 
     #Merge variants df and depthcov df in index Locus for each variants position we get the values of cov
     final = df_tmp.merge(cov, left_index=True, right_index=True, how='left')
@@ -396,6 +396,7 @@ def parseSpeed(covfiles, df, col, sample):
     locus = final[locus_name]
     final.drop(columns=locus_name, inplace=True)
     final.insert(10, locus_name, locus)
+    final.drop_duplicates(inplace=True)
     final = final.iloc[:, 1:]
     print("#[INFO] Length variants "+os.path.basename(covfiles), len(final.index))
     return final
@@ -598,10 +599,9 @@ def copy_repository(seg):
                 else:
                     os.mkdir(osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
                     #move olde analysis files if they exists in DPNI date folder
-                    systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/*")+" "+osj(config["env"][  "repository"], sample, "DPNI", "DPNI."+date))
+                    systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/*.vcf.gz*")+" "+osj(config["env"][  "repository"], sample, "DPNI", "DPNI."+date))
                     #Same with log folder
                     systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/.log")+" "+osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
-                
                 #Copy new vcf analysis and index into repo sample
                 print("#[INFO] Copying sample "+sample)
                 systemcall("rsync "+osj(config["env"]["output"], seg[sample]+".final.vcf.gz*")+" "+osj(config["env"]["repository"], sample, 'DPNI'))
@@ -624,7 +624,7 @@ def handle_error():#TODO TEST
             else:
                 os.mkdir(osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
                 #move olde analysis files if they exists in DPNI date folder
-                systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/*")+" "+osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
+                systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/*.final.vcf.gz*")+" "+osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
                 #Same with log folder
                 systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/.log")+" "+osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
                 #Copy log in folder
@@ -659,41 +659,77 @@ seg = {}
 seg[config["family"]["MOTHER"]["affinity"][0]] = 'MOTHER'
 seg[config["family"]["FATHER"]["affinity"][0]] = 'FATHER'
 seg[config["foetus"]["name"]] = 'FOETUS'
+whole = list(config['family'].keys())
+whole.append(config['foetus']['name'])
+print("#[INFO] FAMILY ", whole)
+
 
 if config["env"]["repository"]:
     rule all:
         params:
             bgzip = config["tools"]["bgzip"],
-            tabix = config["tools"]["tabix"]
+            tabix = config["tools"]["tabix"],
+            bcftools = config["tools"]["bcftools"]
         input:
-            expand(output+"/{sample}.final.vcf", sample=config['family'])
+            expand(output+"/{sample}.final.vcf", sample=whole)
         log:
             log+"/all.log"
         run:
             #Compress and Index (same cmd in bash above)
             for vcf in input:
+                print(vcf)
                 systemcall(params.bgzip+" --force "+vcf+" && "+params.tabix+" -p vcf "+vcf+".gz")
-            copy_repository(seg)
+                alias = os.path.basename(vcf).split(".", 1)[0]
+                if alias in ["MOTHER", "FATHER"]:
+                    #s = config["family"][os.path.basename(vcf).split(".", 1)[0]]["affinity"][0]
+                    #print("#[INFO] rule all ", s)
+                    id = config["family"][alias]["affinity"][0]
+                    systemcall("echo "+id+" > "+osj(config["env"]["output"], id))
+                    systemcall(params.bcftools+" reheader -s "+osj(config["env"]["output"], id)+" "+vcf+".gz -o "+osj(config["env"]["output"], id+".final.vcf.gz")+" && "+params.tabix+" -p vcf "+osj(config["env"]["output"], id+".final.vcf.gz"))
+                    alias = id
+                
+                #Copying vcf
+                sample = os.path.basename(vcf).split('.', 1)[0]
+                if not os.path.exists(osj(config["env"]["repository"], alias, "DPNI")):
+                    print("#[INFO] Create folder ", osj(config["env"]["repository"], alias, "DPNI"))
+                    os.mkdir(osj(config["env"]["repository"], alias, "DPNI"))
+                else:
+                    print("[INFO] store old results")
+                    os.mkdir(osj(config["env"]["repository"], alias, "DPNI", "DPNI."+date))
+                    #results shouldn't be
+                    #move old analysis files if they exists in DPNI date folder
+                    systemcall("mv "+osj(config["env"]["repository"], alias, "DPNI/*.final.vcf.gz*")+" "+osj(config["env"],["repository"], alias, "DPNI", "DPNI."+date))
+                    #Same with log folder
+                    systemcall("mv "+osj(config["env"]["repository"], alias, "DPNI/.log")+" "+osj(config["env"]["repository"], alias, "DPNI", "DPNI."+date))
+
+                print("#[INFO] Copying sample ", alias)
+                systemcall("rsync "+alias+".final.vcf.gz* "+osj(config["env"]["repository"], alias, "DPNI/"))
+                systemcall("rsync -ar "+osj(config["env"]["output"], '.log')+" "+osj(config["env"]["repository"], alias, "DPNI/"))
+                #else:
+                #    id = config["foetus"]["name"]
+                    #shutil.copy2(vcf+".gz", osj(config["env"]["output"], id+".final.vcf.gz"))
+            #copy_repository(seg)
 else:
     rule all:
         params:
             bgzip = config["tools"]["bgzip"],
             tabix = config["tools"]["tabix"]
         input:
-            expand(output+"/{sample}.final.vcf", sample=config['family'])
+            expand(output+"/{sample}.final.vcf", sample=whole),
+
         log:
             log+"/all.log"
-        shell:
-            """
-                for VCF in {input}; do {params.bgzip} --force $VCF && {params.tabix} -p vcf $VCF.gz; done
-            """
+        run:
+            #Compress and Index (same cmd in bash above)
+            for vcf in input:
+                systemcall(params.bgzip+" --force "+vcf+" && "+params.tabix+" -p vcf "+vcf+".gz")
 
 
 rule paste_vcf_pool:
     input:
         foetus = config['foetus']['vcf']
     output:
-        output+"/pool.vcf"
+        output+"/pool.vcf.gz"
     shell:
         """
             cp {input} {output}
@@ -704,13 +740,15 @@ rule add_info:
         vcf = output+"/{sample}.norm.uniq.sorted.vcf",
         cov = output+"/all.gatk.cov"
     output:
-        vcf = temp(output+"/{sample}.final.vcf")
+        vcf = output+"/{sample}.final.vcf"
     threads: config['tools']['threads']
     run:
         subprocess.call("mkdir -p "+output.vcf+".dict", shell=True)
         subprocess.call("awk -F \":\" 'NR>1{print $0 >> (\""+output.vcf+".dict/COVFILE\" $1)}' "+input.cov, shell=True)
         #####new
         sample_name = os.path.basename(input.vcf).split('.')[0]
+        if sample_name == config["foetus"]["name"]:
+            sample_name = "foetus"
         #transform raw vcf into dataframe and insert header in list
         df, head = vcfTodataframe(input.vcf, True)
         
@@ -726,49 +764,46 @@ rule add_info:
         #parse variants by chr to speed up analysis
         #prepare args for multiprocessing
         print("#[INFO] Parse variants by chr")
-        list_cov = [(osj(output.vcf+'.dict', covfiles), df, col, sample_name) for covfiles in os.listdir(output.vcf+'.dict') if not covfiles.startswith('COVFILELocus')]
+        #list_cov = [(osj(output.vcf+'.dict', covfiles), df, col, sample_name) #for covfiles in os.listdir(output.vcf+'.dict') if not covfiles.#startswith('COVFILELocus')]
         #print("#[INFO] LISTCV", list_cov)
-        print("#[INFO] chr nbr", len(list_cov))
-        with Pool(config['tools']['threads']) as pool:
-            result = pool.starmap(parseSpeed, list_cov)
-            for locus in result:
-                list_var.append(locus)
-
+        #print("#[INFO] chr nbr", len(list_cov))
+        #Multiprocess
+        #with Pool(config['tools']['threads']) as pool:
+        #    result = pool.starmap(parseSpeed, list_cov)
+        for covfiles in os.listdir(output.vcf+'.dict'):
+            if not covfiles.startswith('COVFILELocus'):
+                print("#[INFO] Covfile ", covfiles)
+                list_var.append(parseSpeed(osj(output.vcf+'.dict', covfiles), df, col, sample_name))
         #print("#[INFO] LISTVAR ", list_var)
         #result = pd.concat(list_var, axis=1, ignore_index=True)
         print("#[INFO] Process annotations")
         #frequence annotations
         metrics = pd.concat(list_var)
         metrics = metrics.dropna(subset=['REF', 'ALT'], how='all')
-        print(metrics.columns)
-        print(len(metrics.index))
+
 
         #calculate frequence regarding depth and base identification
         s_list = ['foetus']
         s_list.extend(config['family'])
         print("#[INFO] Family people ", s_list)
+        
         frequence = addFrequence(metrics, sample_name, s_list)
-        print(frequence.columns)
-        print(len(frequence.index))
         #remove duplicate column used to create frequence
         metrics.drop(columns=["Depth_FATHER", "Depth_MOTHER", "Depth_foetus", "Base_counts_FATHER", "Base_counts_MOTHER", "Base_counts_foetus"], inplace=True)
         dfinal = pd.concat([metrics.reset_index(drop=True), frequence.reset_index(drop=True)], axis=1)
-        print("#[INFO] length df merge "+str(len(dfinal.index)))
-        print(dfinal.columns)
+
         info = frequence.iloc[:, 2:]
-        print("#[INFO] info columns", info.columns)
-        print(len(info.columns))
-        print("DEBUGG \n\n")
 
         for items in list(info.columns):
             info[items] = items+'='+info[items].astype(str)
         info['INFOS'] = info.agg(';'.join, axis=1)
         dfinal['INFO'] = dfinal['INFO']+';'+info['INFOS']
         #denovofilter
-        dfinal.to_csv("/app/res/test.csv", header=True, sep="\t", index=False)
+        #dfinal.to_csv("/app/res/test.csv", header=True, sep="\t", index=False)
         #The global denovo filter is more precise, can remove 2 lines above
-        df_final = denovoFilter(dfinal)
-        df_final['INFO'] =  df_final['INFO']+';'+['denovo_filter='+val for val in df_final['denovo_filter'].to_list()]
+        #df_final = #denovoFilter(dfinal)
+        df_final = dfinal.copy()
+        #df_final['INFO'] =  df_final['INFO']+';'+['denovo_filter='+val for val in df_final['denovo_filter'].to_list()]
         #TODO
         tmp_vcf = output.vcf+'.tmp'
         sample = os.path.basename(tmp_vcf).split('.')[0]
@@ -778,13 +813,14 @@ rule add_info:
         
         #sort and supress dict of coverage files
         subprocess.call('grep "^#" '+tmp_vcf+' > '+output.vcf+' && grep -v "^#" '+tmp_vcf+' | sort -k1,1V -k2,2n >> '+output.vcf, shell=True)
-        subprocess.call("rm -rf "+output.vcf+".dict", shell=True)
+        #subprocess.call("rm -rf "+output.vcf+".dict", shell=True)
+
 
 rule copy_vcf_pool:
     params:
         bcftools = config["tools"]["bcftools"]
     input:
-        foetus = output+"/pool.vcf"
+        foetus = output+"/pool.vcf.gz"
     output:
         tmp = temp(output+"/pool.renamed.vcf")
     log:
@@ -945,7 +981,7 @@ rule uniq_trio_foetus:
         output+"/MOTHER.norm.vcf",
 
     output:
-        tmp = temp(output+"/FOETUS.norm.uniq.vcf")
+        tmp = temp(output+"/FOETUS.norm.uniq.vcf"),
         sort = output+"/FOETUS.norm.uniq.sorted.vcf"
     log:
         log+"/FOETUS.bcftools.log"
@@ -1044,4 +1080,3 @@ rule merge_coverage_v2:
         """
             paste {input.samples} {input.foetus} > {output}
         """
-
