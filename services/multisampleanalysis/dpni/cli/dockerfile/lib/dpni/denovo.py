@@ -1,6 +1,51 @@
+from operator import index
 import pandas as pd
 from tqdm import tqdm
 import os
+import subprocess
+from multiprocessing import Pool
+from os.path import join as osj
+
+config = {
+    "tools": {
+        "java": "java",
+        "gatk": "/STARK/tools/gatk/3.8-1-0/bin/GenomeAnalysisTK.jar",
+        "VaRank": "/home1/TOOLS/tools/varank/VaRank_1.4.3",
+        "Alamut-batch": "/home1/TOOLS/tools/alamut_batch/alamut-batch-standalone-1.11",
+        "howard": "/STARK/tools/howard/current/bin/HOWARD",
+        "bcftools": "/STARK/tools/bcftools/current/bin/bcftools",
+        "bgzip": "/STARK/tools/htslib/current/bin/bgzip",
+        "tabix": "/STARK/tools/htslib/current/bin/tabix",
+        "threads": 2,
+    },
+    "family": {
+        "FATHER": {
+            "sex": "M",
+            "affinity": ["ASG2104494", "FATHER"],
+            "bam": "/STARK/data/users/jb/210728_NB551027_0901_AHLG3NBGXG/ASG2104494/STARK/ASG2104494.bwamem.bam",
+            "vcf": "/STARK/data/users/jb/210728_NB551027_0901_AHLG3NBGXG/ASG2104494/STARK/ASG2104494.reports/ASG2104494.final.vcf.gz",
+        },
+        "MOTHER": {
+            "sex": "F",
+            "affinity": ["ASG2104493", "MOTHER"],
+            "bam": "/STARK/data/users/jb/210728_NB551027_0901_AHLG3NBGXG/ASG2104493/STARK/ASG2104493.bwamem.bam",
+            "vcf": "/STARK/data/users/jb/210728_NB551027_0901_AHLG3NBGXG/ASG2104493/STARK/ASG2104493.reports/ASG2104493.final.vcf.gz",
+        },
+    },
+    "foetus": {
+        "name": "FAV2104492",
+        "bam": "/STARK/data/users/jb/210728_NB551027_0901_AHLG3NBGXG/FAV2104492/STARK/FAV2104492.bwamem.bam",
+        "vcf": "/STARK/data/users/jb/210728_NB551027_0901_AHLG3NBGXG/FAV2104492/STARK/FAV2104492.reports/FAV2104492.final.vcf.gz",
+    },
+    "env": {
+        "output": "/STARK/output/res",
+        "genome": "/STARK/databases/genomes/current/hg19.fa",
+        "bed": "/STARK/data/users/jb/210728_NB551027_0901_AHLG3NBGXG/ASG2104494/STARK/ASG2104494.bed",
+        "run": "/STARK/data/users/jb/210728_NB551027_0901_AHLG3NBGXG/",
+        "repository": "/STARK/data/users/jb/210728_NB551027_0901_AHLG3NBGXG/",
+        "depository": "",
+    },
+}
 
 
 def test(result):
@@ -73,6 +118,63 @@ def test(result):
     return result
 
 
+def uniqueChr(df):
+    unique = df["#CHROM"].unique()
+    return unique
+
+
+def addFrequence(df, sample, s_list):
+    # df.sort_values(by=['#CHROM', 'POS'], ascending=[False, True], key=lambda x: np.argsort(index_natsorted(df['#CHROM']
+    locus = "Locus_" + sample
+    data = []
+    # print(df.columns)
+    # print(df.head())
+    for i, values in df.iterrows():
+        # print(values)
+        last = {}
+        last["#CHROM"] = values[locus].strip().split(":")[0]
+        last["POSITION"] = values[locus].strip().split(":")[1]
+        # for each indivi stats
+        for indiv in s_list:
+            tmp = values["Base_counts_" + indiv].strip().split()
+            tmp_data = {}
+            tmp2_data = {}
+            # details of each bases count
+            for bases in tmp:
+                base = bases.split(":")
+                tmp_data[base[0]] = base[1]
+                # print(tmp_data)
+            for count in tmp_data.items():
+                # print(count)
+                try:
+                    tmp2_data[count[0]] = str(
+                        round(float(count[1]) / values["Total_Depth_" + indiv], 2)
+                    )
+                except:
+                    # print("#[INFO] Depth is 0 for ", values["Locus_" + indiv])
+                    tmp2_data[count[0]] = "0"
+
+            count = "|".join(":".join((key, val)) for (key, val) in tmp_data.items())
+            freq = "|".join(":".join((key, val)) for (key, val) in tmp2_data.items())
+
+            last["Depth_" + indiv] = values["Depth_" + indiv]
+            last["Base_counts_" + indiv] = count
+            last["Base_frequence_" + indiv] = freq
+
+        data.append(last)
+    final = pd.DataFrame(data)
+    return final
+
+
+def createFinaldf(df, header, oup):
+    raw = df[df.columns[0:10]]
+    with open(oup, "w+") as f:
+        for lines in header:
+            f.write(lines.strip() + "\n")
+    raw.to_csv(oup, mode="a", index=False, header=False, sep="\t")
+    return raw
+
+
 def parse_sample_field(dfVar):
     # UPDATE 21/06/2022
     # handle multisample and keep information of sample field like <sample>_<field> for each annotations
@@ -128,6 +230,56 @@ def parse_sample_field(dfVar):
         )
     df_final.drop(columns=sample_list, inplace=True)
     return df_final, df_bad_anno, sample_list
+
+
+def parseSpeed(covfiles, df, col, sample):
+    """
+    input: folder containing cov depth file by chr, vcf of the sample and list of unique chr
+    """
+    # hide warning
+
+    pd.set_option("mode.chained_assignment", None)
+
+    if os.path.basename(covfiles) == "COVFILEchr3":
+        print("#[INFO] chr " + covfiles)
+    # print("#[INFO] Chrcov "+covfiles)
+    data = []
+    # read cov file results from gatk depth coverage to dataframe
+    tmp = pd.read_csv(covfiles, sep="\t", names=col)
+    # chr number
+    chr = os.path.basename(covfiles)[7:]
+    locus_name = "Locus_" + sample
+    cov = tmp.loc[tmp[locus_name].str.startswith(chr + ":")]  # .to_dict    ('records')
+    # print("INFO COV", cov.head())
+    # select only one chromosome (cut by starmap func to multiprocess)
+    df_tmp = df.loc[df["#CHROM"] == chr]
+    # to match depth coverage informations
+    df_tmp.loc[:, locus_name] = (
+        df.loc[:, "#CHROM"].astype(str) + ":" + df.loc[:, "POS"].astype(str)
+    )
+    # Locus column as index for both variant and depthcoverage file
+    df_tmp = df_tmp.set_index(locus_name)
+    cov = cov.set_index(locus_name)
+    # print("INFO DF_TMP "+covfiles, df_tmp)
+    # print("INFO length dftmp ", len(df_tmp.index))
+    # Merge variants df and depthcov df in index Locus for each variants    position weget the values of cov
+    print("\n")
+    print("#[INFO] df tmp", df_tmp)
+    print("#[INFO] cov", cov)
+    print("\n")
+    final = df_tmp.merge(cov, left_index=True, right_index=True, how="left")
+    # reset index and reinsert Locus columns ex chr1:5667097 at good column     position
+    print("final before index", final)
+    final.reset_index(level=0, inplace=True)
+    locus = final[locus_name]
+    final.drop(columns=locus_name, inplace=True)
+    final.insert(10, locus_name, locus)
+    final.drop_duplicates(inplace=True)
+    final = final.iloc[:, 1:]
+    print(*final.columns)
+    print(final)
+    print("#[INFO] Length variants " + os.path.basename(covfiles), len(final.index))
+    return final
 
 
 def vcfTodataframe(file, rheader=False):
@@ -283,11 +435,152 @@ def barcode_DPNI(df, foetus):
     return df
 
 
-origin, header = vcfTodataframe("/app/res_test/FATHER.merged.vcf", True)
-df, _, _i = parse_sample_field(origin)
-#
-final = barcode_DPNI(df, "FF5")
-final.to_csv("/app/res/denovo_filter.tsv", header=True, index=False, sep="\t")
+def add_info(vcf_in, vcf_out, cov):
+    sample_name = os.path.basename(vcf_in).split(".")[0]
+    if sample_name == config["foetus"]["name"]:
+        sample_name = "foetus"
+    # transform raw vcf into dataframe and insert header in list
+    df, head = vcfTodataframe(vcf_in, True)
+
+    # unique chr cov file from gatk
+    unique = uniqueChr(df)
+    list_var = []
+
+    # columns of cov file
+    with open(cov) as f:
+        col = f.readline().strip().split("\t")
+    print("#[INFO] Columns depthcov ", col)
+    # col = ['Locus', 'Total_Depth', 'Average_Depth', 'Depth', 'Base_counts']
+    # parse variants by chr to speed up analysis
+    # prepare args for multiprocessing
+    print("#[INFO] Parse variants by chr")
+    list_cov = [
+        (osj(vcf_out + ".dict", covfiles), df, col, sample_name)
+        for covfiles in os.listdir(vcf_out + ".dict")
+        if not covfiles.startswith("COVFILELocus")
+    ]
+    # print(list_cov)
+    # print("#[INFO] LISTCV", list_cov)
+    print("#[INFO] chr nbr", len(list_cov))
+    with Pool(6) as pool:
+        # TEST async
+        result = tqdm(pool.starmap(parseSpeed, list_cov), total=len(list_cov))
+        if result.ready():
+            print("#[INFO] Starmap done")
+            pool.close()
+            pool.join()
+        for locus in result:
+            print(locus.head())
+            print(len(locus.index))
+            list_var.append(locus)
+    # print("#[INFO] LISTVAR ", list_var)
+    # result = pd.concat(list_var, axis=1, ignore_index=True)
+    print("#[INFO] Process annotations")
+    # frequence annotations
+    metrics = pd.concat(list_var)
+    metrics = metrics.dropna(subset=["REF", "ALT"], how="all")
+    # calculate frequence regarding depth and base identification
+    s_list = ["foetus"]
+    s_list.extend(config["family"])
+    print("#[INFO] Family people ", s_list)
+
+    frequence = addFrequence(metrics, sample_name, s_list)
+    # remove duplicate column used to create frequence
+    metrics.drop(
+        columns=[
+            "Depth_FATHER",
+            "Depth_MOTHER",
+            "Depth_foetus",
+            "Base_counts_FATHER",
+            "Base_counts_MOTHER",
+            "Base_counts_foetus",
+        ],
+        inplace=True,
+    )
+    dfinal = pd.concat(
+        [metrics.reset_index(drop=True), frequence.reset_index(drop=True)], axis=1
+    )
+    info = frequence.iloc[:, 2:]
+    for items in list(info.columns):
+        info[items] = items + "=" + info[items].astype(str)
+    info["INFOS"] = info.agg(";".join, axis=1)
+    dfinal["INFO"] = dfinal["INFO"] + ";" + info["INFOS"]
+    # denovofilter
+    # dfinal.to_csv("/app/res/test.csv", header=True, sep="\t", index=False)
+    # The global denovo filter is more precise, can remove 2 lines above
+    # df_final = #denovoFilter(dfinal)
+    df_final = dfinal.copy()
+    # df_final['INFO'] =  df_final['INFO']+';'+['denovo_filter='+val for val in df_final['denovo_filter'].to_list()]
+    # TODO
+    tmp_vcf = vcf_out + ".tmp"
+    sample = os.path.basename(tmp_vcf).split(".")[0]
+
+    # Create final vcf with new header
+    createFinaldf(
+        df_final[
+            [
+                "#CHROM",
+                "POS",
+                "ID",
+                "REF",
+                "ALT",
+                "QUAL",
+                "FILTER",
+                "INFO",
+                "FORMAT",
+                sample,
+            ]
+        ],
+        head,
+        tmp_vcf,
+    )
+
+    # sort and supress dict of coverage files
+    subprocess.call(
+        'grep "^#" '
+        + tmp_vcf
+        + " > "
+        + vcf_out
+        + ' && grep -v "^#" '
+        + tmp_vcf
+        + " | sort -k1,1V -k2,2n >> "
+        + vcf_out,
+        shell=True,
+    )
+    return "ok"
+
+
+df = vcfTodataframe("/STARK/output/res/MOTHER.norm.uniq.sorted.vcf")
+print(df)
+col = [
+    "Locus_FATHER",
+    "Total_Depth_FATHER",
+    "Average_Depth_FATHER",
+    "Depth_FATHER",
+    "Base_counts_FATHER",
+    "Locus_MOTHER",
+    "Total_Depth_MOTHER",
+    "Average_Depth_MOTHER",
+    "Depth_MOTHER",
+    "Base_counts_MOTHER",
+    "Locus_foetus",
+    "Total_Depth_foetus",
+    "Average_Depth_foetus",
+    "Depth_foetus",
+    "Base_counts_foetus",
+]
+parseSpeed("/STARK/output/res/MOTHER.final.vcf.dict/COVFILEchr3", df, col, "MOTHER")
+# add_info(
+#    "/STARK/output/res/MOTHER.norm.uniq.sorted.vcf",
+#    "/STARK/output/res/MOTHER.final.vcf",
+#    "/STARK/output/res/all.gatk.cov",
+# )
+
+# origin, header = vcfTodataframe("/app/res_test/FATHER.merged.vcf", True)
+# df, _, _i = parse_sample_field(origin)
+##
+# final = barcode_DPNI(df, "FF5")
+# final.to_csv("/app/res/denovo_filter.tsv", header=True, index=False, sep="\t")
 # origin["INFO"] = [
 #    ";".join(item)
 #    for item in list(
