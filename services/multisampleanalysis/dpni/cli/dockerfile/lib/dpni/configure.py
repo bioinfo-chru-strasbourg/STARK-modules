@@ -9,7 +9,7 @@ class config:
         self, run, trio, genome, tools, output, repository, depository, config_path
     ):
         self.run = run
-        self.trio = (trio,)
+        self.trio = trio
         self.genome = genome
         self.tools = tools
         self.output = output
@@ -28,6 +28,7 @@ class config:
         family["family"] = {}
         for samples in os.listdir(self.run):
             if samples in trio and os.path.isdir(osj(self.run, samples)):
+                print(samples)
                 samp = {}
                 tagfile = self.systemcall(
                     "find "
@@ -53,10 +54,11 @@ class config:
                                     samp["sex"] = sex
                                     # family['family'][samples]['sex'] = sex
                                 # MOTHER, FOETUS, FATHER
-                                elif "FOETAL" in tag:
+                                elif "FETAL" in tag:
                                     fam = tag.split("#")[-1]
                                     if fam == "FOETUS":
                                         family["foetus"] = samp
+                                        family["foetus"]["name"] = samples
                                     else:
                                         samp["affinity"] = []
                                         samp["affinity"].extend([samples, fam])
@@ -76,7 +78,7 @@ class config:
                     + osj(self.run, samples)
                     + ' -maxdepth 3 -name "'
                     + samples
-                    + '.final.vcf"'
+                    + '.final.vcf.gz"'
                 )[0]
                 samp["vcf"] = vcfile
                 if not vcfile:
@@ -88,12 +90,12 @@ class config:
                     s[samples]["bam"] = bamfile
                     family["family"][samp["affinity"][1]] = samp
 
-        bed = self.getbed(run)
+        bed = self.getbed()
 
         family["env"] = {}
         family["env"]["output"] = self.output
         family["env"]["genome"] = self.genome
-        family["env"]["bed"] = self.bed
+        family["env"]["bed"] = bed
         family["env"]["run"] = self.run
         family["env"]["repository"] = self.repository
         family["env"]["depository"] = self.depository
@@ -109,6 +111,7 @@ class config:
         """
         with open(f, "w+") as outfile:
             json.dump(d, outfile, indent=4)
+        print("#[INFO] Create " + f + " configfile")
         return f
 
     @staticmethod
@@ -121,15 +124,15 @@ class config:
         p = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
         return p.stdout.read().decode("utf8").strip().split("\n")
 
-    def getbed(self, run):
-        for samples in os.listdir(run):
-            if os.path.isdir(osj(run, samples)):
+    def getbed(self):
+        for samples in os.listdir(self.run):
+            if os.path.isdir(osj(self.run, samples)):
                 bed = self.systemcall(
-                    "find " + osj(run, samples) + ' -name "' + samples + '.bed"'
+                    "find " + osj(self.run, samples) + ' -name "' + samples + '.bed"'
                 )[0]
                 if bed:
                     return bed
-        print("ERROR no bed in run " + run + " exit !")
+        print("ERROR no bed in run " + self.run + " exit !")
         exit()
 
 
