@@ -9,6 +9,7 @@ from configure import config
 import argparse
 import os
 from os.path import join as osj
+import json
 
 # tools = {
 #    "java": "java",
@@ -21,6 +22,10 @@ from os.path import join as osj
 #    "tabix": "/STARK/tools/htslib/current/bin/tabix",
 #    "threads": 6,
 # }
+
+
+def check_exists(item):
+    assert os.path.exists(item), f"ERROR {item} does not exists"
 
 
 def parseargs():
@@ -52,12 +57,16 @@ def parseargs():
     )
     parser.add_argument(
         "--tools",
-        type=dict,
+        type=str,
         default="/app/config/default.json",
-        help="Dict containing path of tools executable",
+        help="json containing path of tools executable",
     )
     parser.add_argument(
-        "-t", "--trio", type=str, help="List of sample representing example s1,s2,s3"
+        "-t",
+        "--trio",
+        type=str,
+        default="",
+        help="List of sample representing example s1,s2,s3",
     )
     parser.add_argument(
         "-ry",
@@ -74,7 +83,10 @@ def parseargs():
         help="Absolute path of STARK depository",
     )
     parser.add_argument(
-        action="store_true", help="if set process in STARK auto analysis"
+        "--launcher", action="store_true", help="if set process in STARK auto analysis"
+    )
+    parser.add_argument(
+        "--jobs", type=int, default=2, help="Jobs to run in parallel in snakemake"
     )
     args = parser.parse_args()
     return args
@@ -82,22 +94,47 @@ def parseargs():
 
 def main():
     args = parseargs()
-    if args.auto:
-        # args.config = "/app/config/config.json"
+    print("#[INFO] DPNI wrapper")
+    print(args)
+    for folder in [args.run, args.repository, args.depository, args.genome]:
+        if folder:
+            check_exists(folder)
+    with open(args.tools) as too:
+        tools = json.load(too)
+    if args.launcher:
         cf = config(
             args.run,
             args.trio,
             args.genome,
-            args.tools,
+            tools,
             args.output,
             args.repository,
             args.depository,
             args.config,
         )
+        # TODO
         subprocess.call(
             "python " + osj(os.getenv("MICROSERVICE_CONFIG"), "launcher.py")
+        )
+    else:
+        cf = config(
+            args.run,
+            args.trio,
+            args.genome,
+            tools,
+            args.output,
+            args.repository,
+            args.depository,
+            args.config,
+        )
+        cf.configure()
+        subprocess.call(
+            "snakemake --snakefile /app/lib/snakemake/Snakefile --configfile "
+            + args.config
+            + " -j "
+            + args.jobs
         )
 
 
 if __name__ == "__main__":
-    args = parseargs()
+    main()
