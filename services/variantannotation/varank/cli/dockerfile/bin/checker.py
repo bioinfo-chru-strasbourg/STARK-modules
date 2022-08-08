@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
-from multiprocessing.sharedctypes import Value
 import os
 import json
 import logging as log
 import glob
 from os.path import join as osj
 import commons
-
-# from __main__ import default_pattern
 
 
 def absolute_folder_path(path):
@@ -152,7 +149,7 @@ def alamut_license_checker(alamutdb_path):
                     os.rename(alamut_license_tmp, alamut_license)
 
                     log.warning(
-                        f"AlamutDB database file {line} was not found, it was replace with the data in the varank_config.json"
+                        f"AlamutDB database file {line} was not found in the license, it was replace with the data in the varank_config.json"
                     )
 
     with open(alamut_license, "r") as read_file:
@@ -173,7 +170,7 @@ def depository_checker(run_informations):
 
     if not os.path.isdir(run_depository):
         log.warning(
-            f"Specified depository folder doesn't exists, maybe it was sent to the Archives ? Creating a new folder with all subfolders."
+            f"Specified depository folder doesn't exists, maybe it was sent to the Archives ? Creating a new folder with all subfolders tree."
         )
         run_repository_sample_folders = glob.glob(osj(run_repository, "*", ""))
         os.makedirs(run_depository, 0o775)

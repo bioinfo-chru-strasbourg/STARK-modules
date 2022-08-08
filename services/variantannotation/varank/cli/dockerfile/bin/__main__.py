@@ -29,7 +29,7 @@ def main(args):
 
     checker.varank_config_json_checker()
 
-    # mylog = log.getLogger()
+    mylog = log.getLogger()
     # print(mylog.handlers[0].baseFilename)
 
     if args.run:

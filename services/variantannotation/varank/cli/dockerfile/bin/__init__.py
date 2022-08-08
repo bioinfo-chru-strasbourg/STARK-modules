@@ -8,4 +8,5 @@ __all__ = [
     "pedigree_processing",
     "run_processing",
     "omim_downloader",
+    "synchronizer",
 ]

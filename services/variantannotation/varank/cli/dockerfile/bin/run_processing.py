@@ -4,6 +4,8 @@ import commons
 import checker
 import os
 from os.path import join as osj
+import synchronizer
+import folder_processing
 
 
 def launch_run(args):
@@ -25,8 +27,36 @@ def launch_run(args):
             run_repository_list[-2],
             run_repository_list[-1],
         ),
-        "run_repository": run_repository,
         "run_pattern": args.pattern,
+        "run_processing_folder": osj(
+            os.environ[
+                "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES"
+            ],
+            "Archives",
+            run_repository_list[-3],
+            run_repository_list[-2],
+        ),
+        "run_repository": run_repository,
+        "run_processing_folder_tsv": osj(
+            os.environ[
+                "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES"
+            ],
+            "Archives",
+            run_repository_list[-3],
+            run_repository_list[-2],
+            "TSV",
+        ),
+        "run_repository": run_repository,
+        "run_processing_folder_vcf_run": osj(
+            os.environ[
+                "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES"
+            ],
+            "Archives",
+            run_repository_list[-3],
+            run_repository_list[-2],
+            "VCF",
+            run_repository_list[-1],
+        ),
     }
     checker.depository_checker(run_informations)
     checker.pattern_checker(run_informations)
@@ -34,6 +64,9 @@ def launch_run(args):
 
     with open(varank_running_log, "w") as write_file:
         pass
+
+    synchronizer.processing_folder_vcf_synchronizer(run_informations)
+    folder_processing.initialisation(run_informations)
 
 
 if __name__ == "__main__":
