@@ -1156,6 +1156,7 @@ def vcf_synchronization_checker(varank_processing_folder):
 
     # Checking if vcf folder exist
     if not os.path.isdir(vcf_folder):
+        
         error = (
             "[" + datetime.now().strftime("%y%y%m%d-%H%M%S"),
             "] VARANK: There is no VCF folder in"
