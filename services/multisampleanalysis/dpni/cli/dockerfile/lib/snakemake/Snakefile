@@ -65,12 +65,12 @@ def configure(run, trio, genome, tools, output):
                                 sex = tag.split('#')[-1]
                                 samp['sex'] = sex
                                 #family['family'][samples]['sex'] = sex
-                            #MOTHER, FOETUS, FATHER
+                            #MOTHER, fetus, FATHER
                             elif 'FOETAL' in tag:
                                 print(tag)
                                 fam = tag.split('#')[-1]
-                                if fam == 'FOETUS':
-                                    family['foetus'] = samp
+                                if fam == 'fetus':
+                                    family['fetus'] = samp
                                 else:
                                     samp['affinity'] = fam.lower()
                                     family['family'].append(samp)
@@ -478,18 +478,18 @@ def parse_sample_field(dfVar):
     df_final.drop(columns=sample_list, inplace=True)
     return df_final, df_bad_anno, sample_list
 
-def barcode_DPNI(df, foetus):
+def barcode_DPNI(df, fetus):
     dico = {}
     dico["MOTHER"] = []
     dico["FATHER"] = []
-    dico[foetus] = []
-    dico["DPNI_Barcode_coment"] = []
+    dico[fetus] = []
+    #dico["DPNI_Barcode_coment"] = []
     denovo = []
     for i, rows in tqdm(
         df.iterrows(), total=df.shape[0], leave=True, desc="#[INFO] Barcode DPNI ..."
     ):
         # print("INFO index", i)
-        for fam in ["MOTHER", "FATHER", foetus]:
+        for fam in ["MOTHER", "FATHER", fetus]:
             tmp = []
             # control var
             if all(
@@ -503,26 +503,28 @@ def barcode_DPNI(df, foetus):
                     or rows[fam + "_GT"] == "1|0"
                     or rows[fam + "_GT"] == "0|1"
                 ):
-                    # ensure truethness of var
-                    if int(rows[fam + "_DP"]) > 30:
-                        dico[fam].append("1")
-                    else:
-                        dico[fam].append("0")
-                        #tmp.append("Depth:" + rows[fam + "_DP"])
+                    # ensure truethness of var not usefull in exome
+                    #if int(rows[fam + "_DP"]) > 30:
+                    #    dico[fam].append("1")
+                    #else:
+                    #    dico[fam].append("0")
+                    #    #tmp.append("Depth:" + rows[fam + "_DP"])
+                    dico[fam].append("1")
                 # homozygous
                 elif rows[fam + "_GT"] == "1/1" or rows[fam + "_GT"] == "1|1":
-                    if int(rows[fam + "_DP"]) > 30:
-                        dico[fam].append("2")
-                    else:
-                        dico[fam].append("0")
-                        #tmp.append(
-                        #    ",".join(
-                        #        [
-                        #            rows[fam + "_FT"],
-                        #            "Depth" + fam + ":" + rows[fam + "_DP"],
-                        #        ]
-                        #    )
-                        #)
+                    #if int(rows[fam + "_DP"]) > 30:
+                    #    dico[fam].append("2")
+                    #else:
+                    #    dico[fam].append("0")
+                    #    #tmp.append(
+                    #    #    ",".join(
+                    #    #        [
+                    #    #            rows[fam + "_FT"],
+                    #    #            "Depth" + fam + ":" + rows[fam + "_DP"],
+                    #    #        ]
+                    #    #    )
+                    #    #)
+                    dico[fam].append("2")
                 # Ref allele
                 else:
                     dico[fam].append("0")
@@ -532,38 +534,38 @@ def barcode_DPNI(df, foetus):
                     + " ".join([fam + "_GT", fam + "_AD", fam + "_DP", fam + "_FT"])
                 )
                 exit()
-        # Correct Foetus var
-        if (
-            dico["MOTHER"][i] == "2"
-            and dico["FATHER"][i] == "2"
-            and dico[foetus][i] != "2"
-        ):
-            tmp.append("GT-issues")
-        elif (
-            dico["MOTHER"][i] == "0"
-            and dico["FATHER"][i] == "0"
-            and dico[foetus][i] != "0"
-        ):
-            tmp.append("GT-denovo")
-        elif (
-            dico["MOTHER"][i] == "0"
-            and dico["FATHER"][i] == "0"
-            and dico[foetus][i] == "0"
-        ):
-            tmp.append("Artefact")
-        else:
-            tmp.append("Inherit")
-        dico["DPNI_Barcode_coment"].append(tmp)
+        # Correct fetus var
+        #if (
+        #    dico["MOTHER"][i] == "2"
+        #    and dico["FATHER"][i] == "2"
+        #    and dico[fetus][i] != "2"
+        #):
+        #    tmp.append("GT-issues")
+        #elif (
+        #    dico["MOTHER"][i] == "0"
+        #    and dico["FATHER"][i] == "0"
+        #    and dico[fetus][i] != "0"
+        #):
+        #    tmp.append("GT-denovo")
+        #elif (
+        #    dico["MOTHER"][i] == "0"
+        #    and dico["FATHER"][i] == "0"
+        #    and dico[fetus][i] == "0"
+        #):
+        #    tmp.append("Artefact")
+        #else:
+        #    tmp.append("Inherit")
+        #dico["DPNI_Barcode_coment"].append(tmp)
          # DENOVO filter check as each line
         if (
-            str(rows[foetus+"_AD"]) != "."
-            and str(rows[foetus+"_AD"]) != ""
-            and str(rows[foetus+"_AD"]) != "nan"
-            and len(str(rows[foetus+"_AD"]).split(",")) == 2
+            str(rows[fetus+"_AD"]) != "."
+            and str(rows[fetus+"_AD"]) != ""
+            and str(rows[fetus+"_AD"]) != "nan"
+            and len(str(rows[fetus+"_AD"]).split(",")) == 2
         ):
-            if int(rows[foetus+"_AD"].split(",")[1]) < 3 and int(rows[foetus+"_DP"]) >= 300:
+            if int(rows[fetus+"_AD"].split(",")[1]) < 3 and int(rows[fetus+"_DP"]) >= 300 and dico["MOTHER"][i] == "0" and dico["FATHER"][i] == "0":
                 denovo.append("Denovo")
-            elif int(rows[foetus+"_AD"].split(",")[1]) < 3 and int(rows[foetus+"_DP"]) >= 200:
+            elif int(rows[fetus+"_AD"].split(",")[1]) < 3 and int(rows[fetus+"_DP"]) >= 200 and dico["MOTHER"][i] == "0" and dico["FATHER"][i] == "0":
                 denovo.append("LikelyDenovo")
             else:
                 denovo.append("Inherit")
@@ -571,11 +573,11 @@ def barcode_DPNI(df, foetus):
             denovo.append("Inherit")
     values = [
         dico["MOTHER"],
-        dico[foetus],
+        dico[fetus],
         dico["FATHER"],
     ]
     df["DPNI_Barcode"] = ["'" + "".join(item) + "'" for item in list(zip(*values))]
-    df["DPNI_Barcode_coment"] = [",".join(item) for item in dico["DPNI_Barcode_coment"]]
+    #df["DPNI_Barcode_coment"] = [",".join(item) for item in dico["DPNI_Barcode_coment"]]
     df["DPNI_Denovo"] = denovo
     return df
 
@@ -588,28 +590,29 @@ def barcode_DPNI(df, foetus):
     #trio = ["ADN2104279", "ADN2104278", "ASG184957"]
     #configure(config['run'], trio, "/STARK/databases/genomes/current/hg19.fa", "/app/res")
 #configfile: "/app/res/analysis.json"
-def copy_repository(seg):
+def copy_repository():
     if os.path.exists(config["env"]["repository"]):
         print("#[INFO] Copying into repository "+config["env"]["repository"])
         for sample in os.listdir(config["env"]["repository"]):
-            if os.path.isdir(osj(os.listdir(config["env"]["repository"], sample))):
+            print("#[INFO] Sample ", sample)
+            if os.path.isdir(osj(osj(config["env"]["repository"], sample))):
                 #In case of first analysis
                 if not os.path.exists(osj(config["env"]["repository"], sample, 'DPNI')):
+                    print("#[INFO] First analysis create DPNI folder")
                     os.mkdir(osj(config["env"]["repository"], sample, 'DPNI'))
                 else:
                     os.mkdir(osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
-                    #move olde analysis files if they exists in DPNI date folder
+                    #move old analysis files if they exists in DPNI date folder
                     systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/*.vcf.gz*")+" "+osj(config["env"][  "repository"], sample, "DPNI", "DPNI."+date))
                     #Same with log folder
                     systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/.log")+" "+osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
                 #Copy new vcf analysis and index into repo sample
                 print("#[INFO] Copying sample "+sample)
-                systemcall("rsync "+osj(config["env"]["output"], seg[sample]+".final.vcf.gz*")+" "+osj(config["env"]["repository"], sample, 'DPNI'))
+                systemcall("rsync "+osj(config["env"]["output"], sample+".final.vcf.gz*")+" "+osj(config["env"]["repository"], sample, 'DPNI'))
                 #Copying new logs
                 systemcall("rsync -ar "+osj(config["env"]["output"], ".log")+" "+osj(config["env"]["repository"], sample, 'DPNI'))
     else:
         print("ERROR "+config["env"]["repository"]+" path does not exist EXIT")
-    return seg
 
 def handle_error():#TODO TEST
     if config["env"]["repository"]:
@@ -658,9 +661,9 @@ interval_padding = 100
 seg = {}
 seg[config["family"]["MOTHER"]["affinity"][0]] = 'MOTHER'
 seg[config["family"]["FATHER"]["affinity"][0]] = 'FATHER'
-seg[config["foetus"]["name"]] = 'FOETUS'
+seg[config["fetus"]["name"]] = 'fetus'
 whole = list(config['family'].keys())
-whole.append(config['foetus']['name'])
+whole.append(config['fetus']['name'])
 print("#[INFO] FAMILY ", whole)
 
 
@@ -687,28 +690,28 @@ if config["env"]["repository"]:
                     systemcall("echo "+id+" > "+osj(config["env"]["output"], id))
                     systemcall(params.bcftools+" reheader -s "+osj(config["env"]["output"], id)+" "+vcf+".gz -o "+osj(config["env"]["output"], id+".final.vcf.gz")+" && "+params.tabix+" -p vcf "+osj(config["env"]["output"], id+".final.vcf.gz"))
                     alias = id
-                
+                #copy_repository()
                 #Copying vcf
-                sample = os.path.basename(vcf).split('.', 1)[0]
-                if not os.path.exists(osj(config["env"]["repository"], alias, "DPNI")):
-                    print("#[INFO] Create folder ", osj(config["env"]["repository"], alias, "DPNI"))
-                    os.mkdir(osj(config["env"]["repository"], alias, "DPNI"))
-                else:
-                    print("[INFO] store old results")
-                    os.mkdir(osj(config["env"]["repository"], alias, "DPNI", "DPNI."+date))
-                    #results shouldn't be
-                    #move old analysis files if they exists in DPNI date folder
-                    systemcall("mv "+osj(config["env"]["repository"], alias, "DPNI/*.final.vcf.gz*")+" "+osj(config["env"],["repository"], alias, "DPNI", "DPNI."+date))
-                    #Same with log folder
-                    systemcall("mv "+osj(config["env"]["repository"], alias, "DPNI/.log")+" "+osj(config["env"]["repository"], alias, "DPNI", "DPNI."+date))
-
-                print("#[INFO] Copying sample ", alias)
-                systemcall("rsync "+alias+".final.vcf.gz* "+osj(config["env"]["repository"], alias, "DPNI/"))
-                systemcall("rsync -ar "+osj(config["env"]["output"], '.log')+" "+osj(config["env"]["repository"], alias, "DPNI/"))
+                #sample = os.path.basename(vcf).split('.', 1)[0]
+                #if not os.path.exists(osj(config["env"]["repository"], alias, "DPNI")):
+                #    print("#[INFO] Create folder ", osj(config["env"]["repository"], alias, "DPNI"))
+                #    os.mkdir(osj(config["env"]["repository"], alias, "DPNI"))
                 #else:
-                #    id = config["foetus"]["name"]
-                    #shutil.copy2(vcf+".gz", osj(config["env"]["output"], id+".final.vcf.gz"))
-            #copy_repository(seg)
+                #    print("[INFO] store old results")
+                #    os.mkdir(osj(config["env"]["repository"], alias, "DPNI", "DPNI."+date))
+                #    #results shouldn't be
+                #    #move old analysis files if they exists in DPNI date folder
+                #    systemcall("mv "+osj(config["env"]["repository"], alias, "DPNI/*.final.vcf.gz*")+" "+osj(config["env"],["repository"], alias, "DPNI", "DPNI."+date))
+                #    #Same with log folder
+                #    systemcall("mv "+osj(config["env"]["repository"], alias, "DPNI/.log")+" "+osj(config["env"]["repository"], alias, "DPNI", "DPNI."+date))
+#
+                #print("#[INFO] Copying sample ", alias)
+                #systemcall("rsync "+alias+".final.vcf.gz* "+osj(config["env"]["repository"], alias, "DPNI/"))
+                #systemcall("rsync -ar "+osj(config["env"]["output"], '.log')+" "+osj(config["env"]["repository"], alias, "DPNI/"))
+                ##else:
+                ##    id = config["fetus"]["name"]
+                #    #shutil.copy2(vcf+".gz", osj(config["env"]["output"], id+".final.vcf.gz"))
+            copy_repository()
 else:
     rule all:
         params:
@@ -727,7 +730,7 @@ else:
 
 rule paste_vcf_pool:
     input:
-        foetus = config['foetus']['vcf']
+        fetus = config['fetus']['vcf']
     output:
         output+"/pool.vcf.gz"
     shell:
@@ -747,8 +750,8 @@ rule add_info:
         subprocess.call("awk -F \":\" 'NR>1{print $0 >> (\""+output.vcf+".dict/COVFILE\" $1)}' "+input.cov, shell=True)
         #####new
         sample_name = os.path.basename(input.vcf).split('.')[0]
-        if sample_name == config["foetus"]["name"]:
-            sample_name = "foetus"
+        if sample_name == config["fetus"]["name"]:
+            sample_name = "fetus"
         #transform raw vcf into dataframe and insert header in list
         df, head = vcfTodataframe(input.vcf, True)
         
@@ -783,13 +786,13 @@ rule add_info:
 
 
         #calculate frequence regarding depth and base identification
-        s_list = ['foetus']
+        s_list = ['fetus']
         s_list.extend(config['family'])
         print("#[INFO] Family people ", s_list)
         
         frequence = addFrequence(metrics, sample_name, s_list)
         #remove duplicate column used to create frequence
-        metrics.drop(columns=["Depth_FATHER", "Depth_MOTHER", "Depth_foetus", "Base_counts_FATHER", "Base_counts_MOTHER", "Base_counts_foetus"], inplace=True)
+        metrics.drop(columns=["Depth_FATHER", "Depth_MOTHER", "Depth_fetus", "Base_counts_FATHER", "Base_counts_MOTHER", "Base_counts_fetus"], inplace=True)
         dfinal = pd.concat([metrics.reset_index(drop=True), frequence.reset_index(drop=True)], axis=1)
 
         info = frequence.iloc[:, 2:]
@@ -804,7 +807,6 @@ rule add_info:
         #df_final = #denovoFilter(dfinal)
         df_final = dfinal.copy()
         #df_final['INFO'] =  df_final['INFO']+';'+['denovo_filter='+val for val in df_final['denovo_filter'].to_list()]
-        #TODO
         tmp_vcf = output.vcf+'.tmp'
         sample = os.path.basename(tmp_vcf).split('.')[0]
         
@@ -813,14 +815,14 @@ rule add_info:
         
         #sort and supress dict of coverage files
         subprocess.call('grep "^#" '+tmp_vcf+' > '+output.vcf+' && grep -v "^#" '+tmp_vcf+' | sort -k1,1V -k2,2n >> '+output.vcf, shell=True)
-        #subprocess.call("rm -rf "+output.vcf+".dict", shell=True)
+        subprocess.call("rm -rf "+output.vcf+".dict", shell=True)
 
 
 rule copy_vcf_pool:
     params:
         bcftools = config["tools"]["bcftools"]
     input:
-        foetus = output+"/pool.vcf.gz"
+        fetus = output+"/pool.vcf.gz"
     output:
         tmp = temp(output+"/pool.renamed.vcf")
     log:
@@ -914,7 +916,7 @@ rule dpni_barcode:
     output:
         merge = output+"/{sample}.merged.barcode.vcf"
     params:
-        name = config["foetus"]["name"]
+        name = config["fetus"]["name"]
     run:
         origin, header = vcfTodataframe(input.vcf, True)
         df, _, _i = parse_sample_field(origin)
@@ -925,10 +927,11 @@ rule dpni_barcode:
                 zip(
                     origin["INFO"].to_list(),
                     ["DPNIBarcode=" + val for val in final["DPNI_Barcode"].to_list	()],
-                    [
-                        "DPNIBarcodecoment=" + val
-                        for val in final["DPNI_Barcode_coment"].to_list()
-                    ], ["DPNI_Denovo=" + val for val in final["DPNI_Denovo"].to_list()]
+                    #[
+                    #    "DPNIBarcodecoment=" + val
+                    #    for val in final["DPNI_Barcode_coment"].to_list()
+                    #],
+                    ["DPNI_Denovo=" + val for val in final["DPNI_Denovo"].to_list()]
                 )
             )
         ]
@@ -974,19 +977,19 @@ rule uniq_trio:
         """
             {params.bcftools} view -s {wildcards.sample} {input} | grep -v '^##HOWARD' > {output} 2>> {log}
         """
-rule uniq_trio_foetus:
+rule uniq_trio_fetus:
     params:
         bcftools=config["tools"]["bcftools"]
     input:
         output+"/MOTHER.norm.vcf",
 
     output:
-        tmp = temp(output+"/FOETUS.norm.uniq.vcf"),
-        sort = output+"/FOETUS.norm.uniq.sorted.vcf"
+        tmp = temp(output+"/fetus.norm.uniq.vcf"),
+        sort = output+"/fetus.norm.uniq.sorted.vcf"
     log:
-        log+"/FOETUS.bcftools.log"
+        log+"/fetus.bcftools.log"
     params:
-        sample = config["foetus"]["name"]
+        sample = config["fetus"]["name"]
     shell:
         """
             {params.bcftools} view -s {params.sample} {input} | grep -v '^##HOWARD' > {output.tmp} 2>> {log} && grep "^#" {output.tmp} > {output.sort} && grep -v "^#" {output.tmp} | sort -k1,1V -k2,2n >> {output.sort}
@@ -1012,16 +1015,16 @@ rule depth_of_coverage_v2:
     input:
         genome  = config["env"]["genome"],
         bed     = config["env"]["bed"],
-        bam     = config["foetus"]["bam"],
+        bam     = config["fetus"]["bam"],
         
     output:
-        temp(output+"/foetus_tmp.gatk.cov"),
-        temp(output+"/foetus_tmp.gatk.cov.sample_cumulative_coverage_counts"),
-        temp(output+"/foetus_tmp.gatk.cov.sample_cumulative_coverage_proportions"),
-        temp(output+"/foetus_tmp.gatk.cov.sample_statistics"),
-        temp(output+"/foetus_tmp.gatk.cov.sample_summary")
+        temp(output+"/fetus_tmp.gatk.cov"),
+        temp(output+"/fetus_tmp.gatk.cov.sample_cumulative_coverage_counts"),
+        temp(output+"/fetus_tmp.gatk.cov.sample_cumulative_coverage_proportions"),
+        temp(output+"/fetus_tmp.gatk.cov.sample_statistics"),
+        temp(output+"/fetus_tmp.gatk.cov.sample_summary")
     log:
-        log+"/foetus_tmp.gatk.cov.log"
+        log+"/fetus_tmp.gatk.cov.log"
     shell:
         """
             {params.java} -jar {params.gatk} -nt {params.cpu} -omitIntervals -T DepthOfCoverage -R {input.genome} -o {output[0]} -I {input.bam} --includeDeletions --minMappingQuality 10 --printBaseCounts -L {input.bed} --interval_padding {params.padding} &>> {log};
@@ -1029,12 +1032,12 @@ rule depth_of_coverage_v2:
 
 rule rename_pool_coverage_v2:
     input:
-        output+"/foetus_tmp.gatk.cov"
+        output+"/fetus_tmp.gatk.cov"
     output:
-        output+"/foetus.gatk.cov"
+        output+"/fetus.gatk.cov"
     shell:
         """
-            sed '1 s/^.*$/Locus_foetus\tTotal_Depth_foetus\tAverage_Depth_foetus\tDepth_foetus\tBase_counts_foetus/' {input} > {output}
+            sed '1 s/^.*$/Locus_fetus\tTotal_Depth_fetus\tAverage_Depth_fetus\tDepth_fetus\tBase_counts_fetus/' {input} > {output}
         """
 
 rule depth_of_coverage_sample:
@@ -1073,10 +1076,10 @@ rule rename_pool_coverage_sample:
 rule merge_coverage_v2:
     input:
         samples = expand(output+"/{samples}.gatk.renamed.cov", samples=config['family']),
-        foetus = output+"/foetus.gatk.cov"
+        fetus = output+"/fetus.gatk.cov"
     output:
         output+"/all.gatk.cov"
     shell:
         """
-            paste {input.samples} {input.foetus} > {output}
+            paste {input.samples} {input.fetus} > {output}
         """
