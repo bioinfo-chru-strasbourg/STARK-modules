@@ -608,9 +608,12 @@ def copy_repository():
                     systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/.log")+" "+osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
                 #Copy new vcf analysis and index into repo sample
                 print("#[INFO] Copying sample "+sample)
-                systemcall("rsync "+osj(config["env"]["output"], sample+".final.vcf.gz*")+" "+osj(config["env"]["repository"], sample, 'DPNI'))
+                systemcall("rsync "+osj(config["env"]["output"], sample+".final.vcf.gz*")+" "+osj(config["env"]["repository"], sample, 'DPNI/'))
                 #Copying new logs
-                systemcall("rsync -ar "+osj(config["env"]["output"], ".log")+" "+osj(config["env"]["repository"], sample, 'DPNI'))
+                systemcall("rsync -ar "+osj(config["env"]["output"], ".log")+" "+osj(config["env"]["repository"], sample, 'DPNI/'))
+            if config["env"]["depository"]:
+                print("#[INFO] Copying into depository, sample ", sample)
+                systemcall("rsync -ar "+osj(config["env"]["repository"], sample, 'DPNI')+" "+osj(config["env"]["depository"], sample+"/"))
     else:
         print("ERROR "+config["env"]["repository"]+" path does not exist EXIT")
 
@@ -622,7 +625,7 @@ def handle_error():#TODO TEST
             if not os.path.exists(osj(config["env"]["repository"], sample, "DPNI")):
                 print("#[INFO] Create DPNI folder sample "+sample)
                 os.mkdir(osj(config["env"]["repository"], sample, "DPNI"))
-                systemcall("rsync -ar "+osj(config["env"]["output"], ".log")+" "+osj(config["env"]["repository"], sample, "DPNI"))
+                systemcall("rsync -ar "+osj(config["env"]["output"], ".log")+" "+osj(config["env"]["repository"], sample, "DPNI/"))
             #Not the first analysis and crash, create folder to store old analysis
             else:
                 os.mkdir(osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
