@@ -53,12 +53,12 @@ class config:
                                     sex = tag.split("#")[-1]
                                     samp["sex"] = sex
                                     # family['family'][samples]['sex'] = sex
-                                # MOTHER, FOETUS, FATHER
+                                # MOTHER, fetus, FATHER
                                 elif "FETAL" in tag:
                                     fam = tag.split("#")[-1]
-                                    if fam == "FOETUS":
-                                        family["foetus"] = samp
-                                        family["foetus"]["name"] = samples
+                                    if fam == "fetus":
+                                        family["fetus"] = samp
+                                        family["fetus"]["name"] = samples
                                     else:
                                         samp["affinity"] = []
                                         samp["affinity"].extend([samples, fam])
