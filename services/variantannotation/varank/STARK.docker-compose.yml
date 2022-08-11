@@ -71,6 +71,7 @@ services:
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}:${DOCKER_STARK_INNER_FOLDER_CONFIG}:rw
             # Volumes for databases
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
+
             # Volume for developing, to comment if not used
             - /home1/bin/STARK-modules/dev.MR/services/variantannotation/varank/cli/dockerfile/bin/:/tools/varank/current/scripts/:rw
         networks:
