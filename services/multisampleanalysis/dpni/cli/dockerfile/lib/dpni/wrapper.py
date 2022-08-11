@@ -86,7 +86,7 @@ def parseargs():
         "--launcher", action="store_true", help="if set process in STARK auto analysis"
     )
     parser.add_argument(
-        "--jobs", type=int, default=2, help="Jobs to run in parallel in snakemake"
+        "--jobs", type=int, default=4, help="Jobs to run in parallel in snakemake"
     )
     args = parser.parse_args()
     return args
