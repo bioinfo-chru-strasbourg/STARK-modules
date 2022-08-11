@@ -9,4 +9,5 @@ __all__ = [
     "run_processing",
     "omim_downloader",
     "synchronizer",
+    "archives_processing",
 ]

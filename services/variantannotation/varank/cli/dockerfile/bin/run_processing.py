@@ -5,7 +5,7 @@ import checker
 import os
 from os.path import join as osj
 import synchronizer
-import folder_processing
+import archives_processing
 
 
 def launch_run(args):
@@ -66,7 +66,12 @@ def launch_run(args):
         pass
 
     synchronizer.processing_folder_vcf_synchronizer(run_informations)
-    folder_processing.initialisation(run_informations)
+    archives_processing.initialisation(run_informations)
+    checker.configfile(run_informations)
+    archives_processing.configfile_manager(run_informations)
+    archives_processing.varank_launcher(run_informations)
+    checker.logfile(run_informations)
+    archives_processing.cleaner(run_informations)
 
 
 if __name__ == "__main__":

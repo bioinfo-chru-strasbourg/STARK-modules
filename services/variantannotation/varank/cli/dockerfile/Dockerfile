@@ -70,7 +70,7 @@ WORKDIR /usr/src/tcl8.6.12/unix
 RUN ./configure --prefix=/usr/src/tcl; \
 	make; \
 	make prefix=/usr/src/tcl install;
-RUN	ln -s tclsh8.6.12 /usr/src/tcl/bin/tclsh; \
+RUN	ln -s /usr/src/tcl/bin/tclsh8.6 /usr/src/tcl/bin/tclsh; \
 	cd ../../; \
 	rm -rf tcl8.6.12
 ENV PATH="/usr/src/tcl/bin:$PATH"
@@ -88,9 +88,14 @@ RUN mkdir /tools; \
 WORKDIR /tools/varank
 RUN git clone https://github.com/lgmgeo/VaRank.git
 RUN	ln -s VaRank current
+RUN cd current/ExtAnn; \
+	rm -f 20201107_OMIM-1-annotations.tsv.gz; \
+	rm -f 20201107_OMIM-2-annotations.tsv.gz; \
+	ln -s /STARK/databases/OMIMannotations/current/OMIM-1-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-1-annotations.tsv.gz; \
+	ln -s /STARK/databases/OMIMannotations/current/OMIM-2-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-2-annotations.tsv.gz
 
 ENV VARANK=/tools/varank/current/
-ENV varank="python3 /tools/varank/current/scripts/__main__.py"
+ENV varank="python3.10 /tools/varank/current/scripts/__main__.py"
 
 # Alamut-Batch
 RUN mkdir /tools/alamut_batch
@@ -106,6 +111,7 @@ COPY src/ancillary.tar.gz /tools/alamut_batch/current/
 RUN tar -xvf ancillary.tar.gz
 RUN chmod -R 777 /tools/alamut_batch/current/ancillary/
 RUN rm -rf alamut-batch.ini
+RUN ln -s /STARK/config/variantannotation/varank/alamut-batch-license/alamut-batch.ini /tools/alamut_batch/current/alamut-batch.ini
 ENV ALAMUT=/tools/alamut_batch/current/
 
 # ##########################################################################
