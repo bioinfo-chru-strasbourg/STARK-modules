@@ -2,3 +2,5 @@ services/structuralvariation/canoes/cli/dockerfile/.snakemake/
 services/STARK.env
 .env
 !services/qualitycontrol/cqi/cli/dockerfile/app/.env
+*__pycache__
+*.snakemake
