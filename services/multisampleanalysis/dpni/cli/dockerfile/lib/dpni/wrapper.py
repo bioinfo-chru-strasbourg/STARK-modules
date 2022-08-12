@@ -11,18 +11,6 @@ import os
 from os.path import join as osj
 import json
 
-# tools = {
-#    "java": "java",
-#    "gatk": "/STARK/tools/gatk/3.8-1-0/bin/GenomeAnalysisTK.jar",
-#    "VaRank": "/home1/TOOLS/tools/varank/VaRank_1.4.3",
-#    "Alamut-batch": "/home1/TOOLS/tools/alamut_batch/alamut-batch-standalone-1.11",
-#    "howard": "/STARK/tools/howard/current/bin/HOWARD",
-#    "bcftools": "/STARK/tools/bcftools/current/bin/bcftools",
-#    "bgzip": "/STARK/tools/htslib/current/bin/bgzip",
-#    "tabix": "/STARK/tools/htslib/current/bin/tabix",
-#    "threads": 6,
-# }
-
 
 def check_exists(item):
     assert os.path.exists(item), f"ERROR {item} does not exists"
@@ -46,7 +34,11 @@ def parseargs():
         help="Absolute path of output folder",
     )
     parser.add_argument(
-        "-c", "--config", type=str, help="Absolute path of <config>.json created"
+        "-c",
+        "--config",
+        type=str,
+        default="/app/config/analysis.json",
+        help="Absolute path of <config>.json created",
     )
     parser.add_argument(
         "-g",
@@ -101,39 +93,39 @@ def main():
             check_exists(folder)
     with open(args.tools) as too:
         tools = json.load(too)
-    if args.launcher:
-        cf = config(
-            args.run,
-            args.trio,
-            args.genome,
-            tools,
-            args.output,
-            args.repository,
-            args.depository,
-            args.config,
-        )
-        # TODO
-        subprocess.call(
-            "python " + osj(os.getenv("MICROSERVICE_CONFIG"), "launcher.py")
-        )
-    else:
-        cf = config(
-            args.run,
-            args.trio,
-            args.genome,
-            tools,
-            args.output,
-            args.repository,
-            args.depository,
-            args.config,
-        )
-        cf.configure()
-        subprocess.call(
-            "snakemake --snakefile /app/lib/snakemake/Snakefile --configfile "
-            + args.config
-            + " -j "
-            + args.jobs
-        )
+    # if args.launcher:
+    #    cf = config(
+    #        args.run,
+    #        args.trio,
+    #        args.genome,
+    #        tools,
+    #        args.output,
+    #        args.repository,
+    #        args.depository,
+    #        args.config,
+    #    )
+    #    # TODO
+    #    subprocess.call(
+    #        "python " + osj(os.getenv("MICROSERVICE_CONFIG"), "launcher.py")
+    #    )
+    # else:
+    cf = config(
+        args.run,
+        args.trio,
+        args.genome,
+        tools,
+        args.output,
+        args.repository,
+        args.depository,
+        args.config,
+    )
+    cf.configure()
+    subprocess.call(
+        "snakemake --snakefile /app/lib/snakemake/Snakefile --configfile "
+        + args.config
+        + " -j "
+        + args.jobs
+    )
 
 
 if __name__ == "__main__":
