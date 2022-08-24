@@ -64,10 +64,12 @@ def set_log_level(args):
     verbosity = args.verbosity
     run = args.run
     mode = args.mode
+    if run.endswith("/"):
+        run = run[:-1]
 
-    run_name = run.split("/")[-2]
-    run_application = run.split("/")[-3]
-    run_platform = run.split("/")[-4]
+    run_name = run.split("/")[-1]
+    run_application = run.split("/")[-2]
+    run_platform = run.split("/")[-3]
 
     time_seconds = time.time() + 7200
     local_time = time.localtime(time_seconds)
