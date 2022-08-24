@@ -110,10 +110,10 @@ def cleaner(run_informations):
 
     for file in tsv_files:
         os.chmod(file, 0o775)
-        shutil.move(file, varank_processing_tsv_folder)
+        shutil.move(file, run_informations["run_processing_folder_tsv"])
 
     with open(
-        osj(varank_processing_tsv_folder, "TSVCopyComplete.txt"), mode="a"
+        osj(run_informations["run_processing_folder_tsv"], "TSVCopyComplete.txt"), mode="a"
     ):
         pass
 

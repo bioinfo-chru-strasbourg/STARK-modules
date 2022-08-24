@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import logging as log
-import commons
 import checker
 import os
 from os.path import join as osj
 import synchronizer
 import archives_processing
+import non_redundant_generator
 
 
 def launch_run(args):
@@ -72,6 +72,7 @@ def launch_run(args):
     archives_processing.varank_launcher(run_informations)
     checker.logfile(run_informations)
     archives_processing.cleaner(run_informations)
+    non_redundant_generator.generate(run_informations)
 
 
 if __name__ == "__main__":
