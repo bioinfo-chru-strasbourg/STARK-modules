@@ -1,4 +1,4 @@
-FROM stark/stark:0.9.18.2
+FROM stark/stark:0.9.18.4
 
 ###############################
 ### Container of nonregression
