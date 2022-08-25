@@ -200,242 +200,255 @@ def pattern_checker(run_informations):
             )
             raise ValueError(element)
 
+
 def configfile(run_informations):
-    configfile_list = glob.glob(osj(os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_CONFIG"], "variantannotation", "varank", "configfiles", "configfile.*"))
-    extann_config_file = osj(os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_CONFIG"], "variantannotation", "varank", "configfiles", "extann_config_file.tsv")
-    extann_directory = osj(os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_CONFIG"], "variantannotation", "configfiles", "extanns")
+    configfile = osj(
+        os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_CONFIG"],
+        "variantannotation",
+        "varank",
+        "configfiles",
+        f"configfile.{run_informations['run_platform_application']}",
+    )
+
+    extann_config_file = osj(
+        os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_CONFIG"],
+        "variantannotation",
+        "varank",
+        "configfiles",
+        "extann_config_file.tsv",
+    )
+    extann_directory = osj(
+        os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_CONFIG"],
+        "variantannotation",
+        "varank",
+        "configfiles",
+        "extanns",
+    )
     vcf_fields = False
 
-    for configfile in configfile_list:
-        family_list = []
-        tmp_configfile = osj(os.path.dirname(configfile), "tmp" + os.path.basename(configfile))
+    family_list = []
+    tmp_configfile = osj(
+        os.path.dirname(configfile), f"tmp.{os.path.basename(configfile)}"
+    )
 
-        with open(configfile, "r") as read_file:
-            for line in read_file.readlines():
-                line = line.strip()
-                if re.match(r"^-vcfFields:", line):
-                    vcf_fields = True
+    with open(configfile, "r") as read_file:
+        for line in read_file.readlines():
+            line = line.strip()
+            if re.match(r"^-vcfFields:", line):
+                vcf_fields = True
 
-        with open(tmp_configfile, "w") as write_file, open(
-            configfile, "r"
-        ) as read_file, open(extann_config_file, "r") as read_file2:
-            for line in read_file.readlines():
-                writted = False
-                line = line.strip()
+    with open(tmp_configfile, "w") as write_file, open(
+        configfile, "r"
+    ) as read_file, open(extann_config_file, "r") as read_file2:
+        for line in read_file.readlines():
+            writted = False
+            line = line.strip()
 
-                if re.match(r"-vcfInfo:|#-vcfInfo:", line):
-                    if re.match(r"#-vcfInfo:", line):
-                        line = re.sub("#", "", line)
-                    if re.search("no", line):
-                        line = re.sub("no", "yes", line)
-                    if vcf_fields is False:
-                        write_file.write(
-                            line
-                            + "\n"
-                            + '-vcfFields: "FindByPipelines GenotypeConcordance POOL_F_Depth POOL_M_Depth POOL_F_base_counts POOL_M_base_counts BARCODE trio_variant_type"'
-                            + "\n"
+    with open(tmp_configfile, "w") as write_file, open(
+        configfile, "r"
+    ) as read_file, open(extann_config_file, "r") as read_file2:
+        for line in read_file.readlines():
+            writted = False
+            line = line.strip()
+
+            if re.match(r"-vcfInfo:|#-vcfInfo:", line):
+                if re.match(r"#-vcfInfo:", line):
+                    line = re.sub("#", "", line)
+                if re.search("no", line):
+                    line = re.sub("no", "yes", line)
+                if vcf_fields is False:
+                    write_file.write(
+                        line
+                        + "\n"
+                        + '-vcfFields: "FindByPipelines GenotypeConcordance POOL_F_Depth POOL_M_Depth POOL_F_base_counts POOL_M_base_counts BARCODE trio_variant_type"'
+                        + "\n"
+                    )
+                    writted = True
+                elif vcf_fields is True:
+                    write_file.write(line + "\n")
+                    writted = True
+                vcf_fields = True
+
+            if re.match(r"-metrics:|#-metrics:", line):
+                if re.match(r"#-metrics:", line):
+                    line = re.sub("#", "", line)
+                if re.search("us", line):
+                    line = re.sub("us", "fr", line)
+                write_file.write(line + "\n")
+                writted = True
+
+            if re.match(r"#-uniprot:", line):
+                line = re.sub("#", "", line)
+                write_file.write(line + "\n")
+                writted = True
+
+            if re.match(r"#-refseq:", line):
+                line = re.sub("#", "", line)
+                write_file.write(line + "\n")
+                writted = True
+
+            if re.match(r"fam[0-9]+:", line):
+                fam = line.split(" ")
+                fam = fam[1:]
+                for id in fam:
+                    family_list.append(id)
+
+            if re.match(r"-extann:|#-extann:", line):
+                extann_files = line.split('"')
+                for extann_file in reversed(extann_files):
+                    if not extann_file.startswith("/"):
+                        extann_files.remove(extann_file)
+
+                if os.path.basename(configfile) != "configfile.default":
+                    if len(extann_files) != 0:
+                        for extann_file in extann_files:
+                            extann_file_list = extann_file.split(" ")
+                    else:
+                        extann_file_list = []
+
+                    for extann_file in reversed(extann_file_list):
+                        if re.search(r"^.*$", extann_file):
+                            extann_file_list.remove(extann_file)
+
+                    next(read_file2, 1)
+                    for line2 in read_file2.readlines():
+                        line2 = line2.strip()
+                        line2 = line2.split("\t")
+                        extann_platform_application = line2[0] + "." + line2[1]
+                        extann_name = osj(extann_directory, line2[2])
+                        extann_used = line2[3]
+                        configfile_platform_application = run_informations[
+                            "run_platform_application"
+                        ]
+
+                        if (
+                            extann_platform_application
+                            == configfile_platform_application
+                            and extann_used == "yes"
+                        ):
+                            extann_file_list.append(extann_name)
+
+                    if len(extann_file_list) == 0:
+                        log.info(
+                            f"Not using any additional extann file for {configfile}"
                         )
-                        writted = True
-                    elif vcf_fields is True:
-                        write_file.write(line + "\n")
-                        writted = True
-                    vcf_fields = True
 
-                if re.match(r"-metrics:|#-metrics:", line):
-                    if re.match(r"#-metrics:", line):
-                        line = re.sub("#", "", line)
-                    if re.search("us", line):
-                        line = re.sub("us", "fr", line)
-                    write_file.write(line + "\n")
-                    writted = True
-
-                if re.match(r"#-uniprot:", line):
-                    line = re.sub("#", "", line)
-                    write_file.write(line + "\n")
-                    writted = True
-
-                if re.match(r"#-refseq:", line):
-                    line = re.sub("#", "", line)
-                    write_file.write(line + "\n")
-                    writted = True
-
-                if re.match(r"fam[0-9]+:", line):
-                    fam = line.split(" ")
-                    fam = fam[1:]
-                    for id in fam:
-                        family_list.append(id)
-
-                if re.match(r"-extann:|#-extann:", line):
-                    extann_files = line.split('"')
-                    for extann_file in reversed(extann_files):
-                        if not extann_file.startswith("/"):
-                            extann_files.remove(extann_file)
-
-                    if os.path.basename(configfile) != "configfile.default":
-                        if len(extann_files) != 0:
-                            for extann_file in extann_files:
-                                extann_file_list = extann_file.split(" ")
-                        else:
-                            extann_file_list = []
-
-                        for extann_file in reversed(extann_file_list):
-                            if re.search(r"^.*$", extann_file):
-                                extann_file_list.remove(extann_file)
-
-                        next(read_file2, 1)
-                        for line2 in read_file2.readlines():
-                            line2 = line2.strip()
-                            line2 = line2.split("\t")
-                            extann_platform_application = line2[0] + "." + line2[1]
-                            extann_name = os.path.join(extann_directory, line2[2])
-                            extann_used = line2[3]
-                            configfile_platform_application = (
-                                os.path.basename(configfile).split(".")[1]
-                                + "."
-                                + os.path.basename(configfile).split(".")[2]
+                    for extann_file in reversed(extann_file_list):
+                        print(extann_file)
+                        if os.path.isfile(extann_file) and len(extann_file_list) != 0:
+                            continue
+                        elif (
+                            not os.path.isfile(extann_file)
+                            and len(extann_file_list) != 0
+                        ):
+                            extann_file_list.remove(extann_file)
+                            log.error(
+                                f"Not found any additional extann(s) file(s) at {extann_file} directory, please check  your configfile"
                             )
 
-                            if (
-                                extann_platform_application
-                                == configfile_platform_application
-                                and extann_used == "yes"
-                            ):
-                                extann_file_list.append(extann_name)
-
-                        if len(extann_file_list) == 0:
-                            log.info(f"Not using any additional extann file for {configfile}")
-
-                        for extann_file in reversed(extann_file_list):
-                            if (
-                                os.path.isfile(extann_file)
-                                and len(extann_file_list) != 0
-                            ):
-                                continue
-                            elif (
-                                not os.path.isfile(extann_file)
-                                and len(extann_file_list) != 0
-                            ):
-                                extann_file_list.remove(extann_file)
-                                log.error(f"Not found any additional extann(s) file(s) at {extann_file} directory, please checkk  your configfile")
-
-                        if len(extann_file_list) == 0:
-                            line = '#-extann:\t\t""'
-                        else:
-                            line = '-extann:\t\t"' + " ".join(extann_file_list) + '"'
+                    if len(extann_file_list) == 0:
+                        line = '#-extann:\t\t""'
+                    else:
+                        line = '-extann:\t\t"' + " ".join(extann_file_list) + '"'
                         write_file.write(line + "\n")
                         writted = True
 
-                proxy_user = os.environ["http_proxy"].split(":")[1][2:]
-                proxy_passwd = os.environ["http_proxy"].split(":")[2].split("@")[0]
-                proxy_server = os.environ["http_proxy"].split(":")[2].split("@")[1]
-                proxy_port = os.environ["http_proxy"].split(":")[3]
+            proxy_user = os.environ["http_proxy"].split(":")[1][2:]
+            proxy_passwd = os.environ["http_proxy"].split(":")[2].split("@")[0]
+            proxy_server = os.environ["http_proxy"].split(":")[2].split("@")[1]
+            proxy_port = os.environ["http_proxy"].split(":")[3]
 
-                if re.match(r"#-proxyUser:", line):
-                    if re.search(r'"[a-zA-Z0-9]+"', line):
-                        line = re.sub(
-                            '"[a-zA-Z0-9]+"', '"' + proxy_user + '"', line
-                        )
-                    else:
-                        line = re.sub('""', '"' + proxy_user + '"', line)
-                    line = re.sub("#", "", line)
-                    write_file.write(line + "\n")
-                    writted = True
+            if re.match(r"#-proxyUser:", line):
+                if re.search(r'"[a-zA-Z0-9]+"', line):
+                    line = re.sub('"[a-zA-Z0-9]+"', '"' + proxy_user + '"', line)
+                else:
+                    line = re.sub('""', '"' + proxy_user + '"', line)
+                line = re.sub("#", "", line)
+                write_file.write(line + "\n")
+                writted = True
 
-                if re.match(r"#-proxyPasswd:", line):
-                    if re.search(r'"[a-zA-Z0-9]+"', line):
-                        line = re.sub(
-                            '"[a-zA-Z0-9]+"',
-                            '"' + proxy_passwd + '"',
-                            line,
-                        )
-                    else:
-                        line = re.sub(
-                            '""', '"' + proxy_passwd + '"', line
-                        )
-                    line = re.sub("#", "", line)
-                    write_file.write(line + "\n")
-                    writted = True
+            if re.match(r"#-proxyPasswd:", line):
+                if re.search(r'"[a-zA-Z0-9]+"', line):
+                    line = re.sub(
+                        '"[a-zA-Z0-9]+"',
+                        '"' + proxy_passwd + '"',
+                        line,
+                    )
+                else:
+                    line = re.sub('""', '"' + proxy_passwd + '"', line)
+                line = re.sub("#", "", line)
+                write_file.write(line + "\n")
+                writted = True
 
-                if re.match(r"#-proxyServer:", line):
-                    if re.search(r'"[a-zA-Z0-9]+"', line):
-                        line = re.sub(
-                            '"[a-zA-Z0-9]+"',
-                            '"' + proxy_server + '"',
-                            line,
-                        )
-                    else:
-                        line = re.sub(
-                            '""', '"' + proxy_server + '"', line
-                        )
-                    line = re.sub("#", "", line)
-                    write_file.write(line + "\n")
-                    writted = True
+            if re.match(r"#-proxyServer:", line):
+                if re.search(r'"[a-zA-Z0-9]+"', line):
+                    line = re.sub(
+                        '"[a-zA-Z0-9]+"',
+                        '"' + proxy_server + '"',
+                        line,
+                    )
+                else:
+                    line = re.sub('""', '"' + proxy_server + '"', line)
+                line = re.sub("#", "", line)
+                write_file.write(line + "\n")
+                writted = True
 
-                if re.match(r"#-proxyPort:", line):
-                    if re.search(r'"[a-zA-Z0-9]+"', line):
-                        line = re.sub(
-                            '"[a-zA-Z0-9]+"', '"' + proxy_port + '"', line
-                        )
-                    else:
-                        line = re.sub('""', '"' + proxy_port + '"', line)
-                    line = re.sub("#", "", line)
-                    write_file.write(line + "\n")
-                    writted = True
+            if re.match(r"#-proxyPort:", line):
+                if re.search(r'"[a-zA-Z0-9]+"', line):
+                    line = re.sub('"[a-zA-Z0-9]+"', '"' + proxy_port + '"', line)
+                else:
+                    line = re.sub('""', '"' + proxy_port + '"', line)
+                line = re.sub("#", "", line)
+                write_file.write(line + "\n")
+                writted = True
 
-                if re.match(r"-proxyUser:", line):
-                    if re.search(r'"[a-zA-Z0-9]+"', line):
-                        line = re.sub(
-                            '"[a-zA-Z0-9]+"', '"' + proxy_user + '"', line
-                        )
-                    else:
-                        line = re.sub('""', '"' + proxy_user + '"', line)
-                    write_file.write(line + "\n")
-                    writted = True
+            if re.match(r"-proxyUser:", line):
+                if re.search(r'"[a-zA-Z0-9]+"', line):
+                    line = re.sub('"[a-zA-Z0-9]+"', '"' + proxy_user + '"', line)
+                else:
+                    line = re.sub('""', '"' + proxy_user + '"', line)
+                write_file.write(line + "\n")
+                writted = True
 
-                if re.match(r"-proxyPasswd:", line):
-                    if re.search(r'"[a-zA-Z0-9]+"', line):
-                        line = re.sub(
-                            '"[a-zA-Z0-9]+"',
-                            '"' + proxy_passwd + '"',
-                            line,
-                        )
-                    else:
-                        line = re.sub(
-                            '""', '"' + proxy_passwd + '"', line
-                        )
-                    write_file.write(line + "\n")
-                    writted = True
+            if re.match(r"-proxyPasswd:", line):
+                if re.search(r'"[a-zA-Z0-9]+"', line):
+                    line = re.sub(
+                        '"[a-zA-Z0-9]+"',
+                        '"' + proxy_passwd + '"',
+                        line,
+                    )
+                else:
+                    line = re.sub('""', '"' + proxy_passwd + '"', line)
+                write_file.write(line + "\n")
+                writted = True
 
-                if re.match(r"-proxyServer:", line):
-                    if re.search(r'"[a-zA-Z0-9]+"', line):
-                        line = re.sub(
-                            '"[a-zA-Z0-9]+"',
-                            '"' + proxy_server + '"',
-                            line,
-                        )
-                    else:
-                        line = re.sub(
-                            '""', '"' + proxy_server + '"', line
-                        )
-                    write_file.write(line + "\n")
-                    writted = True
+            if re.match(r"-proxyServer:", line):
+                if re.search(r'"[a-zA-Z0-9]+"', line):
+                    line = re.sub(
+                        '"[a-zA-Z0-9]+"',
+                        '"' + proxy_server + '"',
+                        line,
+                    )
+                else:
+                    line = re.sub('""', '"' + proxy_server + '"', line)
+                write_file.write(line + "\n")
+                writted = True
 
-                if re.match(r"-proxyPort:", line):
-                    if re.search(r'"[a-zA-Z0-9]+"', line):
-                        line = re.sub(
-                            '"[a-zA-Z0-9]+"', '"' + proxy_port + '"', line
-                        )
-                    else:
-                        line = re.sub('""', '"' + proxy_port + '"', line)
-                    write_file.write(line + "\n")
-                    writted = True
+            if re.match(r"-proxyPort:", line):
+                if re.search(r'"[a-zA-Z0-9]+"', line):
+                    line = re.sub('"[a-zA-Z0-9]+"', '"' + proxy_port + '"', line)
+                else:
+                    line = re.sub('""', '"' + proxy_port + '"', line)
+                write_file.write(line + "\n")
+                writted = True
 
-                if writted is False:
-                    write_file.write(line + "\n")
+            if writted is False:
+                write_file.write(line + "\n")
 
-        os.remove(configfile)
-        os.rename(tmp_configfile, configfile)
-        os.chmod(configfile, 0o775)
+    os.remove(configfile)
+    os.rename(tmp_configfile, configfile)
+    os.chmod(configfile, 0o775)
+
 
 def logfile(run_informations):
     varank_error = True
@@ -445,10 +458,13 @@ def logfile(run_informations):
         for line in read_file.readlines():
             if re.match(r"^\.\.\.VaRank is done with the analysis", line):
                 varank_error = False
-                log.info(f"VaRank is done with the analysis, non redundant will be launched {logfile}")
+                log.info(
+                    f"VaRank is done with the analysis, non redundant will be launched {logfile}"
+                )
 
     if varank_error is True:
         log.error(f"Unexpected error just happened, please check {logfile}")
+
 
 if __name__ == "__main__":
     pass

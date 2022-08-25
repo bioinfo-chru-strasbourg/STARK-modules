@@ -6,6 +6,7 @@ from os.path import join as osj
 import synchronizer
 import archives_processing
 import non_redundant_generator
+import results_provider
 
 
 def launch_run(args):
@@ -46,7 +47,6 @@ def launch_run(args):
             run_repository_list[-2],
             "TSV",
         ),
-        "run_repository": run_repository,
         "run_processing_folder_vcf_run": osj(
             os.environ[
                 "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES"
@@ -73,6 +73,7 @@ def launch_run(args):
     checker.logfile(run_informations)
     archives_processing.cleaner(run_informations)
     non_redundant_generator.generate(run_informations)
+    results_provider.distribute(run_informations)
 
 
 if __name__ == "__main__":
