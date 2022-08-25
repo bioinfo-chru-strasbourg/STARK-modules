@@ -6,23 +6,15 @@ import os
 import re
 import logging as log
 import datetime
+import subprocess
 
 
 def generate(run_informations):
+    # Adapted from the Samuel's non_redondant.py script
     input_dir = run_informations["run_processing_folder_tsv"]
     columns_to_remove = []
     d = datetime.datetime.now()
-    output_file = osj(
-        input_dir,
-        "Non_Redondant"
-        + "_"
-        + d.strftime("%d")
-        + "_"
-        + d.strftime("%m")
-        + "_"
-        + d.strftime("%Y")
-        + ".tsv",
-    )
+    output_file = osj(input_dir, "Non_Redondant.tsv")
 
     if "WES" in input_dir:
         filter_mode = True
@@ -92,6 +84,45 @@ def generate(run_informations):
                             first_file = False
                         else:
                             assert l == header
+                    else:
+                        l = l.rstrip("\r\n").split("\t")
+                        if "," in l[gnomadAltFreq_popmax_index]:
+                            l[gnomadAltFreq_popmax_index] = l[
+                                gnomadAltFreq_popmax_index
+                            ].replace(",", ".")
+
+                        if filter_mode:
+                            if float(l[gnomadAltFreq_popmax_index]) < 0.005:
+                                continue
+                            if int(l[gnomadHomCount_all_index]) < 2:
+                                continue
+
+                        if l[0] not in already_seen_variants_dic:
+                            already_seen_variants_dic[l[0]] = ""
+
+                            if len(l) != split_header_length:
+                                if len(l) == split_header_length - 1:
+                                    l.append("")
+                                else:
+                                    log.error(
+                                        f"Anormal number of tabulations on current lines compared to header. Exiting..."
+                                    )
+                                    log.error(f"{len(l)}")
+                                    log.error(f"{l}")
+                                    raise ValueError(len(l))
+                            write_file.write(
+                                "\t".join(l[i] for i in index_to_keep) + "\r\n"
+                            )
+    log.info(f"Sorting non redundant file...")
+    subprocess.call(
+        "head -n1 " + output_file + "_unsorted > " + output_file, shell=True
+    )
+    subprocess.call(
+        "tail -n+2 " + output_file + "_unsorted | sort -t $'\t' -k 1 >> " + output_file,
+        shell=True,
+    )
+    os.remove(output_file + "_unsorted")
+    log.info(f"{output_file} generated !")
 
 
 if __name__ == "__main__":
