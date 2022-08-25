@@ -334,7 +334,6 @@ def configfile(run_informations):
                         )
 
                     for extann_file in reversed(extann_file_list):
-                        print(extann_file)
                         if os.path.isfile(extann_file) and len(extann_file_list) != 0:
                             continue
                         elif (
