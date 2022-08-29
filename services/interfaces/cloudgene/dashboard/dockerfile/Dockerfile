@@ -117,30 +117,15 @@ RUN if [ -z $TOOL_VERSION ]; then TOOL_VERSION_FOLDER=latest; else TOOL_VERSION_
 	ln -s $TOOL_VERSION_FOLDER $TOOLS/$TOOL_NAME/current && \
     mkdir -p $TOOLS/$TOOL_NAME/$TOOL_VERSION_FOLDER/bin/config/apps && \
     ln -s config/apps $TOOLS/$TOOL_NAME/$TOOL_VERSION_FOLDER/bin/apps && \
+    mkdir -p $TOOLS/$TOOL_NAME/$TOOL_VERSION_FOLDER/bin/config/pages && \
+    mv $TOOLS/$TOOL_NAME/$TOOL_VERSION_FOLDER/bin/sample/pages $TOOLS/$TOOL_NAME/$TOOL_VERSION_FOLDER/bin/sample/pages.orignal && \
+    ln -s ../config/pages $TOOLS/$TOOL_NAME/$TOOL_VERSION_FOLDER/bin/sample/pages && \
+    cp -pR $TOOLS/$TOOL_NAME/$TOOL_VERSION_FOLDER/bin/sample/pages.orignal/*.stache config/pages/ && \
     mkdir -p $TOOLS/$TOOL_NAME/$TOOL_VERSION_FOLDER/bin/data/tmp && \
     ln -s data/tmp $TOOLS/$TOOL_NAME/$TOOL_VERSION_FOLDER/bin/tmp && \
     mkdir -p $TOOLS/$TOOL_NAME/$TOOL_VERSION_FOLDER/bin/data/workspace && \
     ln -s data/workspace $TOOLS/$TOOL_NAME/$TOOL_VERSION_FOLDER/bin/workspace)
 
-
-############
-# VCFSTATS #
-############
-
-# # TOOL INFO
-# ENV TOOL_NAME="vcfstats"
-# ENV TOOL_VERSION="1.2"
-# ENV TOOL_TARBALL="VcfStats-assembly-$TOOL_VERSION.jar"
-# ENV TOOL_SOURCE_EXTERNAL="https://github.com/biopet/vcfstats/releases/download/v$TOOL_VERSION/$TOOL_TARBALL"
-# ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
-# # TOOL PARAMETERS
-# ENV TOOL_JAR=$TOOL_TARBALL
-# ENV TOOL_JAR_TARGET="VcfStats.jar"
-
-# # TOOL INSTALLATION
-# RUN mkdir -p $TOOLS/$TOOL_NAME/$TOOL_VERSION/bin && \
-# 	wget $TOOL_SOURCE_EXTERNAL -O $TOOLS/$TOOL_NAME/$TOOL_VERSION/bin/$TOOL_JAR_TARGET && \
-# 	ln -s $TOOL_VERSION $TOOLS/$TOOL_NAME/current;
 
 
 
@@ -148,9 +133,8 @@ RUN if [ -z $TOOL_VERSION ]; then TOOL_VERSION_FOLDER=latest; else TOOL_VERSION_
 # Script #
 ##########
 
-ADD ./scripts/launch.sh $TOOLS/$TOOL_NAME/current/bin/
-ADD ./scripts/*.stache $TOOLS/$TOOL_NAME/current/bin/sample/pages/
 ADD ./conf/* $TOOLS/$TOOL_NAME/current/bin/config/
+ADD ./scripts/launch.sh $TOOLS/$TOOL_NAME/current/bin/
 
 
 
@@ -168,7 +152,7 @@ RUN yum clean all ;
 ############
 
 # Cloudgene Docker Branding
-ENV CLOUDGENE_SERVICE_NAME="Cloudgene Docker"
+ENV CLOUDGENE_SERVICE_NAME="Cloudgene STARK"
 ENV CLOUDGENE_HELP_PAGE="https://github.com/lukfor/docker-cloudgene"
 ENV START_CLOUDGENE="true"
 ENV START_HADOOP="true"
