@@ -1,0 +1,24 @@
+{
+  "submodules": {
+    "cloudgene": {
+      "services": {
+        "server": {
+          "code": "dashboard",
+          "name": "Cloudgene",
+          "description": "Cloudgene is a framework to build Software As A Service (SaaS) platforms for data analysis pipelines.",
+          "release": "1.0",
+          "type": "IHM",
+          "available": true,
+          "link": {
+            "available": true,
+            "protocol": "http",
+            "ip": "",
+            "port": "4208",
+            "port_inner": "80",
+            "path": ""
+          }
+        }
+      }
+    }
+  }
+}

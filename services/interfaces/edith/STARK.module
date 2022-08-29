@@ -4,7 +4,7 @@
       "services": {
         "dashboard": {
           "code": "dashboard",
-          "name": "Dashboard",
+          "name": "EDITH",
           "description": "EDITH Dashboard resuming main informations on runs, analyses and results. Provides available IHM services organized in modules",
           "release": "1.2.0.0",
           "type": "IHM",
