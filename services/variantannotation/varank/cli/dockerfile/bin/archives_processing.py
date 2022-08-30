@@ -97,8 +97,8 @@ def initialisation(run_informations):
             osj(run_informations["run_processing_folder"], "TSVDeleting.txt"), mode="a"
         ):
             pass
-        shutil.rmtree(run_informations["run_processing_folder_tsv"])
-        os.mkdir(run_informations["run_processing_folder_tsv"])
+        for tsv_file in glob.glob(osj(run_informations["run_processing_folder_tsv"], "*")):
+            os.remove(tsv_file)
         os.remove(osj(run_informations["run_processing_folder"], "TSVDeleting.txt"))
     else:
         os.mkdir(run_informations["run_processing_folder_tsv"])

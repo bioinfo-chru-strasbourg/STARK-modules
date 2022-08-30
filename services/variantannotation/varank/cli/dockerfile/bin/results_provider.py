@@ -121,7 +121,8 @@ def distribute(run_informations):
                 osj(run_informations["run_depository"], renamed_wrapper_log_file),
             ]
         )
-        os.remove(osj(run_informations["run_repository"], "VARANKRunning.txt"))
+        if os.path.isfile(osj(run_informations["run_repository"], "VARANKRunning.txt")):
+            os.remove(osj(run_informations["run_repository"], "VARANKRunning.txt"))
 
 
 if __name__ == "__main__":

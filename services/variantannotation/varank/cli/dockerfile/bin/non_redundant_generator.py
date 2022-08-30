@@ -97,6 +97,11 @@ def generate(run_informations):
                             if int(l[gnomadHomCount_all_index]) < 2:
                                 continue
 
+                        if "." in l[gnomadAltFreq_popmax_index]:
+                            l[gnomadAltFreq_popmax_index] = l[
+                                gnomadAltFreq_popmax_index
+                            ].replace(".", ",")
+
                         if l[0] not in already_seen_variants_dic:
                             already_seen_variants_dic[l[0]] = ""
 
