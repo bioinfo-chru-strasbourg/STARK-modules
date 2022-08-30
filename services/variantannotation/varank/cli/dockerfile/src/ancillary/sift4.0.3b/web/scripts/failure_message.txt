@@ -1,2 +1,0 @@
-One or more of the SIFT tools failed.
-Please visit http://sift-dev.jcvi.org/daily_log/
