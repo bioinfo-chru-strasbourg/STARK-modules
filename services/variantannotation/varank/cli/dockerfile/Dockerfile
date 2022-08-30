@@ -1,102 +1,92 @@
 # source image
 FROM centos:7
-MAINTAINER Mateusz RAUCH <rauchmateusz@gmail.com>
+LABEL name="Mateusz RAUCH" email="<rauchmateusz@gmail.com>"
 
 ##########################################################################
 # Dockerfile Version:   1.0
 # Software:             VaRank
-# Software Version:     1.4.3
+# Software Version:     2.0
 # Software Website:     http://www.lbgi.fr/VaRank/
 # Description:          Dockerfile to build VaRank container image
 ##########################################################################
 
-ENV SRC=/src
 # packages installation
-RUN yum -y update && yum -y install  epel-release && yum -y group install 'Development Tools' \
-    && yum -y install  gcc gcc-c++ \
-					bzip2 bzip2-devel \
-					zlib2 zlib2-devel \
-					xz xz-devel \
-					glibc.i686 \
-					unzip wget make \
-					git libjpeg-turbo-devel \
-					openssl-devel libffi-devel \
-					python3.8.5-pip \
-	&& yum clean all
+RUN yum -y update
+RUN yum -y install epel-release
+RUN yum -y install wget
+# varank
+RUN yum -y install git
+RUN yum -y install glibc-2.17-326.el7_9.i686
+RUN yum clean all
 
-##########################################################################
+#conda
+RUN cd /tmp
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/lib/miniconda3/
+RUN echo 'export PATH="$PATH:/usr/local/lib/miniconda3/bin"' > /etc/profile.d/miniconda.sh
+RUN chmod 755 /etc/profile.d/miniconda.sh
+ENV PATH="$PATH:/usr/local/lib/miniconda3/bin"
+RUN chmod -R 755 /usr/local/lib/miniconda3/
+RUN rm -f /tmp/Miniconda3-latest-Linux-x86_64.sh
 
-# tools installation
-# PYTHON 3.8.5
-RUN cd /usr/src; \
-	wget --no-check-certificate "https://www.python.org/ftp/python/3.8.5/Python-3.8.5.tgz"; \
-	tar xzf Python-3.8.5.tgz; \
-	rm -f Python-3.8.5.tgz; \
-	cd Python-3.8.5; \
-	./configure --enable-optimizations; \
-	make install;
-
-RUN pip3 install pandas
-				
-# TCL
-RUN wget --no-check-certificate "https://sourceforge.net/projects/tcl/files/Tcl/8.6.9/tcl8.6.9-src.tar.gz/download?use_mirror=netcologne"; \
-	tar -xf download?use_mirror=netcologne; \
-	rm -f download?use_mirror=netcologne; \
-	cd tcl8.6.9/unix; \
-	./configure --prefix=$SRC/tcl; \
-	make; \
-	make prefix=$SRC/tcl install; \
-	ln -s tclsh8.6 $SRC/tcl/bin/tclsh; \
-	cd ../../; \
-	rm -rf tcl8.6.9;
-ENV PATH="$SRC/tcl/bin:$PATH"
+#work env
+RUN conda install -c intel tcl
+RUN conda create -n common python=3.9.7 
 
 # Java
 RUN yum -y install java-11-openjdk
 
+# SQLite3
+RUN yum -y install sqlite-devel
+
 # VaRank
 RUN mkdir /tools; \
-	mkdir /tools/varank; \
-	cd /tools/varank; \
-	wget --no-check-certificate "http://www.lbgi.fr/VaRank/Sources/VaRank_1.4.3.tar.gz"; \
-	tar -xvf VaRank_1.4.3.tar.gz; \
-	rm -rf VaRank_1.4.3.tar.gz; \
-	ln -s VaRank_1.4.3 current; \
-	cd current/ExtAnn; \
-	rm -f OMIMannotations.tsv.gz; \
-	mkdir /tools/varank/current/raw; \
-	ln -s /STARK/databases/OMIMannotations/current/OMIMannotations.tsv.gz /tools/varank/current/ExtAnn/OMIMannotations.tsv.gz
+	mkdir /tools/varank
+WORKDIR /tools/varank
+RUN git clone https://github.com/lgmgeo/VaRank.git
+RUN	ln -s VaRank current
+RUN cd current/ExtAnn; \
+	rm -f *; \
+	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/ACMG.tsv; \
+	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/ClinGenAnnotations.tsv; \
+	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/DDG2P.tsv; \
+	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/ExAC.CNV-Zscore.annotations.tsv; \
+	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/GeneIntolerance-Zscore.annotations.tsv; \
+	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/gnomAD.LOEUF.pLI.annotations.tsv; \
+	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/HI.tsv; \
+	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/morbidGenes.tsv; \
+	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/morbidGenesCandidates.tsv; \
+	ln -s /STARK/databases/OMIMannotations/current/OMIM-1-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-1-annotations.tsv.gz; \
+	ln -s /STARK/databases/OMIMannotations/current/OMIM-2-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-2-annotations.tsv.gz
 
 ENV VARANK=/tools/varank/current/
-ENV varank="python3 /tools/varank/current/scripts/newVaRank.py"
 
 # Alamut-Batch
-RUN mkdir /tools/alamut_batch; \
-	cd /tools/alamut_batch; \
-	wget --no-check-certificate "https://downloads.interactive-biosoftware.com/download.php?product=Alamut-batch-standalone&platform=&OS=Linux&version=1.11"; \
-	tar -xvf download.php?product=Alamut-batch-standalone\&platform=\&OS=Linux\&version=1.11; \
+RUN mkdir /tools/alamut_batch
+WORKDIR /tools/alamut_batch
+RUN wget https://downloads.interactive-biosoftware.com/download.php?product=Alamut-batch-standalone\&platform=\&OS=Linux\&version=1.11
+RUN tar -xvf download.php?product=Alamut-batch-standalone\&platform=\&OS=Linux\&version=1.11; \
 	rm -rf download.php?product=Alamut-batch-standalone\&platform=\&OS=Linux\&version=1.11; \
-	ln -s alamut-batch-standalone-1.11 current; \
-	cd current; \
-	mv ancillary ancillary.original; \
-	mkdir ancillary;
+	ln -s alamut-batch-standalone-1.11 current
+WORKDIR /tools/alamut_batch/current
+RUN rm -rf ancillary
 
-COPY src/ancillary/ /tools/alamut_batch/current/ancillary/
-RUN chmod -R 777 /tools/alamut_batch/current/ancillary/
+COPY src/ancillary.tar.gz /tools/alamut_batch/current/ancillary/
+WORKDIR /tools/alamut_batch/current/ancillary
+RUN tar -xvf ancillary.tar.gz
+RUN rm -rf ancillary.tar.gz
+WORKDIR /tools/alamut_batch/current
+RUN chmod -R 777 ancillary
+RUN rm -rf alamut-batch.ini
+RUN ln -s /STARK/config/variantannotation/varank/alamut-batch-license/alamut-batch.ini /tools/alamut_batch/current/alamut-batch.ini
 ENV ALAMUT=/tools/alamut_batch/current/
 
-##########################################################################
-
-# copy app binaries
-COPY bin/newVaRank.py /tools/varank/current/scripts/newVaRank.py
-
-##########################################################################
-
-# copy config files
-
-COPY config/* /tools/varank/current/config/
-
+COPY bin/*.py /tools/varank/current/scripts/
 RUN chmod -R 777 /tools/
 
-ENTRYPOINT ["$varank"]
+RUN echo "source activate common" > ~/.bashrc
+RUN echo "alias ll='ls -l'" > ~/.bashrc
+RUN echo "alias varank='python3.9 /tools/varank/current/scripts/__main__.py'" > ~/.bashrc
+
+
 WORKDIR /

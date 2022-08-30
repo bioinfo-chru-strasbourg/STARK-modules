@@ -8,7 +8,7 @@
           "name": "VaRank cli",
           "type": "CLI",
           "description": "A VaRank CLI.",
-          "release": "1.0",
+          "release": "2.0",
           "available": true
         },
         "listener": {
@@ -16,7 +16,7 @@
           "name": "VaRank listener",
           "type": "listener",
           "description": "A VaRank listener service is started as a daemon, listening for new STARK analyzed run (new folder in output/repository) and well configured (STARKComplete.txt without VaRankRunning.txt or VaRankComplete.txt), and check triggers to launch or not analysis.",
-          "release": "1.0",
+          "release": "1.1",
           "available": true
         } 
       }
