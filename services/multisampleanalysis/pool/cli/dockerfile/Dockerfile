@@ -19,6 +19,7 @@ LABEL maintainer="NICAISE Samuel <samuel.nicaise@chru-strasbourg.fr>" \
 
 
 ENV SRC=/src
+RUN yum update
 RUN yum -y install  epel-release
 RUN yum -y install  gcc gcc-c++ \
 					bzip2 bzip2-devel \

@@ -6,7 +6,7 @@ FROM continuumio/miniconda:latest
 
 #necessary libs
 RUN mkdir -p /usr/share/man/man1
-RUN apt-get update --allow-releaseinfo-change && apt-get update && apt-get install -y \
+RUN apt-get --allow-releaseinfo-change update && apt-get install -y \
 	build-essential \
 	default-jdk \
 	git \
