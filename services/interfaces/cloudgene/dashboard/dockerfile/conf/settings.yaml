@@ -1,0 +1,12 @@
+!cloudgene.mapred.util.Settings
+apps: !java.util.Vector
+-  id: installApp@1.1.0
+   changed: false
+   filename: apps/installApp/1.1.0/application.yaml
+   permission: admin
+navigation: !java.util.Vector
+- !cloudgene.mapred.util.MenuItem
+   id: help
+   name: Help
+   link: https://github.com/lukfor/docker-cloudgene
+secretKey: xvVSYZsOObhwfUwTMvrPLaRsLLcyMYXoshbxOclSXESHaxoDJwGWJktZJkaHUtwF
