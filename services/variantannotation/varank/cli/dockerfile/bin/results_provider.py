@@ -33,6 +33,7 @@ def distribute(run_informations):
             osj(run_informations["run_repository"], renamed_varank_log_file),
         ]
     )
+    log.info(f"Copied {renamed_varank_log_file} into run repository")
     subprocess.run(
         [
             "rsync",
@@ -41,6 +42,7 @@ def distribute(run_informations):
             osj(run_informations["run_depository"], renamed_varank_log_file),
         ]
     )
+    log.info(f"Copied {renamed_varank_log_file} into run depository")
     subprocess.run(
         [
             "rsync",
@@ -49,6 +51,7 @@ def distribute(run_informations):
             osj(run_informations["run_repository"], renamed_non_redundant),
         ]
     )
+    log.info(f"Copied {renamed_non_redundant} into run repository")
     subprocess.run(
         [
             "rsync",
@@ -57,6 +60,7 @@ def distribute(run_informations):
             osj(run_informations["run_depository"], renamed_non_redundant),
         ]
     )
+    log.info(f"Copied {renamed_non_redundant} into run depository")
 
     for sample in run_repository_sample_folder_list:
         sample = os.path.basename(os.path.dirname(sample))
@@ -65,10 +69,12 @@ def distribute(run_informations):
             osj(run_informations["run_repository"], sample, "VARANK", "")
         ):
             os.mkdir(osj(run_informations["run_repository"], sample, "VARANK", ""))
+            log.info(f"Created VARANK folder for sample {sample} into run repository")
         if not os.path.isdir(
             osj(run_informations["run_depository"], sample, "VARANK", "")
         ):
             os.mkdir(osj(run_informations["run_depository"], sample, "VARANK", ""))
+            log.info(f"Created VARANK folder for sample {sample} into run depository")
 
         varank_folder_name = f"{os.path.basename(sample)}_{date}"
         tsv_files = glob.glob(
@@ -90,6 +96,7 @@ def distribute(run_informations):
                     ),
                 ]
             )
+            log.info(f"Copied {tsv_file} into {varank_folder_name} in repository")
             subprocess.run(
                 [
                     "rsync",
@@ -104,25 +111,30 @@ def distribute(run_informations):
                     ),
                 ]
             )
+            log.info(f"Copied {tsv_file} into {varank_folder_name} in depository")
 
-        subprocess.run(
-            [
-                "rsync",
-                "-rp",
-                wrapper_log_file,
-                osj(run_informations["run_repository"], renamed_wrapper_log_file),
-            ]
-        )
-        subprocess.run(
-            [
-                "rsync",
-                "-rp",
-                wrapper_log_file,
-                osj(run_informations["run_depository"], renamed_wrapper_log_file),
-            ]
-        )
-        if os.path.isfile(osj(run_informations["run_repository"], "VARANKRunning.txt")):
-            os.remove(osj(run_informations["run_repository"], "VARANKRunning.txt"))
+    subprocess.run(
+        [
+            "rsync",
+            "-rp",
+            wrapper_log_file,
+            osj(run_informations["run_repository"], renamed_wrapper_log_file),
+        ]
+    )
+    log.info(f"Copied {renamed_wrapper_log_file} into run repository")
+    subprocess.run(
+        [
+            "rsync",
+            "-rp",
+            wrapper_log_file,
+            osj(run_informations["run_depository"], renamed_wrapper_log_file),
+        ]
+    )
+    log.info(f"Copied {renamed_wrapper_log_file} into run repository")
+
+    if os.path.isfile(osj(run_informations["run_repository"], "VARANKRunning.txt")):
+        os.remove(osj(run_informations["run_repository"], "VARANKRunning.txt"))
+        log.info(f"Deleted VARANKRunning.txt")
 
 
 if __name__ == "__main__":

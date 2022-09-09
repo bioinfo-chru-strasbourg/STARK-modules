@@ -74,7 +74,8 @@ def launch_run(args):
     archives_processing.cleaner(run_informations)
     non_redundant_generator.generate(run_informations)
     results_provider.distribute(run_informations)
-
+    
+    log.info(f"VaRank analysis for run {run_informations['run_name']} ended well")
 
 if __name__ == "__main__":
     pass
