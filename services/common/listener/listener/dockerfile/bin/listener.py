@@ -277,7 +277,7 @@ def checkTriggers(jconfig, serviceName, run):
 			groupList = []
 			for g in jconfig[key]:
 				if g.startswith("!"):
-					notGroupList.append(g[:-1])
+					notGroupList.append(g[1:])
 				else:
 					groupList.append(g)
 			if runGroup in notGroupList:
@@ -355,7 +355,7 @@ def main(groupInputList, serviceName, jsonFile, days, delay, containersFile, con
 			for starkComplete in starkCompleteList:
 				###25/01/2021 Prod Hotfix
 				runDir = os.path.dirname(starkComplete)
-				p = subprocess.Popen("find "+runDir+"/* -type d -maxdepth 1", stdout=subprocess.PIPE, shell=True)
+				p = subprocess.Popen("find "+runDir+"/* -maxdepth 1 -type d", stdout=subprocess.PIPE, shell=True)
 				out = p.stdout.readlines()
 				if any([os.path.basename(path.rstrip()) == "STARK" for path in out]):
 					###
