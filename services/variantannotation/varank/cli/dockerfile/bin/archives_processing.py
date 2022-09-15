@@ -9,49 +9,10 @@ import json
 import multiprocessing
 
 
-def initialisation(run_informations):
-    archives_vcf_files = glob.glob(
-        osj(run_informations["run_processing_folder"], "VCF", "*", "*.final.vcf*")
-    )
-    archives_run_name = glob.glob(
-        osj(run_informations["run_processing_folder"], "VCF", "*")
-    )
+def root_vcf_initialisation(run_informations):
     other_vcfs = glob.glob(
         osj(run_informations["run_processing_folder"], "*.final.vcf*")
     ) + glob.glob(osj(run_informations["run_processing_folder"], "VCF", "*.final.vcf*"))
-
-    deleted_samples_file = osj(
-        os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_CONFIG"],
-        "variantannotation",
-        "varank",
-        "configfiles",
-        "deleted_samples_config.tsv",
-    )
-
-    with open(deleted_samples_file, "r") as read_file:
-        next(read_file)
-        for line in read_file.readlines():
-            line = line.split("\t")
-            if line[4] == os.path.basename(run_informations["run_processing_folder"]):
-                vcf_file_to_delete = osj(
-                    run_informations["run_processing_folder"], "VCF", line[1], line[0]
-                )
-                if os.path.isfile(vcf_file_to_delete):
-                    os.remove(vcf_file_to_delete)
-
-    if len(archives_vcf_files) != 0:
-        archives_vcf_files = sorted(archives_vcf_files)
-        for run_name in archives_run_name:
-            vcf_file_list = glob.glob(osj(run_name, "*.final.vcf*"))
-            for processed_vcf_file in vcf_file_list:
-                subprocess.run(
-                    [
-                        "rsync",
-                        "-rp",
-                        processed_vcf_file,
-                        run_informations["run_processing_folder"],
-                    ]
-                )
 
     if len(other_vcfs) != 0:
         if not os.path.isdir(
@@ -85,9 +46,61 @@ def initialisation(run_informations):
                     "rsync",
                     "-rp",
                     archives_default_processed_vcf_files,
-                    run_informations["run_processing_folder"],
+                    run_informations["analysis_folder"],
                 ]
             )
+
+
+def initialisation(run_informations):
+    archives_vcf_files = glob.glob(
+        osj(run_informations["run_processing_folder"], "VCF", "*", "*.final.vcf*")
+    )
+    archives_run_name = glob.glob(
+        osj(run_informations["run_processing_folder"], "VCF", "*")
+    )
+
+    deleted_samples_file = osj(
+        os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_CONFIG"],
+        "variantannotation",
+        "varank",
+        "configfiles",
+        "deleted_samples_config.tsv",
+    )
+
+    with open(deleted_samples_file, "r") as read_file:
+        next(read_file)
+        for line in read_file.readlines():
+            line = line.split("\t")
+            if line[4] == os.path.basename(run_informations["run_processing_folder"]):
+                vcf_file_to_delete = osj(
+                    run_informations["run_processing_folder"], "VCF", line[1], line[0]
+                )
+                if os.path.isfile(vcf_file_to_delete):
+                    os.remove(vcf_file_to_delete)
+
+    if len(archives_vcf_files) != 0:
+        archives_vcf_files = sorted(archives_vcf_files)
+        for run_name in archives_run_name:
+            vcf_file_list = glob.glob(osj(run_name, "*.final.vcf*"))
+            for processed_vcf_file in vcf_file_list:
+                subprocess.run(
+                    [
+                        "rsync",
+                        "-rp",
+                        processed_vcf_file,
+                        run_informations["analysis_folder"],
+                    ]
+                )
+
+    if os.path.isdir(osj(run_informations["run_processing_folder"], "Alamut")):
+        subprocess.run(
+            [
+                "rsync",
+                "-rp",
+                osj(run_informations["run_processing_folder"], "Alamut"),
+                run_informations["analysis_folder"],
+            ]
+        )
 
     if os.path.isdir(run_informations["run_processing_folder_tsv"]):
         log.info(
@@ -97,7 +110,9 @@ def initialisation(run_informations):
             osj(run_informations["run_processing_folder"], "TSVDeleting.txt"), mode="a"
         ):
             pass
-        for tsv_file in glob.glob(osj(run_informations["run_processing_folder_tsv"], "*")):
+        for tsv_file in glob.glob(
+            osj(run_informations["run_processing_folder_tsv"], "*")
+        ):
             os.remove(tsv_file)
         os.remove(osj(run_informations["run_processing_folder"], "TSVDeleting.txt"))
     else:
@@ -111,7 +126,7 @@ def configfile_manager(run_informations):
         "varank",
         "configfiles",
     )
-    used_configfile = osj(run_informations["run_processing_folder"], "configfile")
+    used_configfile = osj(run_informations["analysis_folder"], "configfile")
 
     if run_informations["run_platform_application"] == "default":
         configfile = osj(configfile_shelter, "configfile.default")
@@ -147,7 +162,7 @@ def configfile_manager(run_informations):
 
 
 def varank_launcher(run_informations):
-    logfile = osj(run_informations["run_processing_folder"], "VaRank.log")
+    logfile = osj(run_informations["analysis_folder"], "VaRank.log")
     varank_bin = osj(os.environ["VARANK"], "bin", "VaRank")
 
     varank_json = osj(
@@ -171,7 +186,7 @@ def varank_launcher(run_informations):
             [
                 varank_bin,
                 "-vcfdir",
-                run_informations["run_processing_folder"],
+                run_informations["analysis_folder"],
                 "-alamutHumanDB",
                 "hg19",
                 "-SamVa",
@@ -187,16 +202,43 @@ def varank_launcher(run_informations):
 
 
 def cleaner(run_informations):
-    tsv_files = glob.glob(osj(run_informations["run_processing_folder"], "*tsv"))
-    vcf_files = glob.glob(
-        osj(run_informations["run_processing_folder"], "*final.vcf.gz")
-    )
-    db_files = glob.glob(osj(run_informations["run_processing_folder"], "*db"))
-    log.info(f"Cleaning the archives folder")
+    tsv_files = glob.glob(osj(run_informations["analysis_folder"], "*tsv"))
+    vcf_files = glob.glob(osj(run_informations["analysis_folder"], "*final.vcf.gz"))
+    db_files = glob.glob(osj(run_informations["analysis_folder"], "*db"))
+    log.info(f"Cleaning the analysis folder")
 
     for file in tsv_files:
         os.chmod(file, 0o775)
         shutil.move(file, run_informations["run_processing_folder_tsv"])
+        log.info(f"Moved generated tsv files")
+
+    if os.path.isdir(osj(run_informations["run_processing_folder"], "Alamut")):
+        shutil.rmtree(osj(run_informations["run_processing_folder"], "Alamut"))
+        log.info(f"Removed old Alamut folder")
+
+    subprocess.run(
+        [
+            "rsync",
+            "-rp",
+            osj(run_informations["analysis_folder"], "Alamut"),
+            run_informations["run_processing_folder"],
+        ]
+    )
+    log.info(f"Copied new Alamut folder")
+
+    if os.path.isfile(osj(run_informations["run_processing_folder"], "VaRank.log")):
+        os.remove(osj(run_informations["run_processing_folder"], "VaRank.log"))
+        log.info(f"Removed old VaRank.log")
+
+    subprocess.run(
+        [
+            "rsync",
+            "-rp",
+            osj(run_informations["analysis_folder"], "VaRank.log"),
+            run_informations["run_processing_folder"],
+        ]
+    )
+    log.info(f"Copied new VaRank.log")
 
     with open(
         osj(run_informations["run_processing_folder_tsv"], "TSVCopyComplete.txt"),
@@ -206,9 +248,14 @@ def cleaner(run_informations):
 
     for file in vcf_files:
         os.remove(file)
+        log.info(f"Deleted used vcf file")
 
     for db_file in db_files:
         os.remove(db_file)
+        log.info(f"Deleted sqlite database")
+
+    shutil.rmtree(run_informations["analysis_folder"])
+    log.info(f"Deleted temporary analysis folder")
 
 
 if __name__ == "__main__":

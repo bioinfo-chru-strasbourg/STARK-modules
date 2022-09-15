@@ -3,7 +3,6 @@ import glob
 from operator import truediv
 from os.path import join as osj
 import os
-import re
 import logging as log
 import datetime
 import subprocess
