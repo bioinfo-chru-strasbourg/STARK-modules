@@ -92,10 +92,9 @@ def varank_config_json_checker():
                 OMIM_1 = data["databases"]["OMIM"]["OMIM_1"]
                 OMIM_2 = data["databases"]["OMIM"]["OMIM_2"]
                 if api_token == "...":
-                    log.error(
-                        f"{i} license was not parametered, please modify in {varank_json}"
+                    log.info(
+                        f"{i} license was not parametered, please modify asap in {varank_json}"
                     )
-                    raise ValueError(api_token)
                 if not os.path.isfile(OMIM_1):
                     log.error(
                         f"{OMIM_1} file do not exists, please modify the path in {varank_json} or download the latest version with the omim command"

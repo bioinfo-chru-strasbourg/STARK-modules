@@ -57,6 +57,7 @@ def launch_run(args):
             "VCF",
             run_repository_list[-1],
         ),
+        "analysis_folder": f"/tmp_{run_repository_list[-1]}/",
     }
     checker.depository_checker(run_informations)
     checker.pattern_checker(run_informations)
@@ -70,10 +71,12 @@ def launch_run(args):
     checker.configfile(run_informations)
     archives_processing.configfile_manager(run_informations)
     archives_processing.varank_launcher(run_informations)
-    checker.logfile(run_informations)
     archives_processing.cleaner(run_informations)
+    checker.logfile(run_informations)
     non_redundant_generator.generate(run_informations)
     results_provider.distribute(run_informations)
+
+    log.info(f"VaRank analysis for run {run_informations['run_name']} ended well")
 
 
 if __name__ == "__main__":
