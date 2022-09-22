@@ -967,12 +967,12 @@ rule convertvcf_alldesign:
 		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.py.log"
 	shell:
 		"""
-		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzalldesign} --out_tsv {output.tsvalldesign} 2> {log.log2}
+		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzalldesign} --out_tsv {output.tsvalldesign}
 		"""
 
 
 onstart:
-	shell("touch " + outputdir + "/" + serviceName + "Running.txt")
+	shell("touch " + outputdir + serviceName + "Running.txt")
 	# Add the snakemake parameters to log
 	with open(logfile, "a+") as f:
 		json.dump(config, f)
@@ -997,15 +997,17 @@ onsuccess:
 	# Remove old files
 	for sample in sample_list:
 		shell("rm -f " + outputdir + sample + "/" + serviceName + "/* || true")
-	# Copy new files
-	for sample in sample_list:
-		shell("cp -R " + tmpdir + "/" + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + outputdir + sample + "/" + serviceName + "/")
 	# Rsync all files into final destination
 	shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
+	# Copy new files
+	for sample in sample_list:
+		shell("cp " + outputdir + "/" + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + outputdir + sample + "/" + serviceName + "/")
 	if depotcopy == True:
 		shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {depotdir}")
+		for sample in sample_list:
+			shell("cp " + depotdir + "/" + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/")
 
 onerror:
-	shell("touch " + outputdir + "/" + serviceName + "Failed.txt")
-	shell("rm -f " + outputdir + "/" + serviceName + "Running.txt")
+	shell("touch " + outputdir + serviceName + "Failed.txt")
+	shell("rm -f " + outputdir + serviceName + "Running.txt")
 	shell("rsync -azvh --include={include_file_log} --exclude {exclude_file} {tmpdir}/ {outputdir}")
