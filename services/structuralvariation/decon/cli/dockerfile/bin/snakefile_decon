@@ -19,6 +19,8 @@
 	# rename failures and results_all from txt to tsv
 	# script to convert vcf to tsv & rules
 	# exclude samples list case insentitive
+	# modify copy of the results
+	# add tsv2vcf converter (https://github.com/sigven/vcf2tsvpy)
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -965,7 +967,7 @@ rule convertvcf_alldesign:
 		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.py.log"
 	shell:
 		"""
-		python {scriptspath}/vcf2tsv_converter.py -i {input.vcfgzalldesign} -o {output.tsvalldesign} 2> {log.log2}
+		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzalldesign} --out_tsv {output.tsvalldesign} 2> {log.log2}
 		"""
 
 
@@ -992,6 +994,14 @@ onsuccess:
 	with open(logfile, "a+") as f:
 		f.write("End of the analysis : ")
 		f.write((date_time_end) + "\n")
+
+# need to remove files in : outputdir + sample + "/" serviceName + "/" for each samples (rm -f ./* 2>test.ee) if needed dev/null
+	for sample in sample_list:
+		shell("for i in $(ls -p " + outputdir + sample + "/" + serviceName + "/" + " | grep -v /); do rm -f $i; done")
+# cp all
+	for sample in sample_list:
+		shell("cp -R " + tmpdir + "/" + sample + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/ " + outputdir + sample + "/" + serviceName + "/")
+
 	# Copy files to final destination
 	shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
 	if depotcopy == True:

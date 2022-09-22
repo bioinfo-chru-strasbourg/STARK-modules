@@ -13,4 +13,6 @@ dependencies:
   - requests
   - tqdm
   - numpy
+  - Jinja2
+  - vcf2tsvpy
 prefix: ./envs

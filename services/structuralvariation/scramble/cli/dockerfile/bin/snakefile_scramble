@@ -14,6 +14,8 @@
 	# remove panel vcf filtering (output was essentially empty) ; rename full to unfiltered
 	# script to convert vcf to tsv & corresponding rules
 	# exclude samples list case insentitive
+	# modify copy of the results
+	# add vcf2tsv converter ((https://github.com/sigven/vcf2tsvpy)
 
 ################## Context ##################
 # launch snakemake -s  snakefile_scramble -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -205,7 +207,7 @@ depotdir = depositorydir + "/" + group_name + "/" + app_name + "/" + nameoftheru
 
 if not outputdir:
 	outputdir = repositorydir + "/" + group_name + "/" + app_name + "/" + nameoftherun + "/"
- 
+
 # Set the path of the customnumberingfile for makeCNVcalls
 customnumberingfile = tmpdir + "/" + serviceName + "." +  date_time + '.CustomNumbering.txt'
 
@@ -369,20 +371,26 @@ if debug:
 # check the number of sample for copy or merge vcf rule
 sample_count = len(sample_list) 
 
-# Make a report
-# report: "/app/res/workflow.rst"
-
 # add more input with expand to display rules help
-rule all:
-	"""
-	Rule will create an unfiltered vcf.gz & design vcf.gz and correponding tsv
-	"""
-	input:
-		tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list),
-		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv",
-		alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
+if not bed_file:
+	rule all:
+		"""
+		Rule will create an unfiltered vcf.gz and correponding tsv
+		"""
+		input:
+			vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz", sample=sample_list, aligner=aligner_list),
+			tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv"
 
+else:
+	rule all:
+		"""
+		Rule will create an unfiltered vcf.gz & design vcf.gz and correponding tsv
+		"""
+		input:
+			tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list),
+			tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv",
+			alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
 rule help:
 	"""
@@ -405,7 +413,6 @@ rule indexing:
 	input:
 		bam = inputdir + "/{sample}.{aligner}.bam"
 	output:
-		#bai = report(inputdir + "/{sample}.{aligner}.bai")
 		bai = inputdir + "/{sample}.{aligner}.bai"
 	params:
 		threads = config['THREADS']
@@ -638,8 +645,7 @@ rule cpvcfdesign:
 		fi
 		"""
 
-
-rule convertvcf_sample:
+rule convertvcf_sampledesign:
 	"""
 	Vcf 2 tsv conversion
 	"""
@@ -651,7 +657,7 @@ rule convertvcf_sample:
 		log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Vcf2Tsv_converter.log"
 	shell:
 		"""
-		python {scriptspath}/vcf2tsv_converter.py -i {input.vcfgzdesign} -o {output.tsvdesign} 2> {log.log2}
+		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzdesign} --out_tsv {output.tsvdesign} 2> {log.log2}
 		"""
 
 rule convertvcf_alldesign:
@@ -666,7 +672,7 @@ rule convertvcf_alldesign:
 		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.py.log"
 	shell:
 		"""
-		python {scriptspath}/vcf2tsv_converter.py -i {input.vcfgzalldesign} -o {output.tsvalldesign} 2> {log.log2}
+		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzalldesign} --out_tsv {output.tsvalldesign} 2> {log.log2}
 		"""
 
 rule convertvcf_allunfiltered:
@@ -676,16 +682,13 @@ rule convertvcf_allunfiltered:
 	input:
 		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Unfiltered.vcf.gz"
 	output:
-		tsvalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv"
+		tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv"
 	log:
 		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.py.log"
 	shell:
 		"""
-		python {scriptspath}/vcf2tsv_converter.py -i {input.vcfgzallfull} -o {output.tsvalldesign} 2> {log.log2}
+		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzallfull} --out_tsv {output.tsvallfull} 2> {log.log2}
 		"""
-
-
-
 
 onstart:
 	shell("touch " + outputdir + "/" + serviceName + "Running.txt")
@@ -702,7 +705,14 @@ onsuccess:
 	with open(logfile, "a+") as f:
 		f.write("End of the analysis : ")
 		f.write((date_time_end) + "\n")
-	
+
+# need to remove files in : outputdir + sample + "/" serviceName + "/" for each samples (rm -f ./* 2>test.ee) if needed dev/null
+	for sample in sample_list:
+		shell("for i in $(ls -p " + outputdir + sample + "/" + serviceName + "/" + " | grep -v /); do rm -f $i; done")
+# cp all
+	for sample in sample_list:
+		shell("cp -R " + tmpdir + "/" + sample + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/ " + outputdir + sample + "/" + serviceName + "/")
+
 	# Copy files to final destination
 	shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
 	if depotcopy == True:
