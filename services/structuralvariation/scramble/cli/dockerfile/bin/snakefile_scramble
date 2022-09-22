@@ -698,8 +698,8 @@ onstart:
 		f.write("\n")
 
 onsuccess:
-	shell("touch " + outputdir + "/" + serviceName + "Complete.txt")
-	shell("rm -f " + outputdir + "/" + serviceName + "Running.txt")
+	shell("touch " + outputdir + serviceName + "Complete.txt")
+	shell("rm -f " + outputdir + serviceName + "Running.txt")
 	# Add end time of the analysis to the log file
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
@@ -707,7 +707,7 @@ onsuccess:
 		f.write((date_time_end) + "\n")
 	# Remove old files
 	for sample in sample_list:
-		shell("rm -f " + outputdir + sample + "/" + serviceName + "/* 2>/dev/null")
+		shell("rm -f " + outputdir + sample + "/" + serviceName + "/* || true")
 	# Copy new files
 	for sample in sample_list:
 		shell("cp -R " + tmpdir + "/" + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + outputdir + sample + "/" + serviceName + "/")
