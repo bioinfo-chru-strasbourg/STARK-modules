@@ -2,7 +2,7 @@
   "code" : "Multi Sample Analysis",
   "name": "Multi Sample Analysis",
   "fullname": "Multi Sample Analysis",
-  "description": "Multi Sample Analysis from multiple VCF files, such as trio, pool, composite heterozygous variants",
-  "release": "1.0",
+  "description": "Multi Sample Analysis from multiple VCF files, such as trio, pool, composite heterozygous variants and DPNI analysis",
+  "release": "1.1",
   "available": true
 }

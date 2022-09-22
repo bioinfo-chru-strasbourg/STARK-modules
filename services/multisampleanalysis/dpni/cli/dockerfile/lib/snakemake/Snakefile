@@ -1,0 +1,1088 @@
+import multiprocessing
+import os
+import shutil
+import random
+import string
+import subprocess
+import time
+import numpy as np
+from os.path import join as osj
+from itertools import islice
+import sys
+from collections import OrderedDict, defaultdict
+import re
+import pandas as pd
+from multiprocessing import Pool
+import json
+from tqdm import tqdm
+from datetime import datetime
+
+
+date = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+def systemcall(command):
+    '''
+    *passing command to the shell*
+    *return list containing stdout lines*
+    command - shell command (string)
+    '''
+    p = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+    return p.stdout.read().decode('utf8').strip().split('\n')
+
+def getbed(run):
+    for samples in os.listdir(run):
+        if os.path.isdir(osj(run, samples)):
+            bed  = systemcall('find '+osj(run, samples)+' -name "'+samples+'.bed"')[0]
+            if bed:
+                return bed
+    print("ERROR no bed in run "+run+" exit !")
+    exit()
+    
+
+def configure(run, trio, genome, tools, output):
+    family = {}
+    family['tools'] = tools
+    family['family'] = list()
+    family['process'] = list()
+    for samples in os.listdir(run):
+        print("#[INFO] samples ", samples)
+        if samples in trio and os.path.isdir(osj(run, samples)):
+            samp = {}
+            tagfile = systemcall('find '+osj(run, samples)+' -maxdepth 2  -name "'+samples+'.tag"')[0]
+            if not tagfile:
+                #TODO search ped file
+                print("WARNING no tag file in sample "+ samples)
+            else:
+                with open(tagfile, 'r') as t:
+                    for lines in t:
+                        whole = lines.strip().split('!')
+                        print(whole)
+                        for tag in whole:
+                            if 'SEX' in tag and '_' in tag:
+                                sex = tag.split('_')[-1]
+                                samp['sex'] = sex
+                            elif 'SEX' in tag and '#' in tag:
+                                sex = tag.split('#')[-1]
+                                samp['sex'] = sex
+                                #family['family'][samples]['sex'] = sex
+                            #MOTHER, fetus, FATHER
+                            elif 'FOETAL' in tag:
+                                print(tag)
+                                fam = tag.split('#')[-1]
+                                if fam == 'fetus':
+                                    family['fetus'] = samp
+                                else:
+                                    samp['affinity'] = fam.lower()
+                                    family['family'].append(samp)
+            #Looking for bam files
+            bamfile = systemcall('find '+osj(run, samples)+' -maxdepth 3 -name "*.bwamem.bam" ! -name "*.validation.*"')[0]
+            samp['bam'] = bamfile
+            if not bamfile:
+                print("ERROR no bam file in sample "+samples+" exit !")
+                exit()
+            vcfile = systemcall('find '+osj(run, samples)+' -maxdepth 3 -name "'+samples+'.final.vcf"')[0]
+            samp['vcf'] = vcfile
+            samp['sample'] = samples
+            if not vcfile:
+                print("ERROR no vcf file in sample "+samples+" exit !")
+                exit()
+            if 'affinity' in samp:
+                s = {}
+                s[samples] = {}
+                s[samples]['bam'] = bamfile
+                family['process'].append(s)
+            #family['family'] = samp
+    bed = getbed(run)
+    
+    family['env'] = {}
+    family['env']["output"] = "/app/res"
+    family['env']["genome"] = genome
+    family['env']["bed"] = bed
+    
+
+    json = writejson(family, output)
+    return json
+
+
+
+def vcfTodataframe(file, rheader=False):
+    '''
+    Take in input vcf file, or tsv and return a dataframe
+    I"m gonna build my own vcf parser et puis c'est tout
+    return 3 Dataframe, full, only sample, only info
+    '''
+    name, extension = os.path.splitext(file)
+    
+    header = []
+    variants_tmp = []
+    variants = []
+    
+    
+    print("#[INFO] "+file)
+    if extension == '.vcf':
+        #print('[#INFO] VCF: '+file)
+        with open(file) as f:
+            for lines in f:
+                if lines.startswith('#'):
+                    header.append(lines.strip())
+                else:
+                    variants_tmp.append(lines)
+                        
+    col = header[-1].strip().split('\t')
+    for v in variants_tmp:
+        variants.append(v.strip().split('\t'))
+
+    rows = []
+    #Creating Dataframe from the whole VCF	
+    print("#[INFO] Whole VCF to Dataframe")
+    for i, var in enumerate(variants):
+        rows.append(pd.Series(var, index=col))
+    #.T necessary to transpose index and columns
+    dfVar = pd.concat(rows, axis=1, ignore_index=True).T
+    
+    if rheader:
+        return dfVar, header
+    else: 
+        return dfVar
+
+def uniqueChr(df):
+    unique = df['#CHROM'].unique()
+    return unique
+
+def parseInfoField(dfVar):
+    '''
+    input: take a dataframe (from vcf)
+    
+    output: return a dataframe of the vcf when the info field is parsed 
+    '''
+    
+    ############
+    #Parsing INFO field from dfVar dataframe containing all informations from vcf
+    ############
+    
+    #print(dfVar.head())
+    infoList = []
+    dicoInfo = []
+    headers = []
+    
+    
+    print("#[INFO] Parsing INFO field")
+    for i,elems in dfVar.iterrows():
+        infoList.append([x.split('=') for x in elems['INFO'].split(';')])
+            
+    print("\n")
+    
+    
+    [headers.append(elems[0]) for ite in infoList for elems in ite]
+    dfInfo = pd.DataFrame(columns=np.unique(np.array(headers)))
+    #print(np.unique(np.array(headers)))
+    
+    
+    #print(infoList[0:5])
+    print("#[INFO] From INFO field to Dataframe")
+    for j, elems in enumerate(infoList):
+        add = {}
+        for fields in elems:
+            if len(fields) <= 1:
+                f = {fields[0]: 'TRUE'}
+                add.update(f)
+            else:
+                f = dict([fields])
+                add.update(f)
+                
+        dicoInfo.append(add)
+        
+    print("\n")
+    #print(dicoInfo.keys())
+    #print(dict(list(dicoInfo.items())[0:2]))
+    
+    df_final = pd.DataFrame(dicoInfo, columns=np.unique(np.array(headers)))
+    
+    dfInfo = dfVar.join(df_final, how='inner')
+    
+    return dfInfo
+    
+def parseFile(folder, df, unique):
+    '''
+    input: folder containing cov depth file by chr, vcf of the sample and list of unique chr
+    '''
+    final = []
+    #for each depth count file 
+    for covfiles in os.listdir(folder):
+        if not covfiles.startswith('COVFILELocus'):
+            #iterate chr by chr
+            print("#[INFO] chr"+covfiles)
+            for j, string in enumerate(unique):
+                if covfiles.endswith(string):
+                    #print("#[INFO] Chrcov "+covfiles)
+                    data = []
+                    #read cov file results from gatk depth coverage
+                    tmp = pd.read_csv(osj(folder, covfiles), sep='\t', names=['Locus_F', 'Total_Depth_F', 'Average_Depth_sample_F', 'POOL_F_Depth', 'POOL_F_base_counts', 'Locus_M', 'Total_Depth_M', 'Average_Depth_sample_M', 'POOL_M_Depth', 'POOL_M_base_counts'])
+                    cov = tmp.to_dict('records')
+                    
+                    #Iterate over dataframe from vcf norm sorted and unique
+                    for i, chpos in df[['#CHROM', 'POS']].iterrows():
+                        if string == chpos[0]:
+                            #print(chpos[1][1])
+                            #time.sleep(10)
+                            dot = ':'.join(chpos)
+                            
+                            val = [dico for dico in cov if dot in dico.values()]
+                            final.append(val[0])
+                            #add row in list
+                            #final.append(cov[(cov == dot).any(axis=1)])
+                            
+                else:
+                    continue
+    print("#[INFO] Length variants ", len(final))
+    return final
+    #time.sleep(10)
+
+def addFrequence(df, sample, s_list):
+    #df.sort_values(by=['#CHROM', 'POS'], ascending=[False, True], key=lambda x: np.argsort(index_natsorted(df['#CHROM'] 
+    locus = 'Locus_'+sample
+    data = []
+    #print(df.columns)
+    #print(df.head())
+    for i, values in df.iterrows():
+        #print(values)
+        last = {}
+        last['#CHROM'] = values[locus].strip().split(':')[0]
+        last['POSITION'] = values[locus].strip().split(':')[1]
+        #for each indivi stats
+        for indiv in s_list:
+            tmp = values['Base_counts_'+indiv].strip().split()
+            tmp_data = {}
+            tmp2_data = {}
+            #details of each bases count
+            for bases in tmp:
+                base = bases.split(':')
+                tmp_data[base[0]] = base[1]
+                #print(tmp_data)
+            for count in tmp_data.items():
+                #print(count)
+                try:
+                    tmp2_data[count[0]] = str(round(float(count[1]) / values['Total_Depth_'+indiv], 2))
+                except:
+                    #print("#[INFO] Depth is 0 for ", values['Locus_'+indiv])
+                    tmp2_data[count[0]] = "0"
+
+            count = '|'.join(':'.join((key,val)) for (key,val) in tmp_data.items())
+            freq = '|'.join(':'.join((key,val)) for (key,val) in tmp2_data.items())
+
+            last['Depth_'+indiv] = values['Depth_'+indiv]
+            last['Base_counts_'+indiv] = count
+            last['Base_frequence_'+indiv] = freq
+
+        data.append(last)
+    final = pd.DataFrame(data)
+    return final
+
+
+
+def denovoFilter(df):
+    #####merge df raw and df which new columns
+    #result = pd.merge(df, res, on=["#CHROM", "POS"])
+    
+    #####denovo
+    result = df.copy()
+    print("#[INFO] Denovo Filter")
+    result['denovo_filter'] = None
+    for i, var in result.iterrows():
+        ref = var['REF']
+        mut = var['ALT']
+        freq = []
+        for item in var["Base_counts_FATHER"].split("|"):
+            freq.append(item.split(':'))
+        #freq = [item.split(":") for item in var["Base_counts_FATHER"].split("|").split()]
+        #print(freq)
+        tmp = []
+        for item in var["Base_counts_MOTHER"].split("|"):
+            tmp.append(item.split(":"))
+        freq.extend(tmp)
+        #print(freq)
+        #[dict(item.split(':')[0] = item.split(':')[1]) for item in freq_f]
+        val = []
+        for values in freq:
+            #print(values)
+            #time.sleep(10)
+            if values[0] == mut:
+                #print(values[0], mut)
+                val.append(int(values[1]))
+        
+        #filter only for SNV 
+        if val and all(value < 3 for value in val) and var['Total_Depth_FATHER'] >= 300 and var['Total_Depth_MOTHER'] >= 300 and len(mut) == 1 and len(ref) == 1:
+            result.loc[i, 'denovo_filter'] = "Denovo"
+            #print("#[INFO] counts", val)
+            #print(result.loc[i, 'denovo_filter'])
+            #time.sleep(5)
+        elif val and all(value < 2 for value in val) and var['Total_Depth_FATHER'] >= 200 and var['Total_Depth_MOTHER'] >= 200 and len(mut) == 1 and len(ref) == 1:
+            result.loc[i, 'denovo_filter'] = "LikelyDenovo"
+            #print("#[INFO] counts", val)
+            #print(result.loc[i, 'denovo_filter'])
+            #print(var)
+        elif len(mut) > 1 and len(ref) == 1:
+            result.loc[i, 'denovo_filter'] = "InDel"
+        elif len(ref) > 1 and len(mut) == 1:
+            result.loc[i, 'denovo_filter'] = "InDel"
+        else:
+            result.loc[i, 'denovo_filter'] = "Inherit"
+        #print("#LINE ", [var["#CHROM"], var["POS"], var["REF"], var["ALT"]])
+    
+    print(result['denovo_filter'].value_counts())
+        
+    return result
+
+def addHeader(col, header):
+    for field in col:
+        if field == 'denovo_filter':
+            info = '##INFO=<ID='+field+',Number=.,Type=String,Description="denovo_filter Filter established in genetics diagnosis team in the CHRU of Strasbourg, allele depth < 3 && Depth >= 300 > Denovo or allele depth < 2 && Depth >= 200 Likelydenovo, remaining variants are considered as inherit for snv and inherit_indels">\n'
+            header.insert(header.index(header[-1]), info)
+        else:
+            info = '##INFO=<ID='+field+',Number=.,Type=String,Description="GATK '+field+'">\n'
+            header.insert(header.index(header[-1]), info)
+    return header
+
+def createFinaldf(df, header, oup):
+    raw = df[df.columns[0:10]]
+    with open(oup, 'w+') as f:
+        for lines in header:
+            f.write(lines.strip()+'\n')
+    raw.to_csv(oup, mode='a', index=False, header=False, sep='\t')
+    return raw
+    
+def parseSpeed(covfiles, df, col, sample):
+    '''
+    input: folder containing cov depth file by chr, vcf of the sample and list of unique chr
+    '''
+    #hide warning
+
+    pd.set_option('mode.chained_assignment', None)
+    
+    
+    #print("#[INFO] chr "+covfiles)
+    #print("#[INFO] Chrcov "+covfiles)
+    data = []
+    #read cov file results from gatk depth coverage to dataframe
+    tmp_chunk = pd.read_csv(covfiles, sep='\t', names=col, chunksize=10000)
+    tmp = pd.concat(tmp_chunk)
+
+    #chr number
+    chr = os.path.basename(covfiles)[7:]
+
+    locus_name = 'Locus_'+sample
+
+    cov = tmp.loc[tmp[locus_name].str.startswith(chr+':')]#.to_dict('records')
+    #print("INFO COV", cov.head())
+
+    #select only one chromosome (cut by starmap func to multiprocess)
+    df_tmp = df.loc[df['#CHROM'] == chr]
+    
+    #to match depth coverage informations
+    df_tmp.loc[:, locus_name] = df.loc[:,'#CHROM'].astype(str)+':'+df.loc[:,'POS'].astype(str)
+
+    #Locus column as index for both variant and depthcoverage file 
+    df_tmp = df_tmp.set_index(locus_name)
+    cov = cov.set_index(locus_name)
+
+    #print("INFO DF_TMP "+covfiles, df_tmp)
+    #print("INFO length dftmp ", len(df_tmp.index))
+
+    #Merge variants df and depthcov df in index Locus for each variants position we get the values of cov
+    final = df_tmp.merge(cov, left_index=True, right_index=True, how='left')
+
+    #reset index and reinsert Locus columns ex chr1:5667097 at good column position
+    final.reset_index(level=0, inplace=True)
+    locus = final[locus_name]
+    final.drop(columns=locus_name, inplace=True)
+    final.insert(10, locus_name, locus)
+    final.drop_duplicates(inplace=True)
+    final = final.iloc[:, 1:]
+    print("#[INFO] Length variants "+os.path.basename(covfiles), len(final.index))
+    return final
+
+def parse(dico):
+    data={}
+    for file in dico:
+        name=dico[file]["vcf"].split("/")[-1].split(".")[0]
+        data[name]=dico[file]["vcf"]
+    return data
+
+def get_pool_name(pool):
+    dico_pool = {}
+    for item in pool:
+        name = pool[item]["vcf"].split("/")[-1].split(".")[0]
+        dico_pool[name] = pool[item]["vcf"]
+    return dico_pool
+
+def writejson(d,f):
+    """
+    Read dict, return a json file
+    """
+    with open(f, 'w') as outfile:
+        json.dump(d, outfile, indent=4)
+
+def parse_sample_field(dfVar):
+    # UPDATE 21/06/2022
+    # handle multisample and keep information of sample field like <sample>_<field> for each annotations
+
+    #############
+    ### Parsing Sample Field in VCF
+    #############
+
+    dico = []
+    # dfTest = pd.Series(dfVar.TEM195660.values,index=dfVar.FORMAT).to_dict()
+    bad_annotation = []
+    sample_list = []
+
+    # Parsing FORMAT field in VCF
+    # print("[#INFO] Parsing FORMAT field")
+    isample = list(dfVar.columns).index("FORMAT") + 1
+    # index: line where the caller identify an event somethings
+    for col in dfVar.columns[isample:]:
+        # print("#[INFO] " + col + "\n")
+        tmp_ = []
+        sample_list.append(col)
+        for i, row in tqdm(
+            dfVar.iterrows(),
+            total=dfVar.shape[0],
+            leave=True,
+            desc="#[INFO] SAMPLE " + col,
+        ):
+            if len(row["FORMAT"].split(":")) != len(row[col].split(":")):
+                bad_annotation.append(pd.Series(row[:], index=dfVar.columns))
+                continue
+            else:
+                # If more than on sample
+                if len(dfVar.columns[isample:]) > 1:
+                    index = [col + "_" + x for x in row["FORMAT"].split(":")]
+                else:
+                    index = row["FORMAT"].split(":")
+                toadd = pd.Series(
+                    row[col].split(":"),
+                    index=index,
+                ).to_dict()
+                # toadd.update({"caller":col})
+                tmp_.append(toadd)
+        dico.append(pd.DataFrame(tmp_))
+
+    dfSample = pd.concat(dico, axis=1)
+    df_bad_anno = pd.DataFrame(bad_annotation)
+    try:
+        df_final = dfVar.join(dfSample, how="inner")
+    except ValueError:
+        df_final = dfVar.join(dfSample, how="inner", lsuffix="_INFO", rsuffix="_SAMPLE")
+        print(
+            "WARNING some columns are present in both INFO and SAMPLE field, add _INFO and _SAMPLE suffix"
+        )
+    df_final.drop(columns=sample_list, inplace=True)
+    return df_final, df_bad_anno, sample_list
+
+def barcode_DPNI(df, fetus):
+    dico = {}
+    dico["MOTHER"] = []
+    dico["FATHER"] = []
+    dico[fetus] = []
+    #dico["DPNI_Barcode_coment"] = []
+    denovo = []
+    for i, rows in tqdm(
+        df.iterrows(), total=df.shape[0], leave=True, desc="#[INFO] Barcode DPNI ..."
+    ):
+        # print("INFO index", i)
+        for fam in ["MOTHER", "FATHER", fetus]:
+            tmp = []
+            # control var
+            if all(
+                elem in df.columns
+                for elem in [fam + "_GT", fam + "_AD", fam + "_DP", fam + "_FT"]
+            ):
+                # Variant call heterozygous
+                if (
+                    rows[fam + "_GT"] == "0/1"
+                    or rows[fam + "_GT"] == "1/0"
+                    or rows[fam + "_GT"] == "1|0"
+                    or rows[fam + "_GT"] == "0|1"
+                ):
+                    # ensure truethness of var not usefull in exome
+                    #if int(rows[fam + "_DP"]) > 30:
+                    #    dico[fam].append("1")
+                    #else:
+                    #    dico[fam].append("0")
+                    #    #tmp.append("Depth:" + rows[fam + "_DP"])
+                    dico[fam].append("1")
+                # homozygous
+                elif rows[fam + "_GT"] == "1/1" or rows[fam + "_GT"] == "1|1":
+                    #if int(rows[fam + "_DP"]) > 30:
+                    #    dico[fam].append("2")
+                    #else:
+                    #    dico[fam].append("0")
+                    #    #tmp.append(
+                    #    #    ",".join(
+                    #    #        [
+                    #    #            rows[fam + "_FT"],
+                    #    #            "Depth" + fam + ":" + rows[fam + "_DP"],
+                    #    #        ]
+                    #    #    )
+                    #    #)
+                    dico[fam].append("2")
+                # Ref allele
+                else:
+                    dico[fam].append("0")
+            else:
+                print(
+                    "WARNING miss one metrics columns in "
+                    + " ".join([fam + "_GT", fam + "_AD", fam + "_DP", fam + "_FT"])
+                )
+                exit()
+        # Correct fetus var
+        #if (
+        #    dico["MOTHER"][i] == "2"
+        #    and dico["FATHER"][i] == "2"
+        #    and dico[fetus][i] != "2"
+        #):
+        #    tmp.append("GT-issues")
+        #elif (
+        #    dico["MOTHER"][i] == "0"
+        #    and dico["FATHER"][i] == "0"
+        #    and dico[fetus][i] != "0"
+        #):
+        #    tmp.append("GT-denovo")
+        #elif (
+        #    dico["MOTHER"][i] == "0"
+        #    and dico["FATHER"][i] == "0"
+        #    and dico[fetus][i] == "0"
+        #):
+        #    tmp.append("Artefact")
+        #else:
+        #    tmp.append("Inherit")
+        #dico["DPNI_Barcode_coment"].append(tmp)
+         # DENOVO filter check as each line
+        if (
+            str(rows[fetus+"_AD"]) != "."
+            and str(rows[fetus+"_AD"]) != ""
+            and str(rows[fetus+"_AD"]) != "nan"
+            and len(str(rows[fetus+"_AD"]).split(",")) == 2
+        ):
+            if int(rows[fetus+"_AD"].split(",")[1]) < 3 and int(rows[fetus+"_DP"]) >= 300 and dico["MOTHER"][i] == "0" and dico["FATHER"][i] == "0":
+                denovo.append("Denovo")
+            elif int(rows[fetus+"_AD"].split(",")[1]) < 3 and int(rows[fetus+"_DP"]) >= 200 and dico["MOTHER"][i] == "0" and dico["FATHER"][i] == "0":
+                denovo.append("LikelyDenovo")
+            else:
+                denovo.append("Inherit")
+        else:
+            denovo.append("Inherit")
+    values = [
+        dico["MOTHER"],
+        dico[fetus],
+        dico["FATHER"],
+    ]
+    df["DPNI_Barcode"] = ["'" + "".join(item) + "'" for item in list(zip(*values))]
+    #df["DPNI_Barcode_coment"] = [",".join(item) for item in dico["DPNI_Barcode_coment"]]
+    df["DPNI_Denovo"] = denovo
+    return df
+
+
+
+
+
+
+#Prerequisites
+    #trio = ["ADN2104279", "ADN2104278", "ASG184957"]
+    #configure(config['run'], trio, "/STARK/databases/genomes/current/hg19.fa", "/app/res")
+#configfile: "/app/res/analysis.json"
+def copy_repository():
+    if os.path.exists(config["env"]["repository"]):
+        print("#[INFO] Copying into repository "+config["env"]["repository"])
+        for sample in os.listdir(config["env"]["repository"]):
+            print("#[INFO] Sample ", sample)
+            if os.path.isdir(osj(osj(config["env"]["repository"], sample))):
+                #In case of first analysis
+                if not os.path.exists(osj(config["env"]["repository"], sample, 'DPNI')):
+                    print("#[INFO] First analysis create DPNI folder")
+                    os.mkdir(osj(config["env"]["repository"], sample, 'DPNI'))
+                else:
+                    os.mkdir(osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
+                    #move old analysis files if they exists in DPNI date folder
+                    systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/*.vcf.gz*")+" "+osj(config["env"][  "repository"], sample, "DPNI", "DPNI."+date))
+                    #Same with log folder
+                    systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/.log")+" "+osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
+                #Copy new vcf analysis and index into repo sample
+                print("#[INFO] Copying sample "+sample)
+                systemcall("rsync "+osj(config["env"]["output"], sample+".final.vcf.gz*")+" "+osj(config["env"]["repository"], sample, 'DPNI/'))
+                #Copying new logs
+                systemcall("rsync -ar "+osj(config["env"]["output"], ".log")+" "+osj(config["env"]["repository"], sample, 'DPNI/'))
+            if config["env"]["depository"]:
+                print("#[INFO] Copying into depository, sample ", sample)
+                systemcall("rsync -ar "+osj(config["env"]["repository"], sample, 'DPNI')+" "+osj(config["env"]["depository"], sample+"/"))
+    else:
+        print("ERROR "+config["env"]["repository"]+" path does not exist EXIT")
+
+def handle_error():#TODO TEST
+    if config["env"]["repository"]:
+        print("ERROR in analysis, copy log in repository run sample "+config["env"]["repository"])
+        for sample in os.listdir(config["env"]["repository"]):
+            #First analysis
+            if not os.path.exists(osj(config["env"]["repository"], sample, "DPNI")):
+                print("#[INFO] Create DPNI folder sample "+sample)
+                os.mkdir(osj(config["env"]["repository"], sample, "DPNI"))
+                systemcall("rsync -ar "+osj(config["env"]["output"], ".log")+" "+osj(config["env"]["repository"], sample, "DPNI/"))
+            #Not the first analysis and crash, create folder to store old analysis
+            else:
+                os.mkdir(osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
+                #move olde analysis files if they exists in DPNI date folder
+                systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/*.final.vcf.gz*")+" "+osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
+                #Same with log folder
+                systemcall("mv "+osj(config["env"]["repository"], sample, "DPNI/.log")+" "+osj(config["env"]["repository"], sample, "DPNI", "DPNI."+date))
+                #Copy log in folder
+                systemcall("rsync -ar "+osj(config["env"]["output"], ".log")+" "+osj(config["env"]["repository"], sample, "DPNI"))
+
+######################
+#snakemake on case
+#####################
+
+onstart: print(config)
+onerror: 
+    handle_error()
+
+output = config["env"]["output"]
+log = output+"/.log"
+#pool_name = get_pool_name(config["analysis"]["pool"])
+
+if "threads" in config["tools"]:
+    nbCPU =  config["tools"]["threads"]
+else:
+    if multiprocessing.cpu_count() > 2:
+        nbCPU = multiprocessing.cpu_count()-1
+    else:
+        nbCPU = 1
+
+interval_padding = 100
+
+############
+## SEG
+############
+seg = {}
+seg[config["family"]["MOTHER"]["affinity"][0]] = 'MOTHER'
+seg[config["family"]["FATHER"]["affinity"][0]] = 'FATHER'
+seg[config["fetus"]["name"]] = 'fetus'
+whole = list(config['family'].keys())
+whole.append(config['fetus']['name'])
+print("#[INFO] FAMILY ", whole)
+
+
+if config["env"]["repository"]:
+    rule all:
+        params:
+            bgzip = config["tools"]["bgzip"],
+            tabix = config["tools"]["tabix"],
+            bcftools = config["tools"]["bcftools"]
+        input:
+            expand(output+"/{sample}.final.vcf", sample=whole)
+        log:
+            log+"/all.log"
+        run:
+            #Compress and Index (same cmd in bash above)
+            for vcf in input:
+                print(vcf)
+                systemcall(params.bgzip+" --force "+vcf+" && "+params.tabix+" -p vcf "+vcf+".gz")
+                alias = os.path.basename(vcf).split(".", 1)[0]
+                if alias in ["MOTHER", "FATHER"]:
+                    #s = config["family"][os.path.basename(vcf).split(".", 1)[0]]["affinity"][0]
+                    #print("#[INFO] rule all ", s)
+                    id = config["family"][alias]["affinity"][0]
+                    systemcall("echo "+id+" > "+osj(config["env"]["output"], id))
+                    systemcall(params.bcftools+" reheader -s "+osj(config["env"]["output"], id)+" "+vcf+".gz -o "+osj(config["env"]["output"], id+".final.vcf.gz")+" && "+params.tabix+" -p vcf "+osj(config["env"]["output"], id+".final.vcf.gz"))
+                    alias = id
+                #copy_repository()
+                #Copying vcf
+                #sample = os.path.basename(vcf).split('.', 1)[0]
+                #if not os.path.exists(osj(config["env"]["repository"], alias, "DPNI")):
+                #    print("#[INFO] Create folder ", osj(config["env"]["repository"], alias, "DPNI"))
+                #    os.mkdir(osj(config["env"]["repository"], alias, "DPNI"))
+                #else:
+                #    print("[INFO] store old results")
+                #    os.mkdir(osj(config["env"]["repository"], alias, "DPNI", "DPNI."+date))
+                #    #results shouldn't be
+                #    #move old analysis files if they exists in DPNI date folder
+                #    systemcall("mv "+osj(config["env"]["repository"], alias, "DPNI/*.final.vcf.gz*")+" "+osj(config["env"],["repository"], alias, "DPNI", "DPNI."+date))
+                #    #Same with log folder
+                #    systemcall("mv "+osj(config["env"]["repository"], alias, "DPNI/.log")+" "+osj(config["env"]["repository"], alias, "DPNI", "DPNI."+date))
+#
+                #print("#[INFO] Copying sample ", alias)
+                #systemcall("rsync "+alias+".final.vcf.gz* "+osj(config["env"]["repository"], alias, "DPNI/"))
+                #systemcall("rsync -ar "+osj(config["env"]["output"], '.log')+" "+osj(config["env"]["repository"], alias, "DPNI/"))
+                ##else:
+                ##    id = config["fetus"]["name"]
+                #    #shutil.copy2(vcf+".gz", osj(config["env"]["output"], id+".final.vcf.gz"))
+            copy_repository()
+else:
+    rule all:
+        params:
+            bgzip = config["tools"]["bgzip"],
+            tabix = config["tools"]["tabix"]
+        input:
+            expand(output+"/{sample}.final.vcf", sample=whole),
+
+        log:
+            log+"/all.log"
+        run:
+            #Compress and Index (same cmd in bash above)
+            for vcf in input:
+                systemcall(params.bgzip+" --force "+vcf+" && "+params.tabix+" -p vcf "+vcf+".gz")
+
+
+rule paste_vcf_pool:
+    input:
+        fetus = config['fetus']['vcf']
+    output:
+        output+"/pool.vcf.gz"
+    shell:
+        """
+            cp {input} {output}
+        """
+
+rule add_info:
+    input:
+        vcf = output+"/{sample}.norm.uniq.sorted.vcf",
+        cov = output+"/all.gatk.cov"
+    output:
+        vcf = output+"/{sample}.final.vcf"
+    threads: config['tools']['threads']
+    run:
+        subprocess.call("mkdir -p "+output.vcf+".dict", shell=True)
+        subprocess.call("awk -F \":\" 'NR>1{print $0 >> (\""+output.vcf+".dict/COVFILE\" $1)}' "+input.cov, shell=True)
+        #####new
+        sample_name = os.path.basename(input.vcf).split('.')[0]
+        if sample_name == config["fetus"]["name"]:
+            sample_name = "fetus"
+        #transform raw vcf into dataframe and insert header in list
+        df, head = vcfTodataframe(input.vcf, True)
+        
+        #unique chr cov file from gatk
+        unique = uniqueChr(df)
+        list_var = []
+        
+        #columns of cov file
+        with open(input.cov) as f:
+            col = f.readline().strip().split('\t')
+        print("#[INFO] Columns depthcov ", col)
+        #col = ['Locus', 'Total_Depth', 'Average_Depth', 'Depth', 'Base_counts']
+        #parse variants by chr to speed up analysis
+        #prepare args for multiprocessing
+        print("#[INFO] Parse variants by chr")
+        #list_cov = [(osj(output.vcf+'.dict', covfiles), df, col, sample_name) #for covfiles in os.listdir(output.vcf+'.dict') if not covfiles.#startswith('COVFILELocus')]
+        #print("#[INFO] LISTCV", list_cov)
+        #print("#[INFO] chr nbr", len(list_cov))
+        #Multiprocess
+        #with Pool(config['tools']['threads']) as pool:
+        #    result = pool.starmap(parseSpeed, list_cov)
+        for covfiles in os.listdir(output.vcf+'.dict'):
+            if not covfiles.startswith('COVFILELocus'):
+                print("#[INFO] Covfile ", covfiles)
+                list_var.append(parseSpeed(osj(output.vcf+'.dict', covfiles), df, col, sample_name))
+        #print("#[INFO] LISTVAR ", list_var)
+        #result = pd.concat(list_var, axis=1, ignore_index=True)
+        print("#[INFO] Process annotations")
+        #frequence annotations
+        metrics = pd.concat(list_var)
+        metrics = metrics.dropna(subset=['REF', 'ALT'], how='all')
+
+
+        #calculate frequence regarding depth and base identification
+        s_list = ['fetus']
+        s_list.extend(config['family'])
+        print("#[INFO] Family people ", s_list)
+        
+        frequence = addFrequence(metrics, sample_name, s_list)
+        #remove duplicate column used to create frequence
+        metrics.drop(columns=["Depth_FATHER", "Depth_MOTHER", "Depth_fetus", "Base_counts_FATHER", "Base_counts_MOTHER", "Base_counts_fetus"], inplace=True)
+        dfinal = pd.concat([metrics.reset_index(drop=True), frequence.reset_index(drop=True)], axis=1)
+
+        info = frequence.iloc[:, 2:]
+
+        for items in list(info.columns):
+            info[items] = items+'='+info[items].astype(str)
+        info['INFOS'] = info.agg(';'.join, axis=1)
+        dfinal['INFO'] = dfinal['INFO']+';'+info['INFOS']
+        #denovofilter
+        #dfinal.to_csv("/app/res/test.csv", header=True, sep="\t", index=False)
+        #The global denovo filter is more precise, can remove 2 lines above
+        #df_final = #denovoFilter(dfinal)
+        df_final = dfinal.copy()
+        #df_final['INFO'] =  df_final['INFO']+';'+['denovo_filter='+val for val in df_final['denovo_filter'].to_list()]
+        tmp_vcf = output.vcf+'.tmp'
+        sample = os.path.basename(tmp_vcf).split('.')[0]
+        
+        #Create final vcf with new header
+        createFinaldf(df_final[['#CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', sample]], head, tmp_vcf)
+        
+        #sort and supress dict of coverage files
+        subprocess.call('grep "^#" '+tmp_vcf+' > '+output.vcf+' && grep -v "^#" '+tmp_vcf+' | sort -k1,1V -k2,2n >> '+output.vcf, shell=True)
+        subprocess.call("rm -rf "+output.vcf+".dict", shell=True)
+
+
+rule copy_vcf_pool:
+    params:
+        bcftools = config["tools"]["bcftools"]
+    input:
+        fetus = output+"/pool.vcf.gz"
+    output:
+        tmp = temp(output+"/pool.renamed.vcf")
+    log:
+        log+"/pool.bcftools.log"
+    shell:
+        """
+            {params.bcftools} annotate --remove "^INFO/FindByPipelines,INFO/GenotypeConcordance" {input} > {output.tmp} 2>> {log}
+        """
+
+rule copy_vcf_sample:
+    params:
+        bcftools = config["tools"]["bcftools"]
+    input:
+        lambda wildcards: config["family"][wildcards.sample]["vcf"]
+    output:
+        temp(output+"/{sample}.renamed.vcf")
+    log:
+        log+"/{sample}.bcftools.log"
+    shell:
+        """
+            {params.bcftools} annotate --remove "^INFO/FindByPipelines,INFO/GenotypeConcordance" {input} > {output} 2>> {log}
+        """
+
+rule compress_index_vcf:
+    params:
+        bgzip = config["tools"]["bgzip"],
+        tabix = config["tools"]["tabix"]
+    input:
+        output+"/{sample}.renamed.vcf"
+    output:
+        gz  = output+"/{sample}.renamed.vcf.gz",
+        tbi = output+"/{sample}.renamed.vcf.gz.tbi"
+    shell:
+        """
+            {params.bgzip} -c {input} > {output.gz} && {params.tabix} -p vcf {output.gz}
+        """
+
+rule reheader_sample:
+    params:
+        bcftools=config["tools"]["bcftools"],
+        tabix = config["tools"]["tabix"]
+    input:
+        vcf = output+"/{sample}.renamed.vcf.gz",
+    output:
+        rename = output+"/{sample}.rename",
+        correct = output+"/{sample}.renamed.correct.vcf.gz"
+    shell:
+        """
+            echo {wildcards.sample} > {output.rename} && {params.bcftools} reheader --samples={output.rename} {input.vcf} -o {output.correct} && {params.tabix} -p vcf {output.correct}
+        """
+
+rule merge_vcf:
+    params:
+        bcftools=config["tools"]["bcftools"]
+    input:
+        sample_vcf = expand(output+"/{sample}.renamed.correct.vcf.gz", sample=config["family"]),
+        pool_vcf = output+"/pool.renamed.vcf.gz"
+    output:
+        output+"/{sample}.merged.vcf"
+
+    log:
+        log+"/{sample}.bcftools.log"
+    shell:
+        """
+            {params.bcftools} merge -m none {input.sample_vcf} {input.pool_vcf} -o {output} 2>> {log}
+        """
+#rule dpni_barcode:
+#	input:
+#		output+"/{sample}.merged.vcf"
+#	output:
+#		output+"/{sample}.merged.annotated.vcf"
+#	run:
+#		dpni_barcode()
+#rule howard_trio:
+#	params:
+#		howard = config["tools"]["howard"]
+#	input:
+#		output+"/{sample}.merged.vcf"
+#	output:
+#		output+"/{sample}.trio.howard.vcf"
+#	log:
+#		log+"/{sample}.howard.log"
+#	shell:
+#		"""
+#			{params.howard} --input={input} --output={output} --calculation=BARCODE --trio=POOL_M,POOL_F,{wildcards.sample} &>> {log}
+#		"""
+
+rule dpni_barcode:
+    input:
+        vcf = output+"/{sample}.merged.vcf"
+    output:
+        merge = output+"/{sample}.merged.barcode.vcf"
+    params:
+        name = config["fetus"]["name"]
+    run:
+        origin, header = vcfTodataframe(input.vcf, True)
+        df, _, _i = parse_sample_field(origin)
+        final = barcode_DPNI(df, params.name)
+        origin["INFO"] = [
+            ";".join(item)
+            for item in list(
+                zip(
+                    origin["INFO"].to_list(),
+                    ["DPNIBarcode=" + val for val in final["DPNI_Barcode"].to_list	()],
+                    #[
+                    #    "DPNIBarcodecoment=" + val
+                    #    for val in final["DPNI_Barcode_coment"].to_list()
+                    #],
+                    ["DPNI_Denovo=" + val for val in final["DPNI_Denovo"].to_list()]
+                )
+            )
+        ]
+        with open(output.merge, "w+") as f:
+            for row in header[:-1]:
+                f.write(row + "\n")
+            f.write(
+                '##INFO=<ID=DPNIBarcode,Number=1,Type=String,Description="Family barcode from STARK DPNI module">\n'
+            )
+            f.write(
+                '##INFO=<ID=DPNIBarcodecoment,Number=1,Type=String,Description="Comment on barcode result from STARK DPNI module">\n')
+            f.write('##INFO=<ID=DPNI_Denovo,Number=.,Type=String,Description="denovo variants assumption">\n')
+        origin.to_csv(output.merge, header=True, mode="a", index=False, sep="\t")
+
+
+rule normalize_vcf:
+    params:
+        bcftools = config["tools"]["bcftools"],
+        genome = config["env"]["genome"]
+    input:
+        output+"/{sample}.merged.barcode.vcf"
+    output:
+        temp(output+"/{sample}.norm.vcf")
+    log:
+        log+"/{sample}.bcftools.normalize.log"
+    shell:
+        """
+            {params.bcftools} norm -m-any {input} | {params.bcftools} norm -d none -f {params.genome} -o {output} 2>> {log}
+        """
+
+#only for multiple in trio in batch
+rule uniq_trio:
+    params:
+        bcftools=config["tools"]["bcftools"]
+    input:
+        output+"/{sample}.norm.vcf",
+
+    output:
+        temp(output+"/{sample}.norm.uniq.vcf")
+    log:
+        log+"/{sample}.bcftools.log"
+    shell:
+        """
+            {params.bcftools} view -s {wildcards.sample} {input} | grep -v '^##HOWARD' > {output} 2>> {log}
+        """
+rule uniq_trio_fetus:
+    params:
+        bcftools=config["tools"]["bcftools"]
+    input:
+        output+"/MOTHER.norm.vcf",
+
+    output:
+        tmp = temp(output+"/fetus.norm.uniq.vcf"),
+        sort = output+"/fetus.norm.uniq.sorted.vcf"
+    log:
+        log+"/fetus.bcftools.log"
+    params:
+        sample = config["fetus"]["name"]
+    shell:
+        """
+            {params.bcftools} view -s {params.sample} {input} | grep -v '^##HOWARD' > {output.tmp} 2>> {log} && grep "^#" {output.tmp} > {output.sort} && grep -v "^#" {output.tmp} | sort -k1,1V -k2,2n >> {output.sort}
+        """
+
+rule sort_vcf:
+    input:
+        output+"/{sample}.norm.uniq.vcf"
+    output:
+        output+"/{sample}.norm.uniq.sorted.vcf"
+    shell:
+        """
+            grep "^#" {input} > {output} && grep -v "^#" {input} | sort -k1,1V -k2,2n >> {output}
+        """
+
+
+rule depth_of_coverage_v2:
+    params:
+        cpu     = config["tools"]["threads"],
+        padding = interval_padding,
+        java    = config["tools"]["java"],
+        gatk    = config["tools"]["gatk"]
+    input:
+        genome  = config["env"]["genome"],
+        bed     = config["env"]["bed"],
+        bam     = config["fetus"]["bam"],
+        
+    output:
+        temp(output+"/fetus_tmp.gatk.cov"),
+        temp(output+"/fetus_tmp.gatk.cov.sample_cumulative_coverage_counts"),
+        temp(output+"/fetus_tmp.gatk.cov.sample_cumulative_coverage_proportions"),
+        temp(output+"/fetus_tmp.gatk.cov.sample_statistics"),
+        temp(output+"/fetus_tmp.gatk.cov.sample_summary")
+    log:
+        log+"/fetus_tmp.gatk.cov.log"
+    shell:
+        """
+            {params.java} -jar {params.gatk} -nt {params.cpu} -omitIntervals -T DepthOfCoverage -R {input.genome} -o {output[0]} -I {input.bam} --includeDeletions --minMappingQuality 10 --printBaseCounts -L {input.bed} --interval_padding {params.padding} &>> {log};
+        """
+
+rule rename_pool_coverage_v2:
+    input:
+        output+"/fetus_tmp.gatk.cov"
+    output:
+        output+"/fetus.gatk.cov"
+    shell:
+        """
+            sed '1 s/^.*$/Locus_fetus\tTotal_Depth_fetus\tAverage_Depth_fetus\tDepth_fetus\tBase_counts_fetus/' {input} > {output}
+        """
+
+rule depth_of_coverage_sample:
+    params:
+        cpu     = config["tools"]["threads"],
+        padding = interval_padding,
+        java    = config["tools"]["java"],
+        gatk    = config["tools"]["gatk"],
+        bam     = lambda values: config["family"][values.samples]["bam"]
+    input:
+        genome  = config["env"]["genome"],
+        bed     = config["env"]["bed"]
+    output:
+        temp(output+"/{samples}.gatk.cov"),
+        temp(output+"/{samples}.gatk.cov.sample_cumulative_coverage_counts"),
+        temp(output+"/{samples}.gatk.cov.sample_cumulative_coverage_proportions"),
+        temp(output+"/{samples}.gatk.cov.sample_statistics"),
+        temp(output+"/{samples}.gatk.cov.sample_summary")
+    log:
+        log+"/{samples}.gatk.cov.log"
+    shell:
+        """
+            {params.java} -jar {params.gatk} -nt {params.cpu} -omitIntervals -T DepthOfCoverage -R {input.genome} -o {output[0]} -I {params.bam} --includeDeletions --minMappingQuality 10 --printBaseCounts -L {input.bed} --interval_padding {params.padding} &>> {log};
+        """
+
+rule rename_pool_coverage_sample:
+    input:
+        output+"/{samples}.gatk.cov"
+    output:
+        output+"/{samples}.gatk.renamed.cov"
+    shell:
+        """
+            sed '1 s/^.*$/Locus_{wildcards.samples}\tTotal_Depth_{wildcards.samples}\tAverage_Depth_{wildcards.samples}\tDepth_{wildcards.samples}\tBase_counts_{wildcards.samples}/' {input} > {output}
+        """
+
+rule merge_coverage_v2:
+    input:
+        samples = expand(output+"/{samples}.gatk.renamed.cov", samples=config['family']),
+        fetus = output+"/fetus.gatk.cov"
+    output:
+        output+"/all.gatk.cov"
+    shell:
+        """
+            paste {input.samples} {input.fetus} > {output}
+        """
