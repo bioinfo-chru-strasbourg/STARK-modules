@@ -87,7 +87,7 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 	yaml_path = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG')
 	if group_name and project_name:
 		yaml_config_file = yaml_path+"/"+group_name+"_"+project_name+".yaml"
-		if not yaml_config_file:
+		if not os.path.exists(yaml_config_file):
 			yaml_config_file = yaml_path+"/"+group_name+".yaml"
 	else:
 		yaml_config_file = None
