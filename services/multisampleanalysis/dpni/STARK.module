@@ -1,0 +1,25 @@
+{
+  "submodules": {
+    "pool": {
+      "description" : "POOL analysis for trio analysis with pooled parents",
+      "services": {
+        "cli": {
+          "code": "cli",
+          "name": "CLI service",
+          "type": "CLI",
+          "description": "cli service, create image and configure service.",
+          "release": "1.0",
+          "available": false
+        },
+        "listener": {
+          "code": "listener",
+          "name": "LISTENER service",
+          "type": "listener",
+          "description": "listener service, create image and configure service.",
+          "release": "1.0",
+          "available": false
+        }
+      }
+    }
+  }
+}

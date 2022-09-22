@@ -1,0 +1,5 @@
+
+#!/bin/bash
+
+SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+[[ -z "$@" ]] && python $SCRIPT_DIR/../lib/dpni/wrapper.py --help || python $SCRIPT_DIR/../lib/dpni/wrapper.py "$@"
