@@ -12,10 +12,9 @@
 # PROD version 2 : 16/06/2022 changelog
 	# merge AnnotSV tsv from each samples into all samples's file
 	# remove panel vcf filtering (output was essentially empty) ; rename full to unfiltered
-	# script to convert vcf to tsv & corresponding rules
 	# exclude samples list case insentitive
-	# modify copy of the results
-	# add vcf2tsv converter ((https://github.com/sigven/vcf2tsvpy)
+	# modify how copying of the results works
+	# add vcf2tsv converter ((https://github.com/sigven/vcf2tsvpy) & corresponding rules
 
 ################## Context ##################
 # launch snakemake -s  snakefile_scramble -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -55,7 +54,8 @@ debug = config['DEBUG_MODE']
 serviceName = config['serviceName']
 
 # Datas directory
-rundir = config['run']
+#rundir = config['run']
+rundir = os.path.normpath(config['run'])
 
 # Repository/depository directories
 repositorydir = config['repository']
@@ -367,11 +367,11 @@ if debug:
 # Tools that output a file adding a extension should be set with params: params.output as the output of the command without the extension, and output: output.ext exist only to connect rules
 # For programs that do not have an explicit log parameter, you may always use 2> {log} to redirect standard output to a file (here, the log file) in Linux-based systems. Note that it is also supported to have multiple (named) log files being specified
 # 1 is stdout, 2 is stderr 
+################################################################################
 
 # check the number of sample for copy or merge vcf rule
 sample_count = len(sample_list) 
 
-# add more input with expand to display rules help
 
 if not bed_file:
 	rule all:
@@ -705,15 +705,13 @@ onsuccess:
 	with open(logfile, "a+") as f:
 		f.write("End of the analysis : ")
 		f.write((date_time_end) + "\n")
-
-# need to remove files in : outputdir + sample + "/" serviceName + "/" for each samples (rm -f ./* 2>test.ee) if needed dev/null
+	# Remove old files
 	for sample in sample_list:
-		shell("for i in $(ls -p " + outputdir + sample + "/" + serviceName + "/" + " | grep -v /); do rm -f $i; done")
-# cp all
+		shell("rm -f " + outputdir + sample + "/" + serviceName + "/* 2>/dev/null")
+	# Copy new files
 	for sample in sample_list:
-		shell("cp -R " + tmpdir + "/" + sample + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/ " + outputdir + sample + "/" + serviceName + "/")
-
-	# Copy files to final destination
+		shell("cp -R " + tmpdir + "/" + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + outputdir + sample + "/" + serviceName + "/")
+	# Rsync all files into final destination
 	shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
 	if depotcopy == True:
 		shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {depotdir}")
