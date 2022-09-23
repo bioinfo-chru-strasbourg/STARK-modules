@@ -720,5 +720,5 @@ onsuccess:
 
 onerror:
 	shell("touch " + outputdir + serviceName + "Failed.txt")
-	shell("rm -f " + outputdir + serviceName + "Running.txt")
+	#shell("rm -f " + outputdir + serviceName + "Running.txt")
 	shell("rsync -azvh --include={include_file_log} --exclude {exclude_file} {tmpdir}/ {outputdir}")
