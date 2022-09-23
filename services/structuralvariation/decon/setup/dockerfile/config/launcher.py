@@ -5,15 +5,16 @@
 
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
+# PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
 
-# yaml files are groupe_name and project_name dependant
+# PROD version 2 : 16/06/2022 changelog
+	# yaml files can be defined by groupe_name + project_name or groupe_name only
 
 ################## Context ##################
 # type python launcher.py -h for help
 #
 # ex of command :python launcher.py -r run
-#
 ####################################
 
 # From listener.py

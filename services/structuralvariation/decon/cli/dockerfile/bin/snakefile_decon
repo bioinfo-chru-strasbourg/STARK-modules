@@ -13,13 +13,14 @@
 	# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_LIST_RESTRICT)
 	# rewrite DECON bed / custom numbering formating
 	# remove panel vcf filtering (output was essentially empty)
-	# merge AnnotSV tsv from each samples into all samples's file
 	# add a chr filter option to remove chromosome (essentially chrY) (CHR_LIST_RESTRICT)
-	# add a chrX Male gender analysis only to avoid chrY failure (can be configure in the yaml)
+	# add a chrX Male gender analysis only to avoid chrY failure (REMOVE_M_noY)
 	# rename failures and results_all from txt to tsv
-	# exclude samples list case insentitive
-	# modify how copying of the results works
-	# add vcf2tsv converter ((https://github.com/sigven/vcf2tsvpy) & corresponding rules
+	# exclude samples list case insensitive
+	# copying new analysis per sample in the root sample dir & removing the old ones
+	# add vcf2tsv converter ((https://github.com/sigven/vcf2tsvpy) & corresponding rules : each vcf will be convert to tsv
+	# correct run path by removing ending '/' if exist
+	# keep "Running.txt" file if failed, avoiding multiple analysis launch
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -41,7 +42,6 @@ import pandas as pd
 
 from datetime import datetime
 from shutil import copy2
-from shutil import move
 
 ################## Configuration file and PATHS ##################
 configfile: "/app/config/default.yaml"
@@ -57,7 +57,6 @@ debug = config['DEBUG_MODE']
 serviceName = config['serviceName']
 
 # Datas directory
-#rundir = config['run']
 rundir = os.path.normpath(config['run'])
 
 # Repository/depository directories
@@ -650,7 +649,7 @@ ruleorder: indexing > ReadInBams
 
 rule all:
 	"""
-	Rule will create a design and panel vcf.gz if a gene list file is provided, else a design vcf.gz only
+	Rule will create a design vcf.gz with the gene list file provided
 	"""
 	input:
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
@@ -964,7 +963,7 @@ rule convertvcf_alldesign:
 	output:
 		tsvalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 	log:
-		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.py.log"
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.log"
 	shell:
 		"""
 		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzalldesign} --out_tsv {output.tsvalldesign}
@@ -996,7 +995,7 @@ onsuccess:
 		f.write((date_time_end) + "\n")
 	# Remove old files
 	for sample in sample_list:
-		shell("rm -f " + outputdir + sample + "/" + serviceName + "/* || true")
+		shell("rm -f " + outputdir + sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
 	# Rsync all files into final destination
 	shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
 	# Copy new files

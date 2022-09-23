@@ -10,11 +10,12 @@
 
 
 # PROD version 2 : 16/06/2022 changelog
-	# merge AnnotSV tsv from each samples into all samples's file
 	# remove panel vcf filtering (output was essentially empty) ; rename full to unfiltered
-	# exclude samples list case insentitive
-	# modify how copying of the results works
-	# add vcf2tsv converter ((https://github.com/sigven/vcf2tsvpy) & corresponding rules
+	# exclude samples list case insensitive
+	# copying new analysis per sample in the root sample dir & removing the old ones
+	# add vcf2tsv converter ((https://github.com/sigven/vcf2tsvpy) & corresponding rules : each vcf will be convert to tsv
+	# correct run path by removing ending '/' if exist
+	# keep "Running.txt" file if failed, avoiding multiple analysis launch
 
 ################## Context ##################
 # launch snakemake -s  snakefile_scramble -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -38,7 +39,6 @@ import json
 
 from datetime import datetime
 from shutil import copy2
-from shutil import move
 
 ################## Configuration file and PATHS ##################
 configfile: "/app/config/default.yaml"
@@ -54,7 +54,6 @@ debug = config['DEBUG_MODE']
 serviceName = config['serviceName']
 
 # Datas directory
-#rundir = config['run']
 rundir = os.path.normpath(config['run'])
 
 # Repository/depository directories
@@ -376,7 +375,7 @@ sample_count = len(sample_list)
 if not bed_file:
 	rule all:
 		"""
-		Rule will create an unfiltered vcf.gz and correponding tsv
+		Rule will create an unfiltered vcf.gz and corresponding tsv
 		"""
 		input:
 			vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz", sample=sample_list, aligner=aligner_list),
@@ -385,7 +384,7 @@ if not bed_file:
 else:
 	rule all:
 		"""
-		Rule will create an unfiltered vcf.gz & design vcf.gz and correponding tsv
+		Rule will create an unfiltered vcf.gz & design vcf.gz and corresponding tsv
 		"""
 		input:
 			tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list),
@@ -445,7 +444,7 @@ rule cluster_identifier:
 		cluster_identifier -m {params.mini} -s {params.soft} -r {params.region} {input.bam} > {output.txt}
 		"""
 
-# You will need a reference genome indexed with the following command for blast (indels mode) to work : makeblastdb -in refgene.fa -dbtype nucl
+# Indels option : you will need a reference genome indexed with the following command for blast (indels mode) to work : makeblastdb -in refgene.fa -dbtype nucl
 rule scramble:
 	"""
 	Calling SCRAMble.R with --eval-meis produces a tab delimited file. If a genomereference.fa file is provided, then a VCF is produced as well.
@@ -654,7 +653,7 @@ rule convertvcf_sampledesign:
 	output:
 		tsvdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv"
 	log:
-		log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Vcf2Tsv_converter.log"
+		log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf2tsv_converter.log"
 	shell:
 		"""
 		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzdesign} --out_tsv {output.tsvdesign} 2> {log.log2}
@@ -669,7 +668,7 @@ rule convertvcf_alldesign:
 	output:
 		tsvalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 	log:
-		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.py.log"
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.log"
 	shell:
 		"""
 		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzalldesign} --out_tsv {output.tsvalldesign} 2> {log.log2}
@@ -684,7 +683,7 @@ rule convertvcf_allunfiltered:
 	output:
 		tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv"
 	log:
-		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.py.log"
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.log"
 	shell:
 		"""
 		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzallfull} --out_tsv {output.tsvallfull} 2> {log.log2}
@@ -707,7 +706,7 @@ onsuccess:
 		f.write((date_time_end) + "\n")
 	# Remove old files
 	for sample in sample_list:
-		shell("rm -f " + outputdir + sample + "/" + serviceName + "/* || true")
+		shell("rm -f " + outputdir + sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
 	# Rsync all files into final destination
 	shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
 	# Copy new files
