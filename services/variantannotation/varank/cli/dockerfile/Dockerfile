@@ -36,15 +36,14 @@ RUN conda create -n common python=3.9.7
 # Java
 RUN yum -y install java-11-openjdk
 
-# SQLite3
-RUN yum -y install sqlite-devel
-
 # VaRank
 RUN mkdir /tools; \
 	mkdir /tools/varank
 WORKDIR /tools/varank
 RUN git clone https://github.com/lgmgeo/VaRank.git
-RUN	ln -s VaRank current
+RUN ln -s VaRank current
+RUN cd current; \
+	git checkout c137f3a28c873d6e0cf66d71c84bd49765114031
 RUN cd current/ExtAnn; \
 	rm -f *; \
 	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/ACMG.tsv; \
