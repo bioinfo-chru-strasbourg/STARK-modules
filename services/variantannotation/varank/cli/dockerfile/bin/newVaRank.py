@@ -948,69 +948,69 @@ def configfile_checker(configfiles_folder, args):
 
 				if re.match(r'#-proxyUser:', line):
 					if re.search(r'"[a-zA-Z0-9]+"', line):
-						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_USER'] + '"', line)
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + 'bioinfosurf' + '"', line)
 					else:
-						line = re.sub('""', '"' + os.environ['PROXY_USER'] + '"', line)
+						line = re.sub('""', '"' + 'bioinfosurf' + '"', line)
 					line = re.sub('#', '', line)
 					write_file.write(line + '\n')
 					writted = True
 				
 				if re.match(r'#-proxyPasswd:', line):
 					if re.search(r'"[a-zA-Z0-9]+"', line):
-						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_PASSWD'] + '"', line)
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + 'cquetuveux' + '"', line)
 					else:
-						line = re.sub('""', '"' + os.environ['PROXY_PASSWD'] + '"', line)
+						line = re.sub('""', '"' + 'cquetuveux' + '"', line)
 					line = re.sub('#', '', line)
 					write_file.write(line + '\n')
 					writted = True
 				
 				if re.match(r'#-proxyServer:', line):
 					if re.search(r'"[a-zA-Z0-9]+"', line):
-						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_SERVER'] + '"', line)
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + 'cyclope' + '"', line)
 					else:
-						line = re.sub('""', '"' + os.environ['PROXY_SERVER'] + '"', line)
+						line = re.sub('""', '"' + 'cyclope' + '"', line)
 					line = re.sub('#', '', line)
 					write_file.write(line + '\n')
 					writted = True
 				
 				if re.match(r'#-proxyPort:', line):
 					if re.search(r'"[a-zA-Z0-9]+"', line):
-						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_PORT'] + '"', line)
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + '8080' + '"', line)
 					else:
-						line = re.sub('""', '"' + os.environ['PROXY_PORT'] + '"', line)
+						line = re.sub('""', '"' + '8080' + '"', line)
 					line = re.sub('#', '', line)
 					write_file.write(line + '\n')
 					writted = True
 					
 				if re.match(r'-proxyUser:', line):
 					if re.search(r'"[a-zA-Z0-9]+"', line):
-						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_USER'] + '"', line)
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + 'bioinfosurf' + '"', line)
 					else:
-						line = re.sub('""', '"' + os.environ['PROXY_USER'] + '"', line)
+						line = re.sub('""', '"' + 'bioinfosurf' + '"', line)
 					write_file.write(line + '\n')
 					writted = True
 				
 				if re.match(r'-proxyPasswd:', line):
 					if re.search(r'"[a-zA-Z0-9]+"', line):
-						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_PASSWD'] + '"', line)
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + 'cquetuveux' + '"', line)
 					else:
-						line = re.sub('""', '"' + os.environ['PROXY_PASSWD'] + '"', line)
+						line = re.sub('""', '"' + 'cquetuveux' + '"', line)
 					write_file.write(line + '\n')
 					writted = True
 				
 				if re.match(r'-proxyServer:', line):
 					if re.search(r'"[a-zA-Z0-9]+"', line):
-						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_SERVER'] + '"', line)
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + 'cyclope' + '"', line)
 					else:
-						line = re.sub('""', '"' + os.environ['PROXY_SERVER'] + '"', line)
+						line = re.sub('""', '"' + 'cyclope' + '"', line)
 					write_file.write(line + '\n')
 					writted = True
 				
 				if re.match(r'-proxyPort:', line):
 					if re.search(r'"[a-zA-Z0-9]+"', line):
-						line = re.sub('"[a-zA-Z0-9]+"', '"' + os.environ['PROXY_PORT'] + '"', line)
+						line = re.sub('"[a-zA-Z0-9]+"', '"' + '8080' + '"', line)
 					else:
-						line = re.sub('""', '"' + os.environ['PROXY_PORT'] + '"', line)
+						line = re.sub('""', '"' + '8080' + '"', line)
 					write_file.write(line + '\n')
 					writted = True
 

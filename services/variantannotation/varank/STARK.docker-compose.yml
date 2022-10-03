@@ -45,7 +45,7 @@ services:
         # Volumes for databases
         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
         # File for developing, to comment if not used
-        #- /home1/bin/STARK-modules/current/services/variantannotation/varank/cli/dockerfile/bin/newVaRank.py:/tools/varank/current/scripts/newVaRank.py:rw
+        - /home1/bin/STARK-modules/dev.MR/services/variantannotation/varank/cli/dockerfile/bin/newVaRank.py:/tools/varank/current/scripts/newVaRank.py:rw
         networks: 
             - ${DOCKER_STARK_MAIN_NETWORK}
 
