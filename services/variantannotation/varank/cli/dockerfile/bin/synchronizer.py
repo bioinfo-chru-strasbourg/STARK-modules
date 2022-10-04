@@ -15,7 +15,7 @@ def processing_folder_vcf_synchronizer(run_informations):
 
     if not os.path.isdir(run_informations["run_processing_folder_vcf_run"]):
         os.makedirs(run_informations["run_processing_folder_vcf_run"])
-        os.chmod(run_informations["run_processing_folder_vcf_run"], 0o775)
+        os.chmod(run_informations["run_processing_folder_vcf_run"], 0o777)
 
     for element in pattern:
         vcf_files = glob.glob(osj(run_repository, element))
@@ -31,7 +31,7 @@ def processing_folder_vcf_synchronizer(run_informations):
         
     archives_vcf_files = glob.glob(osj(run_informations["run_processing_folder_vcf_run"], "*"))
     for vcf_file in archives_vcf_files:
-        os.chmod(vcf_file, 0o775)
+        os.chmod(vcf_file, 0o777)
         
 
         

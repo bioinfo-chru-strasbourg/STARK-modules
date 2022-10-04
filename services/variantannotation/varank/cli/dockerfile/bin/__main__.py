@@ -20,27 +20,28 @@ import logging as log
 import commons
 import checker
 import run_processing
+import folder_processing
 
 
 def main(args):
     original_umask = os.umask(0o000)
-    commons.set_log_level(args)
-    commons.set_logger_info(args)
 
+    # print(mylog.handlers[0].baseFilename)
     checker.varank_config_json_checker()
 
-    mylog = log.getLogger()
-    # print(mylog.handlers[0].baseFilename)
-
-    if args.run:
+    if "run" in args:
+        commons.set_log_level_run(args)
+        commons.set_logger_info_run(args)
+        mylog = log.getLogger()
         run_processing.launch_run(args)
+        commons.set_logger_info_run(args)
 
-    # elif args.varank_folder:
-    # 	launch_folder_analysis(args)
+    elif "folder" in args:
+        commons.set_log_level_default(args)
+        folder_processing.launch_folder(args)
     # elif args.allsync18:
     # 	pattern = pattern_generator(args)
     # 	launch_universal_sync18(pattern)
-    commons.set_logger_info(args)
     os.umask(original_umask)
 
 

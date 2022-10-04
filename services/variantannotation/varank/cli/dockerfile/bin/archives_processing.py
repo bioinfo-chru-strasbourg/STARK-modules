@@ -12,7 +12,10 @@ import multiprocessing
 def root_vcf_initialisation(run_informations):
     other_vcfs = glob.glob(
         osj(run_informations["run_processing_folder"], "*.final.vcf*")
-    ) + glob.glob(osj(run_informations["run_processing_folder"], "VCF", "*.final.vcf*"))
+    ) + glob.glob(osj(run_informations["run_processing_folder"], "*", "*.final.vcf*"))
+
+    shutil.rmtree(osj(run_informations["run_processing_folder"], "TSV"))
+    os.mkdir(osj(run_informations["run_processing_folder"], "TSV"))
 
     if len(other_vcfs) != 0:
         if not os.path.isdir(
@@ -35,20 +38,34 @@ def root_vcf_initialisation(run_informations):
                     archives_default_vcf_folder,
                 ]
             )
+            os.remove(archives_other_processing_vcf_files)
 
-        archives_default_vcf_files = glob.glob(
-            osj(archives_default_vcf_folder, "*.final.vcf*")
+    vcf_files = glob.glob(
+        osj(run_informations["run_processing_folder"], "VCF", "*", "*.final.vcf*")
+    )
+
+    if not os.path.isdir(run_informations["analysis_folder"]):
+        os.mkdir(run_informations["analysis_folder"])
+
+    for vcf_file in vcf_files:
+        subprocess.run(
+            [
+                "rsync",
+                "-rp",
+                vcf_file,
+                run_informations["analysis_folder"],
+            ]
         )
 
-        for archives_default_processed_vcf_files in archives_default_vcf_files:
-            subprocess.run(
-                [
-                    "rsync",
-                    "-rp",
-                    archives_default_processed_vcf_files,
-                    run_informations["analysis_folder"],
-                ]
-            )
+    if os.path.isdir(osj(run_informations["run_processing_folder"], "Alamut")):
+        subprocess.run(
+            [
+                "rsync",
+                "-rp",
+                osj(run_informations["run_processing_folder"], "Alamut"),
+                run_informations["analysis_folder"],
+            ]
+        )
 
 
 def initialisation(run_informations):
@@ -198,19 +215,18 @@ def varank_launcher(run_informations):
             stderr=subprocess.STDOUT,
             universal_newlines=True,
         )
-    os.chmod(logfile, 0o775)
+    os.chmod(logfile, 0o777)
 
 
 def cleaner(run_informations):
     tsv_files = glob.glob(osj(run_informations["analysis_folder"], "*tsv"))
     vcf_files = glob.glob(osj(run_informations["analysis_folder"], "*final.vcf.gz"))
-    db_files = glob.glob(osj(run_informations["analysis_folder"], "*db"))
     log.info(f"Cleaning the analysis folder")
 
     for file in tsv_files:
-        os.chmod(file, 0o775)
+        os.chmod(file, 0o777)
         shutil.move(file, run_informations["run_processing_folder_tsv"])
-        log.info(f"Moved generated tsv files")
+    log.info(f"Moved generated tsv files")
 
     if os.path.isdir(osj(run_informations["run_processing_folder"], "Alamut")):
         shutil.rmtree(osj(run_informations["run_processing_folder"], "Alamut"))
@@ -248,11 +264,7 @@ def cleaner(run_informations):
 
     for file in vcf_files:
         os.remove(file)
-        log.info(f"Deleted used vcf file")
-
-    for db_file in db_files:
-        os.remove(db_file)
-        log.info(f"Deleted sqlite database")
+    log.info(f"Deleted used vcf file")
 
     shutil.rmtree(run_informations["analysis_folder"])
     log.info(f"Deleted temporary analysis folder")

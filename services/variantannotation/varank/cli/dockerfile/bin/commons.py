@@ -9,7 +9,7 @@ import time
 default_pattern = "*/STARK/*.reports/*.final.vcf.gz"
 
 
-def set_logger_info(args):
+def set_logger_info_run(args):
     mylog = log.getLogger()
     log_file = mylog.handlers[0].baseFilename
     info_file = log_file.replace(".log", ".info")
@@ -44,7 +44,7 @@ Time run: {delta}"""
             write_file.write(logging)
 
 
-def logger_header(log_file):
+def logger_header_run(log_file):
     logging = f"""#########################
 #     VaRank Wrapper    #
 #    Variants Ranking   #
@@ -60,7 +60,7 @@ def logger_header(log_file):
         write_file.write(logging)
 
 
-def set_log_level(args):
+def set_log_level_run(args):
     verbosity = args.verbosity
     run = args.run
     mode = args.mode
@@ -90,7 +90,7 @@ def set_log_level(args):
         log_file,
     )
 
-    logger_header(log_file)
+    logger_header_run(log_file)
 
     configs = {
         "debug": log.DEBUG,
@@ -112,6 +112,31 @@ def set_log_level(args):
         filemode="a",
         format="%(asctime)s [%(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
+        level=configs[verbosity],
+    )
+
+
+def set_log_level_default(args):
+    verbosity = args.verbosity
+
+    configs = {
+        "debug": log.DEBUG,
+        "info": log.INFO,
+        "warning": log.WARNING,
+        "error": log.ERROR,
+        "critical": log.CRITICAL,
+    }
+    if verbosity not in configs.keys():
+        raise ValueError(
+            "Unknown verbosity level:"
+            + verbosity
+            + "\nPlease use any in:"
+            + configs.keys()
+        )
+    log.basicConfig(
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        force=True,
         level=configs[verbosity],
     )
 
