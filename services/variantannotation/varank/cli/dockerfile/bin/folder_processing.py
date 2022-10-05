@@ -5,7 +5,6 @@ import os
 from os.path import join as osj
 import archives_processing
 import non_redundant_generator
-import results_provider
 import glob
 
 

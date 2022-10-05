@@ -10,7 +10,9 @@ default_pattern = "*/STARK/*.reports/*.final.vcf.gz"
 
 
 def set_logger_info_run(args):
-    mylog = log.getLogger()
+    mylog = log.getLogger("run_infos")
+    handler = log.FileHandler("run_infos.log")
+    mylog.addHandler(handler)
     log_file = mylog.handlers[0].baseFilename
     info_file = log_file.replace(".log", ".info")
 
@@ -52,7 +54,7 @@ def logger_header_run(log_file):
 #########################
 
 ####################
-#   Release: {os.environ["DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_RELEASE"]}   #
+#   Release: {os.environ["DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_RELEASE"]} #
 ####################
 
 """

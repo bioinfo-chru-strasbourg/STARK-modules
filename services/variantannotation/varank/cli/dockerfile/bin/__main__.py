@@ -33,7 +33,9 @@ def main(args):
         commons.set_log_level_run(args)
         commons.set_logger_info_run(args)
         mylog = log.getLogger()
+
         run_processing.launch_run(args)
+
         commons.set_logger_info_run(args)
 
     elif "folder" in args:
