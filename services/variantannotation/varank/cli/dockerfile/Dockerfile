@@ -3,9 +3,9 @@ FROM centos:7
 LABEL name="Mateusz RAUCH" email="<rauchmateusz@gmail.com>"
 
 ##########################################################################
-# Dockerfile Version:   1.0
+# Dockerfile Version:   2.0.1
 # Software:             VaRank
-# Software Version:     2.0
+# Software Version:     1.5.2
 # Software Website:     http://www.lbgi.fr/VaRank/
 # Description:          Dockerfile to build VaRank container image
 ##########################################################################
@@ -58,6 +58,9 @@ RUN cd current/ExtAnn; \
 	ln -s /STARK/databases/OMIMannotations/current/OMIM-1-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-1-annotations.tsv.gz; \
 	ln -s /STARK/databases/OMIMannotations/current/OMIM-2-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-2-annotations.tsv.gz
 
+WORKDIR /tools/varank/current/sources/
+RUN sed -i -e 's/1.4.3/1.5.2/g' VaRank-config.tcl
+
 ENV VARANK=/tools/varank/current/
 
 # Alamut-Batch
@@ -68,24 +71,27 @@ RUN tar -xvf download.php?product=Alamut-batch-standalone\&platform=\&OS=Linux\&
 	rm -rf download.php?product=Alamut-batch-standalone\&platform=\&OS=Linux\&version=1.11; \
 	ln -s alamut-batch-standalone-1.11 current
 WORKDIR /tools/alamut_batch/current
-RUN rm -rf ancillary
+RUN mv ancillary ancillary.old
 
 COPY src/ancillary.tar.gz /tools/alamut_batch/current/ancillary/
 WORKDIR /tools/alamut_batch/current/ancillary
 RUN tar -xvf ancillary.tar.gz
 RUN rm -rf ancillary.tar.gz
+
 WORKDIR /tools/alamut_batch/current
 RUN chmod -R 777 ancillary
 RUN rm -rf alamut-batch.ini
 RUN ln -s /STARK/config/variantannotation/varank/alamut-batch-license/alamut-batch.ini /tools/alamut_batch/current/alamut-batch.ini
+
 ENV ALAMUT=/tools/alamut_batch/current/
+ENV PYTHONDONTWRITEBYTECODE 1
 
 COPY bin/*.py /tools/varank/current/scripts/
 RUN chmod -R 777 /tools/
 
-RUN echo "source activate common" > ~/.bashrc
-RUN echo "alias ll='ls -l'" > ~/.bashrc
-RUN echo "alias varank='python3.9 /tools/varank/current/scripts/__main__.py'" > ~/.bashrc
+RUN echo "source activate common" >> ~/.bashrc
+RUN echo "alias ll='ls -lra'" >> ~/.bashrc
+RUN echo "alias varank='python3.9 /tools/varank/current/scripts/__main__.py'" >> ~/.bashrc
 
 
 WORKDIR /

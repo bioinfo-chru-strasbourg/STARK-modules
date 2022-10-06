@@ -10,9 +10,13 @@ default_pattern = "*/STARK/*.reports/*.final.vcf.gz"
 
 
 def set_logger_info_run(args):
-    mylog = log.getLogger("run_infos")
-    handler = log.FileHandler("run_infos.log")
-    mylog.addHandler(handler)
+    # if os.path.isfile("/run_infos.log"):
+    #     os.remove("/run_infos.log")
+    # if os.path.isfile("/run_infos.info"):
+    #     os.remove("/run_infos.info")
+    mylog = log.getLogger()
+    # handler = log.FileHandler("run_infos.log")
+    # mylog.addHandler(handler)
     log_file = mylog.handlers[0].baseFilename
     info_file = log_file.replace(".log", ".info")
 
@@ -111,6 +115,7 @@ def set_log_level_run(args):
 
     log.basicConfig(
         filename=log_file,
+        force=True,
         filemode="a",
         format="%(asctime)s [%(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
