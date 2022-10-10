@@ -78,7 +78,7 @@ def parseargs():
         "--launcher", action="store_true", help="if set process in STARK auto analysis"
     )
     parser.add_argument(
-        "--jobs", type=int, default=4, help="Jobs to run in parallel in snakemake"
+        "--jobs", type=int, default=8, help="Jobs to run in parallel in snakemake"
     )
     args = parser.parse_args()
     return args
@@ -124,7 +124,8 @@ def main():
         "snakemake --snakefile /app/lib/snakemake/Snakefile --configfile "
         + args.config
         + " -j "
-        + args.jobs
+        + str(args.jobs),
+        shell = True
     )
 
 
