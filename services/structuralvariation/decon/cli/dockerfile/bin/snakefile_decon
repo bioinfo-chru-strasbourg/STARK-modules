@@ -870,7 +870,7 @@ rule AnnotSV:
 	output:
 		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design_uncorr.tsv"
 	log:
-		txt = tmpdir + "/{sample}/" + serviceName +  "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.log"
+		txt = tmpdir + "/{sample}/" + serviceName +  "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.log"
 	params:
 		bedtools = config['BEDTOOLS_PATH'],
 		bcftools = config['BCFTOOLS_PATH'],
@@ -1000,11 +1000,11 @@ onsuccess:
 	shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
 	# Copy new files
 	for sample in sample_list:
-		shell("cp " + outputdir + "/" + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + outputdir + sample + "/" + serviceName + "/")
+		shell("cp " + outputdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + outputdir + sample + "/" + serviceName + "/")
 	if depotcopy == True:
 		shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {depotdir}")
 		for sample in sample_list:
-			shell("cp " + depotdir + "/" + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/")
+			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/")
 
 onerror:
 	shell("touch " + outputdir + serviceName + "Failed.txt")
