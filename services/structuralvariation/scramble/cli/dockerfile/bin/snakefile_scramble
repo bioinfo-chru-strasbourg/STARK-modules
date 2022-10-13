@@ -521,7 +521,7 @@ rule AnnotSV:
 	output:
 		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV_uncorr.tsv"
 	log:
-		txt = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/log/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.log"
+		txt = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.log"
 	params:
 		bedtools = config['BEDTOOLS_PATH'],
 		bcftools = config['BCFTOOLS_PATH'],
