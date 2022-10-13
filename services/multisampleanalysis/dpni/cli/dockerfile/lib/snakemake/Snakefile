@@ -65,12 +65,12 @@ def configure(run, trio, genome, tools, output):
                                 sex = tag.split('#')[-1]
                                 samp['sex'] = sex
                                 #family['family'][samples]['sex'] = sex
-                            #MOTHER, fetus, FATHER
+                            #MOTHER, FETUS, FATHER
                             elif 'FOETAL' in tag:
                                 print(tag)
                                 fam = tag.split('#')[-1]
-                                if fam == 'fetus':
-                                    family['fetus'] = samp
+                                if fam == 'FETUS':
+                                    family['FETUS'] = samp
                                 else:
                                     samp['affinity'] = fam.lower()
                                     family['family'].append(samp)
@@ -594,6 +594,8 @@ def copy_repository():
     if os.path.exists(config["env"]["repository"]):
         print("#[INFO] Copying into repository "+config["env"]["repository"])
         for sample in os.listdir(config["env"]["repository"]):
+            if not os.path.isdir(osj(config["env"]["repository"], sample)):
+                continue #not a sample
             print("#[INFO] Sample ", sample)
             if os.path.isdir(osj(osj(config["env"]["repository"], sample))):
                 #In case of first analysis
@@ -621,6 +623,8 @@ def handle_error():#TODO TEST
     if config["env"]["repository"]:
         print("ERROR in analysis, copy log in repository run sample "+config["env"]["repository"])
         for sample in os.listdir(config["env"]["repository"]):
+            if not os.path.isdir(osj(config["env"]["repository"], sample)):
+                continue #not a sample
             #First analysis
             if not os.path.exists(osj(config["env"]["repository"], sample, "DPNI")):
                 print("#[INFO] Create DPNI folder sample "+sample)
@@ -640,8 +644,9 @@ def handle_error():#TODO TEST
 #snakemake on case
 #####################
 
-onstart: print(config)
-onerror: 
+onstart:
+    print(config)
+onerror:
     handle_error()
 
 output = config["env"]["output"]
@@ -661,12 +666,14 @@ interval_padding = 100
 ############
 ## SEG
 ############
-seg = {}
-seg[config["family"]["MOTHER"]["affinity"][0]] = 'MOTHER'
-seg[config["family"]["FATHER"]["affinity"][0]] = 'FATHER'
-seg[config["fetus"]["name"]] = 'fetus'
-whole = list(config['family'].keys())
-whole.append(config['fetus']['name'])
+#seg = {}
+#seg[config["family"]["MOTHER"]["affinity"][0]] = 'MOTHER'
+#seg[config["family"]["FATHER"]["affinity"][0]] = 'FATHER'
+config["family"]["MOTHER"]["affinity"][0] = 'MOTHER'
+config["family"]["FATHER"]["affinity"][0] = 'FATHER'
+#config["FETUS"]["name"] = 'FETUS'
+whole = list(config["family"].keys())
+whole.append(config["FETUS"]["name"])
 print("#[INFO] FAMILY ", whole)
 
 
@@ -733,7 +740,7 @@ else:
 
 rule paste_vcf_pool:
     input:
-        fetus = config['fetus']['vcf']
+        fetus = config["FETUS"]['vcf']
     output:
         output+"/pool.vcf.gz"
     shell:
@@ -753,8 +760,8 @@ rule add_info:
         subprocess.call("awk -F \":\" 'NR>1{print $0 >> (\""+output.vcf+".dict/COVFILE\" $1)}' "+input.cov, shell=True)
         #####new
         sample_name = os.path.basename(input.vcf).split('.')[0]
-        if sample_name == config["fetus"]["name"]:
-            sample_name = "fetus"
+        if sample_name == config["FETUS"]["name"]:
+            sample_name = "FETUS"
         #transform raw vcf into dataframe and insert header in list
         df, head = vcfTodataframe(input.vcf, True)
         
@@ -789,13 +796,13 @@ rule add_info:
 
 
         #calculate frequence regarding depth and base identification
-        s_list = ['fetus']
+        s_list = ['FETUS']
         s_list.extend(config['family'])
         print("#[INFO] Family people ", s_list)
         
         frequence = addFrequence(metrics, sample_name, s_list)
         #remove duplicate column used to create frequence
-        metrics.drop(columns=["Depth_FATHER", "Depth_MOTHER", "Depth_fetus", "Base_counts_FATHER", "Base_counts_MOTHER", "Base_counts_fetus"], inplace=True)
+        metrics.drop(columns=["Depth_FATHER", "Depth_MOTHER", "Depth_FETUS", "Base_counts_FATHER", "Base_counts_MOTHER", "Base_counts_FETUS"], inplace=True)
         dfinal = pd.concat([metrics.reset_index(drop=True), frequence.reset_index(drop=True)], axis=1)
 
         info = frequence.iloc[:, 2:]
@@ -919,7 +926,7 @@ rule dpni_barcode:
     output:
         merge = output+"/{sample}.merged.barcode.vcf"
     params:
-        name = config["fetus"]["name"]
+        name = config["FETUS"]["name"]
     run:
         origin, header = vcfTodataframe(input.vcf, True)
         df, _, _i = parse_sample_field(origin)
@@ -982,17 +989,16 @@ rule uniq_trio:
         """
 rule uniq_trio_fetus:
     params:
-        bcftools=config["tools"]["bcftools"]
+        bcftools = config["tools"]["bcftools"],
+        sample = config["FETUS"]["name"]
     input:
         output+"/MOTHER.norm.vcf",
 
     output:
-        tmp = temp(output+"/fetus.norm.uniq.vcf"),
-        sort = output+"/fetus.norm.uniq.sorted.vcf"
+        tmp = temp(output+"/FETUS.norm.uniq.vcf"),
+        sort = output+"/FETUS.norm.uniq.sorted.vcf"
     log:
-        log+"/fetus.bcftools.log"
-    params:
-        sample = config["fetus"]["name"]
+        log+"/FETUS.bcftools.log"
     shell:
         """
             {params.bcftools} view -s {params.sample} {input} | grep -v '^##HOWARD' > {output.tmp} 2>> {log} && grep "^#" {output.tmp} > {output.sort} && grep -v "^#" {output.tmp} | sort -k1,1V -k2,2n >> {output.sort}
@@ -1018,16 +1024,16 @@ rule depth_of_coverage_v2:
     input:
         genome  = config["env"]["genome"],
         bed     = config["env"]["bed"],
-        bam     = config["fetus"]["bam"],
+        bam     = config["FETUS"]["bam"],
         
     output:
-        temp(output+"/fetus_tmp.gatk.cov"),
-        temp(output+"/fetus_tmp.gatk.cov.sample_cumulative_coverage_counts"),
-        temp(output+"/fetus_tmp.gatk.cov.sample_cumulative_coverage_proportions"),
-        temp(output+"/fetus_tmp.gatk.cov.sample_statistics"),
-        temp(output+"/fetus_tmp.gatk.cov.sample_summary")
+        temp(output+"/FETUS_tmp.gatk.cov"),
+        temp(output+"/FETUS_tmp.gatk.cov.sample_cumulative_coverage_counts"),
+        temp(output+"/FETUS_tmp.gatk.cov.sample_cumulative_coverage_proportions"),
+        temp(output+"/FETUS_tmp.gatk.cov.sample_statistics"),
+        temp(output+"/FETUS_tmp.gatk.cov.sample_summary")
     log:
-        log+"/fetus_tmp.gatk.cov.log"
+        log+"/FETUS_tmp.gatk.cov.log"
     shell:
         """
             {params.java} -jar {params.gatk} -nt {params.cpu} -omitIntervals -T DepthOfCoverage -R {input.genome} -o {output[0]} -I {input.bam} --includeDeletions --minMappingQuality 10 --printBaseCounts -L {input.bed} --interval_padding {params.padding} &>> {log};
@@ -1035,12 +1041,12 @@ rule depth_of_coverage_v2:
 
 rule rename_pool_coverage_v2:
     input:
-        output+"/fetus_tmp.gatk.cov"
+        output+"/FETUS_tmp.gatk.cov"
     output:
-        output+"/fetus.gatk.cov"
+        output+"/FETUS.gatk.cov"
     shell:
         """
-            sed '1 s/^.*$/Locus_fetus\tTotal_Depth_fetus\tAverage_Depth_fetus\tDepth_fetus\tBase_counts_fetus/' {input} > {output}
+            sed '1 s/^.*$/Locus_FETUS\tTotal_Depth_FETUS\tAverage_Depth_FETUS\tDepth_FETUS\tBase_counts_FETUS/' {input} > {output}
         """
 
 rule depth_of_coverage_sample:
@@ -1079,7 +1085,7 @@ rule rename_pool_coverage_sample:
 rule merge_coverage_v2:
     input:
         samples = expand(output+"/{samples}.gatk.renamed.cov", samples=config['family']),
-        fetus = output+"/fetus.gatk.cov"
+        fetus = output+"/FETUS.gatk.cov"
     output:
         output+"/all.gatk.cov"
     shell:
