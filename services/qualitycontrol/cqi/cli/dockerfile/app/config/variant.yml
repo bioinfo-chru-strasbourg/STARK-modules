@@ -6,7 +6,6 @@ channels:
   - defaults
 dependencies:
   - vcftools
-  - bcftools
   - bedtools
   - perl-vcftools-vcf
   - tabix
