@@ -1,0 +1,4 @@
+# Patch for some gene name
+EXON_SEP: True
+# Old Bed formating
+OLD_BED: True

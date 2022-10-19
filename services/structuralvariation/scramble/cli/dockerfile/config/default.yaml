@@ -5,6 +5,7 @@
 
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
+# PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
 
 # Add here variables that will extend default configuration yaml file.
@@ -52,14 +53,14 @@ BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
 SCRAMBLE_PATH: "/tools/scramble/current/bin"
 # Path to scripts
 SCRIPTS_PATH: "/app/src"
-# Samples list exclusion (not to be analyse)
-EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
+# Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
+EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
 # Sample filter
 FILTER_SAMPLE: []
 
 ### Indexing files options
 # Ext to index (endwith)
-EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai", ".list.genes"]
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes"]
 
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False
@@ -76,21 +77,21 @@ CRAM_ONLY: False
 
 # Rsync option for copy
 # include_rsync must have more than one arguement
-INCLUDE_RSYNC: "{'*.vcf.gz','*.vcf.gz.tbi','*.bed','*/'}"
+INCLUDE_RSYNC: "{'*Unfiltered.vcf.gz','*Unfiltered.vcf.gz.tbi','*Design.vcf.gz','*Design.vcf.gz.tbi','*AnnotSV.Unfiltered.tsv','*AnnotSV.Design.tsv','*Design_results_all.tsv','*Identify_Failures.tsv','*.bed','*list.txt','*/'}"
 # exclude_rsync can only take on arguement
 EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
 # Copy to depot directory (archive)
-DEPOT_COPY: False
+DEPOT_COPY: True
 
 ##### Search parameters for inputs ####
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
 ## DEBUG ##
-DEBUG_MODE: True
+DEBUG_MODE: False
 
 # MISC
 THREADS: "4"

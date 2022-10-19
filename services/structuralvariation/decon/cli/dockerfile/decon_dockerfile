@@ -273,6 +273,57 @@ RUN echo "#[INFO] System installation" && \
 	echo "#[INFO] System Clean" && \
 	echo "#";
 
+##########
+# HOWARD #
+##########
+
+# TOOL INFO
+#ENV TOOL_NAME="howard"
+#ENV TOOL_VERSION="0.9.15.6"
+#ENV TOOL_TARBALL="$TOOL_VERSION.tar.gz"
+#ENV TOOL_SOURCE_EXTERNAL="https://github.com/bioinfo-chru-strasbourg/howard/archive/refs/heads/$TOOL_TARBALL"
+#ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+#ENV TOOL_PARAM_DATABASE_FOLDER_LINK=$DATABASES
+#ENV TOOL_PARAM_DATABASE_FOLDER=/databases
+
+
+# TOOL INSTALLATION
+#RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+#	source $TOOL_INIT && \
+#	tar xf $TOOL_SOURCE -C $TOOL_SOURCE_BUILD && \
+#	cp -R $TOOL_SOURCE_BUILD/*/* $TOOL_DEST/ && \
+#	chmod a+x $TOOL_DEST/* -R && \
+#	mkdir -p $TOOL_PARAM_DATABASE_FOLDER_LINK && \
+#	mkdir -p $TOOL_PARAM_DATABASE_FOLDER && \
+#	ln -s $DATABASES $TOOL_DATABASE_FOLDER && \
+#	$TOOL_CHECK ;
+
+##########
+# SNPEFF #
+##########
+
+# TOOL INFO
+#ENV TOOL_NAME="snpeff"
+#ENV TOOL_VERSION="4.3t"
+#ENV TOOL_TARBALL="snpEff_v4_3t_core.zip"
+#ENV TOOL_SOURCE_EXTERNAL="https://sourceforge.net/projects/snpeff/files/$TOOL_TARBALL"
+#ENV PATH=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin:$PATH
+# TOOL PARAMETERS
+#ENV TOOL_PARAM_DATABASE_FOLDER_LINK=$DATABASES/snpeff/4.3t
+#ENV TOOL_PARAM_DATABASE_FOLDER_LINK=$DATABASES/snpeff/$TOOL_VERSION
+#ENV TOOL_PARAM_DATABASE_FOLDER=$TOOLS/$TOOL_NAME/$TOOL_VERSION/bin/data
+
+# TOOL INSTALLATION
+#RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
+#	source $TOOL_INIT && \
+#	unzip -q $TOOL_SOURCE -d $TOOL_SOURCE_BUILD && \
+#	cp $TOOL_SOURCE_BUILD/*/*jar $TOOL_DEST/bin/ && \
+#	cp $TOOL_SOURCE_BUILD/*/*config $TOOL_DEST/bin/ && \
+#	mkdir -p $TOOL_PARAM_DATABASE_FOLDER_LINK && \
+#	ln -snf $TOOL_PARAM_DATABASE_FOLDER_LINK/ $TOOL_PARAM_DATABASE_FOLDER && \
+#	$TOOL_CHECK ;
+
 #########
 # CONDA #
 #########
@@ -336,7 +387,7 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/scales/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/ggplot2/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/magrittr/ && \
- 	mkdir -p $TOOL_DEST/bin/packrat/src/BiocGenerics/ && \
+	mkdir -p $TOOL_DEST/bin/packrat/src/BiocGenerics/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/zlibbioc/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/S4Vectors/ && \
 	mkdir -p $TOOL_DEST/bin/packrat/src/IRanges/ && \
@@ -352,7 +403,7 @@ RUN echo "#[INFO] TOOL installation '$TOOL_NAME:$TOOL_VERSION'" && \
 	wget https://cran.r-project.org/src/contrib/Archive/digest/digest_0.6.8.tar.gz -O $TOOL_DEST/bin/packrat/src/digest/digest_0.6.8.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_1.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/ggplot2/ggplot2_1.0.1.tar.gz && \
 	wget https://cran.r-project.org/src/contrib/Archive/magrittr/magrittr_1.5.tar.gz -O $TOOL_DEST/bin/packrat/src/magrittr/magrittr_1.5.tar.gz && \
- 	wget https://depot.galaxyproject.org/package/noarch/BiocGenerics_0.12.1.tar.gz -O $TOOL_DEST/bin/packrat/src/BiocGenerics/BiocGenerics_0.12.1.tar.gz && \
+	wget https://depot.galaxyproject.org/package/noarch/BiocGenerics_0.12.1.tar.gz -O $TOOL_DEST/bin/packrat/src/BiocGenerics/BiocGenerics_0.12.1.tar.gz && \
 	wget https://depot.galaxyproject.org/package/noarch/bg/zlibbioc_1.12.0.tar.gz -O $TOOL_DEST/bin/packrat/src/zlibbioc/zlibbioc_1.12.0.tar.gz && \
 	wget https://depot.galaxyproject.org/package/noarch/S4Vectors_0.4.0.tar.gz -O $TOOL_DEST/bin/packrat/src/S4Vectors/S4Vectors_0.4.0.tar.gz && \
 	wget https://depot.galaxyproject.org/package/noarch/IRanges_2.0.1.tar.gz -O $TOOL_DEST/bin/packrat/src/IRanges/IRanges_2.0.1.tar.gz && \

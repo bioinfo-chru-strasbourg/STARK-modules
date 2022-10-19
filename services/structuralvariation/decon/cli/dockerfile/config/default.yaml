@@ -5,8 +5,15 @@
 
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
+# PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
 
+# PROD version 2 : 16/06/2022 changelog
+# add the possibility to analyse gender separately, extract gender from tag files ; gender analysis can be set with REMOVE_F & REMOVE_M & REMOVE_A options
+# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_FILTER & GENE_LIST_RESTRICT)
+# add a chr filter option to remove chrosome (essentially chrY) CHR_FILTER & CHR_LIST_RESTRICT)
+
+##########################################################################
 # Add here variables that will extend default configuration yaml file.
 # If a variable was already defined in the default configuration yaml file, it will be replace.
 # launch snakemake -s snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory var1=0.05 var2=12
@@ -22,7 +29,7 @@ OUTPUT_DIR: ""
 TMP_DIR: "tmp"
 
 # Copy to depot directory (archive)
-DEPOT_COPY: False
+DEPOT_COPY: True
 
 # Group and App default name
 GROUP_NAME: "UNKNOWN"
@@ -55,14 +62,14 @@ BEDTOOLS_PATH: "/tools/bedtools/current/bin/bedtools"
 BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
 # Path to scripts
 SCRIPTS_PATH: "/app/src"
-# Samples list exclusion (not to be analyse) (startswith)
-EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
+# Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
+EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
 # Sample filter
 FILTER_SAMPLE: []
 
 ### Indexing files options
 # Ext to index (endwith)
-EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".fastq.gz", ".vcf.gz", ".bam", ".bam.bai", ".list.genes"]
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes", ".tag"]
 
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False
@@ -77,11 +84,11 @@ ALIGNER_NAME:
 
 # Rsync options : if several files are added add {} at the start and end of the list
 # include_rsync must have more than one arguement
-INCLUDE_RSYNC: "{'*.tsv','*.vcf.gz','*.vcf.gz.tbi','*.pdf','*.txt','*.bed','*/'}"
+INCLUDE_RSYNC: "{'*Unfiltered.vcf.gz','*Unfiltered.vcf.gz.tbi','*Design.vcf.gz','Design.vcf.gz.tbi','*AnnotSV.Unfiltered.tsv','*AnnotSV.Design.tsv','*Design_results_all.tsv','*Identify_Failures.tsv','*.bed','*list.txt','*.pdf','*/'}"
 # exclude_rsync can only take on arguement
 EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed
-INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed'}"
 
 ##### Search parameters of input for the search function #####
 RECURSIVE_SEARCH: False
@@ -91,7 +98,7 @@ SEARCH_ARGUMENT: "/*/STARK/*"
 THREADS: "4"
 
 ## DEBUG ##
-DEBUG_MODE: True
+DEBUG_MODE: False
 
 ### DECON BED processing ###
 # Regen exon number with IntersectBed and a refseqgene reference (True/False)
@@ -103,9 +110,18 @@ KEEP_UNKNOWN: False
 EXON_SEP: False
 # Old Bed formating
 OLD_BED: False
-# Remove Y or Y ref
-REMOVE_X: True
-REMOVE_Y: True
+
+# Remove Y or Y or Autosome analysis
+REMOVE_F: False
+REMOVE_M: False
+REMOVE_A: False
+REMOVE_M_noY: False
+
+# Limit the analysis to a list of genes
+GENE_LIST_RESTRICT: []
+
+# List of chr to remove (essentially for chrY)
+CHR_LIST_RESTRICT: []
 
 ############## Tools specific parameters ##############
 
@@ -116,7 +132,7 @@ mincov: 100 # Minimum coverage threshold – the minimum median coverage for any
 ############# makeCNVcalls params
 transProb: 0.01 # Transition probability – the transition probability between normal copy number state and either deletion or duplication state in the hidden Markov model, 0.01 is a high threshold value to increase sensitivity (default 0.01)
 customexon: False # default False
-plot: None # default (plot argument should be one of: None, Custom or All)
+plot: All # default (plot argument should be one of: None, Custom or All)
 plotFolder: # default DECoNPlots folder
 
 ############# AnnotSV params
