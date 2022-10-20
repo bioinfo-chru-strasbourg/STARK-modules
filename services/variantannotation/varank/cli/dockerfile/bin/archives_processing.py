@@ -14,9 +14,6 @@ def root_vcf_initialisation(run_informations):
         osj(run_informations["run_processing_folder"], "*.final.vcf*")
     ) + glob.glob(osj(run_informations["run_processing_folder"], "*", "*.final.vcf*"))
 
-    shutil.rmtree(osj(run_informations["run_processing_folder"], "TSV"))
-    os.mkdir(osj(run_informations["run_processing_folder"], "TSV"))
-
     if len(other_vcfs) != 0:
         if not os.path.isdir(
             osj(run_informations["run_processing_folder"], "VCF", "DEFAULT")
@@ -44,8 +41,11 @@ def root_vcf_initialisation(run_informations):
         osj(run_informations["run_processing_folder"], "VCF", "*", "*.final.vcf*")
     )
 
-    if not os.path.isdir(run_informations["analysis_folder"]):
-        os.mkdir(run_informations["analysis_folder"])
+    tmp_folders = glob.glob("/tmp_*")
+    for tmp_folder in tmp_folders:
+        shutil.rmtree(tmp_folder)
+
+    os.mkdir(run_informations["analysis_folder"])
 
     for vcf_file in vcf_files:
         subprocess.run(
@@ -143,7 +143,7 @@ def configfile_manager(run_informations):
         "varank",
         "configfiles",
     )
-    used_configfile = osj(run_informations["analysis_folder"], "configfile")
+    used_configfile = osj(run_informations["run_processing_folder"], "configfile")
 
     if run_informations["run_platform_application"] == "default":
         configfile = osj(configfile_shelter, "configfile.default")
@@ -152,30 +152,45 @@ def configfile_manager(run_informations):
             configfile_shelter,
             f"configfile.{run_informations['run_platform_application']}",
         )
-        default_configfile = osj(configfile_shelter, "configfile.default")
 
-    if os.path.isfile(configfile) and not os.path.isfile(used_configfile):
+    if (
+        os.path.isfile(configfile)
+        and not os.path.isfile(used_configfile)
+        and not run_informations["run_platform_application"] == "default"
+    ):
         log.info(
             f"Configfile {configfile} in {run_informations['run_processing_folder']} was synced from the configfile shelter"
         )
         subprocess.run(["rsync", "-rp", configfile, used_configfile])
 
-    elif os.path.isfile(configfile) and os.path.isfile(used_configfile):
+    elif (
+        os.path.isfile(configfile)
+        and os.path.isfile(used_configfile)
+        and not run_informations["run_platform_application"] == "default"
+    ):
         log.info(
-            f"Configfile {configfile} in {run_informations['run_processing_folder']} was synced from the configfile shelter"
+            f"Configfile {configfile} in {run_informations['run_processing_folder']} was updated from the configfile shelter"
         )
         subprocess.run(["rsync", "-rp", configfile, used_configfile])
 
-    elif not os.path.isfile(configfile) and os.path.isfile(used_configfile):
+    elif (
+        os.path.isfile(used_configfile)
+        and run_informations["run_platform_application"] == "default"
+    ):
         log.info(
             f"Using existing configfile in {run_informations['run_processing_folder']}"
         )
 
-    elif not os.path.isfile(configfile) and not os.path.isfile(used_configfile):
-        log.info(
-            f"Using default configfile in {run_informations['run_processing_folder']} from configfile shelter"
-        )
-        subprocess.run(["rsync", "-rp", default_configfile, used_configfile])
+    elif (
+        not os.path.isfile(used_configfile)
+        and run_informations["run_platform_application"] == "default"
+    ):
+        log.info(f"Using default configfile in configfile shelter")
+        subprocess.run(["rsync", "-rp", configfile, used_configfile])
+
+    subprocess.run(
+        ["rsync", "-rp", used_configfile, run_informations["analysis_folder"]]
+    )
 
 
 def varank_launcher(run_informations):
@@ -222,6 +237,10 @@ def cleaner(run_informations):
     tsv_files = glob.glob(osj(run_informations["analysis_folder"], "*tsv"))
     vcf_files = glob.glob(osj(run_informations["analysis_folder"], "*final.vcf.gz"))
     log.info(f"Cleaning the analysis folder")
+
+    if os.path.isdir(osj(run_informations["run_processing_folder"], "TSV")):
+        shutil.rmtree(osj(run_informations["run_processing_folder"], "TSV"))
+        os.mkdir(osj(run_informations["run_processing_folder"], "TSV"))
 
     for file in tsv_files:
         os.chmod(file, 0o777)
