@@ -6,6 +6,13 @@
 # Description:         Dockerfile to build container image
 ##############################################################
 
+# DEV version 0.1 : 10/11/2021
+# INT version 0.1 : 17/03/2022
+# PROD version 1 : 03/06/2022
+# Authoring : Thomas LAVAUX
+
+# PROD version 2 : 04/09/2022 changelog
+	# add libtool package
 
 ##########
 # README #
@@ -106,7 +113,7 @@ RUN echo "#[INFO] SCRAMBLE module installation configuration" && echo "#" ;
 ##################
 # This will install system packages, python packages and scripts to install tools
 
-ENV YUM_INSTALL="autoconf automake htop bc bzip2 bzip2-devel curl curl-devel gcc gcc-c++ git lzma make ncurses-devel perl perl-Data-Dumper perl-Digest-MD5 perl-Switch perl-devel perl-Tk perl-Archive-Tar perl-List-MoreUtils tbb-devel unzip rsync wget which xz xz-devel zlib zlib-devel java-1.8.0 openssl-devel R-devel libcurl htslib htslib-devel tcl libffi-devel libxml2-devel harfbuzz-devel fribidi-devel freetype-devel libpng-devel libtiff-devel libjpeg-turbo-devel"
+ENV YUM_INSTALL="autoconf automake htop bc bzip2 bzip2-devel curl curl-devel gcc gcc-c++ git lzma make ncurses-devel perl perl-Data-Dumper perl-Digest-MD5 perl-Switch perl-devel perl-Tk perl-Archive-Tar perl-List-MoreUtils tbb-devel unzip rsync wget which xz xz-devel zlib zlib-devel java-1.8.0 openssl-devel R-devel libcurl htslib htslib-devel tcl libffi-devel libxml2-devel harfbuzz-devel fribidi-devel freetype-devel libpng-devel libtiff-devel libjpeg-turbo-devel libtool"
 
 ENV YUM_REMOVE="autoconf automake bzip2-devel ncurses-devel perl-devel tbb-devel xz-devel zlib-devel curl-devel htslib-devel libcurl-devel libcurl-openssl-devel libxml2-devel"
 
