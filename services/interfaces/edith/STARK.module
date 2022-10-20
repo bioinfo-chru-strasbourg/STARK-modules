@@ -1,0 +1,24 @@
+{
+  "submodules": {
+    "edith": {
+      "services": {
+        "dashboard": {
+          "code": "dashboard",
+          "name": "EDITH",
+          "description": "EDITH Dashboard resuming main informations on runs, analyses and results. Provides available IHM services organized in modules",
+          "release": "1.2.0.0",
+          "type": "IHM",
+          "available": true,
+          "link": {
+            "available": true,
+            "protocol": "http",
+            "ip": "",
+            "port": "4202",
+            "port_inner": "80",
+            "path": ""
+          }
+        }
+      }
+    }
+  }
+}
