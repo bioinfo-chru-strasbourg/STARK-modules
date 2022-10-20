@@ -230,6 +230,10 @@ def configfile(run_informations):
         os.path.dirname(configfile), f"tmp.{os.path.basename(configfile)}"
     )
 
+    if not os.path.isfile(configfile):
+        log.error(f"There is no configfile linked to this application, please create one and launch the analysis again")
+        raise ValueError(configfile)
+
     with open(configfile, "r") as read_file:
         for line in read_file.readlines():
             line = line.strip()
@@ -334,6 +338,9 @@ def configfile(run_informations):
 
                     for extann_file in reversed(extann_file_list):
                         if os.path.isfile(extann_file) and len(extann_file_list) != 0:
+                            log.info(
+                                f"Using the following for your analysis : {extann_file}"
+                            )
                             continue
                         elif (
                             not os.path.isfile(extann_file)
