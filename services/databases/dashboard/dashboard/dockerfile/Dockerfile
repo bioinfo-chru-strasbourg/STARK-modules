@@ -1,5 +1,5 @@
 # Dockerfile
-FROM php:7.4-apache-buster
+FROM php:7.4-apache
 
 ENV COMPOSER_ALLOW_SUPERUSER=1
 

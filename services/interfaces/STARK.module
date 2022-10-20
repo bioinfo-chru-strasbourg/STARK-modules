@@ -1,8 +1,0 @@
-{
-  "code" : "interfaces",
-  "name": "Interfaces",
-  "fullname": "STARK dashboard & interfaces",
-  "description": "INTERFACES provides IHM as a Dashboard, monitoring interfaces, services interfaces for STARK analyses, results and modules.",
-  "release": "1.0",
-  "available": true
-}
