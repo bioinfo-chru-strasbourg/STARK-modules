@@ -1,0 +1,15 @@
+##fileformat=VCFv4.3
+##fileDate=02/12/2021
+##source=AnnotSV_annotation
+##InputFile=/app/test/ACE2105804.canoes.annotsv.tsv
+##reference=/STARK/databases/genomes/current/hg19.fa
+##contig=<ID=chr7,length=159138663,assembly=/STARK/databases/genomes/current/hg19.fa>
+##ALT=<ID=DEL,Description="Deletion">
+##INFO=<ID=ACMG,Number=1,Type=Float,Description="ACMG genes">
+##INFO=<ID=DDD_status,Number=1,Type=Float,Description="DDD status">
+##INFO=<ID=DDD_mode,Number=1,Type=Float,Description="DDD allelic requirement">
+##INFO=<ID=DDD_consequence,Number=1,Type=Float,Description="DDD mutation consequence">
+##INFO=<ID=DDD_disease,Number=1,Type=Float,Description="DDD disease name">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	ACE2105804
+chr7	74166360	.	G	<DEL>	.	PASS	AnnotSV_ID=7_74166361_74173228_DEL;SV_end=74173228;SV_length=6867;SV_type=DEL;AnnotSV_type=split;Gene_name=GTF2I;NM=NM_001163636;CDS_length=528.0;tx_length=6868.0;location=intron26-intron33;intersectStart=74166361.0;intersectEnd=74173228.0;DGV_GAIN_n_samples_with_SV=0;DGV_GAIN_n_samples_tested=0;DGV_GAIN_Frequency=-1.0;DGV_LOSS_n_samples_with_SV=0;DGV_LOSS_n_samples_tested=0;DGV_LOSS_Frequency=-1.0;GD_AF=-1.0;GD_POPMAX_AF=-1.0;DDD_SV=7:74142983-74317139;DDD_DUP_n_samples_with_SV=1.0;DDD_DUP_Frequency=0.001183432;DDD_DEL_n_samples_with_SV=3.0;DDD_DEL_Frequency=0.003550296;1000g_AF=-1.0;1000g_max_AF=-1.0;IMH_AF=-1.0;IMH_ID_others=7:39546632-99949025_INV,7:55955254-100292055_INV,7:66631328-143298938_INV,7:67635773-98083201_INV;HI_CGscore=0.0;TriS_CGscore=0.0;HI_DDDpercent=33.5;synZ_ExAC=0.964550444182401;misZ_ExAC=4.23220859072885;pLI_ExAC=0.998398520586018;AnnotSV_ranking=4	GT	./.
