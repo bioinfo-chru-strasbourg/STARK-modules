@@ -109,7 +109,8 @@ foreach ($inputs_manifests as $key => $input_manifest_file_path) {
 if (!isset($_SESSION["data"]["index"]["repositories"])) {
 	#$_SESSION["data"]["index"]["repositories"]["runs_repositories"]=preg_grep("#^[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/STARKCopyComplete.txt$#", array_unique(file("$folder_indexes/repositories.idx")));
 	#$_SESSION["data"]["index"]["repositories"]["runs_repositories"]=preg_grep("#^[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/*stark.report.html$#", array_unique(file("$folder_indexes/repositories.idx")));	
-	$_SESSION["data"]["index"]["repositories"]["runs_repositories"]=preg_grep("#^.*stark.report.(html|pdf)$#", array_unique(file("$folder_indexes/repositories.idx")));	
+	#$_SESSION["data"]["index"]["repositories"]["runs_repositories"]=preg_grep("#^.*stark.report.(html|pdf)$#", array_unique(file("$folder_indexes/repositories.idx")));	
+	$_SESSION["data"]["index"]["repositories"]["runs_repositories"]=preg_grep("#^.*report.(html|pdf)$#", array_unique(file("$folder_indexes/repositories.idx")));	
 	$_SESSION["data"]["index"]["repositories"]["runs_repositories_samples_files"]=preg_grep("#^[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/.*$#", array_unique(file("$folder_indexes/repositories.idx")));
 	#$_SESSION["data"]["index"]["repositories"]["runs_repositories"]=preg_grep("#^[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/STARKCopyComplete.txt$#", array_unique(file("$folder_indexes/repositories.idx")));
 	#$_SESSION["data"]["index"]["repositories"]["runs_repositories"]=preg_grep("#^[^\/]*/[^\/]*/[^\/]*/[^\/]*/[^\/]*/.*$#", array_unique(file("$folder_indexes/repositories.idx")));
@@ -164,7 +165,7 @@ foreach ($runs_repositories as $key => $file_path) {
 	#$runs_repositories_corrected["$repositories_root/$repository/$group/$project/$run/$sample/$file"]=$file_path;
 	$runs_repositories_corrected[$key]=trim("$repositories_root/$repository/$group/$project/$run/$sample/$file");
 
-	$total_runs_list[$run]++;
+	$total_runs_list[$run][$runs_repositories_corrected[$key]]=$runs_repositories_corrected[$key];
 
 };
 
