@@ -164,7 +164,7 @@ foreach ($runs_repositories as $key => $file_path) {
 	#$runs_repositories_corrected["$repositories_root/$repository/$group/$project/$run/$sample/$file"]=$file_path;
 	$runs_repositories_corrected[$key]=trim("$repositories_root/$repository/$group/$project/$run/$sample/$file");
 
-	$total_runs_list[$run]++;
+	$total_runs_list[$run][$runs_repositories_corrected[$key]]=$runs_repositories_corrected[$key];
 
 };
 
