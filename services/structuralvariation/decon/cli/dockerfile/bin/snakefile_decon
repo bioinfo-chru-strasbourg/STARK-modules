@@ -493,9 +493,9 @@ if bed_file and genes_file and customexon_regen == False:
 			cat_panel_list = [basepath + "/" + s for s in cat_panel_list]
 		with open(cat_list_genes, 'w+') as f:
 			f.write('\t'.join(cat_panel_list))
-		shell(" xargs --delimiter='\\n' cat <"+cat_list_genes+" >> "+cat_panels_bed+" ")
+		shell(" xargs --delimiter='\\t' cat <"+cat_list_genes+" >> "+cat_panels_bed+" ")
 	else:
-		shell(" xargs --delimiter='\\n' cat <"+genes_file+" >> "+cat_panels_bed+" ")
+		shell(" xargs --delimiter='\\t' cat <"+genes_file+" >> "+cat_panels_bed+" ")
 	df = pd.read_csv(cat_panels_bed,  sep='\t')
 	df = df.drop_duplicates()
 	df.to_csv(cat_noduplicate_panels_bed, sep='\t', index=False, header=False)
