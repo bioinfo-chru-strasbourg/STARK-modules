@@ -1,0 +1,16 @@
+{
+  "submodules": {
+    "slurm": {
+      "services": {
+        "scaleout": {
+          "code": "scaleout",
+          "name": "COMMON scaleout service",
+          "type": "scaleout",
+          "description": "Common scaleout, create image and configure scaleout.",
+          "release": "1.0",
+          "available": false
+        }
+      }
+    }
+  }
+}
