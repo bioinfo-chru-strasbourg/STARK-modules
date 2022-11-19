@@ -46,16 +46,33 @@ volumes:
   src:
   container-shared:
   munge:
-  tmp:
-    # driver: local
-    # driver_opts:
-    #    o: bind
-    #    type: none
-    #    device: ${MAIN_MODULE_MOUNT}/tmp
-  run:
-  run-lock:
   mysql:
-  journal: #- /var/lib/journal
+  # slurmdbd
+  tmp_slurmdbd:
+  run_slurmdbd:
+  run-lock_slurmdbd:
+  journal_slurmdbd:
+  # mgmtnode
+  tmp_mgmtnode:
+  run_mgmtnode:
+  run-lock_mgmtnode:
+  journal_mgmtnode:
+  # login
+  tmp_login:
+  run_login:
+  run-lock_login:
+  journal_login:
+  # node00
+  tmp_node00:
+  run_node00:
+  run-lock_node00:
+  journal_node00:
+  # rest
+  tmp_rest:
+  run_rest:
+  run-lock_rest:
+  journal_rest:
+  # Config
   cluster-cfg:
     driver: local
     driver_opts:
@@ -175,10 +192,18 @@ services:
 
       - /var/run/docker.sock:/var/run/docker.sock
 
-      - tmp:/tmp
-      - run:/run/
-      - run-lock:/run/lock/
-      - journal:/var/lib/journal
+      # - tmp:/tmp
+      # - run:/run/
+      # - run-lock:/run/lock/
+      # - journal:/var/lib/journal
+      # - /tmp
+      # - /run
+      # - /run/lock
+      # - /var/lib/journal
+      - tmp_slurmdbd:/tmp
+      - run_slurmdbd:/run
+      - run-lock_slurmdbd:/run/lock
+      - journal_slurmdbd:/var/lib/journal
 
       - cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
 
@@ -258,10 +283,18 @@ services:
 
       - munge:/etc/munge
 
-      - tmp:/tmp
-      - run:/run/
-      - run-lock:/run/lock/
-      - journal:/var/lib/journal
+      # - tmp:/tmp
+      # - run:/run/
+      # - run-lock:/run/lock/
+      # - journal:/var/lib/journal
+      # - /tmp
+      # - /run
+      # - /run/lock
+      # - /var/lib/journal
+      - tmp_mgmtnode:/tmp
+      - run_mgmtnode:/run
+      - run-lock_mgmtnode:/run/lock
+      - journal_mgmtnode:/var/lib/journal
 
       - cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
 
@@ -340,10 +373,18 @@ services:
 
       - /var/run/docker.sock:/var/run/docker.sock
 
-      - tmp:/tmp
-      - run:/run/
-      - run-lock:/run/lock/
-      - journal:/var/lib/journal
+      # - tmp:/tmp
+      # - run:/run/
+      # - run-lock:/run/lock/
+      # - journal:/var/lib/journal
+      # - /tmp
+      # - /run
+      # - /run/lock
+      # - /var/lib/journal
+      - tmp_login:/tmp
+      - run_login:/run
+      - run-lock_login:/run/lock
+      - journal_login:/var/lib/journal
 
       - cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
       
@@ -417,10 +458,18 @@ services:
 
       - /var/run/docker.sock:/var/run/docker.sock
 
-      - tmp:/tmp
-      - run:/run/
-      - run-lock:/run/lock/
-      - journal:/var/lib/journal
+      # - tmp:/tmp
+      # - run:/run/
+      # - run-lock:/run/lock/
+      # - journal:/var/lib/journal
+      # - /tmp
+      # - /run
+      # - /run/lock
+      # - /var/lib/journal
+      - tmp_node00:/tmp
+      - run_node00:/run
+      - run-lock_node00:/run/lock
+      - journal_node00:/var/lib/journal
 
       - cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
 
@@ -555,10 +604,18 @@ services:
 
       - /var/run/docker.sock:/var/run/docker.sock
 
-      - tmp:/tmp
-      - run:/run/
-      - run-lock:/run/lock/
-      - journal:/var/lib/journal
+      # - tmp:/tmp
+      # - run:/run/
+      # - run-lock:/run/lock/
+      # - journal:/var/lib/journal
+      # - /tmp
+      # - /run
+      # - /run/lock
+      # - /var/lib/journal
+      - tmp_rest:/tmp
+      - run_rest:/run
+      - run-lock_rest:/run/lock
+      - journal_rest:/var/lib/journal
 
       - cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
 
