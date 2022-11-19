@@ -1,6 +1,6 @@
 #!/bin/bash
 #only configure once
-[ -f /var/run/slurmctld.startup ] && exit 0
+#[ -f /var/run/slurmctld.startup ] && exit 0
 
 sed -e '/^hosts:/d' -i /etc/nsswitch.conf
 echo 'hosts:      files myhostname' >> /etc/nsswitch.conf
@@ -13,14 +13,24 @@ do
 done
 
 
-
 CLUSTERNAME="$(awk -F= '/^ClusterName=/ {print $2}' /etc/slurm/slurm.conf)"
 [ -z "$CLUSTERNAME" ] && echo 'no cluster name' && exit 1
+
+# Add cluster
 sacctmgr -vi add cluster "$CLUSTERNAME"
+# Add account
 sacctmgr -vi add account admin Cluster="$CLUSTERNAME" Description="none" Organization="none"
+# Add user
 sacctmgr -vi add user root Account=admin DefaultAccount=admin
 sacctmgr -vi add user slurm Account=admin DefaultAccount=admin
-
+# Add QOSs:
+sacctmgr -i add qos high
+sacctmgr -i add qos medium
+sacctmgr -i add qos low
+# Load cluster.cfg
+if [ ! -s /lab_scripts/cluster.cfg ]; then
+	touch /lab_scripts/cluster.cfg
+fi;
 sacctmgr -vi load /lab_scripts/cluster.cfg
 
 # #for i in arnold bambam barney betty chip dino edna fred gazoo pebbles wilma

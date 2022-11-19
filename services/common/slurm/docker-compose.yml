@@ -412,7 +412,7 @@ services:
     #     #   cpus: 6
     #     #   memory: 48G
 
-    mem_limit: 500m
+    # mem_limit: 500m
 
     tty: true
 

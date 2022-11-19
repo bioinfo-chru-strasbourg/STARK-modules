@@ -21,7 +21,7 @@ echo "Starting slurm daemon"
 echo "---------------------"
 pdsh systemctl restart slurmd
 # Make sure the slurmd daemon is running..
-until ssh node01 '(ps -ef|grep -v grep|grep slurmd)' ; do
+until ssh node00 '(ps -ef|grep -v grep|grep slurmd)' ; do
    sleep 1
 done
 # Add an additional, tunable delay in seconds, just to be sure...
@@ -35,6 +35,7 @@ echo
 echo "-----------------------------------"
 echo "Updating state of nodes to 'resume'"
 echo "-----------------------------------"
-scontrol update nodename=node[00-09] state=resume 2>/dev/null
+#scontrol update nodename=node[00-09] state=resume 2>/dev/null
+scontrol update nodename=node00 state=resume 2>/dev/null
 
 exit
