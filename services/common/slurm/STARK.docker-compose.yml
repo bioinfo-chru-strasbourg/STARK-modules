@@ -24,7 +24,7 @@ networks:
       config:
         #- subnet: "10.11.0.0/16"
         - subnet: "${SUBNET}.0.0/16"
-        - subnet: "${SUBNET6}::/64"
+        - subnet: "${SUBNET6}:/64"
 
   stark_stark:
     external: 
@@ -100,7 +100,7 @@ services:
       context: ./sql_server
       args:
         SUBNET: "${SUBNET}" #"10.11"
-        SUBNET6: "${SUBNET6}::"
+        SUBNET6: "${SUBNET6}:"
       network: host
 
     environment:
@@ -109,7 +109,7 @@ services:
       - MYSQL_PASSWORD=password
       - MYSQL_DATABASE=slurm_acct_db
       - SUBNET=${SUBNET}
-      - SUBNET6="${SUBNET6}::"
+      - SUBNET6="${SUBNET6}:"
 
     volumes:
       - /dev/log:/dev/log
@@ -136,23 +136,23 @@ services:
     networks:
       internal:
         ipv4_address: "${SUBNET}.1.3"
-        ipv6_address: "${SUBNET6}::1:3"
+        ipv6_address: "${SUBNET6}:1:3"
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
-      - "db:${SUBNET6}::1:3"
+      - "db:${SUBNET6}:1:3"
       - "slurmdbd:${SUBNET}.1.2"
-      - "slurmdbd:${SUBNET6}::1:2"
+      - "slurmdbd:${SUBNET6}:1:2"
       - "mgmtnode:${SUBNET}.1.1"
-      - "mgmtnode:${SUBNET6}::1:1"
+      - "mgmtnode:${SUBNET6}:1:1"
       - "login:${SUBNET}.1.5"
-      - "login:${SUBNET6}::1:5"
+      - "login:${SUBNET6}:1:5"
       - "rest:${SUBNET}.1.6"
-      - "rest:${SUBNET6}::1:6"
+      - "rest:${SUBNET6}:1:6"
       - "proxy:${SUBNET}.1.7"
-      - "proxy:${SUBNET6}::1:7"
+      - "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
-      - "openondemand:${SUBNET6}::1:21"
+      - "openondemand:${SUBNET6}:1:21"
 
 
 
@@ -164,7 +164,7 @@ services:
         DOCKER_FROM: almalinux
         SLURM_RELEASE: master
         SUBNET: "${SUBNET}"
-        SUBNET6: "${SUBNET6}::"
+        SUBNET6: "${SUBNET6}:"
         CACHE_DESTROYER: "1667128123"
       network: host
 
@@ -179,7 +179,7 @@ services:
     networks:
       internal:
         ipv4_address: "${SUBNET}.1.2"
-        ipv6_address: "${SUBNET6}::1:2"
+        ipv6_address: "${SUBNET6}:1:2"
 
     volumes:
       - root-home:/root
@@ -197,14 +197,7 @@ services:
 
       - /var/run/docker.sock:/var/run/docker.sock
 
-      # - tmp:/tmp
-      # - run:/run/
-      # - run-lock:/run/lock/
-      # - journal:/var/lib/journal
-      # - /tmp
-      # - /run
-      # - /run/lock
-      # - /var/lib/journal
+
       - tmp_slurmdbd:/tmp
       - run_slurmdbd:/run
       - run-lock_slurmdbd:/run/lock
@@ -233,19 +226,19 @@ services:
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
-      - "db:${SUBNET6}::1:3"
+      - "db:${SUBNET6}:1:3"
       - "slurmdbd:${SUBNET}.1.2"
-      - "slurmdbd:${SUBNET6}::1:2"
+      - "slurmdbd:${SUBNET6}:1:2"
       - "mgmtnode:${SUBNET}.1.1"
-      - "mgmtnode:${SUBNET6}::1:1"
+      - "mgmtnode:${SUBNET6}:1:1"
       - "login:${SUBNET}.1.5"
-      - "login:${SUBNET6}::1:5"
+      - "login:${SUBNET6}:1:5"
       - "rest:${SUBNET}.1.6"
-      - "rest:${SUBNET6}::1:6"
+      - "rest:${SUBNET6}:1:6"
       - "proxy:${SUBNET}.1.7"
-      - "proxy:${SUBNET6}::1:7"
+      - "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
-      - "openondemand:${SUBNET6}::1:21"
+      - "openondemand:${SUBNET6}:1:21"
 
 
 
@@ -255,7 +248,7 @@ services:
 
     environment:
       - SUBNET="${SUBNET}"
-      - SUBNET6="${SUBNET6}::"
+      - SUBNET6="${SUBNET6}:"
       - container=docker
 
     hostname: mgmtnode
@@ -263,7 +256,7 @@ services:
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.1
-        ipv6_address: ${SUBNET6}::1:1
+        ipv6_address: ${SUBNET6}:1:1
       stark_stark:
 
     volumes:
@@ -288,14 +281,7 @@ services:
 
       - munge:/etc/munge
 
-      # - tmp:/tmp
-      # - run:/run/
-      # - run-lock:/run/lock/
-      # - journal:/var/lib/journal
-      # - /tmp
-      # - /run
-      # - /run/lock
-      # - /var/lib/journal
+
       - tmp_mgmtnode:/tmp
       - run_mgmtnode:/run
       - run-lock_mgmtnode:/run/lock
@@ -325,19 +311,19 @@ services:
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
-      - "db:${SUBNET6}::1:3"
+      - "db:${SUBNET6}:1:3"
       - "slurmdbd:${SUBNET}.1.2"
-      - "slurmdbd:${SUBNET6}::1:2"
+      - "slurmdbd:${SUBNET6}:1:2"
       - "mgmtnode:${SUBNET}.1.1"
-      - "mgmtnode:${SUBNET6}::1:1"
+      - "mgmtnode:${SUBNET6}:1:1"
       - "login:${SUBNET}.1.5"
-      - "login:${SUBNET6}::1:5"
+      - "login:${SUBNET6}:1:5"
       - "rest:${SUBNET}.1.6"
-      - "rest:${SUBNET6}::1:6"
+      - "rest:${SUBNET6}:1:6"
       - "proxy:${SUBNET}.1.7"
-      - "proxy:${SUBNET6}::1:7"
+      - "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
-      - "openondemand:${SUBNET6}::1:21"
+      - "openondemand:${SUBNET6}:1:21"
 
 
 
@@ -347,7 +333,7 @@ services:
 
     environment:
       - SUBNET="${SUBNET}"
-      - SUBNET6="${SUBNET6}::"
+      - SUBNET6="${SUBNET6}:"
       - container=docker
 
     hostname: login
@@ -355,7 +341,7 @@ services:
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.5
-        ipv6_address: ${SUBNET6}::1:5
+        ipv6_address: ${SUBNET6}:1:5
 
     volumes:
       - root-home:/root
@@ -378,14 +364,7 @@ services:
 
       - /var/run/docker.sock:/var/run/docker.sock
 
-      # - tmp:/tmp
-      # - run:/run/
-      # - run-lock:/run/lock/
-      # - journal:/var/lib/journal
-      # - /tmp
-      # - /run
-      # - /run/lock
-      # - /var/lib/journal
+
       - tmp_login:/tmp
       - run_login:/run
       - run-lock_login:/run/lock
@@ -412,19 +391,19 @@ services:
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
-      - "db:${SUBNET6}::1:3"
+      - "db:${SUBNET6}:1:3"
       - "slurmdbd:${SUBNET}.1.2"
-      - "slurmdbd:${SUBNET6}::1:2"
+      - "slurmdbd:${SUBNET6}:1:2"
       - "mgmtnode:${SUBNET}.1.1"
-      - "mgmtnode:${SUBNET6}::1:1"
+      - "mgmtnode:${SUBNET6}:1:1"
       - "login:${SUBNET}.1.5"
-      - "login:${SUBNET6}::1:5"
+      - "login:${SUBNET6}:1:5"
       - "rest:${SUBNET}.1.6"
-      - "rest:${SUBNET6}::1:6"
+      - "rest:${SUBNET6}:1:6"
       - "proxy:${SUBNET}.1.7"
-      - "proxy:${SUBNET6}::1:7"
+      - "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
-      - "openondemand:${SUBNET6}::1:21"
+      - "openondemand:${SUBNET6}:1:21"
 
 
 
@@ -434,15 +413,18 @@ services:
 
     environment:
       - SUBNET="${SUBNET}"
-      - SUBNET6="${SUBNET6}::"
+      - SUBNET6="${SUBNET6}:"
+      - NODE_NAME=${NODE00_NAME}
+      - NODE_IP4=${NODE00_IP4}
+      - NODE_IP6=${NODE00_IP6}
       - container=docker
 
     hostname: node00
 
     networks:
       internal:
-        ipv4_address: ${SUBNET}.5.0
-        ipv6_address: ${SUBNET6}::5:0
+        ipv4_address: ${NODE00_IP4}
+        ipv6_address: ${NODE00_IP6}
 
     volumes:
       - root-home:/root
@@ -463,14 +445,7 @@ services:
 
       - /var/run/docker.sock:/var/run/docker.sock
 
-      # - tmp:/tmp
-      # - run:/run/
-      # - run-lock:/run/lock/
-      # - journal:/var/lib/journal
-      # - /tmp
-      # - /run
-      # - /run/lock
-      # - /var/lib/journal
+
       - tmp_node00:/tmp
       - run_node00:/run
       - run-lock_node00:/run/lock
@@ -478,27 +453,6 @@ services:
 
       - cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
 
-    # ulimits:
-    #   nproc:
-    #     soft: 4
-    #     hard: 4
-    #   nofile:
-    #     soft: 131072
-    #     hard: 131072
-    #   memlock:
-    #     soft: 48000
-    #     hard: 48000
-
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '1'
-    #       memory: 64G
-    #     # reservations:
-    #     #   cpus: 6
-    #     #   memory: 48G
-
-    # mem_limit: 500m
 
     tty: true
 
@@ -521,19 +475,19 @@ services:
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
-      - "db:${SUBNET6}::1:3"
+      - "db:${SUBNET6}:1:3"
       - "slurmdbd:${SUBNET}.1.2"
-      - "slurmdbd:${SUBNET6}::1:2"
+      - "slurmdbd:${SUBNET6}:1:2"
       - "mgmtnode:${SUBNET}.1.1"
-      - "mgmtnode:${SUBNET6}::1:1"
+      - "mgmtnode:${SUBNET6}:1:1"
       - "login:${SUBNET}.1.5"
-      - "login:${SUBNET6}::1:5"
+      - "login:${SUBNET6}:1:5"
       - "rest:${SUBNET}.1.6"
-      - "rest:${SUBNET6}::1:6"
+      - "rest:${SUBNET6}:1:6"
       - "proxy:${SUBNET}.1.7"
-      - "proxy:${SUBNET6}::1:7"
+      - "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
-      - "openondemand:${SUBNET6}::1:21"
+      - "openondemand:${SUBNET6}:1:21"
 
 
 
@@ -547,7 +501,7 @@ services:
 
     environment:
       - SUBNET="${SUBNET}"
-      - SUBNET6="${SUBNET6}::"
+      - SUBNET6="${SUBNET6}:"
       - DEFAULT_SSHHOST=login
 
     volumes:
@@ -558,7 +512,7 @@ services:
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.21
-        ipv6_address: ${SUBNET6}::1:21
+        ipv6_address: ${SUBNET6}:1:21
 
     depends_on:
       - "login"
@@ -592,7 +546,7 @@ services:
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.6
-        ipv6_address: ${SUBNET6}::1:6
+        ipv6_address: ${SUBNET6}:1:6
       stark_stark:
 
     volumes:
@@ -609,14 +563,7 @@ services:
 
       - /var/run/docker.sock:/var/run/docker.sock
 
-      # - tmp:/tmp
-      # - run:/run/
-      # - run-lock:/run/lock/
-      # - journal:/var/lib/journal
-      # - /tmp
-      # - /run
-      # - /run/lock
-      # - /var/lib/journal
+
       - tmp_rest:/tmp
       - run_rest:/run
       - run-lock_rest:/run/lock
@@ -645,19 +592,19 @@ services:
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
-      - "db:${SUBNET6}::1:3"
+      - "db:${SUBNET6}:1:3"
       - "slurmdbd:${SUBNET}.1.2"
-      - "slurmdbd:${SUBNET6}::1:2"
+      - "slurmdbd:${SUBNET6}:1:2"
       - "mgmtnode:${SUBNET}.1.1"
-      - "mgmtnode:${SUBNET6}::1:1"
+      - "mgmtnode:${SUBNET6}:1:1"
       - "login:${SUBNET}.1.5"
-      - "login:${SUBNET6}::1:5"
+      - "login:${SUBNET6}:1:5"
       - "rest:${SUBNET}.1.6"
-      - "rest:${SUBNET6}::1:6"
+      - "rest:${SUBNET6}:1:6"
       - "proxy:${SUBNET}.1.7"
-      - "proxy:${SUBNET6}::1:7"
+      - "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
-      - "openondemand:${SUBNET6}::1:21"
+      - "openondemand:${SUBNET6}:1:21"
 
 
 
@@ -671,7 +618,7 @@ services:
 
     environment:
       - SUBNET="${SUBNET}"
-      - SUBNET6="${SUBNET6}::"
+      - SUBNET6="${SUBNET6}:"
       - container=docker
 
     hostname: proxy
@@ -681,7 +628,7 @@ services:
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.7
-        ipv6_address: ${SUBNET6}::1:7
+        ipv6_address: ${SUBNET6}:1:7
 
     volumes:
       - auth:/auth/
@@ -711,17 +658,17 @@ services:
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
-      - "db:${SUBNET6}::1:3"
+      - "db:${SUBNET6}:1:3"
       - "slurmdbd:${SUBNET}.1.2"
-      - "slurmdbd:${SUBNET6}::1:2"
+      - "slurmdbd:${SUBNET6}:1:2"
       - "mgmtnode:${SUBNET}.1.1"
-      - "mgmtnode:${SUBNET6}::1:1"
+      - "mgmtnode:${SUBNET6}:1:1"
       - "login:${SUBNET}.1.5"
-      - "login:${SUBNET6}::1:5"
+      - "login:${SUBNET6}:1:5"
       - "rest:${SUBNET}.1.6"
-      - "rest:${SUBNET6}::1:6"
+      - "rest:${SUBNET6}:1:6"
       - "proxy:${SUBNET}.1.7"
-      - "proxy:${SUBNET6}::1:7"
+      - "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
-      - "openondemand:${SUBNET6}::1:21"
+      - "openondemand:${SUBNET6}:1:21"
 

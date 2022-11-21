@@ -5,6 +5,48 @@
 sed -e '/^hosts:/d' -i /etc/nsswitch.conf
 echo 'hosts:      files myhostname' >> /etc/nsswitch.conf
 
+# Nodes
+if [ ! -s /config/nodelist ] || [ ! -s /config/hosts.nodes ] || [ ! -s /config/hosts ]; then
+	touch /config/nodelist /config/hosts.nodes /config/hosts
+fi;
+
+if [ -s /etc/hosts ]; then
+	cat /etc/hosts /config/hosts | sort -u >> /config/hosts
+fi;
+
+if [ ! -z "$NODE_NAME" ]; then
+	if ! grep -Fxq "$NODE_NAME $NODE_IP4 $NODE_IP6" /config/nodelist; then
+		echo -e "$NODE_NAME $NODE_IP4 $NODE_IP6" >> /config/nodelist
+	fi
+	#echo -e "$NODE_NAME $NODE_IP4 $NODE_IP6" >> /config/nodelist
+	if ! grep -Fxq ""$NODE_IP4 $NODE_NAME"" /config/hosts.nodes; then
+		echo -e ""$NODE_IP4 $NODE_NAME"" >> /config/hosts.nodes
+	fi
+	if ! grep -Fxq ""$NODE_IP6 $NODE_NAME"" /config/hosts.nodes; then
+		echo -e ""$NODE_IP6 $NODE_NAME"" >> /config/hosts.nodes
+	fi
+	# echo -e "$NODE_IP4 $NODE_NAME" >> /config/hosts.nodes
+	# echo -e "$NODE_IP6 $NODE_NAME" >> /config/hosts.nodes
+	if ! grep -Fxq ""$NODE_IP4 $NODE_NAME"" /config/hosts; then
+		echo -e ""$NODE_IP4 $NODE_NAME"" >> /config/hosts
+	fi
+	if ! grep -Fxq ""$NODE_IP6 $NODE_NAME"" /config/hosts; then
+		echo -e ""$NODE_IP6 $NODE_NAME"" >> /config/hosts
+	fi
+fi;
+
+awk -i inplace '!seen[$0]++'  /config/nodelist
+awk -i inplace '!seen[$0]++'  /config/hosts.nodes
+awk -i inplace '!seen[$0]++'  /config/hosts
+
+ln -sfn /config/nodelist /etc/nodelist
+ln -sfn /config/hosts.nodes /etc/hosts.nodes
+ln -sfn /config/hosts /etc/hosts
+
+
+
+
+# wait for cluster
 while true
 do
 	sacctmgr show cluster &>/dev/null
