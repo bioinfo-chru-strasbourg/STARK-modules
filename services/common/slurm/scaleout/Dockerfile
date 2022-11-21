@@ -162,24 +162,33 @@ RUN ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa && \
 	chown -R ood:ood /home/ood/.ssh && chmod -R 0700 /home/ood/.ssh
 
 RUN groupadd -g 1005 admin && \
-	groupadd -g 1006 biology && \
-	groupadd -g 1007 bioinfo && \
-	for i in fred wilma; do \
-		/usr/sbin/useradd -c $i -m -g users -G biology $i && \
+	groupadd -g 1006 bioinfo && \
+	groupadd -g 1007 biology && \
+	# Create users \
+	for i in stark fred wilma; do \
+		/usr/sbin/useradd -c $i -m -g users $i && \
 		echo 'password' | passwd $i --stdin && \
 		mkdir -p /home/$i/.ssh && \
 		mkdir -p /srv/containers/$i/ && \
-		chown $i:biology /srv/containers/$i/ && \
 		chmod 0700 /srv/containers/$i/ && \
 		ssh-keygen -f /home/$i/.ssh/id_ecdsa -N '' -t ecdsa && \
 		ssh-keygen -y -f /home/$i/.ssh/id_ecdsa > /home/$i/.ssh/id_ecdsa.pub && \
 		cat /home/$i/.ssh/id_ecdsa.pub >> /home/$i/.ssh/authorized_keys && \
 		chown -R $i:users /home/$i/.ssh && chmod -R 0700 /home/$i/.ssh; \
 		mkdir -p /home/$i/.enroot/{data,cache}; \
-		usermod -G biology $i; \
+	done && \
+	# bioinfo \
+	for i in stark wilma; do \
+		/usr/sbin/usermod -a -G bioinfo stark && \
+		chown $i:bioinfo /srv/containers/$i/ && \
+		/usr/sbin/usermod -G bioinfo $i; \
+	done && \
+	# biology \
+	for i in stark fred; do \
+		/usr/sbin/usermod -a -G bioinfo stark && \
+		chown $i:bioinfo /srv/containers/$i/ && \
+		/usr/sbin/usermod -G bioinfo $i; \
 	done;
-	# usermod -G biology fred && \
-	# usermod -G biology barney
 
 COPY scrun.sh /usr/local/bin/scrun
 RUN chmod 0755 /usr/local/bin/scrun
@@ -209,7 +218,7 @@ RUN awk '{if (match($1, /^(passwd|group)/)) {print $1, "slurm", $2, $3} else {pr
 	echo -e "\nalias ..='cd ..'\n" >> /etc/bashrc && \
 	echo -e "\nalias l='ls -alF'\n" >> /etc/bashrc && \
 	mandb && \
-	mkdir -p -m 0777 /lab_scripts
+	mkdir -p -m 0777 /config
 
 COPY my.cnf /etc/
 RUN sed -e "s#{SUBNET}#${SUBNET}#g" -i /etc/my.cnf && \
@@ -266,7 +275,7 @@ COPY patch /usr/local/src/slurm/patch
 RUN bash -c "if [ -s /usr/local/src/slurm/patch ]; then cd /usr/local/src/slurm/; echo $CACHE_DESTROYER >/dev/null; git pull origin ${SLURM_RELEASE}; git am /usr/local/src/slurm/patch && make -j >/dev/null && make install >/dev/null; fi"
 
 COPY nodelist /etc/nodelist
-COPY lab_scripts/* /lab_scripts/
+COPY config/* /config/
 COPY slurm/ /etc/slurm/
 RUN ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
 	chmod 0600 /etc/slurm/slurmdbd.conf && \

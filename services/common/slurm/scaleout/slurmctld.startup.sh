@@ -24,20 +24,33 @@ sacctmgr -vi add account admin Cluster="$CLUSTERNAME" Description="none" Organiz
 sacctmgr -vi add user root Account=admin DefaultAccount=admin
 sacctmgr -vi add user slurm Account=admin DefaultAccount=admin
 # Add QOSs:
+sacctmgr -i add qos normal
 sacctmgr -i add qos high
 sacctmgr -i add qos medium
 sacctmgr -i add qos low
-# Load cluster.cfg
-if [ ! -s /lab_scripts/cluster.cfg ]; then
-	touch /lab_scripts/cluster.cfg
-fi;
-sacctmgr -vi load /lab_scripts/cluster.cfg
+# Modify user QOS
+sacctmgr -i modify account admin set qos=high
+sacctmgr -i modify user root,slurm set qos=high
 
-# #for i in arnold bambam barney betty chip dino edna fred gazoo pebbles wilma
-# for i in fred wilma
-# do
-# 	sacctmgr -vi add user $i Account=biology DefaultAccount=biology
-# done
+# Load users
+if [ ! -s /config/users.sh ]; then
+	touch /config/users.sh
+fi;
+chmod u+x /config/users.sh
+/config/users.sh
+
+# Load QOS
+if [ ! -s /config/qos.sh ]; then
+	touch /config/qos.sh
+fi;
+chmod u+x /config/qos.sh
+/config/qos.sh
+
+# Load cluster.cfg
+if [ ! -s /config/cluster.cfg ]; then
+	touch /config/cluster.cfg
+fi;
+sacctmgr -vi load /config/cluster.cfg
 
 if [ "$(hostname -s)" = "mgmtnode" ]
 then

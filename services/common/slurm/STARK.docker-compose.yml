@@ -42,7 +42,7 @@ volumes:
   etc-slurm:
   slurmctld:
   mail:
-  auth:
+  
   src:
   container-shared:
   munge:
@@ -79,7 +79,12 @@ volumes:
        o: bind
        type: none
        device: ${CLUSTER_CONFIG_HOST_FOLDER}
-
+  auth:
+    driver: local
+    driver_opts:
+       o: bind
+       type: none
+       device: ${CLUSTER_CONFIG_HOST_FOLDER}
 
 # SERVICES
 ##########
