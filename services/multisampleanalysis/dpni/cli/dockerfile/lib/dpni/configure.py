@@ -75,8 +75,8 @@ class config:
                     exit()
                 vcfile = self.systemcall(
                     "find "
-                    + osj(self.run, samples)
-                    + ' -maxdepth 3 -name "'
+                    + osj(self.run, samples, "STARK", samples+".reports")
+                    + ' -maxdepth 2 -name "'
                     + samples
                     + '.final.vcf.gz"'
                 )[0]

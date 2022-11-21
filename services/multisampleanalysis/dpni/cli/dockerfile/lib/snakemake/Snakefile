@@ -669,8 +669,8 @@ interval_padding = 100
 #seg = {}
 #seg[config["family"]["MOTHER"]["affinity"][0]] = 'MOTHER'
 #seg[config["family"]["FATHER"]["affinity"][0]] = 'FATHER'
-config["family"]["MOTHER"]["affinity"][0] = 'MOTHER'
-config["family"]["FATHER"]["affinity"][0] = 'FATHER'
+#config["family"]["MOTHER"]["affinity"][0] = 'MOTHER'
+#config["family"]["FATHER"]["affinity"][0] = 'FATHER'
 #config["FETUS"]["name"] = 'FETUS'
 whole = list(config["family"].keys())
 whole.append(config["FETUS"]["name"])
@@ -691,15 +691,20 @@ if config["env"]["repository"]:
             #Compress and Index (same cmd in bash above)
             for vcf in input:
                 print(vcf)
-                systemcall(params.bgzip+" --force "+vcf+" && "+params.tabix+" -p vcf "+vcf+".gz")
                 alias = os.path.basename(vcf).split(".", 1)[0]
                 if alias in ["MOTHER", "FATHER"]:
-                    #s = config["family"][os.path.basename(vcf).split(".", 1)[0]]["affinity"][0]
+                    systemcall(params.bgzip+" --force "+vcf+" -c > "+vcf+".tmp.gz && "+params.tabix+" -p vcf "+vcf+".tmp.gz")
+                    #s = config["family"][os.path.basename(vcf).split(".", 1)[0]]
                     #print("#[INFO] rule all ", s)
                     id = config["family"][alias]["affinity"][0]
-                    systemcall("echo "+id+" > "+osj(config["env"]["output"], id))
-                    systemcall(params.bcftools+" reheader -s "+osj(config["env"]["output"], id)+" "+vcf+".gz -o "+osj(config["env"]["output"], id+".final.vcf.gz")+" && "+params.tabix+" -p vcf "+osj(config["env"]["output"], id+".final.vcf.gz"))
-                    alias = id
+                    #print(config["family"][alias]["affinity"][0]
+                    print(alias)
+                    print(id)
+                    systemcall("echo "+id+" > "+osj(config["env"]["output"], alias))
+                    systemcall(params.bcftools+" reheader -s "+osj(config["env"]["output"], alias)+" "+vcf+".tmp.gz -o "+osj(config["env"]["output"], id+".final.vcf.gz")+" && "+params.tabix+" -p vcf "+osj(config["env"]["output"], id+".final.vcf.gz"))
+                else:
+                    systemcall(params.bgzip+" --force "+vcf+" && "+params.tabix+" -p vcf "+vcf+".gz")
+                #   alias = id
                 #copy_repository()
                 #Copying vcf
                 #sample = os.path.basename(vcf).split('.', 1)[0]
@@ -714,7 +719,7 @@ if config["env"]["repository"]:
                 #    systemcall("mv "+osj(config["env"]["repository"], alias, "DPNI/*.final.vcf.gz*")+" "+osj(config["env"],["repository"], alias, "DPNI", "DPNI."+date))
                 #    #Same with log folder
                 #    systemcall("mv "+osj(config["env"]["repository"], alias, "DPNI/.log")+" "+osj(config["env"]["repository"], alias, "DPNI", "DPNI."+date))
-#
+                #
                 #print("#[INFO] Copying sample ", alias)
                 #systemcall("rsync "+alias+".final.vcf.gz* "+osj(config["env"]["repository"], alias, "DPNI/"))
                 #systemcall("rsync -ar "+osj(config["env"]["output"], '.log')+" "+osj(config["env"]["repository"], alias, "DPNI/"))
