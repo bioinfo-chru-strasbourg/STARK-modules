@@ -43,8 +43,15 @@ ln -sfn /config/nodelist /etc/nodelist
 ln -sfn /config/hosts.nodes /etc/hosts.nodes
 ln -sfn /config/hosts /etc/hosts
 
-
-
+# Nodes
+if [ ! -s /config/nodes.conf ]; then
+	if [ -s /etc/slurm/nodes.conf ]; then
+		cp /etc/slurm/nodes.conf /config/nodes.conf
+	else
+		touch /config/nodes.conf
+	fi;
+fi;
+ln -sfn /config/nodes.conf /etc/slurm/nodes.conf
 
 # wait for cluster
 while true
@@ -96,19 +103,23 @@ sacctmgr -vi load /config/cluster.cfg
 
 if [ "$(hostname -s)" = "mgmtnode" ]
 then
-	if [ ! -s /etc/slurm/nodes.conf ]
+	#if [ ! -s /etc/slurm/nodes.conf ]
+	if [ ! -s /config/nodes.conf ]
 	then
 		props="$(slurmd -C | head -1 | sed 's#NodeName=mgmtnode ##g')"
-		echo "NodeName=DEFAULT $props Gres=gpu:gtx:3" >> /etc/slurm/nodes.conf
+		#echo "NodeName=DEFAULT $props Gres=gpu:gtx:3" >> /etc/slurm/nodes.conf
+		echo "NodeName=DEFAULT $props Gres=gpu:gtx:3" >> /config/nodes.conf
 
 		cat /etc/nodelist | while read name ip4 ip6
 		do
 			[ ! -z "$ip6" ] && addr="$ip6" || addr="$ip4"
-			echo "NodeName=$name NodeAddr=$addr" >> /etc/slurm/nodes.conf
+			#echo "NodeName=$name NodeAddr=$addr" >> /etc/slurm/nodes.conf
+			echo "NodeName=$name NodeAddr=$addr" >> /config/nodes.conf
 		done
 	fi
 else
-	while [ ! -s /etc/slurm/nodes.conf ]
+	#while [ ! -s /etc/slurm/nodes.conf ]
+	while [ ! -s /config/nodes.conf ]
 	do
 		sleep 0.25
 	done
