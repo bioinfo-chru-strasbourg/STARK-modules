@@ -96,7 +96,7 @@ services:
 
   stark-module-common-submodule-slurm-service-db:
 
-    image: stark/sql_server:latest
+    image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-sql_server:${DOCKER_STARK_MODULE_SUBMODULE_RELEASE}
 
     build:
       context: ./sql_server
@@ -167,14 +167,16 @@ services:
     build:
       context: ./scaleout
       args:
-        DOCKER_FROM: almalinux
-        SLURM_RELEASE: master
+        # DOCKER_FROM: almalinux # almalinux
+        # SLURM_RELEASE: master # master
+        DOCKER_FROM: almalinux:8.7 # almalinux
+        SLURM_RELEASE: slurm-22.05 # master
         SUBNET: "${SUBNET}"
         SUBNET6: "${SUBNET6}:"
         CACHE_DESTROYER: "1667128123"
       network: host
 
-    image: stark/scaleout:latest
+    image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-scaleout:${DOCKER_STARK_MODULE_SUBMODULE_RELEASE}
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-slurmdbd
 
@@ -249,7 +251,7 @@ services:
 
   stark-module-common-submodule-slurm-service-mgmtnode:
 
-    image: stark/scaleout:latest
+    image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-scaleout:${DOCKER_STARK_MODULE_SUBMODULE_RELEASE}
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-mgmtnode
 
@@ -331,7 +333,7 @@ services:
 
   stark-module-common-submodule-slurm-service-login:
 
-    image: stark/scaleout:latest
+    image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-scaleout:${DOCKER_STARK_MODULE_SUBMODULE_RELEASE}
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-login
 
@@ -409,7 +411,7 @@ services:
 
   stark-module-common-submodule-slurm-service-node00:
 
-    image: stark/scaleout:latest
+    image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-scaleout:${DOCKER_STARK_MODULE_SUBMODULE_RELEASE}
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-node00
 
@@ -495,7 +497,7 @@ services:
       context: ./openondemand
       network: host
 
-    image: stark/openondemand
+    image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-openondemand
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-openondemand
 
@@ -520,7 +522,8 @@ services:
       - "stark-module-common-submodule-slurm-service-login"
 
     ports:
-      - 8081:80
+      - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_OPENONDEMAND_PORT_PUBLISHED}:80 #8081:80
+      #- 8081:80 #8081:80
 
     tty: true
 
@@ -544,7 +547,7 @@ services:
 
     hostname: rest
 
-    image: stark/scaleout:latest
+    image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-scaleout:${DOCKER_STARK_MODULE_SUBMODULE_RELEASE}
 
     networks:
       slurm_internal:
@@ -617,7 +620,7 @@ services:
       context: ./proxy
       network: host
 
-    image: stark/proxy:latest
+    image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-proxy:${DOCKER_STARK_MODULE_SUBMODULE_RELEASE}
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-proxy
 
@@ -658,7 +661,8 @@ services:
       - apparmor:unconfined
 
     ports:
-      - 8080:8080
+      - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PROXY_PORT_PUBLISHED}:8080 # 8080:8080
+      #- 8080:8080 # 8080:8080
 
     depends_on:
       - "stark-module-common-submodule-slurm-service-rest"
