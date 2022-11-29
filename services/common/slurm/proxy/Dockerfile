@@ -1,4 +1,5 @@
-FROM alpine
+#FROM alpine
+FROM php:8.0.5-fpm-alpine
 RUN mkdir -p /run/nginx/ /var/www/html/validate /var/www/html/auth
 RUN mkdir -p /var/www/html/slurm
 RUN apk update && apk add nginx php8-fpm bash php8-session nginx-debug

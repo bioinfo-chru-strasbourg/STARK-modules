@@ -13,7 +13,7 @@ version: '3.9'
 
 networks:
   
-  internal:
+  slurm_internal:
     driver: bridge
     driver_opts:
         com.docker.network.bridge.enable_ip_masquerade: 'true'
@@ -35,51 +35,53 @@ networks:
 # VOLUMES
 #########
 
+#stark-module-common-submodule-slurm-volume-
+
 volumes:
-  root-home:
-  home:
-  etc-ssh:
-  etc-slurm:
-  slurmctld:
-  mail:
+  stark-module-common-submodule-slurm-volume-main-root-home:
+  stark-module-common-submodule-slurm-volume-main-home:
+  stark-module-common-submodule-slurm-volume-main-etc-ssh:
+  stark-module-common-submodule-slurm-volume-main-etc-slurm:
+  stark-module-common-submodule-slurm-volume-main-slurmctld:
+  stark-module-common-submodule-slurm-volume-main-mail:
   
-  src:
-  container-shared:
-  munge:
-  mysql:
+  stark-module-common-submodule-slurm-volume-main-src:
+  stark-module-common-submodule-slurm-volume-main-container-shared:
+  stark-module-common-submodule-slurm-volume-main-munge:
+  stark-module-common-submodule-slurm-volume-main-mysql:
   # slurmdbd
-  tmp_slurmdbd:
-  run_slurmdbd:
-  run-lock_slurmdbd:
-  journal_slurmdbd:
+  stark-module-common-submodule-slurm-volume-slurmdbd-tmp:
+  stark-module-common-submodule-slurm-volume-slurmdbd-run:
+  stark-module-common-submodule-slurm-volume-slurmdbd-run-lock:
+  stark-module-common-submodule-slurm-volume-slurmdbd-journal:
   # mgmtnode
-  tmp_mgmtnode:
-  run_mgmtnode:
-  run-lock_mgmtnode:
-  journal_mgmtnode:
+  stark-module-common-submodule-slurm-volume-mgmtnode-tmp:
+  stark-module-common-submodule-slurm-volume-mgmtnode-run:
+  stark-module-common-submodule-slurm-volume-mgmtnode-run-lock:
+  stark-module-common-submodule-slurm-volume-mgmtnode-journal:
   # login
-  tmp_login:
-  run_login:
-  run-lock_login:
-  journal_login:
+  stark-module-common-submodule-slurm-volume-login-tmp:
+  stark-module-common-submodule-slurm-volume-login-run:
+  stark-module-common-submodule-slurm-volume-login-run-lock:
+  stark-module-common-submodule-slurm-volume-login-journal:
   # node00
-  tmp_node00:
-  run_node00:
-  run-lock_node00:
-  journal_node00:
+  stark-module-common-submodule-slurm-volume-node00-tmp:
+  stark-module-common-submodule-slurm-volume-node00-run:
+  stark-module-common-submodule-slurm-volume-node00-run-lock:
+  stark-module-common-submodule-slurm-volume-node00-journal:
   # rest
-  tmp_rest:
-  run_rest:
-  run-lock_rest:
-  journal_rest:
+  stark-module-common-submodule-slurm-volume-rest-tmp:
+  stark-module-common-submodule-slurm-volume-rest-run:
+  stark-module-common-submodule-slurm-volume-rest-run-lock:
+  stark-module-common-submodule-slurm-volume-rest-journal:
   # Config
-  cluster-cfg:
+  stark-module-common-submodule-slurm-volume-config-cluster-cfg:
     driver: local
     driver_opts:
        o: bind
        type: none
        device: ${CLUSTER_CONFIG_HOST_FOLDER}
-  auth:
+  stark-module-common-submodule-slurm-volume-config-auth:
     driver: local
     driver_opts:
        o: bind
@@ -92,7 +94,7 @@ volumes:
 services:
 
 
-  db:
+  stark-module-common-submodule-slurm-service-db:
 
     image: stark/sql_server:latest
 
@@ -103,6 +105,8 @@ services:
         SUBNET6: "${SUBNET6}:"
       network: host
 
+    container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-db
+
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_USER=slurm
@@ -112,8 +116,10 @@ services:
       - SUBNET6="${SUBNET6}:"
 
     volumes:
+      # System
       - /dev/log:/dev/log
-      - mysql:/var/lib/mysql
+      # Main
+      - stark-module-common-submodule-slurm-volume-main-mysql:/var/lib/mysql
 
     hostname: db
 
@@ -134,7 +140,7 @@ services:
       - apparmor:unconfined
 
     networks:
-      internal:
+      slurm_internal:
         ipv4_address: "${SUBNET}.1.3"
         ipv6_address: "${SUBNET6}:1:3"
 
@@ -156,7 +162,7 @@ services:
 
 
 
-  slurmdbd:
+  stark-module-common-submodule-slurm-service-slurmdbd:
 
     build:
       context: ./scaleout
@@ -170,6 +176,8 @@ services:
 
     image: stark/scaleout:latest
 
+    container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-slurmdbd
+
     environment:
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET}"
@@ -177,33 +185,30 @@ services:
     hostname: slurmdbd
 
     networks:
-      internal:
+      slurm_internal:
         ipv4_address: "${SUBNET}.1.2"
         ipv6_address: "${SUBNET6}:1:2"
 
     volumes:
-      - root-home:/root
-      - etc-slurm:/etc/slurm
+      # System
       - /dev/log:/dev/log
-      - mail:/var/spool/mail/
-      - src:/usr/local/src/
-
       - /etc/localtime:/etc/localtime:ro
       - /sys/:/sys/:ro
-
       - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-
       - /sys/fs/fuse/:/sys/fs/fuse/
-
       - /var/run/docker.sock:/var/run/docker.sock
-
-
-      - tmp_slurmdbd:/tmp
-      - run_slurmdbd:/run
-      - run-lock_slurmdbd:/run/lock
-      - journal_slurmdbd:/var/lib/journal
-
-      - cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
+      # Main
+      - stark-module-common-submodule-slurm-volume-main-root-home:/root
+      - stark-module-common-submodule-slurm-volume-main-etc-slurm:/etc/slurm
+      - stark-module-common-submodule-slurm-volume-main-mail:/var/spool/mail/
+      - stark-module-common-submodule-slurm-volume-main-src:/usr/local/src/
+      # Service
+      - stark-module-common-submodule-slurm-volume-slurmdbd-tmp:/tmp
+      - stark-module-common-submodule-slurm-volume-slurmdbd-run:/run
+      - stark-module-common-submodule-slurm-volume-slurmdbd-run-lock:/run/lock
+      - stark-module-common-submodule-slurm-volume-slurmdbd-journal:/var/lib/journal
+      # Config
+      - stark-module-common-submodule-slurm-volume-config-cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
 
     tty: true
 
@@ -222,7 +227,7 @@ services:
       - apparmor:unconfined
 
     depends_on:
-      - "db"
+      - "stark-module-common-submodule-slurm-service-db"
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
@@ -242,9 +247,11 @@ services:
 
 
 
-  mgmtnode:
+  stark-module-common-submodule-slurm-service-mgmtnode:
 
     image: stark/scaleout:latest
+
+    container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-mgmtnode
 
     environment:
       - SUBNET="${SUBNET}"
@@ -254,41 +261,36 @@ services:
     hostname: mgmtnode
 
     networks:
-      internal:
+      slurm_internal:
         ipv4_address: ${SUBNET}.1.1
         ipv6_address: ${SUBNET6}:1:1
       stark_stark:
 
     volumes:
-      - root-home:/root
-      - home:/home/
-      - slurmctld:/var/spool/slurm
-      - etc-ssh:/etc/ssh
-      - etc-slurm:/etc/slurm
+      # System
       - /dev/log:/dev/log
-      - mail:/var/spool/mail/
-      - auth:/auth/
-      - src:/usr/local/src/
-
       - /etc/localtime:/etc/localtime:ro
       - /sys/:/sys/:ro
-
       - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-
       - /sys/fs/fuse/:/sys/fs/fuse/
-
       - /var/run/docker.sock:/var/run/docker.sock
-
-      - munge:/etc/munge
-
-
-      - tmp_mgmtnode:/tmp
-      - run_mgmtnode:/run
-      - run-lock_mgmtnode:/run/lock
-      - journal_mgmtnode:/var/lib/journal
-
-      - cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
-
+      # Main
+      - stark-module-common-submodule-slurm-volume-main-root-home:/root
+      - stark-module-common-submodule-slurm-volume-main-home:/home/
+      - stark-module-common-submodule-slurm-volume-main-slurmctld:/var/spool/slurm
+      - stark-module-common-submodule-slurm-volume-main-etc-ssh:/etc/ssh
+      - stark-module-common-submodule-slurm-volume-main-etc-slurm:/etc/slurm
+      - stark-module-common-submodule-slurm-volume-main-mail:/var/spool/mail/
+      - stark-module-common-submodule-slurm-volume-main-src:/usr/local/src/
+      - stark-module-common-submodule-slurm-volume-main-munge:/etc/munge
+      # Service
+      - stark-module-common-submodule-slurm-volume-mgmtnode-tmp:/tmp
+      - stark-module-common-submodule-slurm-volume-mgmtnode-run:/run
+      - stark-module-common-submodule-slurm-volume-mgmtnode-run-lock:/run/lock
+      - stark-module-common-submodule-slurm-volume-mgmtnode-journal:/var/lib/journal
+      # Config
+      - stark-module-common-submodule-slurm-volume-config-auth:${CLUSTER_AUTH_INNER_FOLDER}
+      - stark-module-common-submodule-slurm-volume-config-cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
 
     tty: true
 
@@ -307,7 +309,7 @@ services:
       - apparmor:unconfined
 
     depends_on:
-      - "slurmdbd"
+      - "stark-module-common-submodule-slurm-service-slurmdbd"
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
@@ -327,9 +329,11 @@ services:
 
 
 
-  login:
+  stark-module-common-submodule-slurm-service-login:
 
     image: stark/scaleout:latest
+
+    container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-login
 
     environment:
       - SUBNET="${SUBNET}"
@@ -339,39 +343,35 @@ services:
     hostname: login
 
     networks:
-      internal:
+      slurm_internal:
         ipv4_address: ${SUBNET}.1.5
         ipv6_address: ${SUBNET6}:1:5
 
     volumes:
-      - root-home:/root
-      - etc-ssh:/etc/ssh
-      - etc-slurm:/etc/slurm
-      - home:/home/
-      - slurmctld:/var/spool/slurm
+      # System
       - /dev/log:/dev/log
-      - mail:/var/spool/mail/
-      - src:/usr/local/src/
       - /dev/fuse:/dev/fuse:rw
-      - container-shared:/srv/containers
-
       - /etc/localtime:/etc/localtime:ro
       - /sys/:/sys/:ro
-
       - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-
       - /sys/fs/fuse/:/sys/fs/fuse/
-
       - /var/run/docker.sock:/var/run/docker.sock
-
-
-      - tmp_login:/tmp
-      - run_login:/run
-      - run-lock_login:/run/lock
-      - journal_login:/var/lib/journal
-
-      - cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
-      
+      # Main
+      - stark-module-common-submodule-slurm-volume-main-root-home:/root
+      - stark-module-common-submodule-slurm-volume-main-etc-ssh:/etc/ssh
+      - stark-module-common-submodule-slurm-volume-main-etc-slurm:/etc/slurm
+      - stark-module-common-submodule-slurm-volume-main-home:/home/
+      - stark-module-common-submodule-slurm-volume-main-slurmctld:/var/spool/slurm
+      - stark-module-common-submodule-slurm-volume-main-mail:/var/spool/mail/
+      - stark-module-common-submodule-slurm-volume-main-src:/usr/local/src/
+      - stark-module-common-submodule-slurm-volume-main-container-shared:/srv/containers
+      # Service
+      - stark-module-common-submodule-slurm-volume-login-tmp:/tmp
+      - stark-module-common-submodule-slurm-volume-login-run:/run
+      - stark-module-common-submodule-slurm-volume-login-run-lock:/run/lock
+      - stark-module-common-submodule-slurm-volume-login-journal:/var/lib/journal
+      # Config
+      - stark-module-common-submodule-slurm-volume-config-cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
 
     tty: true
 
@@ -407,9 +407,11 @@ services:
 
 
 
-  node00:
+  stark-module-common-submodule-slurm-service-node00:
 
     image: stark/scaleout:latest
+
+    container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-node00
 
     environment:
       - SUBNET="${SUBNET}"
@@ -422,37 +424,33 @@ services:
     hostname: node00
 
     networks:
-      internal:
+      slurm_internal:
         ipv4_address: ${NODE00_IP4}
         ipv6_address: ${NODE00_IP6}
 
     volumes:
-      - root-home:/root
-      - etc-ssh:/etc/ssh
-      - etc-slurm:/etc/slurm
-      - home:/home/
+      # System
       - /dev/log:/dev/log
-      - mail:/var/spool/mail/
-      - src:/usr/local/src/
-      - container-shared:/srv/containers
-
       - /etc/localtime:/etc/localtime:ro
       - /sys/:/sys/:ro
-
       - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-
       - /sys/fs/fuse/:/sys/fs/fuse/
-
       - /var/run/docker.sock:/var/run/docker.sock
-
-
-      - tmp_node00:/tmp
-      - run_node00:/run
-      - run-lock_node00:/run/lock
-      - journal_node00:/var/lib/journal
-
-      - cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
-
+      # Main
+      - stark-module-common-submodule-slurm-volume-main-root-home:/root
+      - stark-module-common-submodule-slurm-volume-main-etc-ssh:/etc/ssh
+      - stark-module-common-submodule-slurm-volume-main-etc-slurm:/etc/slurm
+      - stark-module-common-submodule-slurm-volume-main-home:/home/
+      - stark-module-common-submodule-slurm-volume-main-mail:/var/spool/mail/
+      - stark-module-common-submodule-slurm-volume-main-src:/usr/local/src/
+      - stark-module-common-submodule-slurm-volume-main-container-shared:/srv/containers
+      # Service
+      - stark-module-common-submodule-slurm-volume-node00-tmp:/tmp
+      - stark-module-common-submodule-slurm-volume-node00-run:/run
+      - stark-module-common-submodule-slurm-volume-node00-run-lock:/run/lock
+      - stark-module-common-submodule-slurm-volume-node00-journal:/var/lib/journal
+      # Config
+      - stark-module-common-submodule-slurm-volume-config-cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
 
     tty: true
 
@@ -471,7 +469,7 @@ services:
       - apparmor:unconfined
 
     depends_on:
-      - "mgmtnode"
+      - "stark-module-common-submodule-slurm-service-mgmtnode"
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
@@ -491,7 +489,7 @@ services:
 
 
 
-  openondemand:
+  stark-module-common-submodule-slurm-service-openondemand:
 
     build:
       context: ./openondemand
@@ -499,23 +497,27 @@ services:
 
     image: stark/openondemand
 
+    container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-openondemand
+
     environment:
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}:"
       - DEFAULT_SSHHOST=login
 
     volumes:
+      # System
       - /dev/log:/dev/log
-      - etc-ssh:/etc/shared-ssh
-      - home:/home/
+      # Main
+      - stark-module-common-submodule-slurm-volume-main-etc-ssh:/etc/shared-ssh
+      - stark-module-common-submodule-slurm-volume-main-home:/home/
 
     networks:
-      internal:
+      slurm_internal:
         ipv4_address: ${SUBNET}.1.21
         ipv6_address: ${SUBNET6}:1:21
 
     depends_on:
-      - "login"
+      - "stark-module-common-submodule-slurm-service-login"
 
     ports:
       - 8081:80
@@ -537,39 +539,40 @@ services:
       - apparmor:unconfined
 
 
-  rest:
+
+  stark-module-common-submodule-slurm-service-rest:
 
     hostname: rest
 
     image: stark/scaleout:latest
 
     networks:
-      internal:
+      slurm_internal:
         ipv4_address: ${SUBNET}.1.6
         ipv6_address: ${SUBNET6}:1:6
       stark_stark:
 
-    volumes:
-      - etc-ssh:/etc/ssh
-      - etc-slurm:/etc/slurm
-      - /dev/log:/dev/log
+    container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-rest
+    #container_name: rest
 
+    volumes:
+      # System
+      - /dev/log:/dev/log
       - /etc/localtime:/etc/localtime:ro
       - /sys/:/sys/:ro
-
       - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-
       - /sys/fs/fuse/:/sys/fs/fuse/
-
       - /var/run/docker.sock:/var/run/docker.sock
-
-
-      - tmp_rest:/tmp
-      - run_rest:/run
-      - run-lock_rest:/run/lock
-      - journal_rest:/var/lib/journal
-
-      - cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
+      # Main
+      - stark-module-common-submodule-slurm-volume-main-etc-ssh:/etc/ssh
+      - stark-module-common-submodule-slurm-volume-main-etc-slurm:/etc/slurm
+      # Service
+      - stark-module-common-submodule-slurm-volume-rest-tmp:/tmp
+      - stark-module-common-submodule-slurm-volume-rest-run:/run
+      - stark-module-common-submodule-slurm-volume-rest-run-lock:/run/lock
+      - stark-module-common-submodule-slurm-volume-rest-journal:/var/lib/journal
+      # Config
+      - stark-module-common-submodule-slurm-volume-config-cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
 
     tty: true
 
@@ -588,7 +591,7 @@ services:
       - apparmor:unconfined
 
     depends_on:
-      - "mgmtnode"
+      - "stark-module-common-submodule-slurm-service-mgmtnode"
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
@@ -608,13 +611,15 @@ services:
 
 
 
-  proxy:
+  stark-module-common-submodule-slurm-service-proxy:
 
     build:
       context: ./proxy
       network: host
 
     image: stark/proxy:latest
+
+    container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-proxy
 
     environment:
       - SUBNET="${SUBNET}"
@@ -626,14 +631,16 @@ services:
     command: ["bash", "-c", "nginx & php-fpm8 -F"]
 
     networks:
-      internal:
+      slurm_internal:
         ipv4_address: ${SUBNET}.1.7
         ipv6_address: ${SUBNET6}:1:7
 
     volumes:
-      - auth:/auth/
+      # System
       - /dev/log:/dev/log
-
+      # Main
+      - stark-module-common-submodule-slurm-volume-config-auth:/auth/
+      
     tty: true
 
     logging:
@@ -654,7 +661,7 @@ services:
       - 8080:8080
 
     depends_on:
-      - "rest"
+      - "stark-module-common-submodule-slurm-service-rest"
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
