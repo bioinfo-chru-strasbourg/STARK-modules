@@ -11,24 +11,31 @@ version: '3.9'
 # NETWORKS
 ##########
 
+# networks:
+  
+#   slurm_internal:
+#     driver: bridge
+#     driver_opts:
+#         com.docker.network.bridge.enable_ip_masquerade: 'true'
+#         #com.docker.network.bridge.enable_ipv6: 'true'
+#     internal: false
+#     enable_ipv6: true
+#     ipam:
+#       config:
+#         #- subnet: "10.11.0.0/16"
+#         - subnet: "${SUBNET}.0.0/16"
+#         - subnet: "${SUBNET6}:/64"
+
+
 networks:
   
   slurm_internal:
-    driver: bridge
-    driver_opts:
-        com.docker.network.bridge.enable_ip_masquerade: 'true'
-        #com.docker.network.bridge.enable_ipv6: 'true'
-    internal: false
-    enable_ipv6: true
-    ipam:
-      config:
-        #- subnet: "10.11.0.0/16"
-        - subnet: "${SUBNET}.0.0/16"
-        - subnet: "${SUBNET6}:/64"
-
-  stark_stark:
     external: 
-      name: stark_stark
+       name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_NETWORK}
+
+  # stark_stark:
+  #   external: 
+  #     name: stark_stark
 
 
 
@@ -143,6 +150,7 @@ services:
       slurm_internal:
         ipv4_address: "${SUBNET}.1.3"
         ipv6_address: "${SUBNET6}:1:3"
+      #stark_stark:
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
@@ -190,6 +198,7 @@ services:
       slurm_internal:
         ipv4_address: "${SUBNET}.1.2"
         ipv6_address: "${SUBNET6}:1:2"
+      #stark_stark:
 
     volumes:
       # System
@@ -259,6 +268,7 @@ services:
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}:"
       - container=docker
+      - REST_URL=rest
 
     hostname: mgmtnode
 
@@ -266,7 +276,7 @@ services:
       slurm_internal:
         ipv4_address: ${SUBNET}.1.1
         ipv6_address: ${SUBNET6}:1:1
-      stark_stark:
+      #stark_stark:
 
     volumes:
       # System
@@ -348,6 +358,7 @@ services:
       slurm_internal:
         ipv4_address: ${SUBNET}.1.5
         ipv6_address: ${SUBNET6}:1:5
+      #stark_stark:
 
     volumes:
       # System
@@ -429,6 +440,7 @@ services:
       slurm_internal:
         ipv4_address: ${NODE00_IP4}
         ipv6_address: ${NODE00_IP6}
+      #stark_stark:
 
     volumes:
       # System
@@ -517,6 +529,7 @@ services:
       slurm_internal:
         ipv4_address: ${SUBNET}.1.21
         ipv6_address: ${SUBNET6}:1:21
+      #stark_stark:
 
     depends_on:
       - "stark-module-common-submodule-slurm-service-login"
@@ -553,7 +566,7 @@ services:
       slurm_internal:
         ipv4_address: ${SUBNET}.1.6
         ipv6_address: ${SUBNET6}:1:6
-      stark_stark:
+      #stark_stark:
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-rest
     #container_name: rest
@@ -637,6 +650,7 @@ services:
       slurm_internal:
         ipv4_address: ${SUBNET}.1.7
         ipv6_address: ${SUBNET6}:1:7
+      #stark_stark:
 
     volumes:
       # System

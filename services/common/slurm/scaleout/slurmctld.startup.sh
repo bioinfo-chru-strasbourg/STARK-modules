@@ -2,6 +2,11 @@
 #only configure once
 #[ -f /var/run/slurmctld.startup ] && exit 0
 
+verlte() {
+	[  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
+}
+
+
 sed -e '/^hosts:/d' -i /etc/nsswitch.conf
 echo 'hosts:      files myhostname' >> /etc/nsswitch.conf
 
@@ -101,8 +106,15 @@ if [ ! -s /config/cluster.cfg ]; then
 fi;
 sacctmgr -vi load /config/cluster.cfg
 
+
 if [ "$(hostname -s)" = "mgmtnode" ]
 then
+
+	### SLURM TOKEN
+	# if [ ! -s /config/slurm ]; then
+	# 	echo $RANDOM | sha256sum | head -c 50 | xargs echo > /config/slurm
+	# fi;
+
 	#if [ ! -s /etc/slurm/nodes.conf ]
 	if [ ! -s /config/nodes.conf ]
 	then
@@ -117,6 +129,28 @@ then
 			echo "NodeName=$name NodeAddr=$addr" >> /config/nodes.conf
 		done
 	fi
+
+	### OPENAPI release
+	openapi_release=""
+	for v in $(ls -r /usr/local/src/slurm/src/plugins/openapi | grep "^v"); do
+		verlte "$openapi_release" "$v" && openapi_release=$v
+	done;
+	echo $openapi_release > /config/openapi_release
+
+	### REST URL
+	# if [ ! -z "$REST_URL" ] && [ ! -s /config/rest_url ]; then
+	# 	echo "REST URL OK"
+	# 	echo "$REST_URL" > /config/rest_url
+	# 	cat /config/rest_url
+	# else
+	# 	echo "NO REST URL!!!"
+	# fi;
+	# touch /config/rest_server
+	# [ ! -s /config/rest_server ] && [ "$REST_URL" != "" ] && echo "$REST_URL" > /config/rest_server
+	echo "rest" > /config/rest_hostname
+	
+
+
 else
 	#while [ ! -s /etc/slurm/nodes.conf ]
 	while [ ! -s /config/nodes.conf ]
