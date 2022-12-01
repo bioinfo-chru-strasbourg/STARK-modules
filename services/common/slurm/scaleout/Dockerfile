@@ -275,7 +275,7 @@ COPY patch /usr/local/src/slurm/patch
 RUN bash -c "if [ -s /usr/local/src/slurm/patch ]; then cd /usr/local/src/slurm/; echo $CACHE_DESTROYER >/dev/null; git pull origin ${SLURM_RELEASE}; git am /usr/local/src/slurm/patch && make -j >/dev/null && make install >/dev/null; fi"
 
 COPY nodelist /etc/nodelist
-COPY config/* /config/
+COPY config/* /config/ 
 COPY slurm/ /etc/slurm/
 RUN ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
 	chmod 0600 /etc/slurm/slurmdbd.conf && \

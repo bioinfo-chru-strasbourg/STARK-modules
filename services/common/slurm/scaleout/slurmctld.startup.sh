@@ -58,6 +58,17 @@ if [ ! -s /config/nodes.conf ]; then
 fi;
 ln -sfn /config/nodes.conf /etc/slurm/nodes.conf
 
+# Priority
+if [ ! -s /config/priority.conf ]; then
+	if [ -s /etc/slurm/priority.conf ]; then
+		cp /etc/slurm/priority.conf /config/priority.conf
+	else
+		touch /config/priority.conf
+	fi;
+fi;
+ln -sfn /config/priority.conf /etc/slurm/priority.conf
+
+
 # wait for cluster
 while true
 do
