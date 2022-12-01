@@ -1,0 +1,600 @@
+#!/bin/bash
+#################################
+##
+## STARK
+##
+#################################
+
+SCRIPT_NAME="STARKListener"
+SCRIPT_DESCRIPTION="STARK listener analysis"
+SCRIPT_RELEASE="0.9.1"
+SCRIPT_DATE="30/11/2022"
+SCRIPT_AUTHOR="Antony Le Bechec"
+SCRIPT_COPYRIGHT="IRC"
+SCRIPT_LICENCE="GNU-AGPL"
+
+# Realse note
+RELEASE_NOTES=$RELEASE_NOTES"# 0.9b-24/11/2019: Script creation\n";
+RELEASE_NOTES=$RELEASE_NOTES"# 0.9.1-30/11/2022: Add SLURM\n";
+
+# Script folder
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Configuration
+ENV_CONFIG=$(find -L $SCRIPT_DIR/.. -name config.app)
+source $ENV_CONFIG 1>/dev/null 2>/dev/null
+
+
+# Header
+function header () {
+	cat $STARK_FOLDER_DOCS/HEADER
+}
+
+# Release
+function release () {
+	cat $STARK_FOLDER_DOCS/RELEASE_NOTES
+}
+
+# Usage
+function usage {
+	echo "# USAGE: $(basename $0) [options...]";
+	echo "";
+	echo "### Launch an analysis through (by order of priority):";
+	echo "# --application=<STRING|FILE>              APP name or APP file configuration of the APPLICATION.";
+	echo "#                                          Must be in the STARK APPS folder if relative path";
+	echo "#                                          Default: defined in the RUN SampleSheet, or default.app if not defined";
+	echo "# --input=<FOLDER>                         List of folders containing analyses/runs.";
+	echo "#                                          Default: RUN folder in APP.";
+	echo "# --condition=<FILE1,FILE2...>             List of files to start command (at least one)";
+	echo "#                                          Default: 'RTAComplete.txt&SampleSheet.csv STARKComplete.txt&SampleSheet.csv *analysis.json'";
+	echo "# --days=<INTEGER>                         Analysis folder and files conditions maximum modification days";
+	echo "#                                          Default: '30'";
+	echo "# --log=<FOLDER>                           Logs folder";
+	echo "#                                          Default: LOG folder in APP.";
+	echo "# --command=<STRING>                       Command to launch";
+	echo "#                                          Either 'SLURM', 'DOCKER', 'LAUNCHER' or 'STARK'";
+	echo "#                                          Default: 'DOCKER'";
+	echo "# --launcher=<STRING>                      Launcher URI (for command 'LAUNCH' or 'SLURM')";
+	echo "#                                          Default: 'http://localhost:8000/analysis'";
+	echo "# --docker-stark-image=<STRING>            Docker STARK image (for command 'DOCKER' or 'SLURM')";
+	echo "#                                          Default: environment";
+	echo "# --slurm-config-folder=<FOLDER>           SLURM configuration folder (for command 'SLURM')";
+	echo "#                                          Default: /STARK/config/common/slurm";
+	echo "# --exec                                   Execute command";
+	echo "# --daemon                                 Execute script as a daemon";
+	echo "# --daemon-periodicity                     Listening periodicity";
+
+	echo "# --verbose                                VERBOSE";
+	echo "# --debug                                  DEBUG";
+	echo "# --release                                RELEASE";
+	echo "# --help                                   HELP";
+	echo "";
+}
+
+
+
+
+####################################################################################################################################
+# Getting parameters from the input
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ":" tells that the option has a required argument, "::" tells that the option has an optional argument, no ":" tells no argument
+ARGS=$(getopt -o "e:vdnh" --long "env:,app:,application:,input:,condition:,days:,log:,command:,launcher:,docker-stark-image:,slurm-config-folder:,exec,daemon,daemon-periodicity:,no_header,verbose,debug,release,help" -- "$@" 2> /dev/null)
+
+if [ $? -ne 0 ]; then
+	:
+	echo "#[ERROR] Error in the argument list:";
+	echo "#[ERROR] $@"
+	echo ""
+	usage;
+	exit;
+fi;
+
+
+PARAM=$@
+DEBUG=0
+VERBOSE=0
+
+
+eval set -- "$ARGS"
+while true
+do
+	#echo "$1=$2"
+	#echo "Eval opts";
+	case "$1" in
+		-e|--env|--app|--application)
+			APP="$2"
+			shift 2
+			;;
+		--input)
+			INPUT_FOLDER="$2"
+			INPUT_FOLDER=$(echo $INPUT_FOLDER | tr "," " ")
+			shift 2
+			;;
+		--condition)
+			CONDITION="$2"
+			CONDITION=$(echo $CONDITION | tr "," " ")
+			shift 2
+			;;
+		--days)
+			DAYS="$2"
+			shift 2
+			;;
+		--log)
+			LOG="$2"
+			shift 2
+			;;
+		--command)
+			COMMAND="$2"
+			shift 2
+			;;
+		--launcher)
+			LAUNCHER="$2"
+			shift 2
+			;;
+		--docker-stark-image)
+			DOCKER_STARK_IMAGE="$2"
+			shift 2
+			;;
+		--slurm-config-folder)
+			SLURM_CONFIG_FOLDER="$2"
+			shift 2
+			;;
+		--exec)
+			EXEC=1
+			shift 1
+			;;
+		--daemon)
+			DAEMON=1
+			shift 1
+			;;
+		--daemon-periodicity)
+			DAEMON_PERIODICITY="$2"
+			shift 2
+			;;
+		-v|--verbose)
+			VERBOSE=1
+			shift 1
+			;;
+		-d|--debug)
+			VERBOSE=1
+			DEBUG=1
+			shift 1
+			;;
+		-n|--release)
+			release;
+			exit 0
+			;;
+		-h|--help)
+			HELP=1
+			usage
+			exit 0
+			;;
+		--no_header)
+			NO_HEADER=1
+			shift 1
+			;;
+		--) shift
+			break
+			;;
+		*) 	echo "# Option $1 is not recognized. " "Use -h or --help to display the help." && \
+			exit 1
+			;;
+	esac
+done
+
+
+# header
+(($NO_HEADER)) || header;
+
+####################################################################################################################################
+# Checking the input parameter
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+if ((0)); then
+	echo "#[ERROR] Required parameter: --analysis, --run, or --reads. For informations --applications_infos, --pipelines_infos, --release_infos, --tools_infos. Use --help to display the help." && echo "" && usage && exit 1;
+fi
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+# ENV
+#########
+
+#echo "APP=$APP"; exit;
+(($VERBOSE)) && [ ! -z "$APP" ] && echo "#[INFO] Search Application '$APP'"
+
+ENV=$(find_app "$APP" "$STARK_FOLDER_APPS")
+source_app "$APP" "$STARK_FOLDER_APPS" 1
+
+export ENV
+export APP
+
+(($VERBOSE)) && [ ! -z "$APP" ] && [ ! -z "$ENV" ] && echo "#[INFO] Application '$APP' found ('$ENV')"
+(($VERBOSE)) && [ ! -z "$APP" ] && [ -z "$ENV" ] && echo "#[INFO] Application '$APP' NOT found"
+
+
+# INPUT FOLDER
+################
+
+if [ "$INPUT_FOLDER" == "" ]; then
+	INPUT_FOLDER=$FOLDER_RUN
+else
+	for IF in $INPUT_FOLDER; do
+		if [ ! -d $IF ]; then
+			echo "#[ERROR] Input folder '$IF' does NOT exists"
+			exit 0
+		fi;
+	done;
+fi;
+
+
+# CONDITION
+##############
+
+if [ "$CONDITION" == "" ]; then
+	CONDITION="RTAComplete.txt&SampleSheet.csv STARKComplete.txt&SampleSheet.csv *analysis.json"
+fi;
+
+
+# DAYS
+########
+
+if [ "$DAYS" == "" ]; then
+	DAYS="30"
+fi;
+
+
+# COMMAND
+###########
+
+if [ "$COMMAND" == "" ]; then
+	COMMAND="DOCKER"
+fi;
+
+
+# LAUNCHER
+###########
+
+if [ "$LAUNCHER" == "" ]; then
+	LAUNCHER="http://localhost:8000/analysis"
+fi;
+
+
+# DAEMON_PERIODICITY
+######################
+
+if [ "$DAEMON_PERIODICITY" == "" ]; then
+	DAEMON_PERIODICITY="10"
+fi;
+
+# SLURM CONFIG FOLDER
+######################
+
+if [ "$SLURM_CONFIG_FOLDER" == "" ]; then
+	SLURM_CONFIG_FOLDER="/STARK/config/common/slurm"
+fi;
+
+
+# MEM BY THREAD
+################
+if [ -z "$MEM_BY_THREAD" ]; then
+	MEM_BY_THREAD=7
+fi;
+
+
+# COMMAND Check
+################
+
+if [ "$COMMAND" == "SLURM" ]; then
+	# SLURM config
+	SLURM_USER=root
+	SLURM_TOKEN=$(cat $SLURM_CONFIG_FOLDER/slurm)
+	SLURM_OPENAPI_RELEASE=$(cat $SLURM_CONFIG_FOLDER/openapi_release)
+	SLURM_REST_URL="rest"
+
+	# SLURM check response
+	CMD_SLURM_CHECK="curl -s -H 'X-SLURM-USER-NAME:$SLURM_USER' -H 'X-SLURM-USER-TOKEN:$SLURM_TOKEN' http://$SLURM_REST_URL/slurm/$SLURM_OPENAPI_RELEASE/jobs"
+	(($DEBUG)) && echo "CMD_SLURM_CHECK=$CMD_SLURM_CHECK"
+	if eval $CMD_SLURM_CHECK 1>/dev/null 2>/dev/null; then
+		(($DEBUG)) && echo "#[INFO] SLURM connexion pass"
+	else
+		(($DEBUG)) && echo "#[WARNING] SLURM connexion failed"
+		echo "#[WARNING] SLURM connexion failed. Switch to COMMAND 'LAUNCHER'"
+		COMMAND="LAUNCHER"
+	fi;
+	
+fi;
+
+if [ "$COMMAND" == "LAUNCHER" ]; then
+
+	# LAUNCHER check response
+	CMD_LAUNCHER_CHECK="curl -s $LAUNCHER"
+	(($DEBUG)) && echo "CMD_LAUNCHER_CHECK=$CMD_LAUNCHER_CHECK"
+	if eval $CMD_LAUNCHER_CHECK 1>/dev/null 2>/dev/null; then
+		(($DEBUG)) && echo "#[INFO] LAUNCHER connexion pass"
+	else
+		(($DEBUG)) && echo "#[WARNING] LAUNCHER connexion failed"
+		echo "#[WARNING] LAUNCHER connexion failed. Switch to COMMAND 'DOCKER'"
+		COMMAND="DOCKER"
+	fi;
+	
+fi;
+
+
+# DEBUG
+#########
+
+
+if ((1)) && (($DEBUG)); then
+#if (($DEBUG)); then
+	echo "APP:$APP"
+	echo "ENV:$ENV"
+	echo "INPUT_FOLDER:$INPUT_FOLDER"
+	echo "CONDITION:$CONDITION"
+	echo "FOLDER_LOG:$FOLDER_LOG"
+	echo ""
+	echo "COMMAND:$COMMAND"
+	echo ""
+	echo ""
+	echo "APP:$APP"
+	echo "   FOLDER_RUN:$FOLDER_RUN"
+	echo "   FOLDER_MANIFEST:$FOLDER_MANIFEST"
+	echo "FOLDER_OUTPUT:$FOLDER_OUTPUT"
+	echo "   FOLDER_RESULTS:$FOLDER_RESULTS"
+	echo "   FOLDER_DEMULTIPLEXING:$FOLDER_DEMULTIPLEXING"
+	echo "   FOLDER_TMP:$FOLDER_TMP"
+	echo "   FOLDER_LOG:$FOLDER_LOG"
+	echo "DATABASES:$DATABASES"
+	echo "CONDITION:$CONDITION"
+	echo "FOLDER_DATABASES:$FOLDER_DATABASES"
+	echo "APP=$APP"
+	echo "ASSEMBLY=$ASSEMBLY"
+	echo "PIPELINES=$PIPELINES"
+	echo "ALIGNERS=$ALIGNERS"
+	echo "CALLERS=$CALLERS"
+	echo "ANNOTATORS=$ANNOTATORS"
+	echo "ASSEMBLY=$ASSEMBLY"
+	#exit 0;
+fi;
+
+
+
+
+while ((1)); do
+
+	# foreach input folder
+	for IF in $INPUT_FOLDER; do
+		# for each analysis folder
+		(($DEBUG)) && echo "#[DEBUG] IF=$IF"
+		### DEBUG
+		#DAYS=9999999999
+		#for IFA in $IF/*; do
+		#for IFA in $(find -L $IF -mindepth 1 -maxdepth 1 -type d -mtime -$DAYS); do
+		for IFA in $(find -L $IF -mindepth 1 -maxdepth 1 -type d -mtime -$DAYS); do
+			(($DEBUG)) && echo "#[DEBUG] IFA=$IFA"
+
+			#(($DEBUG)) && [ "$IFA" != "/STARK/input/runs/RUN_TEST" ] && continue;
+
+			#MD5=$(echo $IFA | md5sum | awk '{print $1}')
+			MD5=$(find -L $IFA -maxdepth 1 -xtype f -print0 | xargs -0 sha1sum | cut -b-40 | sha1sum | awk '{print $1}')
+			RUN_NAME=$(basename $IFA)
+			ID="ID-$MD5-NAME-$RUN_NAME"
+			MD5_LOG="$FOLDER_LOG/$ID.log"
+			MD5_SLURM="$FOLDER_LOG/$ID.sbatch.json"
+			if [ -d $IFA ]; then
+				if [ ! -f $MD5_LOG ]; then
+					(($DEBUG)) && echo "# "
+					(($DEBUG)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5]"
+
+					# Check conditions
+					CONDITION_TEST=0
+					for C in $CONDITION; do
+						(($DEBUG)) && echo "#[INFO]    condition AND '$C' test"
+						CONDITION_AND=$(echo $C | tr "&" " ")
+						CONDITION_AND_TEST=1
+						for CA in $CONDITION_AND; do
+							(($DEBUG)) && echo "#[INFO]          condition '$CA' test"
+							if (( $(find -L $IFA -mindepth 1 -maxdepth 1 -type f -iname "$CA" -mtime -$DAYS | wc -l) )); then
+								(($DEBUG)) && echo "#[INFO]          => condition '$CA' OK"
+							else
+								(($DEBUG)) && echo "#[INFO]       => condition '$CA' ko"
+								CONDITION_AND_TEST=0
+								break
+							fi;
+						done;
+						(($DEBUG)) && echo "#[INFO]    => condition AND test '$CONDITION_AND_TEST'"
+						if (($CONDITION_AND_TEST)); then
+							CONDITION_TEST=1
+							break
+						fi;
+						
+					done;
+					(($DEBUG)) && echo "#[INFO]    Condition '$C' test '$CONDITION_TEST'"
+
+					
+					if (( $CONDITION_TEST )); then
+
+						(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] Conditions checked!"
+
+						CMD=""
+						if [ "$COMMAND" == "LAUNCHER" ]; then
+							CMD="curl -s -X POST -H 'Content-Type: application/json' -d '{\"run\":\"$IFA\"}' $LAUNCHER"
+						elif [ "$COMMAND" == "DOCKER" ]; then
+							DOCKER_STARK_MOUNT_STARK_DOCKER_PARAMETERS=$(echo $DOCKER_STARK_MOUNT | sed 's/ /;/gi')
+							CMD="STARK --docker-stark-image=$DOCKER_STARK_IMAGE --docker-parameters='--rm;-d;--name=$ID;$DOCKER_STARK_MOUNT_STARK_DOCKER_PARAMETERS' --runs=$IFA"
+						elif [ "$COMMAND" == "STARK" ]; then
+							CMD="STARK --runs=$IFA"
+						elif [ "$COMMAND" == "SLURM" ]; then
+
+							# Find SampleSheet
+							RUN_SAMPLESHEET=""
+							# sampleSheet within the RUN folder
+							[ -z $RUN_SAMPLESHEET ] && RUN_SAMPLESHEET=$IFA/SampleSheet.csv
+							# Echo
+							[ ! -e $RUN_SAMPLESHEET ] && echo "#[ERROR] No SampleSheet for RUN '$R'" && exit 1;
+							(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] SampleSheet found!"
+							#echo "#[INFO] SampleSheet found for RUN '$IFA': $RUN_SAMPLESHEET";
+							(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] Resources checking..."
+							#echo "#[INFO] Checking THREADS needed for RUN '$IFA'...";
+
+							CHECKED_THREADS=0
+							(($DEBUG)) && echo "#[INFO] CHECKED_THREADS = $CHECKED_THREADS";
+
+							# ANALYSIS TAG
+							ANALYSIS_TAG_SAMPLESHEET=$(grep "^Description" $RUN_SAMPLESHEET | cut -d, -f2- | tr "," "!" | tr " " "!"  | tr -d '\r')
+							ANALYSIS_TAG=$ANALYSIS_TAG_SAMPLESHEET
+							(($DEBUG)) && echo "#[INFO] ANALYSIS_TAG_SAMPLESHEET found for RUN '$IFA': $ANALYSIS_TAG_SAMPLESHEET";
+							(($DEBUG)) && echo "#[INFO] ANALYSIS_TAG found for RUN '$IFA': $ANALYSIS_TAG";
+
+							# MAIN APP extraction
+							MAIN_APP=$(extract_tag "$ANALYSIS_TAG" "APP" | tr " " "+")
+							# MAIN PLUGAPP extraction
+							MAIN_PLUGAPP=$(extract_tag "$ANALYSIS_TAG" "PLUGAPP" | tr " " "+")
+							[ "$MAIN_PLUGAPP" != "" ] && MAIN_APP=$MAIN_APP"+"$MAIN_PLUGAPP
+
+							(($DEBUG)) && echo "#[INFO] Main APP found for RUN '$IFA': $MAIN_APP";
+
+							# MAIN APP THREADS extraction
+							MAIN_APP_THREADS=$(source_app "$MAIN_APP" 2>/dev/null; echo $THREADS)
+							(($DEBUG)) && echo "#[INFO] Main APP THREADS found for RUN '$IFA': $MAIN_APP_THREADS";
+
+							if [ "$MAIN_APP_THREADS" -gt "$CHECKED_THREADS" ]; then
+								CHECKED_THREADS=$MAIN_APP_THREADS
+							fi;
+							(($DEBUG)) && echo "#[INFO] CHECKED_THREADS = $CHECKED_THREADS";
+						
+							# Found APP in samples
+							if ((1)); then
+
+								SAMPLE_DESCRIPTION_FIELD=1;
+								C=1
+								for i in $(cat $RUN_SAMPLESHEET | awk '/\[Data\]/,/\[[^Data]/' | grep "^\[" -v | sed '/^[[:space:]]*$/d' | tr -d '\r' | sed 's/,/\t/g' | head -n 1) ; do
+									[ $i == "Description" ] && SAMPLE_DESCRIPTION_FIELD=$C
+									C=$(( $C + 1 )) ;
+								done
+								for L in $(cat $RUN_SAMPLESHEET | awk '/\[Data\]/,/\[[^Data]/' | grep "^\[" -v | sed '/^[[:space:]]*$/d' | tail -n +2 | tr -d '\r'); do
+
+									(($DEBUG)) && echo "#[INFO] Sample LINE found for RUN '$IFA' - SAMPLE '$SAMPLE_NAME': $L";
+
+									# SAMPLE APP extraction
+									SAMPLE_NAME=$(echo $L | cut -d, -f1 | tr " " "!")
+									SAMPLE_TAG=$(echo $L | cut -d, -f$SAMPLE_DESCRIPTION_FIELD | tr " " "!")
+									SAMPLE_APP=$(extract_tag "$SAMPLE_TAG" "APP" | tr " " "+")
+									SAMPLE_PLUGAPP=$(extract_tag "$SAMPLE_TAG" "PLUGAPP" | tr " " "+")
+									[ "$SAMPLE_APP" == "" ] && SAMPLE_APP=$MAIN_APP
+									[ "$SAMPLE_PLUGAPP" != "" ] && SAMPLE_APP=$SAMPLE_APP"+"$SAMPLE_PLUGAPP
+
+									if [ ! -z $SAMPLE_APP ]; then
+										(($DEBUG)) && echo "#[INFO] Sample APP found for RUN '$IFA' - SAMPLE '$SAMPLE_NAME': $SAMPLE_APP";
+
+										# SAMPLE APP THREADS extraction
+										SAMPLE_APP_THREADS=$(source_app "$SAMPLE_APP" 2>/dev/null; echo $THREADS)
+										(($DEBUG)) && echo "#[INFO] Main APP THREADS found for RUN '$IFA' - SAMPLE '$SAMPLE_NAME': $SAMPLE_APP_THREADS";
+
+										if [ "$SAMPLE_APP_THREADS" -gt "$CHECKED_THREADS" ]; then
+											CHECKED_THREADS=$SAMPLE_APP_THREADS
+										fi;
+										(($DEBUG)) && echo "#[INFO] CHECKED_THREADS = $CHECKED_THREADS";
+
+									else
+										(($DEBUG)) && echo "#[INFO] Sample APP NOT found for RUN '$IFA' - SAMPLE '$SAMPLE_NAME'";
+									fi;
+								done;
+
+							fi;
+
+							# CHECK THREADS verification
+							APP_THREADS=$(source_app "$APP" 2>/dev/null; echo $THREADS)
+							(($DEBUG)) && echo "#[INFO] ENV APP '$APP' THREADS = '$APP_THREADS'";
+							if [ "$CHECKED_THREADS" == "0" ]; then
+								(($DEBUG)) && echo "#[INFO] CHECKED_THREADS = ENV APP '$APP' THREADS = '$APP_THREADS'";
+								CHECKED_THREADS=$APP_THREADS
+							fi;
+
+							if [ "$CHECKED_THREADS" == "" ]; then
+								(($DEBUG)) && echo "#[INFO] CHECKED_THREADS = empty so THREADS = '$APP_THREADS'";
+								CHECKED_THREADS=1
+							fi;
+
+							# STARK_RUN_MEM
+							STARK_RUN_MEM=$((CHECKED_THREADS * MEM_BY_THREADS))
+
+							#echo "#[INFO] Checking THREADS needed for RUN '$IFA' found: $CHECKED_THREADS";
+							(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] Resources checked [${CHECKED_THREADS}CPU/${STARK_RUN_MEM}Go]"
+
+							# JOB config
+							SLURM_STARK_RUN_ACCOUNT="stark"
+							SLURM_STARK_RUN_QOS="high"
+
+							# create sbatch in json
+							
+							echo '{' > $MD5_SLURM
+							echo '	"job": {' >> $MD5_SLURM
+							echo '		"account": "'$SLURM_STARK_RUN_ACCOUNT'",' >> $MD5_SLURM
+							echo '		"tasks": 1,' >> $MD5_SLURM
+							echo '		"name": "'$ID'",' >> $MD5_SLURM
+							echo '		"nodes": 1,' >> $MD5_SLURM
+							echo '		"cpus_per_task": '$CHECKED_THREADS',' >> $MD5_SLURM
+							echo '		"memory_per_node": "'$STARK_RUN_MEM'G",' >> $MD5_SLURM
+							echo '		"QOS": "'$SLURM_STARK_RUN_QOS'",' >> $MD5_SLURM
+							echo '		"current_working_directory": "/tmp/",' >> $MD5_SLURM
+							echo '		"environment": {' >> $MD5_SLURM
+							echo '			"PATH": "/bin:/usr/bin/:/usr/local/bin/",' >> $MD5_SLURM
+							echo '			"LD_LIBRARY_PATH": "/lib/:/lib64/:/usr/local/lib"' >> $MD5_SLURM
+							echo '		}' >> $MD5_SLURM
+							echo '	},' >> $MD5_SLURM
+							echo '	"script": "#!/bin/bash\nsrun docker run --rm --cpus='$CHECKED_THREADS' --memory='$STARK_RUN_MEM'g --name '$ID' '$DOCKER_STARK_MOUNT' '$DOCKER_STARK_IMAGE' --runs='$IFA' --threads='$CHECKED_THREADS' '$STARK_RUN_EXTRA_PARAMS'"' >> $MD5_SLURM
+							echo '}' >> $MD5_SLURM
+
+							# Create command for SLURM
+							CMD="curl -s -H 'X-SLURM-USER-NAME:$SLURM_USER' -H 'X-SLURM-USER-TOKEN:$SLURM_TOKEN' -H 'Content-Type: application/json' -X POST -d @$MD5_SLURM http://$SLURM_REST_URL/slurm/$SLURM_OPENAPI_RELEASE/job/submit"
+							
+						fi;
+
+						EXEC_DATE=$(date '+%Y%m%d-%H%M%S')
+						(($DEBUG)) && echo "#[INFO] Analysis/Run '$IFA' [$ID] TO LAUNCH"
+						(($DEBUG)) && echo "#[INFO] => Launch analysis '$IFA' with command '$COMMAND'"
+						(($DEBUG)) && echo "#[INFO]    MD5: $MD5_LOG"
+						(($DEBUG)) && echo "#[INFO]    CMD: $CMD"
+						(($DEBUG)) && echo "#[INFO]    EXEC_DATE: $EXEC_DATE"
+						if (($EXEC)); then
+							echo "RUN: $RUN_NAME" > $MD5_LOG
+							echo "FOLDER: $IFA" >> $MD5_LOG
+							echo "CONDITION: $C" >> $MD5_LOG
+							echo "EXEC_DATE: $EXEC_DATE" >> $MD5_LOG
+
+							# Find ID for LAUNCHER
+							[ "$COMMAND" == "LAUNCHER" ] && echo -n "ID: " >> $MD5_LOG
+
+							(($DEBUG)) && cat $MD5_LOG
+							# LAUNCH
+							(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] LAUNCHED [$COMMAND]!"
+							eval $CMD 1>> $MD5_LOG 2>> $MD5_LOG
+
+							# If LAUNCHER doesn't respond
+							[ "$COMMAND" == "LAUNCHER" ] && ! (($(cat $MD5_LOG | grep "^ID: .*" -c))) && echo "#[ERROR] LAUNCHER NOT responding!" >> $MD5_LOG
+							
+							# chmod
+							chmod og+r $MD5_LOG
+						else
+							(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] TO LAUNCH BUT NOT LAUNCHED (see --exec option)"
+						fi;
+					else
+						(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] NOT TO LAUNCH due to conditions"
+					fi;
+				else
+					(($DEBUG)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] ALREADY LAUNCHED"
+				fi;
+			fi;
+			
+		done;
+	done;
+
+	if (($DAEMON)); then
+		sleep $DAEMON_PERIODICITY;
+	else
+		break;
+	fi;
+
+done;
+
+
+exit 0
