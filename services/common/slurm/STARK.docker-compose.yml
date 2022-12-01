@@ -94,6 +94,14 @@ volumes:
        o: bind
        type: none
        device: ${CLUSTER_CONFIG_HOST_FOLDER}
+  # Service
+  stark-module-common-submodule-slurm-volume-service-slurm:
+    driver: local
+    driver_opts:
+       o: bind
+       type: none
+       device: ${CLUSTER_SERVICE_HOST_FOLDER}
+
 
 # SERVICES
 ##########
@@ -303,6 +311,8 @@ services:
       # Config
       - stark-module-common-submodule-slurm-volume-config-auth:${CLUSTER_AUTH_INNER_FOLDER}
       - stark-module-common-submodule-slurm-volume-config-cluster-cfg:${CLUSTER_CONFIG_INNER_FOLDER}
+      # Service
+      - stark-module-common-submodule-slurm-volume-service-slurm:${CLUSTER_SERVICE_INNER_FOLDER}
 
     tty: true
 
