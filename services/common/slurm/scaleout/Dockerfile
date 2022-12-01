@@ -254,6 +254,9 @@ RUN echo -e "/usr/local/lib\n/usr/local/lib64" >> /etc/ld.so.conf.d/usr_local_li
 WORKDIR /root/
 
 COPY dump_xdmod.sh /etc/cron.hourly/dump_xdmod.sh
+COPY dump_xdmod.minutely.sh /etc/cron.d/dump_xdmod.minutely.sh
+RUN chmod 0775 /etc/cron.d/dump_xdmod.minutely.sh /etc/cron.hourly/dump_xdmod.sh
+RUN touch /etc/crontab && echo "*/1 * * * * root /etc/cron.d/dump_xdmod.minutely.sh" >> /etc/crontab 
 COPY resume.node.sh /usr/local/sbin/
 COPY suspend.node.sh /usr/local/sbin/
 RUN chmod 0755 /usr/local/sbin/{resume.node.sh,suspend.node.sh} && \
