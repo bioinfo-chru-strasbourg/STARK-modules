@@ -665,8 +665,10 @@ services:
     volumes:
       # System
       - /dev/log:/dev/log
-      # Main
-      - stark-module-common-submodule-slurm-volume-config-auth:/auth/
+      # Config
+      - stark-module-common-submodule-slurm-volume-config-auth:${CLUSTER_AUTH_INNER_FOLDER}
+      # Service
+      - stark-module-common-submodule-slurm-volume-service-slurm:${CLUSTER_SERVICE_INNER_FOLDER}
       
     tty: true
 
