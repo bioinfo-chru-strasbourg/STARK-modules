@@ -19,7 +19,7 @@ header('HTTP/1.0 401 Unauthorized');
 ?>
 <html>
 <body>
-<p>Authentication Options:</p?
+<p>Authentication Options:</p>
 <ul>
 	<li>Per user token:<ul>
 		<li>User: "fred"</li>
