@@ -8,7 +8,7 @@ COPY www.conf /etc/php8/php-fpm.d/www.conf
 COPY nginx.conf /etc/nginx/http.d/
 COPY validate.php /var/www/html/validate/index.php
 COPY auth.php /var/www/html/auth/index.php
-COPY dashboard/* /var/www/html/dashboard/
+COPY dashboard /var/www/html/dashboard
 RUN chmod -R 0755 /var/www/html/validate/index.php /var/www/html/auth/index.php /var/www/html/dashboard/
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 RUN echo "error_log syslog:server=unix:/dev/log,nohostname,tag=nginx debug;" >> /etc/nginx/nginx.conf
