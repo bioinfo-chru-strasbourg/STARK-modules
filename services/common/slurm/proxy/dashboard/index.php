@@ -19,8 +19,57 @@ if (session_status() == PHP_SESSION_NONE || !isset($_SESSION['user_name'])) {
 
 $OUTPUT_FORMAT = $_GET['format'];
 
+
+# Connexion params
+$user=$_SESSION['user_name']; #$user="root";
+$token=$_SESSION['user_token']; #$token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAxNjY2ODksImlhdCI6MTY3MDE2NjY5MCwic3VuIjoic2x1cm0ifQ.r5LV-z4EWjvHDJUgExQS1EHdMx-nPXvNowGmXFuSAJg";
+$rest_hostname=trim(file_get_contents("/auth/rest_hostname")); #$rest_url="rest";
+$openapi_release=trim(file_get_contents("/auth/openapi_release")); #$openapi_release="v0.0.38";
+// # curl -H "X-SLURM-USER-NAME:$user" -H "X-SLURM-USER-TOKEN:$token" http://$rest_url/slurmdb/$openapi_release/qos
+// # curl -H "X-SLURM-USER-NAME:$user" -H "X-SLURM-USER-TOKEN:$token" http://$rest_url/slurm/$openapi_release/jobs
+#print("curl -H 'X-SLURM-USER-NAME:$user' -H 'X-SLURM-USER-TOKEN:$token' http://$rest_hostname/slurm/$openapi_release/jobs");
+
+
+# DEV
+$ch = curl_init();
+try {
+	curl_setopt($ch, CURLOPT_URL, "http://$rest_hostname/slurmdb/$openapi_release/jobs");
+	curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+		"X-SLURM-USER-NAME: $user",
+		"X-SLURM-USER-TOKEN: $token"
+	));
+	// curl_setopt($ch, CURLOPT_HEADER, false);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	// curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);   
+	// curl_setopt($ch, CURLOPT_TIMEOUT, 5);         
+	// curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+	// curl_setopt($ch, CURLOPT_MAXREDIRS, 2);
+	// curl_setopt($ch, CURLOPT_NOBODY, true);
+	
+	$response = curl_exec($ch);
+
+	if (curl_errno($ch)) {
+		echo curl_error($ch);
+		die();
+	}
+	
+	$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+	if ($http_code == intval(200)){
+		// echo "Ressource valide";
+	}
+	else{
+		echo "No connexion: " . $http_code;
+	}
+} catch (\Throwable $th) {
+	throw $th;
+} finally {
+	curl_close($ch);
+}
+
+
 # SACCT
-$sacct_json = file_get_contents("/service/mgmtnode.sacct.json");
+#$sacct_json = file_get_contents("/service/mgmtnode.sacct.json"); # old way
+$sacct_json = $response;
 if ($sacct_json === false) {
     // deal with error...
 }
