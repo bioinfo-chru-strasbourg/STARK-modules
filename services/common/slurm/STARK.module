@@ -2,13 +2,37 @@
   "submodules": {
     "slurm": {
       "services": {
-        "scaleout": {
-          "code": "scaleout",
-          "name": "COMMON scaleout service",
-          "type": "scaleout",
-          "description": "Common scaleout, create image and configure scaleout.",
-          "release": "1.0",
-          "available": false
+        "proxy": {
+          "code": "dashboard",
+          "name": "SLURM Dashboard",
+          "description": "SLURM Dashboard resuming main informations on SLURM jobs.",
+          "release": "1.0.0",
+          "type": "IHM",
+          "available": true,
+          "link": {
+            "available": true,
+            "protocol": "http",
+            "ip": "",
+            "port": "4220",
+            "port_inner": "8080",
+            "path": "dashboard/"
+          }
+        },
+        "openondemand": {
+          "code": "openondemand",
+          "name": "SLURM Open On Demand",
+          "description": "SLURM Open On Demand resuming main informations on SLURM jobs, and a terminal.",
+          "release": "1.0.0",
+          "type": "IHM",
+          "available": true,
+          "link": {
+            "available": true,
+            "protocol": "http",
+            "ip": "",
+            "port": "4221",
+            "port_inner": "80",
+            "path": ""
+          }
         }
       }
     }
