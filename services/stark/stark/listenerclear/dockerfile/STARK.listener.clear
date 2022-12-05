@@ -1,0 +1,244 @@
+#!/bin/bash
+#################################
+##
+## NGS environment
+##
+#################################
+
+SCRIPT_NAME="STARKListenerClear"
+SCRIPT_DESCRIPTION="STARK Listener Clear"
+SCRIPT_RELEASE="0.9b"
+SCRIPT_DATE="03/04/2020"
+SCRIPT_AUTHOR="Antony Le Bechec"
+SCRIPT_COPYRIGHT="HUS/CPS"
+SCRIPT_LICENCE="GNU GPLA V3"
+
+# Realse note
+RELEASE_NOTES=$RELEASE_NOTES"# 0.9b-03/04/2020: Script creation\n";
+
+# Script folder
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Configuration
+ENV_CONFIG=$(find -L $SCRIPT_DIR/.. -name config.app)
+source $ENV_CONFIG 1>/dev/null 2>/dev/null
+
+
+# Header
+function header () {
+	echo "#######################################";
+	echo "# $SCRIPT_NAME [$SCRIPT_RELEASE-$SCRIPT_DATE]";
+	echo "# $SCRIPT_DESCRIPTION ";
+	echo "# $SCRIPT_AUTHOR @ $SCRIPT_COPYRIGHT © $SCRIPT_LICENCE";
+	echo "#######################################";
+}
+
+# Release
+function release () {
+	echo "# RELEASE NOTES:";
+	echo -e $RELEASE_NOTES
+}
+
+
+# Usage
+function usage {
+	echo "# USAGE: $(basename $0) [--listener=<FOLDER> --launcher=<FOLDER>] [-h] [options...]";
+	echo "#";
+	echo "### This script check run unfinished and relaunched them. Use this script when listener and launcher services are stopped (generally after failing).";
+	echo "#";
+	echo "# --docker-env-file=<FILE>                   Docker environment file";
+	echo "#                                            Default: '../.env'";
+	echo "# --listener=<FOLDER>                        Listener log folder";
+	echo "#                                            Default: found in Docker environment file (Inner folder), or in Environment variable";
+	# echo "# --launcher=<FOLDER>                        Launcher log folder";
+	# echo "#                                            Default: found in Docker environment file (Inner folder), or in Environment variable";
+	echo "# --clear                                    Clear Listener log files";
+	echo "#                                            Default: FALSE (just show)";
+	echo "# -v|--verbose                               Verbose mode";
+	echo "# -d|--debug                                 Debug mode";
+	echo "# -n|--release                               Script Release";
+	echo "# -h|--help                                  Help message";
+	echo "#";
+
+}
+
+
+
+
+####################################################################################################################################
+# Getting parameters from the input
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ":" tells that the option has a required argument, "::" tells that the option has an optional argument, no ":" tells no argument
+ARGS=$(getopt -o "vdnh" --long "docker-env-file:,listener:,launcher:,clear,verbose,debug,release,help" -- "$@" 2> /dev/null)
+if [ $? -ne 0 ]; then
+	:
+	echo "#[ERROR] Error in the argument list:";
+	echo "#[ERROR] $@"
+	echo ""
+	usage;
+	exit;
+fi;
+
+
+
+
+PARAM=$@
+DEBUG=0
+VERBOSE=0
+
+eval set -- "$ARGS"
+while true
+do
+	#echo "$1=$2"
+	#echo "Eval opts";
+	case "$1" in
+		--docker-env-file)
+			DOCKER_ENV_FILE="$2"
+			shift 2
+			;;
+		--listener)
+			LISTENER_FOLDER="$2"
+			shift 2
+			;;
+		# --launcher)
+		# 	LAUNCHER_FOLDER="$2"
+		# 	shift 2
+		# 	;;
+		--clear)
+			RELAUNCHED_NOT_FINISHED=1
+			shift 1
+			;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		-v|--verbose)
+			VERBOSE=1
+			shift 1
+			;;
+		-d|--debug)
+			DEBUG=1
+			shift 1
+			;;
+		--) shift
+			break
+			;;
+		*) 	echo "Option $1 is not recognized. " "Use -h or --help to display the help." && \
+			exit 1
+			;;
+	esac
+done
+
+# header
+(($NO_HEADER)) || header;
+
+
+
+####################################################################################################################################
+# Checking the input parameter
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# if [ -z "$LISTENER_FOLDER" ] && [ -z "$LAUNCHER_FOLDER" ] && ((!$DEBUG)); then
+# 	echo "#[ERROR] Required parameter: --listener and --launcher. Use --help to display the help." && echo "" && usage && exit 1;
+# fi
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+## PARAM
+##########
+
+
+## ENV
+if [ -z "$DOCKER_ENV_FILE" ]; then
+	if [ -e $SCRIPT_DIR/../.env ]; then
+		DOCKER_ENV_FILE=$SCRIPT_DIR/../.env
+	fi;
+	#echo "DOCKER_ENV_FILE empty"
+fi;
+
+[ ! -z "$DOCKER_ENV_FILE" ] && [ -e "$DOCKER_ENV_FILE" ] && source $DOCKER_ENV_FILE #&& echo "sourced"
+
+
+## LISTENER
+if [ -z "$LISTENER_FOLDER" ]; then
+	if [ -z "$DOCKER_STARK_INNER_FOLDER_ANALYSES_STARK_SERVICES_LISTENER" ] \
+		&& [ -d "$DOCKER_STARK_INNER_FOLDER_ANALYSES_STARK_SERVICES_LISTENER" ]; then
+		LISTENER_FOLDER=$DOCKER_STARK_INNER_FOLDER_ANALYSES_STARK_SERVICES_LISTENER
+	fi;
+fi;
+
+
+# ## LAUNCHER
+# if [ -z "$LAUNCHER_FOLDER" ]; then
+# 	if [ -z "$DOCKER_STARK_INNER_FOLDER_ANALYSES_STARK_SERVICES_LAUNCHER" ] \
+# 		&& [ -d "$DOCKER_STARK_INNER_FOLDER_ANALYSES_STARK_SERVICES_LAUNCHER" ]; then
+# 		LAUNCHER_FOLDER=$DOCKER_STARK_INNER_FOLDER_ANALYSES_STARK_SERVICES_LAUNCHER
+# 	fi;
+# fi;
+
+
+# DATE
+EXEC_DATE=$(date '+%Y%m%d-%H%M%S')
+
+
+
+## PARAM output
+################
+
+
+
+(($VERBOSE)) && echo "#[INFO] Docker environment file: $DOCKER_ENV_FILE"
+(($VERBOSE)) && echo "#[INFO] Listener log folder: $LISTENER_FOLDER"
+# (($VERBOSE)) && echo "#[INFO] Launcher log folder: $LAUNCHER_FOLDER"
+
+
+
+## PARAM test
+###############
+
+# if [ -z "$LISTENER_FOLDER" ] || [ ! -d "$LISTENER_FOLDER" ] || [ -z "$LAUNCHER_FOLDER" ] || [ ! -d "$LAUNCHER_FOLDER" ]; then
+# 	echo "#[ERROR] Required parameter: --listener and --launcher. Use --help to display the help." && echo "" && usage && exit 1;
+# fi;
+if [ -z "$LISTENER_FOLDER" ] || [ ! -d "$LISTENER_FOLDER" ]; then
+	echo "#[ERROR] Required parameter: --listener and --launcher. Use --help to display the help." && echo "" && usage && exit 1;
+fi;
+
+
+
+## EXEC
+#########
+
+
+for ANALYSIS_LOG in $(find -L $LISTENER_FOLDER -mindepth 1 -maxdepth 1 -name "ID-*-NAME-*.log" -type f); do
+
+	ANALYSIS_NAME=$(echo $(basename $ANALYSIS_LOG) | sed 's/.log//g')
+
+	(($VERBOSE)) && echo "#[INFO] STARK ANALYSIS '$ANALYSIS_NAME' "
+
+	# launched
+	#if (($(ls $LAUNCHER_FOLDER/STARK.*.$ANALYSIS_NAME.json 2>/dev/null | wc -l))) && (($(ls $LAUNCHER_FOLDER/STARK.*.$ANALYSIS_NAME.info 2>/dev/null | wc -l))); then
+	if (($(ls $LISTENER_FOLDER/$ANALYSIS_NAME.json 2>/dev/null | wc -l))); then
+		(($VERBOSE)) && echo "#[INFO] STARK ANALYSIS '$ANALYSIS_NAME' launched "
+	else
+		(($VERBOSE)) && echo "#[INFO] STARK ANALYSIS '$ANALYSIS_NAME' NOT launched "
+	fi;
+
+	# Not finished
+	#if (($(ls $LAUNCHER_FOLDER/STARK.*.$ANALYSIS_NAME.json 2>/dev/null | wc -l))) && ! (($(ls $LAUNCHER_FOLDER/STARK.*.$ANALYSIS_NAME.info 2>/dev/null | wc -l))); then
+	#if (($(ls $LAUNCHER_FOLDER/STARK.*.$ANALYSIS_NAME.info 2>/dev/null | wc -l))); then
+	if (($(ls $LISTENER_FOLDER/$ANALYSIS_NAME.info 2>/dev/null | wc -l))); then
+		(($VERBOSE)) && echo "#[INFO] STARK ANALYSIS '$ANALYSIS_NAME' finished "
+	else
+		(($VERBOSE)) && echo "#[INFO] STARK ANALYSIS '$ANALYSIS_NAME' NOT finished "
+		if (($RELAUNCHED_NOT_FINISHED)); then
+			echo "#[INFO] STARK ANALYSIS '$ANALYSIS_NAME' relaunched"
+			(($DEBUG)) && echo "#[INFO] $ANALYSIS_LOG > $ANALYSIS_LOG.$EXEC_DATE "
+			mv $ANALYSIS_LOG $ANALYSIS_LOG.$EXEC_DATE
+		else
+			echo "#[INFO] STARK ANALYSIS '$ANALYSIS_NAME' need to be relaunched"
+			(($DEBUG)) && echo "#[INFO] $ANALYSIS_LOG > $ANALYSIS_LOG.$EXEC_DATE "
+		fi;
+	fi;
+
+
+done;

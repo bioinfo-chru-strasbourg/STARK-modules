@@ -44,22 +44,33 @@ function usage {
 	echo "#                                          Must be in the STARK APPS folder if relative path";
 	echo "#                                          Default: defined in the RUN SampleSheet, or default.app if not defined";
 	echo "# --input=<FOLDER>                         List of folders containing analyses/runs.";
-	echo "#                                          Default: RUN folder in APP.";
+	echo "#                                          Default: from environment, RUN folder in APP.";
 	echo "# --condition=<FILE1,FILE2...>             List of files to start command (at least one)";
 	echo "#                                          Default: 'RTAComplete.txt&SampleSheet.csv STARKComplete.txt&SampleSheet.csv *analysis.json'";
 	echo "# --days=<INTEGER>                         Analysis folder and files conditions maximum modification days";
 	echo "#                                          Default: '30'";
 	echo "# --log=<FOLDER>                           Logs folder";
-	echo "#                                          Default: LOG folder in APP.";
+	echo "#                                          Default: from environment, LOG folder in APP.";
 	echo "# --command=<STRING>                       Command to launch";
 	echo "#                                          Either 'SLURM', 'DOCKER', 'LAUNCHER' or 'STARK'";
 	echo "#                                          Default: 'DOCKER'";
 	echo "# --launcher=<STRING>                      Launcher URI (for command 'LAUNCH' or 'SLURM')";
 	echo "#                                          Default: 'http://localhost:8000/analysis'";
 	echo "# --docker-stark-image=<STRING>            Docker STARK image (for command 'DOCKER' or 'SLURM')";
-	echo "#                                          Default: environment";
+	echo "#                                          Default: from environment";
 	echo "# --slurm-config-folder=<FOLDER>           SLURM configuration folder (for command 'SLURM')";
-	echo "#                                          Default: /STARK/config/common/slurm";
+	echo "#                                          Default: '/STARK/config/common/slurm'";
+	echo "# --slurm-user=<STRING>                    SLURM User for a job (for command 'SLURM')";
+	echo "#                                          Default: 'root'";
+	echo "# --slurm-account=<STRING>                 SLURM Account for a job (for command 'SLURM')";
+	echo "#                                          Default: 'stark'";
+	echo "# --slurm-qos=<STRING>                     SLURM Quality Of Service for a job (for command 'SLURM')";
+	echo "#                                          QOS will be checked in the SampleSheet TAGs and run APP";
+	echo "#                                             - priority 1: TAG of the run";
+	echo "#                                             - priority 2: QOS variable in main run APP/PlugAPP";
+	echo "#                                          Default: 'high'";
+	echo "# --slurm-mem-by-threads=<INTEGER>         SLURM Memory by threads for a job (for command 'SLURM')";
+	echo "#                                          Default: '7'";
 	echo "# --exec                                   Execute command";
 	echo "# --daemon                                 Execute script as a daemon";
 	echo "# --daemon-periodicity                     Listening periodicity";
@@ -137,6 +148,22 @@ do
 			;;
 		--slurm-config-folder)
 			SLURM_CONFIG_FOLDER="$2"
+			shift 2
+			;;
+		--slurm-user)
+			SLURM_USER="$2"
+			shift 2
+			;;
+		--slurm-account)
+			SLURM_ACCOUNT="$2"
+			shift 2
+			;;
+		--slurm-qos)
+			SLURM_QOS="$2"
+			shift 2
+			;;
+		--slurm-mem-by-threads)
+			MEM_BY_THREADS="$2"
 			shift 2
 			;;
 		--exec)
@@ -272,11 +299,33 @@ if [ "$SLURM_CONFIG_FOLDER" == "" ]; then
 	SLURM_CONFIG_FOLDER="/STARK/config/common/slurm"
 fi;
 
+# SLURM USER
+#############
+
+if [ "$SLURM_USER" == "" ]; then
+	SLURM_USER="root"
+fi;
+
+
+# SLURM ACCOUNT
+################
+
+if [ "$SLURM_ACCOUNT" == "" ]; then
+	SLURM_ACCOUNT="stark"
+fi;
+
+# SLURM QOS
+############
+
+if [ "$SLURM_QOS" == "" ]; then
+	SLURM_QOS="high"
+fi;
+
 
 # MEM BY THREAD
 ################
-if [ -z "$MEM_BY_THREAD" ]; then
-	MEM_BY_THREAD=7
+if [ -z "$MEM_BY_THREADS" ]; then
+	MEM_BY_THREADS=7
 fi;
 
 
@@ -285,10 +334,10 @@ fi;
 
 if [ "$COMMAND" == "SLURM" ]; then
 	# SLURM config
-	SLURM_USER=root
+	#SLURM_USER=root
 	SLURM_TOKEN=$(cat $SLURM_CONFIG_FOLDER/slurm)
 	SLURM_OPENAPI_RELEASE=$(cat $SLURM_CONFIG_FOLDER/openapi_release)
-	SLURM_REST_URL="rest"
+	SLURM_REST_URL=$(cat $SLURM_CONFIG_FOLDER/rest_hostname) #"rest"
 
 	# SLURM check response
 	CMD_SLURM_CHECK="curl -s -H 'X-SLURM-USER-NAME:$SLURM_USER' -H 'X-SLURM-USER-TOKEN:$SLURM_TOKEN' http://$SLURM_REST_URL/slurm/$SLURM_OPENAPI_RELEASE/jobs"
@@ -378,9 +427,12 @@ while ((1)); do
 			RUN_NAME=$(basename $IFA)
 			ID="ID-$MD5-NAME-$RUN_NAME"
 			MD5_LOG="$FOLDER_LOG/$ID.log"
-			MD5_SLURM="$FOLDER_LOG/$ID.sbatch.json"
+			MD5_SLURM="$FOLDER_LOG/$ID.json"
+			MD5_SLURM_info="$FOLDER_LOG/$ID.info"
+			MD5_SLURM_output="$FOLDER_LOG/$ID.output"
 			if [ -d $IFA ]; then
-				if [ ! -f $MD5_LOG ]; then
+				if [ ! -f $MD5_LOG ] || ((1)); then
+				#if [ ! -f $MD5_LOG ]; then
 					(($DEBUG)) && echo "# "
 					(($DEBUG)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5]"
 
@@ -411,6 +463,7 @@ while ((1)); do
 
 					
 					if (( $CONDITION_TEST )); then
+					#if (( $CONDITION_TEST )) || ((1)); then
 
 						(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] Conditions checked!"
 
@@ -432,7 +485,7 @@ while ((1)); do
 							[ ! -e $RUN_SAMPLESHEET ] && echo "#[ERROR] No SampleSheet for RUN '$R'" && exit 1;
 							(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] SampleSheet found!"
 							#echo "#[INFO] SampleSheet found for RUN '$IFA': $RUN_SAMPLESHEET";
-							(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] Resources checking..."
+							(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] Configuration checking..."
 							#echo "#[INFO] Checking THREADS needed for RUN '$IFA'...";
 
 							CHECKED_THREADS=0
@@ -444,6 +497,10 @@ while ((1)); do
 							(($DEBUG)) && echo "#[INFO] ANALYSIS_TAG_SAMPLESHEET found for RUN '$IFA': $ANALYSIS_TAG_SAMPLESHEET";
 							(($DEBUG)) && echo "#[INFO] ANALYSIS_TAG found for RUN '$IFA': $ANALYSIS_TAG";
 
+							# TAG QOS
+							MAIN_QOS=$(extract_tag "$ANALYSIS_TAG" "QOS" | tr " " "+")
+							(($DEBUG)) && echo "#[INFO] Main QOS found for RUN '$IFA': $MAIN_QOS";
+
 							# MAIN APP extraction
 							MAIN_APP=$(extract_tag "$ANALYSIS_TAG" "APP" | tr " " "+")
 							# MAIN PLUGAPP extraction
@@ -451,6 +508,10 @@ while ((1)); do
 							[ "$MAIN_PLUGAPP" != "" ] && MAIN_APP=$MAIN_APP"+"$MAIN_PLUGAPP
 
 							(($DEBUG)) && echo "#[INFO] Main APP found for RUN '$IFA': $MAIN_APP";
+
+							# MAIN APP QOS extraction
+							MAIN_APP_QOS=$(source_app "$MAIN_APP" 2>/dev/null; echo $QOS)
+							(($DEBUG)) && echo "#[INFO] Main APP QOS found for RUN '$IFA': $MAIN_APP_QOS";
 
 							# MAIN APP THREADS extraction
 							MAIN_APP_THREADS=$(source_app "$MAIN_APP" 2>/dev/null; echo $THREADS)
@@ -521,8 +582,30 @@ while ((1)); do
 							(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] Resources checked [${CHECKED_THREADS}CPU/${STARK_RUN_MEM}Go]"
 
 							# JOB config
-							SLURM_STARK_RUN_ACCOUNT="stark"
-							SLURM_STARK_RUN_QOS="high"
+
+							SLURM_STARK_RUN_ACCOUNT=$SLURM_ACCOUNT # "stark" 
+
+							# QOS #"high"
+							if [ "$MAIN_QOS" != "" ]; then
+								SLURM_STARK_RUN_QOS=$MAIN_QOS 
+							elif [ "$MAIN_APP_QOS" != "" ]; then
+								SLURM_STARK_RUN_QOS=$MAIN_APP_QOS
+							elif [ "$SLURM_QOS" != "" ]; then
+								SLURM_STARK_RUN_QOS=$SLURM_QOS
+							else
+								SLURM_STARK_RUN_QOS="high"
+							fi;
+
+							(($VERBOSE)) && echo "#[INFO] Analysis/Run '$IFA' [$MD5] Quality Of Service checked [${SLURM_STARK_RUN_QOS}]"
+
+							SLURM_STARK_RUN_NAME="STARK RUN '$RUN_NAME' [ID:$MD5]"
+
+							STARK_RUN_EXTRA_PARAMS= #"--release_infos"
+
+							# STARK COMMAND
+							SLURM_STARK_RUN_CMD="docker run --entrypoint=bash --rm --cpus=${CHECKED_THREADS} --memory=${STARK_RUN_MEM}g --name ${ID} ${DOCKER_STARK_MOUNT} ${DOCKER_STARK_IMAGE} -c 'STARK --runs=${IFA} --threads=${CHECKED_THREADS} ${STARK_RUN_EXTRA_PARAMS} > ${MD5_SLURM_output}'"
+							# STARK COMMAND FINISHED
+							SLURM_STARK_RUN_INFO="docker run --rm --entrypoint=bash ${DOCKER_STARK_MOUNT} ${DOCKER_STARK_IMAGE} -c 'cat ${MD5_SLURM_output} > ${MD5_SLURM_info} && chmod 0775 ${MD5_SLURM_info}'"
 
 							# create sbatch in json
 							
@@ -530,7 +613,7 @@ while ((1)); do
 							echo '	"job": {' >> $MD5_SLURM
 							echo '		"account": "'$SLURM_STARK_RUN_ACCOUNT'",' >> $MD5_SLURM
 							echo '		"tasks": 1,' >> $MD5_SLURM
-							echo '		"name": "'$ID'",' >> $MD5_SLURM
+							echo '		"name": "'$SLURM_STARK_RUN_NAME'",' >> $MD5_SLURM
 							echo '		"nodes": 1,' >> $MD5_SLURM
 							echo '		"cpus_per_task": '$CHECKED_THREADS',' >> $MD5_SLURM
 							echo '		"memory_per_node": "'$STARK_RUN_MEM'G",' >> $MD5_SLURM
@@ -541,8 +624,9 @@ while ((1)); do
 							echo '			"LD_LIBRARY_PATH": "/lib/:/lib64/:/usr/local/lib"' >> $MD5_SLURM
 							echo '		}' >> $MD5_SLURM
 							echo '	},' >> $MD5_SLURM
-							echo '	"script": "#!/bin/bash\nsrun docker run --rm --cpus='$CHECKED_THREADS' --memory='$STARK_RUN_MEM'g --name '$ID' '$DOCKER_STARK_MOUNT' '$DOCKER_STARK_IMAGE' --runs='$IFA' --threads='$CHECKED_THREADS' '$STARK_RUN_EXTRA_PARAMS'"' >> $MD5_SLURM
+							echo '	"script": "#!/bin/bash\nsrun '${SLURM_STARK_RUN_CMD}' && '${SLURM_STARK_RUN_INFO}'"' >> $MD5_SLURM
 							echo '}' >> $MD5_SLURM
+							(($DEBUG)) && cat $MD5_SLURM
 
 							# Create command for SLURM
 							CMD="curl -s -H 'X-SLURM-USER-NAME:$SLURM_USER' -H 'X-SLURM-USER-TOKEN:$SLURM_TOKEN' -H 'Content-Type: application/json' -X POST -d @$MD5_SLURM http://$SLURM_REST_URL/slurm/$SLURM_OPENAPI_RELEASE/job/submit"
