@@ -5,8 +5,8 @@ STARK module prodives services to run analyses
 * Author: Antony Le Béchec
 * Copyright: HUS/CPS
 * License: GNU GPLA V3
-* Release : 0.9.18.3
-* Date : 20200602
+* Release : 1.1.0
+* Date : 20221205
 
 
 
@@ -45,7 +45,7 @@ $ docker exec stark-module-submodule-stark-cli bcftools
 $ docker exec stark-module-submodule-stark-cli bash -c "find /STARK/tools -mindepth 2 -maxdepth 2 -type d"
 ```
 
----
+<!-- ---
 **STARK Application Program Interface (API)**
 
 
@@ -54,7 +54,7 @@ A STARK Application Program Interface (API) is available through URI http://\<ip
 ```
 $ curl -X POST -H 'Content-Type: application/json' -d '{"run":"MY_RUN"}' http://<ip>:<port>/analysis # STARK analysis with curl in POST method: 
 $ curl http://<ip>:<port>/queue?list # List of analysis running, queued and finished
-```
+``` -->
 
 ---
 **STARK DAta Sharing (DAS)**
@@ -75,5 +75,5 @@ By default, data available are (\<path\>):
 **STARK listener**
 
 
-A STARK listener service is started as a daemon, listening for new sequenced NGS run (new folder in input/runs) and well configured (RTAComplete.txt and SampleSheet.csv), and send a request to STARK API. A STARK listener clear service is checking (once at services start) STARK listener and STARK API log files to reload requests if needed (useful after a server stop/crash).
+A STARK listener service is started as a daemon, listening for new sequenced NGS run (new folder in input/runs) and well configured (RTAComplete.txt and SampleSheet.csv), and send a request to SLURM API. A STARK listener clear service is checking (once at services start) STARK listener log files to reload requests if needed (useful after a server stop/crash).
 

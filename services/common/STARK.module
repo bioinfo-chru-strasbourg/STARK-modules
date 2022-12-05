@@ -3,6 +3,6 @@
   "name": "Common",
   "fullname": "COMMON module services",
   "description": "COMMON module services used by other modules and services, by building images and configuration/setup, and providing interfaces",
-  "release": "1.0",
+  "release": "1.0.0",
   "available": true
 }
