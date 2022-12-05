@@ -29,7 +29,8 @@ if ($user == "") {
 	$user = "root";
 };
 
-$token=$_SESSION['user_token']; #$token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAxNjY2ODksImlhdCI6MTY3MDE2NjY5MCwic3VuIjoic2x1cm0ifQ.r5LV-z4EWjvHDJUgExQS1EHdMx-nPXvNowGmXFuSAJg";
+#$token=$_SESSION['user_token']; #$token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAxNjY2ODksImlhdCI6MTY3MDE2NjY5MCwic3VuIjoic2x1cm0ifQ.r5LV-z4EWjvHDJUgExQS1EHdMx-nPXvNowGmXFuSAJg";
+$token=trim(file_get_contents("/auth/slurm")); #$rest_url="rest";
 $rest_hostname=trim(file_get_contents("/auth/rest_hostname")); #$rest_url="rest";
 $openapi_release=trim(file_get_contents("/auth/openapi_release")); #$openapi_release="v0.0.38";
 // # curl -H "X-SLURM-USER-NAME:$user" -H "X-SLURM-USER-TOKEN:$token" http://$rest_url/slurmdb/$openapi_release/qos
@@ -115,10 +116,9 @@ krsort($jobs, $flags = SORT_REGULAR);
 
 if ( count($jobs) > 0 ) {
 
-	
-
 	$nb = 0;
 	$cell_style = "";
+	$hiddenRows = [];
 
 	foreach ($jobs as $job_id => $job_infos) {
 
@@ -228,9 +228,23 @@ if ( count($jobs) > 0 ) {
 		# Name renderer
 		$cell_style .= "{row: ".$nb.", col: 2, renderer: 'BOLD_StylesRenderer'},";
 
+
+		// if ( $nb >= 20 ) {
+		// 	$hiddenRows[] = $nb;
+		// 	#continue;
+		// }
+
 		$nb++;
 
 	};
+
+	# Hide Rows
+	// print($hiddenRows);
+	// print("<br>");
+	// print(implode(",", $hiddenRows));
+	// print("<br>");
+	// $hiddenRows_implode = implode(",", $hiddenRows);
+
 
 	# Implode Row
 	$dataObject_jobs=implode(",", $dataObject_array);
@@ -405,9 +419,9 @@ if ( count($jobs) > 0 ) {
 				// },
 				// hiddenRows: {
 				// 	// set rows that are hidden by default
-				// 	rows: [0, 1, 2, 3, 4, 5, 6, 10, 11, 12, 13],
-				// 	// when copying or pasting data, take hidden rows into account
-				// 	// copyPasteEnabled: true,
+				// 	rows: [<?php echo $hiddenRows_implode ?>],
+				// // 	// when copying or pasting data, take hidden rows into account
+				// // 	// copyPasteEnabled: true,
 				// 	// show where hidden rows are
 				// 	indicators: true
 				// },
