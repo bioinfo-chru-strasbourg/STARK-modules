@@ -431,6 +431,7 @@ while ((1)); do
 			MD5_SLURM="$FOLDER_LOG/$ID.json"
 			MD5_SLURM_info="$FOLDER_LOG/$ID.info"
 			MD5_SLURM_output="$FOLDER_LOG/$ID.output"
+			MD5_SLURM_error="$FOLDER_LOG/$ID.err"
 			if [ -d $IFA ]; then
 				#if [ ! -f $MD5_LOG ] || ((1)); then
 				if [ ! -f $MD5_LOG ]; then
@@ -607,6 +608,7 @@ while ((1)); do
 							SLURM_STARK_RUN_CMD="docker run --entrypoint=bash --rm --cpus=${CHECKED_THREADS} --memory=${STARK_RUN_MEM}g --name ${ID} ${DOCKER_STARK_MOUNT} ${DOCKER_STARK_IMAGE} -c 'STARK --runs=${IFA} --threads=${CHECKED_THREADS} ${STARK_RUN_EXTRA_PARAMS} > ${MD5_SLURM_output}'"
 							# STARK COMMAND FINISHED
 							SLURM_STARK_RUN_INFO="docker run --rm --entrypoint=bash ${DOCKER_STARK_MOUNT} ${DOCKER_STARK_IMAGE} -c 'cat ${MD5_SLURM_output} > ${MD5_SLURM_info} && chmod 0775 ${MD5_SLURM_info}'"
+							SLURM_STARK_RUN_ERROR="docker run --rm --entrypoint=bash ${DOCKER_STARK_MOUNT} ${DOCKER_STARK_IMAGE} -c 'cat ${MD5_SLURM_output} > ${MD5_SLURM_error} && chmod 0775 ${MD5_SLURM_error}'"
 
 							# create sbatch in json
 							
@@ -625,7 +627,9 @@ while ((1)); do
 							echo '			"LD_LIBRARY_PATH": "/lib/:/lib64/:/usr/local/lib"' >> $MD5_SLURM
 							echo '		}' >> $MD5_SLURM
 							echo '	},' >> $MD5_SLURM
-							echo '	"script": "#!/bin/bash\nsrun '${SLURM_STARK_RUN_CMD}' && '${SLURM_STARK_RUN_INFO}'"' >> $MD5_SLURM
+							#echo '	"script": "#!/bin/bash\nsrun '${SLURM_STARK_RUN_CMD}' && '${SLURM_STARK_RUN_INFO}'"' >> $MD5_SLURM
+							#echo '	"script": "#!/bin/bash\nsrun '${SLURM_STARK_RUN_CMD}' && ('${SLURM_STARK_RUN_INFO}' && exit 0) || ('${SLURM_STARK_RUN_INFO}' && '${SLURM_STARK_RUN_ERROR}' && exit 1) "' >> $MD5_SLURM
+							echo '	"script": "#!/bin/bash\nsrun '${SLURM_STARK_RUN_CMD}' && ('${SLURM_STARK_RUN_INFO}' && exit 0 || exit 1) || (('${SLURM_STARK_RUN_INFO}' || exit 1) && ('${SLURM_STARK_RUN_ERROR}' || exit 1) && exit 1) "' >> $MD5_SLURM
 							echo '}' >> $MD5_SLURM
 							(($DEBUG)) && cat $MD5_SLURM
 
