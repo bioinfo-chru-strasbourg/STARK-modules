@@ -405,7 +405,7 @@ services:
     volumes:
       # System
       - /dev/log:/dev/log
-      - /dev/fuse:/dev/fuse:rw
+      #- /dev/fuse:/dev/fuse:rw
       - /etc/localtime:/etc/localtime:ro
       - /sys/:/sys/:ro
       - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
