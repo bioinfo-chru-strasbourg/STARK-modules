@@ -122,6 +122,9 @@ services:
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-db
 
+    env_file:
+      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
+
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_USER=slurm
@@ -201,6 +204,9 @@ services:
     image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-scaleout:${DOCKER_STARK_MODULE_SUBMODULE_RELEASE}
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-slurmdbd
+
+    env_file:
+      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     environment:
       - SUBNET="${SUBNET}"
@@ -283,6 +289,9 @@ services:
     image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-scaleout:${DOCKER_STARK_MODULE_SUBMODULE_RELEASE}
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-mgmtnode
+
+    env_file:
+      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     environment:
       - SUBNET="${SUBNET}"
@@ -377,6 +386,9 @@ services:
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-login
 
+    env_file:
+      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
+
     environment:
       - SUBNET="${SUBNET}"
       #- SUBNET6="${SUBNET6}:"
@@ -460,6 +472,9 @@ services:
     image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-scaleout:${DOCKER_STARK_MODULE_SUBMODULE_RELEASE}
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-node00
+
+    env_file:
+      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     environment:
       - SUBNET="${SUBNET}"
@@ -556,6 +571,9 @@ services:
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-openondemand
 
+    env_file:
+      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
+
     environment:
       - SUBNET="${SUBNET}"
       #- SUBNET6="${SUBNET6}:"
@@ -619,7 +637,9 @@ services:
       #stark_stark:
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-rest
-    #container_name: rest
+    
+    env_file:
+      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     volumes:
       # System
@@ -692,6 +712,9 @@ services:
     image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-proxy:${DOCKER_STARK_MODULE_SUBMODULE_RELEASE}
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-proxy
+
+    env_file:
+      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     environment:
       - SUBNET="${SUBNET}"
