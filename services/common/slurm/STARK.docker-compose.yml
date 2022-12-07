@@ -123,7 +123,7 @@ services:
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-db
 
     env_file:
-      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
+      - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     environment:
       - MYSQL_ROOT_PASSWORD=password
@@ -206,7 +206,7 @@ services:
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-slurmdbd
 
     env_file:
-      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
+      - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     environment:
       - SUBNET="${SUBNET}"
@@ -291,7 +291,7 @@ services:
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-mgmtnode
 
     env_file:
-      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
+      - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     environment:
       - SUBNET="${SUBNET}"
@@ -387,7 +387,7 @@ services:
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-login
 
     env_file:
-      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
+      - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     environment:
       - SUBNET="${SUBNET}"
@@ -474,7 +474,7 @@ services:
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-node00
 
     env_file:
-      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
+      - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     environment:
       - SUBNET="${SUBNET}"
@@ -572,7 +572,7 @@ services:
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-openondemand
 
     env_file:
-      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
+      - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     environment:
       - SUBNET="${SUBNET}"
@@ -639,7 +639,7 @@ services:
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-rest
     
     env_file:
-      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
+      - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     volumes:
       # System
@@ -714,7 +714,7 @@ services:
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-proxy
 
     env_file:
-      - .${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
+      - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
     environment:
       - SUBNET="${SUBNET}"
