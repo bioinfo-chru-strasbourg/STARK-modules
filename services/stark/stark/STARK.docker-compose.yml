@@ -54,6 +54,11 @@ services:
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
             - ${DOCKER_STARK_SLURM_NETWORK}
+        healthcheck:
+            test: "STARK --help | head -n5 && /tool/bin/STARK.setup --setup-type=INNER && /tool/bin/get_databases.sh"
+            interval: 60s
+            timeout: 60s
+            retries: 3
 
 
     # STARK DAS
@@ -89,7 +94,11 @@ services:
             - ${DOCKER_STARK_MAIN_NETWORK}
         ports:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_DAS_PARAM_PORT_PUBLISHED}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_DAS_PARAM_PORT_TARGET}
-
+        healthcheck:
+            test: "curl -f http://0.0.0.0:5000 || exit 1"
+            interval: 10s
+            timeout: 10s
+            retries: 3
         
     # # STARK API
     # stark-module-stark-submodule-stark-service-api:
@@ -186,11 +195,18 @@ services:
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_INPUT_MANIFESTS}:${DOCKER_STARK_INNER_FOLDER_INPUT_MANIFESTS}:ro
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_INPUT_PEDIGREE}:${DOCKER_STARK_INNER_FOLDER_INPUT_PEDIGREE}:ro
         depends_on:
-            #- stark-module-stark-submodule-stark-service-api
-            - stark-module-stark-submodule-stark-service-listenerclear
+            stark-module-stark-submodule-stark-service-listenerclear:
+                condition: service_started
+            stark-module-stark-submodule-stark-service-cli:
+                condition: service_healthy
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
             - ${DOCKER_STARK_SLURM_NETWORK}
+        healthcheck:
+            test: "STARK --help | head -n5 && /tool/bin/STARK.setup --setup-type=INNER && /tool/bin/get_databases.sh"
+            interval: 60s
+            timeout: 60s
+            retries: 3
 
         
     # STARK SERVICE LISTENER CLEAR
@@ -212,8 +228,13 @@ services:
         volumes:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}:rw
             #- ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_API_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_API_INNER_FOLDER_SERVICES}:ro
+        depends_on:
+            stark-module-stark-submodule-stark-service-cli:
+                condition: service_healthy
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
+        healthcheck:
+            disable: true
 
 
 # NETWORK
@@ -222,6 +243,7 @@ services:
 networks:
     stark_stark:
         external: true
+        name: ${DOCKER_STARK_MAIN_NETWORK}
 
     common_slurm_internal:
         external: true

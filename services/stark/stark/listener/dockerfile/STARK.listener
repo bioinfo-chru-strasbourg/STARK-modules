@@ -605,7 +605,7 @@ while ((1)); do
 							STARK_RUN_EXTRA_PARAMS= #"--release_infos"
 
 							# STARK COMMAND
-							SLURM_STARK_RUN_CMD="docker run --entrypoint=bash --rm --cpus=${CHECKED_THREADS} --memory=${STARK_RUN_MEM}g --name ${ID} ${DOCKER_STARK_MOUNT} ${DOCKER_STARK_IMAGE} -c 'STARK --runs=${IFA} --threads=${CHECKED_THREADS} ${STARK_RUN_EXTRA_PARAMS} > ${MD5_SLURM_output}'"
+							SLURM_STARK_RUN_CMD="docker run --entrypoint=bash --rm --cpus=${CHECKED_THREADS} --memory=${STARK_RUN_MEM}g --name ${ID} ${DOCKER_STARK_MOUNT} ${DOCKER_STARK_IMAGE} -c 'STARK --verbose --runs=${IFA} --threads=${CHECKED_THREADS} ${STARK_RUN_EXTRA_PARAMS} > ${MD5_SLURM_output}'"
 							# STARK COMMAND FINISHED
 							SLURM_STARK_RUN_INFO="docker run --rm --entrypoint=bash ${DOCKER_STARK_MOUNT} ${DOCKER_STARK_IMAGE} -c 'cat ${MD5_SLURM_output} > ${MD5_SLURM_info} && chmod 0775 ${MD5_SLURM_info}'"
 							SLURM_STARK_RUN_ERROR="docker run --rm --entrypoint=bash ${DOCKER_STARK_MOUNT} ${DOCKER_STARK_IMAGE} -c 'cat ${MD5_SLURM_output} > ${MD5_SLURM_error} && chmod 0775 ${MD5_SLURM_error}'"

@@ -118,7 +118,8 @@ RUN git clone --depth 1 --single-branch -b v0.9.1 https://github.com/NVIDIA/pyxi
 WORKDIR /usr/local/src/pyxis
 RUN make install
 
-RUN git clone --depth 1 --single-branch --branch 20210222 git://git.savannah.gnu.org/parallel.git /usr/local/src/parallel
+#RUN git clone --depth 1 --single-branch --branch 20210222 git://git.savannah.gnu.org/parallel.git /usr/local/src/parallel
+RUN git clone --depth 1 --single-branch --branch 20210222 https://git.savannah.gnu.org/git/parallel.git /usr/local/src/parallel
 WORKDIR /usr/local/src/parallel
 RUN autoreconf -i && ./configure --disable-documentation && make -j >/dev/null && make install
 
@@ -126,7 +127,14 @@ RUN git clone --depth 1 --single-branch --branch 0.1.103 https://github.com/vasi
 WORKDIR /usr/local/src/squashfuse
 RUN autoreconf -i && ./configure && make -j >/dev/null && make install
 
-RUN git clone --recurse-submodules --depth 1 --single-branch --branch v3.3.0 https://github.com/NVIDIA/enroot.git /usr/local/src/enroot
+#RUN git clone --recurse-submodules --depth 1 --single-branch --branch v3.3.0 https://github.com/NVIDIA/enroot.git /usr/local/src/enroot
+RUN git clone --depth 1 --single-branch --branch v3.3.0 https://github.com/NVIDIA/enroot.git /usr/local/src/enroot && \
+	git clone https://anongit.freedesktop.org/git/libbsd.git /usr/local/src/enroot/deps/libbsd && \
+	git clone https://github.com/sabotage-linux/kernel-headers.git /usr/local/src/enroot/deps/linux-headers && \
+	git clone https://github.com/megastep/makeself.git /usr/local/src/enroot/deps/makeself && \
+	git clone https://git.musl-libc.org/git/musl /usr/local/src/enroot/deps/musl/
+
+
 WORKDIR /usr/local/src/enroot
 COPY enroot.conf /tmp/enroot.conf
 RUN make sysconfdir=/etc/enroot/ -j >/dev/null && make install && make setcap && \

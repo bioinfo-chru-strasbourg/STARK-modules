@@ -6,25 +6,10 @@
 version: '3'
 
 
-networks:
-  
-  slurm_internal:
-    driver: bridge
-    driver_opts:
-        com.docker.network.bridge.enable_ip_masquerade: 'true'
-        #com.docker.network.bridge.enable_ipv6: 'true'
-    internal: false
-    enable_ipv6: true
-    ipam:
-      config:
-        #- subnet: "10.11.0.0/16"
-        - subnet: "${SUBNET}.0.0/16"
-        - subnet: "${SUBNET6}:/64"
 
+# services:
 
-services:
-
-  stark-module-common-submodule-main-service-setup:
-    image: ${DOCKER_STARK_IMAGE}
-    networks:
-      - slurm_internal
+#   stark-module-common-submodule-main-service-setup:
+#     image: ${DOCKER_STARK_IMAGE}
+#     networks:
+#       - slurm_internal
