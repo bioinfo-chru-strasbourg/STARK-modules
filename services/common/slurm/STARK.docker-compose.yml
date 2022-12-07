@@ -220,7 +220,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /sys/:/sys/:ro
       - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-      - /sys/fs/fuse/:/sys/fs/fuse/
+      #- /sys/fs/fuse/:/sys/fs/fuse/
       - /var/run/docker.sock:/var/run/docker.sock
       # Main
       - stark-module-common-submodule-slurm-volume-main-root-home:/root
@@ -304,7 +304,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /sys/:/sys/:ro
       - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-      - /sys/fs/fuse/:/sys/fs/fuse/
+      #- /sys/fs/fuse/:/sys/fs/fuse/
       - /var/run/docker.sock:/var/run/docker.sock
       # Main
       - stark-module-common-submodule-slurm-volume-main-root-home:/root
@@ -344,6 +344,8 @@ services:
 
     depends_on:
       stark-module-common-submodule-slurm-service-slurmdbd:
+        condition: service_healthy
+      stark-module-common-submodule-slurm-service-node00:
         condition: service_healthy
 
     extra_hosts:
@@ -395,7 +397,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /sys/:/sys/:ro
       - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-      - /sys/fs/fuse/:/sys/fs/fuse/
+      #- /sys/fs/fuse/:/sys/fs/fuse/
       - /var/run/docker.sock:/var/run/docker.sock
       # Main
       - stark-module-common-submodule-slurm-volume-main-root-home:/root
@@ -481,7 +483,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /sys/:/sys/:ro
       - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-      - /sys/fs/fuse/:/sys/fs/fuse/
+      #- /sys/fs/fuse/:/sys/fs/fuse/
       - /var/run/docker.sock:/var/run/docker.sock
       # Main
       - stark-module-common-submodule-slurm-volume-main-root-home:/root
@@ -516,7 +518,9 @@ services:
       - apparmor:unconfined
 
     depends_on:
-      stark-module-common-submodule-slurm-service-mgmtnode:
+      # stark-module-common-submodule-slurm-service-mgmtnode:
+      #   condition: service_healthy
+      stark-module-common-submodule-slurm-service-slurmdbd:
         condition: service_healthy
 
     extra_hosts:
@@ -623,7 +627,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /sys/:/sys/:ro
       - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-      - /sys/fs/fuse/:/sys/fs/fuse/
+      #- /sys/fs/fuse/:/sys/fs/fuse/
       - /var/run/docker.sock:/var/run/docker.sock
       # Main
       - stark-module-common-submodule-slurm-volume-main-etc-ssh:/etc/ssh
