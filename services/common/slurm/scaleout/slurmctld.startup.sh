@@ -131,7 +131,8 @@ then
 	then
 		props="$(slurmd -C | head -1 | sed 's#NodeName=mgmtnode ##g')"
 		#echo "NodeName=DEFAULT $props Gres=gpu:gtx:3" >> /etc/slurm/nodes.conf
-		echo "NodeName=DEFAULT $props Gres=gpu:gtx:3" >> /config/nodes.conf
+		#echo "NodeName=DEFAULT $props Gres=gpu:gtx:3" >> /config/nodes.conf
+		echo "NodeName=DEFAULT $props" >> /config/nodes.conf
 
 		cat /etc/nodelist | while read name ip4 ip6
 		do
