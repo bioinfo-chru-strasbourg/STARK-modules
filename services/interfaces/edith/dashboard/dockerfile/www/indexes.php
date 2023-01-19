@@ -43,9 +43,12 @@ include "config.inc.php";
 ### CONFIGURATION
 ###################
 
-
+print_r($configuration["parameters"]);
 # Index delay
 $indexes_old=$configuration["parameters"]["data_indexes_delay"]+0;
+if ($indexes_old <= 0) {
+	$indexes_old=0;
+};
 $indexes_tmp_old=86400; # 1 day
 #$indexes_old=6;
 #echo "<br><br><br><br>indexes_old=$indexes_old";
@@ -59,9 +62,9 @@ $now=time();
 $runs_indexes_old=($now - $runs_indexes_filemtime);
 
 # inputs - manifests
-$inputs_indexes_filemtime=filemtime("$folder_indexes/manifests.idx");
+$manifests_indexes_filemtime=filemtime("$folder_indexes/manifests.idx");
 $now=time();
-$inputs_indexes_old=($now - $inputs_indexes_filemtime);
+$manifests_indexes_old=($now - $manifests_indexes_filemtime);
 
 # outputs - repositories
 $repositories_indexes_filemtime=filemtime("$folder_indexes/repositories.idx");
@@ -76,9 +79,9 @@ $now=time();
 $runs_indexes_tmp_old=($now - $runs_indexes_tmp_filemtime);
 
 # inputs - manifests
-$inputs_indexes_tmp_filemtime=filemtime("$folder_indexes/manifests.idx.tmp");
+$manifests_indexes_tmp_filemtime=filemtime("$folder_indexes/manifests.idx.tmp");
 $now=time();
-$inputs_indexes_tmp_old=($now - $inputs_indexes_tmp_filemtime);
+$manifests_indexes_tmp_old=($now - $manifests_indexes_tmp_filemtime);
 
 # outputs - repositories
 $repositories_indexes_tmp_filemtime=filemtime("$folder_indexes/repositories.idx.tmp");
@@ -86,14 +89,47 @@ $now=time();
 $repositories_indexes_tmp_old=($now - $repositories_indexes_tmp_filemtime);
 
 # fix if tmp too old (usually due to service hard down)
-if (	($runs_indexes_tmp_old >= $indexes_tmp_old)
-	||	($inputs_indexes_tmp_old >= $indexes_tmp_old)
-	||	($repositories_indexes_tmp_old >= $indexes_tmp_old)
-) {
-	# tmp command
-	$command="rm -f $folder_indexes/runs.idx.tmp $folder_indexes/manifests.idx.tmp $folder_indexes/repositories.idx.tmp";
+// if (	($runs_indexes_tmp_old >= $indexes_tmp_old)
+// 	||	($inputs_indexes_tmp_old >= $indexes_tmp_old)
+// 	||	($repositories_indexes_tmp_old >= $indexes_tmp_old)
+// ) {
+// 	# tmp command
+// 	$command="rm -f $folder_indexes/runs.idx.tmp $folder_indexes/manifests.idx.tmp $folder_indexes/repositories.idx.tmp";
 
-	# inputs runs exec
+// 	# inputs runs exec
+// 	if ($indexes_tmp_old) {
+// 		$output = executeAsyncShellCommand($command);
+// 	} else {
+// 		$output = shell_exec($command);
+// 	}
+// }
+if ($runs_indexes_tmp_old >= $indexes_tmp_old) {
+	# tmp command
+	$command="rm -f $folder_indexes/runs.idx.tmp";
+
+	# exec
+	if ($indexes_tmp_old) {
+		$output = executeAsyncShellCommand($command);
+	} else {
+		$output = shell_exec($command);
+	}
+}
+if ($manifests_indexes_tmp_old >= $indexes_tmp_old) {
+	# tmp command
+	$command="rm -f $folder_indexes/manifests.idx.tmp";
+
+	# exec
+	if ($indexes_tmp_old) {
+		$output = executeAsyncShellCommand($command);
+	} else {
+		$output = shell_exec($command);
+	}
+}
+if ($repositories_indexes_tmp_old >= $indexes_tmp_old) {
+	# tmp command
+	$command="rm -f $folder_indexes/repositories.idx.tmp";
+
+	# exec
 	if ($indexes_tmp_old) {
 		$output = executeAsyncShellCommand($command);
 	} else {
@@ -101,10 +137,9 @@ if (	($runs_indexes_tmp_old >= $indexes_tmp_old)
 	}
 }
 
-
 if (   !is_file("$folder_indexes/runs.idx") || ($runs_indexes_old >= $indexes_old)
-	|| !is_file("$folder_indexes/manifests.idx") || ($inputs_indexes_old >= $indexes_old)
-	|| !is_file("$folder_indexes/manifests.idx") || ($repositories_indexes_old >= $indexes_old)
+	|| !is_file("$folder_indexes/manifests.idx") || ($manifests_indexes_old >= $indexes_old)
+	|| !is_file("$folder_indexes/repositories.idx") || ($repositories_indexes_old >= $indexes_old)
 	) {
 
 	if ( !is_file("$folder_indexes/runs.idx.tmp")
@@ -175,7 +210,6 @@ if (   !is_file("$folder_indexes/runs.idx") || ($runs_indexes_old >= $indexes_ol
 		}
 
 		# repositories parameters
-		#$repositories_files_patterns=" -name *STARKCopyComplete.txt -o -name *stark.report.html -o -name *stark.report.pdf -o -name *tag -o -name *vcf.gz -o -name *vcf -o -name *tsv -o -name *cram -o -name *bed ";
 		$repositories_files_patterns=" -name *STARKCopyComplete.txt -o -name *report.html -o -name *report.pdf -o -name *tag -o -name *vcf.gz -o -name *vcf -o -name *tsv -o -name *cram -o -name *bed ";
 		$repositories_mindepth="2";
 		$repositories_maxdepth="2";
@@ -192,7 +226,6 @@ if (   !is_file("$folder_indexes/runs.idx") || ($runs_indexes_old >= $indexes_ol
 		} else {
 			$output = shell_exec($command);
 		}
-
 
 	}
 }

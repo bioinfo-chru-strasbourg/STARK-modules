@@ -7,8 +7,8 @@
 ### APP
 $APP_CODE="EDITH";
 $APP_NAME="Excellent Dashboard and Interfaces To Help STARK experience";
-$APP_RELEASE="1.0";
-$APP_DATE="20200523";
+$APP_RELEASE="1.2.1";
+$APP_DATE="20221126";
 $APP_DESCRIPTION="EDITH provides an IHM as a Dashboard for STARK analyses and results";
 $APP_COPYRIGHT="HUS/CPS";
 $APP_LICENCE="GPLA - GNU-GPL Affero";

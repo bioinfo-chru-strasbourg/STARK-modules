@@ -69,7 +69,7 @@ $GLOBAL_HEADER='
 
 $GLOBAL_INPUT="";
 
-foreach ($input_list as $input=>$hash) {
+foreach ($runs as $input=>$hash) {
 
 	$GLOBAL_INPUT.='
 
