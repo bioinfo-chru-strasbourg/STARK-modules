@@ -23,21 +23,18 @@ if [ ! -z "$NODE_NAME" ]; then
 	if ! grep -Fxq "$NODE_NAME $NODE_IP4 $NODE_IP6" /config/nodelist; then
 		echo -e "$NODE_NAME $NODE_IP4 $NODE_IP6" >> /config/nodelist
 	fi
-	#echo -e "$NODE_NAME $NODE_IP4 $NODE_IP6" >> /config/nodelist
-	if ! grep -Fxq ""$NODE_IP4 $NODE_NAME"" /config/hosts.nodes; then
-		echo -e ""$NODE_IP4 $NODE_NAME"" >> /config/hosts.nodes
+	if ! grep -Fxq "$NODE_IP4 $NODE_NAME" /config/hosts.nodes; then
+		echo -e "$NODE_IP4 $NODE_NAME" >> /config/hosts.nodes
 	fi
-	if ! grep -Fxq ""$NODE_IP6 $NODE_NAME"" /config/hosts.nodes; then
-		echo -e ""$NODE_IP6 $NODE_NAME"" >> /config/hosts.nodes
+	# if ! grep -Fxq "$NODE_IP6 $NODE_NAME" /config/hosts.nodes; then
+	# 	echo -e "$NODE_IP6 $NODE_NAME" >> /config/hosts.nodes
+	# fi
+	if ! grep -Fxq "$NODE_IP4 $NODE_NAME" /config/hosts; then
+		echo -e "$NODE_IP4 $NODE_NAME" >> /config/hosts
 	fi
-	# echo -e "$NODE_IP4 $NODE_NAME" >> /config/hosts.nodes
-	# echo -e "$NODE_IP6 $NODE_NAME" >> /config/hosts.nodes
-	if ! grep -Fxq ""$NODE_IP4 $NODE_NAME"" /config/hosts; then
-		echo -e ""$NODE_IP4 $NODE_NAME"" >> /config/hosts
-	fi
-	if ! grep -Fxq ""$NODE_IP6 $NODE_NAME"" /config/hosts; then
-		echo -e ""$NODE_IP6 $NODE_NAME"" >> /config/hosts
-	fi
+	# if ! grep -Fxq "$NODE_IP6 $NODE_NAME" /config/hosts; then
+	# 	echo -e "$NODE_IP6 $NODE_NAME" >> /config/hosts
+	# fi
 fi;
 
 awk -i inplace '!seen[$0]++'  /config/nodelist
@@ -59,14 +56,19 @@ fi;
 ln -sfn /config/nodes.conf /etc/slurm/nodes.conf
 
 # Priority
-if [ ! -s /config/priority.conf ]; then
-	if [ -s /etc/slurm/priority.conf ]; then
-		cp /etc/slurm/priority.conf /config/priority.conf
-	else
-		touch /config/priority.conf
-	fi;
+# if [ ! -s /config/priority.conf ]; then
+# 	if [ -s /etc/slurm/priority.conf ]; then
+# 		cp /etc/slurm/priority.conf /config/priority.conf
+# 	else
+# 		touch /config/priority.conf
+# 	fi;
+# fi;
+# ln -sfn /config/priority.conf /etc/slurm/priority.conf
+if [ ! -s /config/priority.conf ] && [ -s /etc/slurm/priority.conf ]; then
+	cp /etc/slurm/priority.conf /config/priority.conf
+	ln -sfn /config/priority.conf /etc/slurm/priority.conf
 fi;
-ln -sfn /config/priority.conf /etc/slurm/priority.conf
+
 
 
 # wait for cluster

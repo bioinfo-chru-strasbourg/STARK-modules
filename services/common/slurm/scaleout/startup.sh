@@ -14,21 +14,18 @@ if [ ! -z "$NODE_NAME" ]; then
 	if ! grep -Fxq "$NODE_NAME $NODE_IP4 $NODE_IP6" /config/nodelist; then
 		echo -e "$NODE_NAME $NODE_IP4 $NODE_IP6" >> /config/nodelist
 	fi
-	#echo -e "$NODE_NAME $NODE_IP4 $NODE_IP6" >> /config/nodelist
-	if ! grep -Fxq ""$NODE_IP4 $NODE_NAME"" /config/hosts.nodes; then
-		echo -e ""$NODE_IP4 $NODE_NAME"" >> /config/hosts.nodes
+	if ! grep -Fxq "$NODE_IP4 $NODE_NAME" /config/hosts.nodes; then
+		echo -e "$NODE_IP4 $NODE_NAME" >> /config/hosts.nodes
 	fi
-	if ! grep -Fxq ""$NODE_IP6 $NODE_NAME"" /config/hosts.nodes; then
-		echo -e ""$NODE_IP6 $NODE_NAME"" >> /config/hosts.nodes
+	# if ! grep -Fxq "$NODE_IP6 $NODE_NAME" /config/hosts.nodes; then
+	# 	echo -e "$NODE_IP6 $NODE_NAME" >> /config/hosts.nodes
+	# fi
+	if ! grep -Fxq "$NODE_IP4 $NODE_NAME" /config/hosts; then
+		echo -e "$NODE_IP4 $NODE_NAME" >> /config/hosts
 	fi
-	# echo -e "$NODE_IP4 $NODE_NAME" >> /config/hosts.nodes
-	# echo -e "$NODE_IP6 $NODE_NAME" >> /config/hosts.nodes
-	if ! grep -Fxq ""$NODE_IP4 $NODE_NAME"" /config/hosts; then
-		echo -e ""$NODE_IP4 $NODE_NAME"" >> /config/hosts
-	fi
-	if ! grep -Fxq ""$NODE_IP6 $NODE_NAME"" /config/hosts; then
-		echo -e ""$NODE_IP6 $NODE_NAME"" >> /config/hosts
-	fi
+	# if ! grep -Fxq "$NODE_IP6 $NODE_NAME" /config/hosts; then
+	# 	echo -e "$NODE_IP6 $NODE_NAME" >> /config/hosts
+	# fi
 fi;
 
 awk -i inplace '!seen[$0]++'  /config/nodelist
@@ -63,5 +60,21 @@ fi;
 chmod u+x /config/users.sh
 /config/users.sh
 
+
+# Fix socket and subnet for slurmrestd
+
+# Remove slurmrestd socket
+[ ! -e /usr/lib/systemd/system/slurmrestd.service.original ] && cp /usr/lib/systemd/system/slurmrestd.service /usr/lib/systemd/system/slurmrestd.service.original
+cat /usr/lib/systemd/system/slurmrestd.service.original | sed "s#unix:/var/run/slurmrestd.socket##" > /usr/lib/systemd/system/slurmrestd.service
+
+# Replace SUBNET variable
+[ ! -e /etc/sysconfig/slurmrestd.original ] && cp /etc/sysconfig/slurmrestd /etc/sysconfig/slurmrestd.original
+envsubst < /etc/sysconfig/slurmrestd.original > /etc/sysconfig/slurmrestd
+
+# reload daemon config
+systemctl daemon-reload
+
+
 #start systemd
-exec /lib/systemd/systemd --system --log-level=info --crash-reboot --log-target=console
+exec /lib/systemd/systemd --system --log-level=debug --crash-reboot --log-target=console
+

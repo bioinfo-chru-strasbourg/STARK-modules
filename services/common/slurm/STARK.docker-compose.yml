@@ -178,6 +178,7 @@ services:
       #- "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
       #- "openondemand:${SUBNET6}:1:21"
+      - "node00:${SUBNET}.5.0"
 
     healthcheck:
       test: "mysqlcheck --all-databases || exit 1"
@@ -259,7 +260,7 @@ services:
 
     depends_on:
       stark-module-common-submodule-slurm-service-db:
-        condition: service_healthy
+        condition: service_started
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
@@ -276,6 +277,7 @@ services:
       #- "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
       #- "openondemand:${SUBNET6}:1:21"
+      - "node00:${SUBNET}.5.0"
 
     healthcheck:
       test: "sacctmgr list stats || exit 1"
@@ -353,9 +355,9 @@ services:
 
     depends_on:
       stark-module-common-submodule-slurm-service-slurmdbd:
-        condition: service_healthy
-      stark-module-common-submodule-slurm-service-node00:
-        condition: service_healthy
+        condition: service_started
+      # stark-module-common-submodule-slurm-service-node00:
+      #   condition: service_started
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
@@ -372,6 +374,7 @@ services:
       #- "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
       #- "openondemand:${SUBNET6}:1:21"
+      - "node00:${SUBNET}.5.0"
 
     healthcheck:
       test: "sacctmgr list stats || exit 1"
@@ -459,6 +462,7 @@ services:
       #- "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
       #- "openondemand:${SUBNET6}:1:21"
+      - "node00:${SUBNET}.5.0"
 
     healthcheck:
       test: "sacctmgr list stats || exit 1"
@@ -533,10 +537,10 @@ services:
       - apparmor:unconfined
 
     depends_on:
-      # stark-module-common-submodule-slurm-service-mgmtnode:
-      #   condition: service_healthy
+      stark-module-common-submodule-slurm-service-mgmtnode:
+        condition: service_started
       stark-module-common-submodule-slurm-service-slurmdbd:
-        condition: service_healthy
+        condition: service_started
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
@@ -553,6 +557,7 @@ services:
       #- "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
       #- "openondemand:${SUBNET6}:1:21"
+      - "node00:${SUBNET}.5.0"
 
     healthcheck:
       test: "sacctmgr list stats || exit 1"
@@ -594,7 +599,7 @@ services:
 
     depends_on:
       stark-module-common-submodule-slurm-service-login:
-        condition: service_healthy
+        condition: service_started
 
     ports:
       - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_OPENONDEMAND_PORT_PUBLISHED}:80 #8081:80
@@ -638,6 +643,9 @@ services:
 
     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX}-rest
     
+    environment:
+      - SUBNET=${SUBNET}
+
     env_file:
       - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PREFIX_ENV_FILE}
 
@@ -678,7 +686,7 @@ services:
 
     depends_on:
       stark-module-common-submodule-slurm-service-mgmtnode:
-        condition: service_healthy
+        condition: service_started
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
@@ -695,9 +703,10 @@ services:
       #- "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
       #- "openondemand:${SUBNET6}:1:21"
+      - "node00:${SUBNET}.5.0"
 
     healthcheck:
-      test: "sacctmgr list stats || exit 1"
+      test: "pgrep slurmrestd || exit 1"
       interval: 10s
       timeout: 10s
       retries: 6
@@ -761,7 +770,7 @@ services:
 
     depends_on:
       stark-module-common-submodule-slurm-service-rest:
-        condition: service_healthy
+        condition: service_started
 
     extra_hosts:
       - "db:${SUBNET}.1.3"
@@ -778,6 +787,7 @@ services:
       #- "proxy:${SUBNET6}:1:7"
       - "openondemand:${SUBNET}.1.21"
       #- "openondemand:${SUBNET6}:1:21"
+      - "node00:${SUBNET}.5.0"
 
     healthcheck:
       test: "nginx -t || exit 1"
