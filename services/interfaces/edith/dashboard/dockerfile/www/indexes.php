@@ -43,7 +43,7 @@ include "config.inc.php";
 ### CONFIGURATION
 ###################
 
-print_r($configuration["parameters"]);
+# print_r($configuration["parameters"]);
 # Index delay
 $indexes_old=$configuration["parameters"]["data_indexes_delay"]+0;
 if ($indexes_old <= 0) {
