@@ -80,6 +80,11 @@ def distribute(run_informations):
             osj(run_informations["run_processing_folder_tsv"], f"*{sample}*.tsv")
         )
 
+        root_tsv_files = glob.glob(osj(run_informations["run_repository"], os.path.basename(sample), "VARANK", "*.tsv"))
+        if len(root_tsv_files) != 0:
+            for tsv_file in root_tsv_files:
+                os.remove(tsv_file)
+
         for tsv_file in tsv_files:
             subprocess.run(
                 [
@@ -91,6 +96,19 @@ def distribute(run_informations):
                         os.path.basename(sample),
                         "VARANK",
                         varank_folder_name,
+                        "",
+                    ),
+                ]
+            )
+            subprocess.run(
+                [
+                    "rsync",
+                    "-rp",
+                    tsv_file,
+                    osj(
+                        run_informations["run_repository"],
+                        os.path.basename(sample),
+                        "VARANK",
                         "",
                     ),
                 ]
