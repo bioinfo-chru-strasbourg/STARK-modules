@@ -77,10 +77,20 @@ def distribute(run_informations):
 
         varank_folder_name = f"{os.path.basename(sample)}_{date}"
         tsv_files = glob.glob(
-            osj(run_informations["run_processing_folder_tsv"], f"*{sample}*.tsv")
+            osj(
+                run_informations["run_processing_folder_tsv"],
+                f"*{sample}*.rankingByVar.tsv",
+            )
         )
 
-        root_tsv_files = glob.glob(osj(run_informations["run_repository"], os.path.basename(sample), "VARANK", "*.tsv"))
+        root_tsv_files = glob.glob(
+            osj(
+                run_informations["run_repository"],
+                os.path.basename(sample),
+                "VARANK",
+                "*.tsv",
+            )
+        )
         if len(root_tsv_files) != 0:
             for tsv_file in root_tsv_files:
                 os.remove(tsv_file)
