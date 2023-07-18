@@ -4,3 +4,5 @@ services/STARK.env
 !services/qualitycontrol/cqi/cli/dockerfile/app/.env
 __pycache__/
 services/variantannotation/varank/cli/dockerfile/bin/__pycache__/checker.cpython-310.pyc
+services/qualitycontrol/loki/cli/dockerfile/bin/old_variantconvert_example
+services/qualitycontrol/loki/cli/dockerfile/bin/old_varank_example
