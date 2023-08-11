@@ -44,11 +44,12 @@ RUN git clone https://github.com/lgmgeo/VaRank.git
 RUN ln -s VaRank current
 RUN cd current; \
 	git checkout c137f3a28c873d6e0cf66d71c84bd49765114031
-RUN mkdir tcllib
+RUN mkdir /tools/varank/current/tcllib ; \
+	mkdir /tools/varank/current/Annotations_Exomiser
 COPY src/tcllib.tar.gz /tools/varank/current/tcllib/
-RUN cd tcllib; \
+RUN cd /tools/varank/current/tcllib; \
 	tar -xvf tcllib.tar.gz
-RUN cd current/ExtAnn; \
+RUN cd /tools/varank/current/ExtAnn; \
 	rm -f *; \
 	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/ACMG.tsv; \
 	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/ClinGenAnnotations.tsv; \
