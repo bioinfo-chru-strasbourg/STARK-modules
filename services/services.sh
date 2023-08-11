@@ -47,6 +47,8 @@ function usage {
 	echo "#                              Default: '../env,STARK.env'";
   	echo "# --folder_services=<FOLDER>   STARK services modules folder ";
 	echo "#                              Default: in env file, or 'services'";
+  	echo "# --folder_config=<FOLDER>     STARK config modules folder ";
+	echo "#                              Default: in env file, or 'config'";
   	echo "# --modules=<STRING>           STARK modules as a list";
 	echo "#                              Format: 'module1,module2,...', use '*' as wildcard";
 	echo "#                              Default: '*' all modules";
@@ -90,7 +92,7 @@ function usage {
 # Getting parameters from the input
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ":" tells that the option has a required argument, "::" tells that the option has an optional argument, no ":" tells no argument
-ARGS=$(getopt -o "vdnh" --long "env:,folder_services:,modules:,submodules:,modules_show,common:,services:,command:,command_args:,verbose,debug,release,help" -- "$@" 2> /dev/null)
+ARGS=$(getopt -o "vdnh" --long "env:,folder_services:,folder_config:,modules:,submodules:,modules_show,common:,services:,command:,command_args:,verbose,debug,release,help" -- "$@" 2> /dev/null)
 if [ $? -ne 0 ]; then
 	:
 	echo "#[ERROR] Error in the argument list:";
@@ -119,6 +121,10 @@ do
 			;;
     	--folder_services)
 			FOLDER_SERVICES="$2"
+			shift 2
+			;;
+    	--folder_config)
+			FOLDER_CONFIG="$2"
 			shift 2
 			;;
     	--modules)
@@ -256,9 +262,24 @@ if [ -z "$FOLDER_SERVICES" ]; then
 fi;
 
 mkdir -p $FOLDER_SERVICES
-chmod a+x $FOLDER_SERVICES  2>/dev/null
+chmod a+x $FOLDER_SERVICES 2>/dev/null
 
 (($VERBOSE)) && echo "#[INFO] STARK Module services modules folder '$FOLDER_SERVICES'"
+
+
+# CONFIG
+if [ -z "$FOLDER_CONFIG" ]; then
+  if [ "$DOCKER_STARK_FOLDER_CONFIG" != "" ]; then
+    FOLDER_CONFIG=$DOCKER_STARK_MAIN_FOLDER/$DOCKER_STARK_FOLDER_CONFIG
+  else
+  	FOLDER_CONFIG=$DOCKER_STARK_MAIN_FOLDER/services
+  fi;
+fi;
+
+mkdir -p $FOLDER_CONFIG
+chmod a+x $FOLDER_CONFIG 2>/dev/null
+
+(($VERBOSE)) && echo "#[INFO] STARK Module config modules folder '$FOLDER_CONFIG'"
 
 
 # MODULE
@@ -439,9 +460,14 @@ for service_module in \
 					cat $service_module_env 1>> $TMP_FOLDER/.env 2>>$TMP_FOLDER/.env.err
 
 					# Create folder
+					# services
 					mkdir -p $FOLDER_SERVICES/$module_name/$service_folder
-					chmod o+rwx $FOLDER_SERVICES/$module_name 2>/dev/null
-					chmod o+rwx $FOLDER_SERVICES/$module_name/$service_folder 2>/dev/null
+					chmod 0777 $FOLDER_SERVICES/$module_name 2>/dev/null
+					chmod 0777 $FOLDER_SERVICES/$module_name/$service_folder 2>/dev/null
+					# config
+					mkdir -p $FOLDER_CONFIG/$module_name/$service_folder
+					chmod 0777 $FOLDER_CONFIG/$module_name 2>/dev/null
+					chmod 0777 $FOLDER_CONFIG/$module_name/$service_folder 2>/dev/null
 
 					# Module configuration file
 					(($DEBUG)) && echo "#[INFO] STARK Module '$module_name' - Module configuration file copy"
@@ -454,7 +480,7 @@ for service_module in \
 					fi;
 					
 					# Files permissions
-					chmod o+rxw -R $FOLDER_SERVICES/$module_name/* 2>/dev/null
+					chmod 0777 -R $FOLDER_SERVICES/$module_name/* 2>/dev/null
 
 					# DEBUG
 					(($DEBUG)) && cat $TMP_FOLDER/.env $TMP_FOLDER/.env.err

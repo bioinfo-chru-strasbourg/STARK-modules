@@ -64,6 +64,7 @@ COPY . /app
 RUN git clone https://github.com/JbaptisteLam/DPNI.git /app/lib/DPNI
 ENV PATH="/usr/local/lib/miniconda3/bin:$PATH"
 RUN conda env create -f /app/lib/DPNI/config/environment.yml
+RUN conda init bash
 RUN echo "source activate dpni" >> ~/.bashrc
 
 RUN chmod -R +x /app
@@ -72,4 +73,4 @@ ENV PATH="/app/bin:$PATH"
 WORKDIR /STARK
 ENTRYPOINT []
 
-CMD ["/app/bin/pool","--help"]
+CMD ["/app/bin/dpni_module","--help"]

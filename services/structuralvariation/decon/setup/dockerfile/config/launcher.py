@@ -5,13 +5,16 @@
 
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
+# PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
+
+# PROD version 2 : 16/06/2022 changelog
+	# yaml files can be defined by groupe_name + project_name or groupe_name only
 
 ################## Context ##################
 # type python launcher.py -h for help
 #
 # ex of command :python launcher.py -r run
-#
 ####################################
 
 # From listener.py
@@ -80,11 +83,13 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 	if run:
 		containerName = serviceName + "_" +date_time+"_"+os.path.basename(run)
 		group_name = run.split('/')[4]
-		app_name = run.split('/')[5]
+		project_name = run.split('/')[5]
 	# Config snakefile config file path
 	yaml_path = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG')
-	if group_name:
-		yaml_config_file = yaml_path+"/"+group_name+".yaml"
+	if group_name and project_name:
+		yaml_config_file = yaml_path+"/"+group_name+"_"+project_name+".yaml"
+		if not os.path.exists(yaml_config_file):
+			yaml_config_file = yaml_path+"/"+group_name+".yaml"
 	else:
 		yaml_config_file = None
 	# Construct the docker command

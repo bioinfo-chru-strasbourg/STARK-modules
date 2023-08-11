@@ -7,6 +7,5 @@
     "bcftools": "/STARK/tools/bcftools/current/bin/bcftools",
     "bgzip": "/STARK/tools/htslib/current/bin/bgzip",
     "tabix": "/STARK/tools/htslib/current/bin/tabix",
-    "threads": "6"
+    "threads": 6
 }
-

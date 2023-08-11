@@ -1,8 +1,0 @@
-{
-  "code" : "edith",
-  "name": "EDITH",
-  "fullname": "STARK dashboard & interfaces",
-  "description": "EDITH (Excellent Dashboard & Interfaces To Help STARK Experience) provides an IHM as a Dashboard for STARK analyses and results.",
-  "release": "1.0",
-  "available": true
-}

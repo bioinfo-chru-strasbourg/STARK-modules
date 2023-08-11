@@ -53,12 +53,12 @@ class config:
                                     sex = tag.split("#")[-1]
                                     samp["sex"] = sex
                                     # family['family'][samples]['sex'] = sex
-                                # MOTHER, fetus, FATHER
+                                # MOTHER, FETUS, FATHER
                                 elif "FETAL" in tag:
                                     fam = tag.split("#")[-1]
-                                    if fam == "fetus":
-                                        family["fetus"] = samp
-                                        family["fetus"]["name"] = samples
+                                    if fam == "FETUS":
+                                        family["FETUS"] = samp
+                                        family["FETUS"]["name"] = samples
                                     else:
                                         samp["affinity"] = []
                                         samp["affinity"].extend([samples, fam])
@@ -75,8 +75,8 @@ class config:
                     exit()
                 vcfile = self.systemcall(
                     "find "
-                    + osj(self.run, samples)
-                    + ' -maxdepth 3 -name "'
+                    + osj(self.run, samples, "STARK", samples+".reports")
+                    + ' -maxdepth 2 -name "'
                     + samples
                     + '.final.vcf.gz"'
                 )[0]

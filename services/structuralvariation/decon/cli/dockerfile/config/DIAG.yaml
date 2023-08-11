@@ -1,0 +1,8 @@
+# Old Bed formating
+OLD_BED: True
+
+plot: All
+
+DEPOT_COPY: True
+
+INCLUDE_RSYNC: "{'*Design.vcf.gz','*Design.vcf.gz.tbi','*Design.tsv','*Design_results_all.txt','*Identify_Failures.txt','*.pdf','*/'}"
