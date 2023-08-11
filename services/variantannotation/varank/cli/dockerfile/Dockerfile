@@ -44,6 +44,10 @@ RUN git clone https://github.com/lgmgeo/VaRank.git
 RUN ln -s VaRank current
 RUN cd current; \
 	git checkout c137f3a28c873d6e0cf66d71c84bd49765114031
+RUN mkdir tcllib
+COPY src/tcllib.tar.gz /tools/varank/current/tcllib/
+RUN cd tcllib; \
+	tar -xvf tcllib.tar.gz
 RUN cd current/ExtAnn; \
 	rm -f *; \
 	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/ACMG.tsv; \
@@ -55,11 +59,14 @@ RUN cd current/ExtAnn; \
 	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/HI.tsv; \
 	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/morbidGenes.tsv; \
 	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/morbidGenesCandidates.tsv; \
+	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/results.txt; \
 	ln -s /STARK/databases/OMIMannotations/current/OMIM-1-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-1-annotations.tsv.gz; \
-	ln -s /STARK/databases/OMIMannotations/current/OMIM-2-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-2-annotations.tsv.gz
+	ln -s /STARK/databases/OMIMannotations/current/OMIM-2-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-2-annotations.tsv.gz; \
+	ln -s /STARK/databases/Annotations_Exomiser/current/ /tools/varank/current/Annotations_Exomiser/
 
 WORKDIR /tools/varank/current/sources/
 RUN sed -i -e 's/1.4.3/1.5.2/g' VaRank-config.tcl
+RUN sed -i -e '/global L_hpo/a set auto_path [linsert $::auto_path 0 /tools/varank/current/tcllib]' VaRank-main.tcl
 
 ENV VARANK=/tools/varank/current/
 

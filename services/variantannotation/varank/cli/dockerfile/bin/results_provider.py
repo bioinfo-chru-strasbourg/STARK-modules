@@ -77,7 +77,7 @@ def distribute(run_informations):
 
         varank_folder_name = f"{os.path.basename(sample)}_{date}"
         tsv_files = glob.glob(
-            osj(run_informations["run_processing_folder_tsv"], f"*{sample}*.tsv")
+            osj(run_informations["run_processing_folder_tsv"], f"*{sample}*_filteredVariants.tsv")
         )
 
         for tsv_file in tsv_files:
