@@ -234,7 +234,8 @@ def varank_launcher(run_informations):
 
 
 def cleaner(run_informations):
-    tsv_files = glob.glob(osj(run_informations["analysis_folder"], f"*{sample}*_filteredVariants.tsv"))
+    tsv_files = glob.glob(osj(run_informations["analysis_folder"], "*allVariants*.tsv"))
+    statistics_files = glob.glob(osj(run_informations["analysis_folder"], "*statistics.tsv"))
     vcf_files = glob.glob(osj(run_informations["analysis_folder"], "*final.vcf.gz"))
     log.info(f"Cleaning the analysis folder")
 
@@ -243,6 +244,9 @@ def cleaner(run_informations):
         os.mkdir(osj(run_informations["run_processing_folder"], "TSV"))
 
     for file in tsv_files:
+        os.chmod(file, 0o777)
+        shutil.move(file, run_informations["run_processing_folder_tsv"])
+    for file in statistics_files:
         os.chmod(file, 0o777)
         shutil.move(file, run_informations["run_processing_folder_tsv"])
     log.info(f"Moved generated tsv files")

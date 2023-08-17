@@ -62,8 +62,9 @@ RUN cd /tools/varank/current/ExtAnn; \
 	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/morbidGenesCandidates.tsv; \
 	ln -s /STARK/config/variantannotation/varank/configfiles/extanns/default/results.txt; \
 	ln -s /STARK/databases/OMIMannotations/current/OMIM-1-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-1-annotations.tsv.gz; \
-	ln -s /STARK/databases/OMIMannotations/current/OMIM-2-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-2-annotations.tsv.gz; \
-	ln -s /STARK/databases/Annotations_Exomiser/current/ /tools/varank/current/Annotations_Exomiser/
+	ln -s /STARK/databases/OMIMannotations/current/OMIM-2-annotations.tsv.gz /tools/varank/current/ExtAnn/OMIM-2-annotations.tsv.gz
+RUN cd /tools/varank/current/Annotations_Exomiser; \
+	ln -s /STARK/databases/Annotations_Exomiser/current/ 2007
 
 WORKDIR /tools/varank/current/sources/
 RUN sed -i -e 's/1.4.3/1.5.2/g' VaRank-config.tcl
