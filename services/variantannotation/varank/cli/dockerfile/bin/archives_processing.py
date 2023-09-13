@@ -234,7 +234,7 @@ def varank_launcher(run_informations):
 
 
 def cleaner(run_informations):
-    tsv_files = glob.glob(osj(run_informations["analysis_folder"], "*allVariants*.tsv"))
+    tsv_files = glob.glob(osj(run_informations["analysis_folder"], "*rankingByVar.tsv"))
     statistics_files = glob.glob(osj(run_informations["analysis_folder"], "*statistics.tsv"))
     vcf_files = glob.glob(osj(run_informations["analysis_folder"], "*final.vcf.gz"))
     log.info(f"Cleaning the analysis folder")
