@@ -21,7 +21,6 @@ services:
         volumes:
             # Main configuration
             - ${DOCKER_STARK_SOCK_MOUNT}:ro
-            #- ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_INNER_FOLDER_CONFIG}:ro
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_PARAM_FOLDER_DATA}:rw
             - /etc/localtime:/etc/localtime:ro
             - /etc/timezone:/etc/timezone:ro

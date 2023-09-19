@@ -13,7 +13,6 @@ services:
   # cli
   stark-module-multisampleanalysis-submodule-dpni-service-cli:
     image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
-    # depends_on: stark-module-multisampleanalysis-submodule-dpni-service-setup
     build:
       context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT}
       dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT_DOCKERFILE}
