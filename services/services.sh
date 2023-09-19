@@ -476,47 +476,45 @@ for service_module in \
 						(($DEBUG)) && docker compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config
 
 
-						if [[ $(wc -l $service_module_yml | cut -f 1 -d ' ') -ge 1 ]]; then
-							# patch for --env-file unavailable
-							if (( $(docker compose --help | grep "\-\-env\-file" -c) )); then
-								
-								# Command
-								if docker compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
-									> $TMP_FOLDER/docker-compose.err
-									if docker compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.err; then
-										(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.err | grep "Found orphan containers" -v
-									else
-										echo "#[ERROR] docker-compose error";
-										cat $TMP_FOLDER/docker-compose.err
-										exit 1;
-									fi;
+						# patch for --env-file unavailable
+						if (( $(docker compose --help | grep "\-\-env\-file" -c) )); then
+							
+							# Command
+							if docker compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
+								> $TMP_FOLDER/docker-compose.err
+								if docker compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.err; then
+									(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.err | grep "Found orphan containers" -v
 								else
 									echo "#[ERROR] docker-compose error";
-									cat $TMP_FOLDER/docker-compose.log $TMP_FOLDER/docker-compose.err;
+									cat $TMP_FOLDER/docker-compose.err
 									exit 1;
 								fi;
-								
 							else
+								echo "#[ERROR] docker-compose error";
+								cat $TMP_FOLDER/docker-compose.log $TMP_FOLDER/docker-compose.err;
+								exit 1;
+							fi;
+							
+						else
 
-								(($VERBOSE)) &&  echo "#[WARNING] STARK Module Docker version does not provide '--env-file' parameter. STARK module is patched to work, but please update your docker version."
+							(($VERBOSE)) &&  echo "#[WARNING] STARK Module Docker version does not provide '--env-file' parameter. STARK module is patched to work, but please update your docker version."
 
-								# Command
-								if env $(cat $TMP_FOLDER/.env | grep "#" -v) docker compose --file $service_module_yml -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
-									> $TMP_FOLDER/docker-compose.err
-									if env $(cat $TMP_FOLDER/.env | grep "#" -v) docker compose --file $service_module_yml -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.out ; then
-										(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.err | grep "Found orphan containers" -v
-									else
-										echo "#[ERROR] docker-compose error";
-										cat $TMP_FOLDER/docker-compose.err
-										exit 1;
-									fi;
+							# Command
+							if env $(cat $TMP_FOLDER/.env | grep "#" -v) docker compose --file $service_module_yml -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
+								> $TMP_FOLDER/docker-compose.err
+								if env $(cat $TMP_FOLDER/.env | grep "#" -v) docker compose --file $service_module_yml -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.out ; then
+									(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.err | grep "Found orphan containers" -v
 								else
 									echo "#[ERROR] docker-compose error";
-									cat $TMP_FOLDER/docker-compose.log $TMP_FOLDER/docker-compose.err;
+									cat $TMP_FOLDER/docker-compose.err
 									exit 1;
 								fi;
-
+							else
+								echo "#[ERROR] docker-compose error";
+								cat $TMP_FOLDER/docker-compose.log $TMP_FOLDER/docker-compose.err;
+								exit 1;
 							fi;
+
 						fi;
 
 					fi;
