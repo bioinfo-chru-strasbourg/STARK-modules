@@ -10,7 +10,6 @@ version: '3'
 
 services:
 
-
     # CQI CLI
     stark-module-qualitycontrol-submodule-nonregression-service-cli:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
@@ -21,8 +20,6 @@ services:
         entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_ENTRYPOINT}
         command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_COMMAND}
         restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_RESTART}
-        env_file:
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_ENV_FILE}
         environment:
             - SLEEP=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_SLEEP}
         volumes:
@@ -40,7 +37,6 @@ services:
             - ${DOCKER_SOCK}:${DOCKER_SOCK}
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
-            
 
 # NETWORK
 ###########
