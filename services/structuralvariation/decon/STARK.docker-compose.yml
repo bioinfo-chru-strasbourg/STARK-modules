@@ -21,9 +21,6 @@ services:
         command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_COMMAND}
         container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_NAME}
         restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_RESTART}
-        env_file:
-            - ${DOCKER_STARK_MODULE_SUBMODULE_ENV}
-            - ${DOCKER_STARK_MODULE_ENV}
         environment:
             - SLEEP=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_PARAM_SLEEP}
         volumes:
@@ -49,9 +46,6 @@ services:
         restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_RESTART}
         entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_ENTRYPOINT}
         command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_COMMAND}
-        env_file:
-            - ${DOCKER_STARK_MODULE_SUBMODULE_ENV}
-            - ${DOCKER_STARK_MODULE_ENV}
         environment:
             - SLEEP=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_SLEEP}
         volumes:
@@ -92,9 +86,6 @@ services:
         entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_ENTRYPOINT}
         command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_COMMAND}
         restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_RESTART}
-        env_file:
-            - ${DOCKER_STARK_MODULE_SUBMODULE_ENV}
-            - ${DOCKER_STARK_MODULE_ENV}
         environment:
             # Those variables are the inputs of the common listener
             # Each line is an argument of listener.py
