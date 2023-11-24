@@ -1,6 +1,3 @@
-FROM centos:7
-MAINTAINER Victor Grentzinger <victor.grentzinger@gmail.com>
-
 ##################################################################################
 # Dockerfile Version:   1.0
 # Software:             listener
@@ -8,6 +5,7 @@ MAINTAINER Victor Grentzinger <victor.grentzinger@gmail.com>
 # Description:          Dockerfile to build Microservices Listener container image
 ##################################################################################
 
+FROM almalinux:8
 
 #######
 # YUM #

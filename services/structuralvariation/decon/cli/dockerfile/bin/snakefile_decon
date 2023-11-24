@@ -1,5 +1,5 @@
 ##########################################################################
-# Snakemakefile Version:   0.1
+# Snakemakefile Version:   3
 # Description:             Snakemake file to run DECoN module (Detection of Exon Copy Number variants)
 ##########################################################################
 
@@ -8,7 +8,7 @@
 # PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
 
-# PROD version 2 : 16/06/2022 changelog
+# PROD version 2 : 14/10/2022 changelog
 	# add the possibility to analyse gender separately, extract gender from tag files ; gender analysis can be set with REMOVE_F & REMOVE_M & REMOVE_A options
 	# add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_LIST_RESTRICT)
 	# rewrite DECON bed / custom numbering formating
@@ -20,7 +20,12 @@
 	# copying new analysis per sample in the root sample dir & removing the old ones
 	# add vcf2tsv converter ((https://github.com/sigven/vcf2tsvpy) & corresponding rules : each vcf will be convert to tsv
 	# correct run path by removing ending '/' if exist
-	# keep "Running.txt" file if failed, avoiding multiple analysis launch
+	# keep "Running.txt" file if failed, avoiding multiple analysis launch by the listener
+
+# PROD version 3 : 19/09/2023 changelog
+	# AnnotSV version 3.3.6 (include the vcf converter)
+	# DECON v2 (just install update)
+	# more options to process DECON bed, update the processalignedfiles function
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -110,6 +115,8 @@ refseqgene = config['REFSEQGENE_PATH']
 refgene = config['REFGENEFA_PATH']
 # Scripts path
 scriptspath = config['SCRIPTS_PATH']
+# Dummy path
+dummypath = config['DUMMY_PATH']
 
 ### Variable for DECON ###
 # DECON dir for R scripts
@@ -119,7 +126,7 @@ decondir = config['DECON_PATH']
 # Set DECON to custom exon analysis
 custom_exon = config['customexon']
 # Regen exon number with IntersectBed and a refseqgene reference 
-customexon_regen = config['EXON_REGEN']
+bed_process = config['BED_PROCESS']
 keep_unknown = config['KEEP_UNKNOWN']
 # Patch for some gene name formatting
 exon_sep = config['EXON_SEP']
@@ -149,31 +156,44 @@ def finditemindico(sample_list, ext_list, dictionary, include_ext, exclude_ext):
 	return searchresult
 
 def searchfiles(directory, search_arg, recursive_arg):
-	""" Function to search all files in a directory, addind a search arguement append to the directory and a recursive_search options (True/False) """
+	""" Function to search all files in a directory, adding a search arguement append to the directory and a recursive_search options (True/False) """
 	return sorted(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
 
-def processalignedfiles(storedir, dictionary, sample, ext, aligner_list, process_cmd, name=None):
-	""" Function to process bam or cram files who's path are stored in a dictionary by sample/ext name """
-	""" You can either cp, ls bam files ; or use samtools to extract bam from a cram file into a storedir or filter a bam with a specific bed """
-	""" You can append a name to the files if you specify a name """
-	inputfile = dictionary[sample][ext]
-	file_without_ext = os.path.splitext((os.path.basename(inputfile)))[0]
-	# option to append name file with an aligner name (if file is sample.bam we need to rename it to sample.aligner.bam for the pipeline)
-	if name:
-		outputfile = storedir + "/" + file_without_ext + "." + name
-		aligner_list.append(name)
-	else:
-		outputfile = storedir + "/" + file_without_ext
-	for aligner in aligner_list:
-		if aligner in inputfile:
-			if process_cmd == 'cram':
-				shell("samtools view -b -T "+refgene+" -o "+outputfile+".bam "+inputfile)	# samtools view -b -T ref_sequence.fa -o sample.bam sample.cram
-			if process_cmd == 'cp':
-				copy2(inputfile, outputfile+ext)
-			if process_cmd == 'ls':
-				shell("ln -sfn "+inputfile+" "+outputfile+ext)
-			if process_cmd == 'filter':
-				shell("samtools view -b -T "+refgene+" -L "+bed_file+" -o "+outputfile+".bam "+inputfile)	# samtools view -b -h -L bedfile.bed -o newbam.bam originalbam.bam
+def processalignedfiles(storedir, dictionary, sample, ext_list, aligner_list, process_cmd, name=None):
+	""" Function to process files who's path are stored in a dictionary by sample/ext name"""
+	""" You can either cp, rsync, ls files ; or use samtools to extract bam from a cram file into a storedir"""
+	""" You can append a name to the end of the files if you specify a name """
+	for ext in ext_list:
+		inputfiles = dictionary[sample][ext]
+		file_without_ext = os.path.basename(inputfiles.replace(ext,''))
+		# option to append name file with an aligner name (if file is sample.bam we need to rename it to sample.aligner.bam for the pipeline)
+		if name:
+			outputfile = storedir + "/" + file_without_ext  + "." + name
+			aligner_list.append(name)
+		else:
+			outputfile = storedir + "/" + file_without_ext
+		for aligner in aligner_list:
+			if aligner in inputfiles:
+				if process_cmd == 'cram':
+					print("Uncompress cram files with samtools")
+					print(inputfiles)
+					shell("samtools view -b -T "+refgene+" -o "+outputfile+".bam "+inputfiles)	# samtools view -b -T ref_sequence.fa -o sample.bam sample.cram
+				if process_cmd == 'cp':
+					print("Copying files to analyse with copy2")
+					print(inputfiles)
+					copy2(inputfiles, outputfile+ext)
+				if process_cmd == 'rsync':
+					print("Copying files to analyse with rsync")
+					print(inputfiles)
+					shell("rsync -azvh "+inputfiles+" "+storedir) # shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
+				if process_cmd == 'ls':
+					print("Creating symobling links with ln for the files to analyse")
+					print(inputfiles)
+					shell("ln -sfn "+inputfiles+" "+outputfile+ext)
+				if process_cmd == 'filterbam':
+					print("Filter bam files with samtools with the bed provided")
+					print(inputfiles)
+					shell("samtools view -b -T "+refgene+" -L "+bed_file+" -o "+outputfile+".bam "+inputfiles)	# samtools view -b -h -L bedfile.bed -o newbam.bam originalbam.bam
 
 def logsomefile(logfile, text, sep, items_list=None, items=None):
 	""" Function to log a variable value or a list of values into a log file """
@@ -450,7 +470,7 @@ intermediatebed = inputdir + "/" + serviceName + '.intermediate.bed'
 # Case if genes file bed don't have gene name & exon number
 # We always create a custom exon file from the design bed and intersectBed with a refseqgene database to get the exon number
 # Warning the refseqgene database must be generated before
-if bed_file and customexon_regen == True:
+if bed_file and bed_process == 'REGEN':
 	# Generating the custom.exon file from scratch (intersectBed with refseqgene file)
 	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
 	df.to_csv(inputbed, sep='\t', index=False, header=False)
@@ -460,7 +480,7 @@ if bed_file and customexon_regen == True:
 	df['Custom.Exon'] = df['Tosplit'].str.split(',').str[-1]
 	df['Custom.Exon'] = df['Custom.Exon'].str.replace('exon','')
 	# Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
-	# Specific for customexon_regen == True
+	# Specific for bed_process == 'REGEN'
 	if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
 		df['NM'] = df['Tosplit'].str.split(',').str[0]
 		df = df[df['NM'].isin(NM_list)]
@@ -485,7 +505,7 @@ if bed_file and customexon_regen == True:
 # New bed 13 cols
 # Intersect bed design with panel intersectBed -a design.bed -b panel.bed -loj > RESULT.bed = columns 1 2 3 & 10 are retained for the bed, column 13 for the exon number
 # ex = chr1	27022390	27024129	NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129	0	+	.	-1	-1	.	-1	.
-if bed_file and genes_file and customexon_regen == False:
+if bed_file and genes_file and bed_process == 'STANDARD':
 	if list_genes:
 		basepath = os. path. dirname(list_genes)
 		with open(list_genes) as f:
@@ -521,6 +541,10 @@ if bed_file and genes_file and customexon_regen == False:
 	if chr_list_remove:
 		df = df[-df['Chr'].isin(chr_list_remove)]
 	df = df.drop_duplicates()
+	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
+
+if bed_file and bed_process == 'NO':
+	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
 
 # DECON bed formating from intermediatebed file : always for autosome 
@@ -655,7 +679,6 @@ rule all:
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
 		allfailtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.tsv", aligner=aligner_list),
 		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
-		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz",
 		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
 rule help:
@@ -688,12 +711,11 @@ rule indexing:
 		"""
 
 # Keep the chr prefix to the Chr list (chr1 and not 1) if your ref genome got chr1 notation (and not 1) if not ReadInBams will crash
-# ReadInBams must run R in the decondir directory to be able to load packrat
 rule ReadInBams:
 	"""
 	DECoN uses a list of BAM files and a BED file of exons to calculate a coverage metric called the fragment per kilobase and million base pairs (FPKM) for each exon specified in the BED file in each sample’s BAM file
 	Rscript ReadInBams.R --bams listofbams.txt --bed file.bed (unique for all bams) --fasta refgenome.fasta --out output.(prefix).RData
-	Requirement : all .bam files must have a .bai file associated with in the same folder
+	Requirement : all .bam files must be indexed
 	"""
 	input:
 		bamlist = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.list.txt",
@@ -707,11 +729,9 @@ rule ReadInBams:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.ReadInBams.err"
 	shell:
 		"""
-		cd {decondir} && Rscript ReadInBams.R --bams {input.bamlist} --bed {params.deconbed_file} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
+		Rscript {decondir}/ReadInBams.R --bams {input.bamlist} --bed {params.deconbed_file} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		"""
 
-# makeCNVcalls must run R in the decondir directory to be able to load packrat
-# We add a if then condition because --custom FALSE will not work if we provide a --exons file
 rule makeCNVcalls:
 	"""
 	This step calls exon CNVs in each sample by selecting reference samples from all other samples contained in the input summary .RData file. The correlation between samples and the number of samples used as a reference are thus calculated and outputted to aid interpretation of call quality
@@ -736,14 +756,12 @@ rule makeCNVcalls:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
+			Rscript {decondir}/makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
 		else
-			cd {decondir} && Rscript makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
+			Rscript {decondir}/makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
 		fi
 		"""
 
-# IdentifyFailures must run R in the decondir directory to be able to load packrat
-# We add a if then condition because --custom FALSE will not work if we provide a --exons file
 rule IdentifyFailures:
 	"""
 	The summary .RData file outputted can be used to flag any samples or exons where exon CNV calling may be suboptimal. Both exons and samples are evaluated based on their median coverage level. When coverage is low, accuracy of detection will be compromised and caution should be exercised when interpreting results. Samples are also evaluated based on their correlation with other samples. Samples which do not have a high correlation with other samples in the set are likely to have suboptimal detection across the entire target
@@ -767,9 +785,9 @@ rule IdentifyFailures:
 		"""
 		if [ {params.customplot} = True ];
 		then
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
+			Rscript {decondir}/IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
 		else
-			cd {decondir} && Rscript IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
+			Rscript {decondir}/IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
 		fi
 		"""
 
@@ -811,7 +829,7 @@ rule Decon_tsv2vcf:
 		log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.DeconTsv2Vcf.log"
 	shell:
 		"""
-		python {scriptspath}/file_converter.py -i {input.allcalltxt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {scriptspath}/fileconversion/config_decon.json 2> {log.log2}
+		python {scriptspath}/file_converter.py -i {input.allcalltxt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {scriptspath}/config_decon.json 2> {log.log2}
 		"""
 
 # bcftools sort don't sort correctly
@@ -822,7 +840,7 @@ rule sortvcfall:
 		vcfsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf"
 	shell:
 		"""
-		grep \"^#\" {input.vcfunsortall} > {output.vcfsortall} && grep -v \"^#\" {input.vcfunsortall} | sort -k1,1V -k2,2g >> {output.vcfsortall} && [[ -s {output.vcfsortall} ]] || cat {scriptspath}/empty.vcf > {output.vcfsortall}
+		grep \"^#\" {input.vcfunsortall} > {output.vcfsortall} && grep -v \"^#\" {input.vcfunsortall} | sort -k1,1V -k2,2g >> {output.vcfsortall} && [[ -s {output.vcfsortall} ]] || cat {dummypath}/empty.vcf > {output.vcfsortall}
 		"""
 
 # bgzip -c to keep input file
@@ -833,7 +851,7 @@ rule vcf2gzall:
 		vcfgzdesign = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Noannotation.vcf.gz"
 	shell:
 		"""
-		bgzip -c {input.vcfsortall} > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign}
+		bgzip -c {input.vcfsortall} > {output.vcfgzdesign} && [[ -s {output.vcfgzdesign} ]] || cat {dummypath}/empty.vcf.gz > {output.vcfgzdesign} ; tabix {output.vcfgzdesign}
 		"""
 
 # --force-samples will output a vcf file with all annotations but without a sample name if the sample did not exist
@@ -853,14 +871,13 @@ rule splitvcf:
 		path = tmpdir + "/{sample}/" + serviceName + "/"
 	shell:
 		"""
-		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgzdesign} && [[ -s {output.vcfgzsplit} ]] || cat {scriptspath}/empty.vcf.gz > {output.vcfgzsplit} ; tabix {output.vcfgzsplit}
+		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgzdesign} && [[ -s {output.vcfgzsplit} ]] || cat {dummypath}/empty.vcf.gz > {output.vcfgzsplit} ; tabix {output.vcfgzsplit}
 		"""
 
-# AnnotSV need bedtools to work ie you have to specify the directory of bedtools binaries in -bedtools argument
-# add -hpo {params.hpofile} if hpofile exist
+
 rule AnnotSV:
 	"""
-	AnnotSV will annotate and rank Structural Variations (SV) from a vcf file. Output will be an AnnotSV tsv file.
+	AnnotSV will annotate and rank Structural Variations (SV) from a vcf file. Output will be an AnnotSV vcf file.
 	-annotationMode can be : split by exons/introns or full by genes
 	-txtFile : path to a file containing a list of preferred genes transcripts to be used in priority during the annotation, preferred genes transcripts names should be tab or space separated
 	-genomeBuild must be specified if not hg19
@@ -868,7 +885,7 @@ rule AnnotSV:
 	input:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.Noannotation.vcf.gz"
 	output:
-		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design_uncorr.tsv"
+		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design_unsort.vcf"
 	log:
 		txt = tmpdir + "/{sample}/" + serviceName +  "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.log"
 	params:
@@ -876,40 +893,11 @@ rule AnnotSV:
 		bcftools = config['BCFTOOLS_PATH'],
 		genome = config['genomeBuild'],
 		overlap = config ['overlap'],
-		mode = config['annotationMode']
+		mode = config['annotationMode'],
+		annotation = config['annotationdir']
 	shell:
 		"""
-		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsvuncorr} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsvuncorr} ]] || echo "#No data to annotate" > {output.tsvuncorr}
-		"""
-
-# AnnotSV drop chr from input 
-#  we need to re-add chr to the SV_chrom column (column number 2)
-rule patchchr:
-	"""
-	Add chr to the SV_chrom column
-	"""
-	input:
-		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design_uncorr.tsv"
-	output:
-		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv"
-	shell:
-		"""
-		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input.tsvuncorr} > {output.tsv}
-		"""
-
-rule AnnotSV2vcf:
-	"""
-	File converter will convert tsv AnnotSV into vcf
-	"""
-	input:
-		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv"
-	output:
-		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design_unsort.vcf"
-	log:
-		log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV2vcf.log"
-	shell:
-		"""
-		python {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json 2> {log.log2} && [[ -s {output.vcfunsort} ]] || echo "#No data to annotate" > {output.vcfunsort}
+		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsvuncorr} -bedtools {params.bedtools} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log.txt} && [[ -s {output.tsvuncorr} ]] || echo "#No data to annotate" > {output.tsvuncorr}
 		"""
 
 # bcftools sort don't sort correctly
@@ -923,7 +911,7 @@ rule sortvcf:
 		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf"
 	shell:
 		"""
-		grep \"^#\" {input.vcfunsort} > {output.vcfsort} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfsort} && [[ -s {output.vcfsort} ]] || cat {scriptspath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfsort}
+		grep \"^#\" {input.vcfunsort} > {output.vcfsort} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfsort} && [[ -s {output.vcfsort} ]] || cat {dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfsort}
 		"""
 
 # bcftools need vcf.gz.tbi index for the merge all

@@ -1,11 +1,17 @@
 ##########################################################################
-# SETUP Version:			0.1
+# SETUP Version:			2
 # Description:				Setup to configure module
 ##########################################################################
 
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
 # Authoring : Thomas LAVAUX
+
+# PROD version 1 : 17/03/2022
+# PROD version 2 : 17/10/2023 : changelog
+	# remove os.getenv
+	# update AnnotSV to 3.3.6
+	# switch to aria2
 
 ################## Context ##################
 #
@@ -46,12 +52,14 @@ def logsomefile(logfile, text, sep, items_list=None, items=None):
 def installdatabase(destination, source, archive_name, logfile, errfile):
 	""" Function to download and install an archive (zip or tar.gz) """
 	os.makedirs(destination, exist_ok = True)
-	systemcall("wget "+ source+" 1>> "+logfile+" 2>> "+errfile+" ")
+	systemcall("aria2c -c -s 16 -x 16 -k 1M -j 1 "+ source+" 1>> "+logfile+" 2>> "+errfile+" ")
 	if archive_name.endswith('.zip'):
 		systemcall("unzip -q "+archive_name+" -d " +destination+" 1>> "+logfile+" 2>> "+errfile+" ")
 	if archive_name.endswith('.tar.gz'):
 		systemcall("tar xzf "+archive_name+" -C "+destination+" 1>> "+logfile+" 2>> "+errfile+" ")
 
+# for wget
+# systemcall("wget "+ source+" 1>> "+logfile+" 2>> "+errfile+" ")
 
 # Variables initialisation
 # set datetime to add to output file name
@@ -63,32 +71,29 @@ date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 # DATABASE VARIABLES #
 ######################
 
-STARK_FOLDER = "/STARK"
-DATABASES = STARK_FOLDER+ "/databases"
+DATABASES = "/STARK/databases"
+serviceName = "decon"
+moduleName = "structuralvariation"
 
-serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')
-moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')
+#serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')
+#moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')
 
 ####################
 # DATABASE ANNOTSV #
 ####################
 
 # https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_3.1.tar.gz
+# include GrCH37 & 38
+
 
 ANNOTSV_NAME = "AnnotSV"
-ANNOTSV_VERSION = "3.1"
+ANNOTSV_VERSION = "3.3.6"
 ANNOTSV_TARBALL = "Annotations_Human_"+ANNOTSV_VERSION+".tar.gz"
 ANNOTSV_SOURCE_EXTERNAL = "https://www.lbgi.fr/~geoffroy/Annotations/"+ANNOTSV_TARBALL
 ANNOTSV_PARAM_DATABASE_FOLDER_LINK = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/"
 
 logfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.log"
 errfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.err"
-
-# export http_proxy=
-# export https_proxy=
-# export ftp_proxy=
-
-systemcall("export https_proxy=http://hux144_proxy:proxysurf@cyclope:8080 ")
 
 # Check if a directory exist
 # os.path.isdir('folder') will return true if exist
@@ -107,12 +112,14 @@ if os.path.isdir(ANNOTSV_PARAM_DATABASE_FOLDER_LINK) == False:
 # /share/AnotSV/jar/exomiser-rest-prioritiser-12.1.0.jar in /STARK/databases/AnnotSV/$TOOL_VERSION/jar/
 # with $TOOL_VERSION = AnnotSV $TOOL_VERSION (ie 3.1)
 
+# GrCH37 only
+
 ###############################################
 
 # https://www.lbgi.fr/~geoffroy/Annotations/2109_hg19.tar.gz
 
 TOOL_NAME="hg19"
-TOOL_VERSION="2109"
+TOOL_VERSION="2202"
 TOOL_TARBALL= TOOL_VERSION+"_"+TOOL_NAME+".tar.gz"
 TOOL_SOURCE_EXTERNAL="https://www.lbgi.fr/~geoffroy/Annotations/"+TOOL_TARBALL
 TOOL_PARAM_DATABASE_FOLDER_LINK= DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/Annotations_Exomiser/"+ TOOL_VERSION+"/"
@@ -165,19 +172,21 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 
 ##################
 # COSMIC install #
-#################
+##################
+
+# TODO Check if install is also GrCH38 ready
 
 # Install COSMIC SV database (file is CosmicCompleteCNA.tsv.gz placed in /STARK/config/structuralvariation/serviceName/setup/COSMIC/ directory)
 # /STARK/config/structuralvariation/serviceName/setup
 genomeBuild_version = "GRCh37"
-COSMIC_source = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG')+"/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
+COSMIC_source = "/STARK/config/"+moduleName+"/"+serviceName+"/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
 COSMIC_install_path = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/Annotations_Human/FtIncludedInSV/COSMIC/"+genomeBuild_version
 if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 	os.makedirs(COSMIC_install_path, exist_ok = True)
 	systemcall("mv "+COSMIC_source+" "+COSMIC_install_path+" ")
 	# AnnotSV dummy vcf in /app/src/dummy.vcf to process COSMIC database (need rw databases access for that)
 	setup_config_path = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION
-	systemcall("AnnotSV -SVinputFile /app/src/dummy.vcf -outputFile "+setup_config_path+"/AnnotSV.dummyannotation.tsv -genomeBuild "+genomeBuild_version+" 1> "+setup_config_path+"/AnnotSV.dummyannotation.log")
+	systemcall("AnnotSV -SVinputFile /app/dummy/dummy.vcf -outputFile "+setup_config_path+"/AnnotSV.dummyannotation.tsv -genomeBuild "+genomeBuild_version+" 1> "+setup_config_path+"/AnnotSV.dummyannotation.log")
 
 
 ##############
@@ -188,12 +197,11 @@ if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 # unzip -q GeneHancer_<version>_for_annotsv.zip -d ($ANNOTSV/share/AnnotSV)/Annotations_Human/FtIncludedInSV/RegulatoryElements/
 
 GENEHANCER_version = "v5.9.zip"
-GENEHANCER_source = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG')+"/setup/GENEHANCER/GeneHancer_hg19_"+ GENEHANCER_version
+GENEHANCER_source = "/STARK/config/"+moduleName+"/"+serviceName+"/setup/GENEHANCER/GeneHancer_hg19_"+ GENEHANCER_version
 GENEHANCER_install_path = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/Annotations_Human/FtIncludedInSV/RegulatoryElements/"
 if not os.path.exists(GENEHANCER_install_path) and os.path.exists(GENEHANCER_source):
 	os.makedirs(GENEHANCER_install_path, exist_ok = True)
 	systemcall("unzip -q "+GENEHANCER_source+" -d "+GENEHANCER_install_path+" ")
-
 
 #######################
 # Copy config files (service.conf & service.json) and launcher.py from app/config to /config/module/servicename/listener/

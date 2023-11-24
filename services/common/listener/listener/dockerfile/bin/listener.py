@@ -56,11 +56,11 @@ def checkProjects(serviceProject, sampleProjectsList):
 	return False
 
 def checkGroup(serviceGroup, sampleGroupsList):
-	# print(serviceGroup)
+
 	listGroup = []
 	for group in sampleGroupsList:
 		listGroup.append(group.split("-")[0])
-	# print(listGroup)
+
 	for g in listGroup:
 		if serviceGroup in g:
 			return True
@@ -73,13 +73,10 @@ def assert_file_exists_and_is_readable(filePath):
 def get_sample_project_from_samplesheet(samplesheetPath):
 	"""
 	Adapted from functions.py
-	
 	Returns a python list containing all tags from samplesheet.
 	"""
 	if samplesheetPath == "NO_SAMPLESHEET_FOUND":
 		return []
-	# assert samplesheetPath != "NO_SAMPLESHEET_FOUND", \
-			# "[ERROR] find_any_samplesheet() couldn't find any samplesheet. Check if the --fromResultDir argument is set correctly."
 	assert_file_exists_and_is_readable(samplesheetPath)
 	inDataTable = False
 	sampleProject = []
@@ -108,7 +105,6 @@ def get_sample_project_from_samplesheet(samplesheetPath):
 def find_any_samplesheet(runDir, fromResDir = False):
 	"""
 	Adapted from runmetrics.py
-	
 	1) look up recursively all files named SampleSheet.csv in the runDir
 	2) check if file path follows an expected samplesheet name and location
 		(the latter depends on if we're in a STARK result or repository dir,
@@ -169,7 +165,7 @@ def checkTags(tag, sampleTagsList, analysisTagsList):
 				t = t[:-1] #remove the ending "!" to avoid having an empty value in tagsToCheck
 			for v in re.split("[!#]", t): #split by tag and by separator
 				tagsToCheck.append(v)
-	#resolution
+
 	if tag.startswith("!"):
 		tag = tag[1:]
 		if tag in tagsToCheck:
@@ -202,7 +198,6 @@ def getSampleListFromRunPath(run):
 	sampleList = []
 	for patient in glob.glob(osj(run,"*/")):
 		pName = os.path.basename(os.path.normpath(patient))
-		# if os.path.exists(osj(patient, "STARK", pName+".SampleSheet.csv")) or os.path.exists(osj(patient, pName+".SampleSheet.csv")):
 		if os.path.exists(osj(patient, "STARKCopyComplete.txt")) or os.path.exists(osj(patient, pName+".SampleSheet.csv")):
 			sampleList.append(pName)
 	return sampleList
@@ -251,8 +246,6 @@ def checkTriggers(jconfig, serviceName, run):
 						listFile.append(not complete(run, file[:-12]))
 					elif "STARKCopyComplete.txt" in file:
 						listFile.append(not complete(run, "STARK"))
-			# print(listNotFile)
-			# print(listFile)
 			if all(listNotFile + listFile):
 				return True
 			else:
@@ -262,7 +255,6 @@ def checkTriggers(jconfig, serviceName, run):
 			listTag = []
 			for tag in jconfig[key]:
 				listTag.append(checkTags(tag, getSampleTagsFromSampleList(getSampleListFromRunPath(run), run), getAnalysisTagsFromSampleList(getSampleListFromRunPath(run), run)))
-			# print(listTag)
 			if all(listTag):
 				return True
 			else:
@@ -277,7 +269,7 @@ def checkTriggers(jconfig, serviceName, run):
 			groupList = []
 			for g in jconfig[key]:
 				if g.startswith("!"):
-					notGroupList.append(g[1:])
+					notGroupList.append(g[1:]) # TODO check that part for exclusion, seems that it's not working
 				else:
 					groupList.append(g)
 			if runGroup in notGroupList:
@@ -287,35 +279,6 @@ def checkTriggers(jconfig, serviceName, run):
 			else:
 				return False
 				
-		# elif key == "group" or key == "project":
-			# # print(run)
-			# if not sampleProject:
-				# sampleProject = get_sample_project_from_samplesheet(find_any_samplesheet(run))
-				# # print(sampleProject)
-			# if key == "group":
-				# listNotGroup = []
-				# listGroup = []
-				# for group in jconfig[key]:
-					# if group.startswith("!"):
-						# listNotGroup.append(not checkGroup(group[1:], sampleProject))
-					# else:
-						# listGroup.append(checkGroup(group, sampleProject))
-				# # print(listNotGroup)
-				# # print(listGroup)
-				# if any(listGroup) and all(listNotGroup):
-					# return True
-				# else:
-					# return False
-			# elif key == "project":
-				# listProject = []
-				# for project in jconfig[key]:
-					# listProject.append(checkProjects(project, sampleProject))
-				# # print(listProject)
-				# if any(listProject):
-					# return True
-				# else:
-					# return False
-
 def getDataFromJson(jsonFile):
 	with open(jsonFile,'r') as jsonAnalysisFile:
 		jsonData = json.load(jsonAnalysisFile)
@@ -353,20 +316,16 @@ def main(groupInputList, serviceName, jsonFile, days, delay, containersFile, con
 		for groupInput in groupInputList:
 			starkCompleteList = getStarkCopyComplete(groupInput, days)
 			for starkComplete in starkCompleteList:
-				###25/01/2021 Prod Hotfix
 				runDir = os.path.dirname(starkComplete)
 				p = subprocess.Popen("find "+runDir+"/* -maxdepth 1 -type d", stdout=subprocess.PIPE, shell=True)
 				out = p.stdout.readlines()
 				if any([os.path.basename(path.rstrip()) == "STARK" for path in out]):
-					###
 					run = getRunName(starkComplete)
 					if verifyTriggers(run, serviceName, jsonFile):
 						print("[INFO] Launching "+serviceName+" analysis for run "+run)
 						launch(run, serviceName, containersFile, os.getenv('MICROSERVICE_MONTAGE'), os.getenv('MICROSERVICE_IMAGE'), os.getenv('MICROSERVICE_LAUNCH'), configFile, os.getenv('MICROSERVICE_REPOSITORY'))
-				###
 				else:
 					print("[INFO] Run "+starkComplete+" ignored as no STARK directory was found")
-				###
 		time.sleep(60.0*delay)
 
 def myoptions():
@@ -389,4 +348,3 @@ if __name__ == "__main__":
 	args = myoptions()
 	groupInputList = args.listInput.split(",")
 	main(groupInputList, args.serviceName, args.jsonFile, args.days, args.delay, args.containersFile, args.configFile)
-

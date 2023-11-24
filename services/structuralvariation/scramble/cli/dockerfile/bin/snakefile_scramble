@@ -1,5 +1,5 @@
 ##########################################################################
-# Snakemakefile Version:   0.1
+# Snakemakefile Version:   3
 # Description:             Snakemake file to run SCRAMBLE module
 ##########################################################################
 
@@ -9,13 +9,16 @@
 # Authoring : Thomas LAVAUX
 
 
-# PROD version 2 : 16/06/2022 changelog
+# PROD version 2 : 14/10/2022 changelog
 	# remove panel vcf filtering (output was essentially empty) ; rename full to unfiltered
 	# exclude samples list case insensitive
 	# copying new analysis per sample in the root sample dir & removing the old ones
 	# add vcf2tsv converter (https://github.com/sigven/vcf2tsvpy) & corresponding rules : each vcf will be convert to tsv
 	# correct run path by removing ending '/' if exist
-	# keep "Running.txt" file if failed, avoiding multiple analysis launch
+	# keep "Running.txt" file if failed, avoiding multiple analysis launch by the listener
+
+# PROD version 3 : 19/09/2023 changelog
+	# AnnotSV version 3.3.6 (include the vcf converter)
 
 ################## Context ##################
 # launch snakemake -s  snakefile_scramble -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -87,9 +90,9 @@ filter_sample_list = config['FILTER_SAMPLE']
 
 # Ext to index into dictionary
 ext_list = config['EXT_INDEX_LIST']
-# Option for processing (cp/ls/samtools)
+# Option for processing files
 process_cmd = config['PROCESS_CMD']
-# Option for processing bam or cram
+# Type of file (ext) to process
 process_file = config['PROCESS_FILE']
 
 # Option to append an aligner name to a file (case if the bam don't have an aligner name == sample.bam)
@@ -105,7 +108,8 @@ include_file_log = config['INCLUDE_LOG_RSYNC']
 refgene = config['REFGENEFA_PATH']
 # Scripts path
 scriptspath = config['SCRIPTS_PATH']
-
+# Dummy path
+dummypath = config['DUMMY_PATH']
 ### FUNCTIONS ###
 
 def finditemindico(sample_list, ext_list, dictionary, include_ext, exclude_ext):
@@ -126,26 +130,41 @@ def searchfiles(directory, search_arg, recursive_arg):
 	""" Function to search all files in a directory, addind a search arguement append to the directory and a recursive_search options (True/False) """
 	return sorted(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
 
-def processalignedfiles(storedir, dictionary, sample, ext, aligner_list, process_cmd, name=None):
-	""" Function to process bam or cram files who's path are stored in a dictionary by sample/ext name"""
-	""" You can either cp, ls bam files ; or use samtools to extract bam from a cram file into a storedir"""
-	""" You can append a name to the files if you specify a name """
-	inputfile = dictionary[sample][ext]
-	file_without_ext = os.path.splitext((os.path.basename(inputfile)))[0]
-	# option to append name file with an aligner name (if file is sample.bam we need to rename it to sample.aligner.bam for the pipeline)
-	if name:
-		outputfile = storedir + "/" + file_without_ext + name
-		aligner_list.append(name)
-	else:
-		outputfile = storedir + "/" + file_without_ext
-	for aligner in aligner_list:
-		if aligner in inputfile:
-			if process_cmd == 'samtools':
-				shell("samtools view -b -T "+refgene+" -o "+outputfile+".bam "+inputfile)	# samtools view -b -T ref_sequence.fa -o sample.bam sample.cram
-			if process_cmd == 'cp':
-				copy2(inputfile, outputfile+ext)
-			if process_cmd == 'ls':
-				shell("ln -sfn "+inputfile+" "+outputfile+ext)
+def processalignedfiles(storedir, dictionary, sample, ext_list, aligner_list, process_cmd, name=None):
+	""" Function to process files who's path are stored in a dictionary by sample/ext name"""
+	""" You can either cp, rsync, ls files ; or use samtools to extract bam from a cram file into a storedir"""
+	""" You can append a name to the end of the files if you specify a name """
+	for ext in ext_list:
+		inputfiles = dictionary[sample][ext]
+		file_without_ext = os.path.basename(inputfiles.replace(ext,''))
+		# option to append name file with an aligner name (if file is sample.bam we need to rename it to sample.aligner.bam for the pipeline)
+		if name:
+			outputfile = storedir + "/" + file_without_ext  + "." + name
+			aligner_list.append(name)
+		else:
+			outputfile = storedir + "/" + file_without_ext
+		for aligner in aligner_list:
+			if aligner in inputfiles:
+				if process_cmd == 'cram':
+					print("Uncompress cram files with samtools")
+					print(inputfiles)
+					shell("samtools view -b -T "+refgene+" -o "+outputfile+".bam "+inputfiles)	# samtools view -b -T ref_sequence.fa -o sample.bam sample.cram
+				if process_cmd == 'cp':
+					print("Copying files to analyse with copy2")
+					print(inputfiles)
+					copy2(inputfiles, outputfile+ext)
+				if process_cmd == 'rsync':
+					print("Copying files to analyse with rsync")
+					print(inputfiles)
+					shell("rsync -azvh "+inputfiles+" "+storedir) # shell("rsync -azvh --include={include_file} --exclude {exclude_file} {tmpdir}/ {outputdir}")
+				if process_cmd == 'ls':
+					print("Creating symobling links with ln for the files to analyse")
+					print(inputfiles)
+					shell("ln -sfn "+inputfiles+" "+outputfile+ext)
+				if process_cmd == 'filterbam':
+					print("Filter bam files with samtools with the bed provided")
+					print(inputfiles)
+					shell("samtools view -b -T "+refgene+" -L "+bed_file+" -o "+outputfile+".bam "+inputfiles)	# samtools view -b -h -L bedfile.bed -o newbam.bam originalbam.bam
 
 def logsomefile(logfile, text, sep, items_list=None, items=None):
 	""" Function to log variable value or list values into a log file """
@@ -460,31 +479,20 @@ rule scramble:
 		meiscore = config['mei-score'],
 		polyafrac = config['poly-a-frac'],
 		polyadist = config['poly-a-dist'],
-		indels = config['indels'],
+		mode = config['scramble_mode'],
 		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr"
 	output:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	log: log1 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.ScrambleR.log", log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.ScrambleR.err"
 	shell:
 		"""
-		if [ {params.indels} = True ];
-		then
-			Rscript --vanilla {params.scrambledir}/SCRAMble.R \
-			--cluster-file {input.txt} \
-			--out-name {params.output} \
-			--install-dir {params.scrambledir} \
-			--mei-refs {params.refmei} \
-			--ref {refgene} \
-			--mei-score {params.meiscore} --nCluster {params.nCluster} --poly-a-dist {params.polyadist} --poly-a-frac {params.polyafrac} --eval-meis --eval-dels 1> {log.log1} 2> {log.log2} && [[ -s {output.vcf} ]] || cat {scriptspath}/empty.vcf > {output.vcf}
-		else
-			Rscript --vanilla {params.scrambledir}/SCRAMble.R \
-			--cluster-file {input.txt} \
-			--out-name {params.output} \
-			--install-dir {params.scrambledir} \
-			--mei-refs {params.refmei} \
-			--ref {refgene} \
-			--mei-score {params.meiscore} --nCluster {params.nCluster} --poly-a-dist {params.polyadist} --poly-a-frac {params.polyafrac} --eval-meis 1> {log.log1} 2> {log.log2} && [[ -s {output.vcf} ]] || cat {scriptspath}/empty.vcf > {output.vcf}
-		fi
+		Rscript --vanilla {params.scrambledir}/SCRAMble.R \
+		--cluster-file {input.txt} \
+		--out-name {params.output} \
+		--install-dir {params.scrambledir} \
+		--mei-refs {params.refmei} \
+		--ref {refgene} \
+		--mei-score {params.meiscore} --nCluster {params.nCluster} --poly-a-dist {params.polyadist} --poly-a-frac {params.polyafrac} {params.mode} > {log.log1} 2> {log.log2} && [[ -s {output.vcf} ]] || cat {dummypath}/empty.vcf > {output.vcf}
 		"""
 
 # escape " with \" for bash or awk or use triple """ to avoid the use of \ ; use double {{ and }} for awk integration to differentiate snakefile variable and awk variable
@@ -497,21 +505,21 @@ rule correctvcf:
 	output:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	params:
-		indels = config['indels']
+		mode = config['scramble_mode'],
 	shell:
 		"""
-		if [ {params.indels} = True ];
+		if [ {params.mode} = "--eval-dels" ];
 		then
-		(grep "^##" {input.vcf} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcf} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcf} | awk '{{print $0"\tGT\t0/1"}}' | awk '{{FS=OFS="\t"}}; {{$4=substr($4, 0, 1); print}}' | awk '{{FS=OFS="\t"}} $3=="DEL" {{$5="<DEL>"}}1') > {output.vcf} && [[ -s {output.vcf} ]] || cat {scriptspath}/empty.vcf > {output.vcf}
+		(grep "^##" {input.vcf} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcf} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcf} | awk '{{print $0"\tGT\t0/1"}}' | awk '{{FS=OFS="\t"}}; {{$4=substr($4, 0, 1); print}}' | awk '{{FS=OFS="\t"}} $3=="DEL" {{$5="<DEL>"}}1') > {output.vcf} && [[ -s {output.vcf} ]] || cat {dummypath}/empty.vcf > {output.vcf}
 		else
-		(grep "^##" {input.vcf} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcf} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcf} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf} && [[ -s {output.vcf} ]] || cat {scriptspath}/empty.vcf > {output.vcf}
+		(grep "^##" {input.vcf} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcf} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcf} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf} && [[ -s {output.vcf} ]] || cat {dummypath}/empty.vcf > {output.vcf}
 		fi
 		"""
 
 # AnnotSV need bedtools to work ie you have to specify the directory of bedtools binaries in -bedtools argument
 rule AnnotSV:
 	"""
-	AnnotSV will annotate and rank Structural Variations (SV) from a vcf file. Output will be an AnnotSV tsv file.
+	AnnotSV will annotate and rank Structural Variations (SV) from a vcf file. Output will be an AnnotSV vcf file.
 	-annotationMode can be : split by exons/introns or full by genes
 	-txtFile : path to a file containing a list of preferred genes transcripts to be used in priority during the annotation, preferred genes transcripts names should be tab or space separated
 	-genomeBuild must be specified if not hg19
@@ -519,49 +527,17 @@ rule AnnotSV:
 	input:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	output:
-		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV_uncorr.tsv"
+		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
 	log:
 		txt = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.log"
 	params:
-		bedtools = config['BEDTOOLS_PATH'],
-		bcftools = config['BCFTOOLS_PATH'],
 		genome = config['genomeBuild'],
 		overlap = config ['overlap'],
-		mode = config['annotationMode']
+		mode = config['annotationMode'],
+		annotation = config['annotationdir']
 	shell:
 		"""
-		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsvuncorr} -bedtools {params.bedtools} -annotationMode {params.mode} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log.txt} && [[ -s {output.tsvuncorr} ]] || cat {scriptspath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.tsvuncorr}
-		"""
-
-
-# AnnotSV drop chr from input 
-# we need to re-add chr to the SV_chrom column (column number 2)
-rule patchchr:
-	"""
-	Add chr to the SV_chrom column
-	"""
-	input:
-		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV_uncorr.tsv"
-	output:
-		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Unfiltered.tsv"
-	shell:
-		"""
-		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input.tsvuncorr} > {output.tsv}
-		"""
-
-rule AnnotSV2vcf:
-	"""
-	File converter will convert tsv AnnotSV into vcf
-	"""
-	input:
-		tsv = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Unfiltered.tsv"
-	output:
-		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Fullunsort.vcf"
-	log:
-		log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV2vcf.log"
-	shell:
-		"""
-		python {scriptspath}/file_converter.py  -i {input.tsv} -o {output.vcfunsort} -fi annotsv -fo vcf -c {scriptspath}/fileconversion/config_annotsv3.json 2> {log.log2} && [[ -s {output.vcfunsort} ]] || cat {scriptspath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
+		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsvuncorr} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log.txt} && [[ -s {output.tsvuncorr} ]] || cat {dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.tsvuncorr}
 		"""
 
 # bcftools sort don't sort correctly
@@ -570,12 +546,12 @@ rule sortvcf:
 	Bash script to sort a vcf
 	"""
 	input:
-		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Fullunsort.vcf"
+		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
 	output:
-		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf"
+		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf"
 	shell:
 		"""
-		grep \"^#\" {input.vcfunsort} > {output.vcfsort} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfsort} && [[ -s {output.vcfsort} ]] || cat {scriptspath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfsort}
+		grep \"^#\" {input.vcfunsort} > {output.vcfsort} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfsort} && [[ -s {output.vcfsort} ]] || cat {dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfsort}
 		"""
 
 # bcftools need vcf.gz.tbi index for the merge all
@@ -584,9 +560,9 @@ rule vcf2gz:
 	Compress vcf with bgzip
 	"""
 	input:
-		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf"
+		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf"
 	output:
-		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz"
+		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz"
 	shell:
 		"""
 		bgzip -c {input.vcfsort} > {output.vcfgz} ; tabix {output.vcfgz}
@@ -597,9 +573,9 @@ rule cpvcffull:
 	Copy or merge with bcftools several vcfs
 	"""
 	input:
-		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz", aligner=aligner_list, sample=sample_list)
+		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
 	output:
-		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Unfiltered.vcf.gz"
+		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.vcf.gz"
 	shell:
 		"""
 		if [ {sample_count} -eq 1 ]
@@ -616,9 +592,9 @@ rule filtervcfdesign:
 	Filter vcf with a bed file
 	"""
 	input:
-		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz"
+		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz"
 	output:
-		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
+		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.vcf.gz"
 	params:
 		bed = bed_file
 	shell:
@@ -633,7 +609,7 @@ rule cpvcfdesign:
 	input:
 		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output:
-		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
+		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf.gz"
 	shell:
 		"""
 		if [ {sample_count} -eq 1 ]
@@ -649,7 +625,7 @@ rule convertvcf_sampledesign:
 	Vcf 2 tsv conversion
 	"""
 	input:
-		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz"
+		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.vcf.gz"
 	output:
 		tsvdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv"
 	log:
@@ -664,7 +640,7 @@ rule convertvcf_alldesign:
 	Vcf 2 tsv conversion
 	"""
 	input:
-		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
+		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf.gz"
 	output:
 		tsvalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 	log:
@@ -679,11 +655,11 @@ rule convertvcf_allunfiltered:
 	Vcf 2 tsv conversion
 	"""
 	input:
-		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.Unfiltered.vcf.gz"
+		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.vcf.gz"
 	output:
-		tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv"
+		tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv"
 	log:
-		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.log"
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.vcf2tsv_converter.log"
 	shell:
 		"""
 		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzallfull} --out_tsv {output.tsvallfull} 2> {log.log2}
