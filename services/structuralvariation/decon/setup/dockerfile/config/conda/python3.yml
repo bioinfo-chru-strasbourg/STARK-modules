@@ -1,9 +1,0 @@
-name: python3
-channels:
-  - bioconda
-  - conda-forge
-  - biobuilds
-dependencies:
-  - python=3.9.7
-  - requests
-prefix: ./envs
