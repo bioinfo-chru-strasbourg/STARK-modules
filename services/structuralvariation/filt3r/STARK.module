@@ -1,14 +1,14 @@
 {
   "submodules": {
-    "decon": {
-      "description" : "DECON analysis for CNV",
+    "filt3r": {
+      "description" : "FILT3R analysis for ITDs",
       "services": {
         "cli": {
           "code": "cli",
           "name": "CLI service",
-          "type": "Cli",
+          "type": "CLI",
           "description": "cli service, create image and configure service.",
-          "release": "3.0",
+          "release": "1.0",
           "available": false
         },
         "listener": {
@@ -24,7 +24,7 @@
           "name": "SETUP service",
           "type": "setup",
           "description": "setup service, create image and configure service.",
-          "release": "2.0",
+          "release": "1.0",
           "available": false
         }
       }

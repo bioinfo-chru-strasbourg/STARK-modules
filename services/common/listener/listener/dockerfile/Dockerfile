@@ -1,9 +1,13 @@
 ##################################################################################
-# Dockerfile Version:   1.0
+# Dockerfile Version:   2.0
 # Software:             listener
-# Software Version:     1.0
+# Software Version:     2.0
 # Description:          Dockerfile to build Microservices Listener container image
 ##################################################################################
+
+# PROD version 2 : 28/11/2023 : changelog
+	# switch to alma linux 8
+	# add docker compose
 
 FROM almalinux:8
 
@@ -11,7 +15,7 @@ FROM almalinux:8
 # YUM #
 #######
 RUN yum update -y
-RUN yum -y install python2 epel-release yum-utils device-mapper-persistent-data lvm2
+RUN yum -y install python3 epel-release yum-utils device-mapper-persistent-data lvm2
 
 #############
 # DOCKER-CE #
@@ -20,6 +24,13 @@ RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docke
 RUN yum -y install docker-ce
 RUN usermod -aG docker $(whoami)
 RUN systemctl enable docker.service
+
+##################
+# DOCKER-COMPOSE #
+##################
+ENV DOCKER_COMPOSE_VERSION="v2.23.3"
+RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+RUN chmod +x /usr/local/bin/docker-compose
 
 ############
 # LISTENER #

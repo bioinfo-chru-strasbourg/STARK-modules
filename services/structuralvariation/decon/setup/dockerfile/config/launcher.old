@@ -1,5 +1,5 @@
 ##########################################################################
-# Launcher Version:			3.0
+# Launcher Version:			0.1
 # Description:				Launcher to run Snakemake module
 ##########################################################################
 
@@ -10,9 +10,6 @@
 
 # PROD version 2 : 16/06/2022 changelog
 	# yaml files can be defined by groupe_name + project_name or groupe_name only
-
-# PROD version 3.0 : 28/11/2023 changelog
-	# docker compose to run containers
 
 ################## Context ##################
 # type python launcher.py -h for help
@@ -75,13 +72,10 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 		microserviceRepo = os.getenv('MICROSERVICE_REPOSITORY')
 	if not serviceName:
 		serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_NAME')
-	# image name is the same as container name
-	# DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME = stark-module-structuralvariation-submodule-flt3itdext-service-cli
 	if not image:
 		image = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME')
 	if not montage:
-		# montage = os.getenv('MICROSERVICE_MONTAGE')
-		montage = ""
+		montage = os.getenv('MICROSERVICE_MONTAGE')
 	# Variables get from config file
 	if configFile:
 		launchCommand = readconfig(configFile, serviceName, 'launch')
@@ -102,10 +96,9 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 	# snakemake --configfile can't be empty ; if not, it will use the default yaml file in the docker container
 	# /bin/bash -c 'source activate variantconvert is mandatory to activate the conda environment, you have to run bash
 	if yaml_config_file and os.path.exists(yaml_config_file):
-	#	cmd = "docker run --rm --name="+containerName+" "+montage+" "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file+"'"
-		cmd = "docker compose run --rm --name="+containerName+" -f STARK.docker-compose.yml "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file+"'"
+		cmd = "docker run --rm --name="+containerName+" "+montage+" "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file+"'"
 	else:
-		cmd = "docker compose run --rm --name="+containerName+" -f STARK.docker-compose.yml "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+"'"
+		cmd = "docker run --rm --name="+containerName+" "+montage+" "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+"'"
 	# launch the cmd to the shell 
 	subprocess.call(cmd, shell = True)
 	# Create a log file
@@ -124,7 +117,7 @@ def myoptions():
 	parser.add_argument("-r", "--run", type = str, default = "", help = "Run to launch", dest = 'run')
 	parser.add_argument("-s", "--service", type = str, default = "", help = "Service name", dest = 'serviceName')
 	parser.add_argument("-log", "--log", type = str, default = "", help = "Path for the log file", dest = 'containersFile')
-	parser.add_argument("-v", "--volume", type = str, default = "", help = "Docker volumes to add", dest = 'montage')
+	parser.add_argument("-v", "--volume", type = str, default = "", help = "Docker volume to add", dest = 'montage')
 	parser.add_argument("-i", "--image", type = str, default = "", help = "Docker image to use", dest = 'image')
 	parser.add_argument("-l", "--launchcommand", type = str, default = "", help = "Command to launch inside the container", dest = 'launchCommand')
 	parser.add_argument("-c", "--config", type = str, default = "", help = "Config file to read from", dest = 'configFile')
