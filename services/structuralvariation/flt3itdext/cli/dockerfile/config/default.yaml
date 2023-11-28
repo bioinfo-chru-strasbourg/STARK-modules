@@ -1,0 +1,97 @@
+##########################################################################
+# Config Yaml Version:     0.2
+# Description:             Yaml file to run Snakefile FLT3_ITD_EXT module
+##########################################################################
+
+# DEV version 0.2 : 05/03/2023
+# Authoring : Thomas LAVAUX
+
+################## Directories and variables ##################
+# Name of the module = {serviceName} from listener.py/launcher.py
+serviceName: "FLT3_ITD_EXT"
+
+# Default repository/depository path from listener.py/launcher.py
+repository: "/STARK/output/repository"
+depository: "/STARK/output/depository"
+# Copy to depot directory (archive)
+DEPOT_COPY: False
+# Output directory if not repository
+OUTPUT_DIR: ""
+# Default path to the input datas == {run} from listener.py/launcher.py
+run: ""
+
+# Group and App default name
+GROUP_NAME: "UNKNOWN"
+APP_NAME: "UNKNOWN"
+
+# Bed file
+BED_FILE: ""
+# Genes file
+GENES_FILE: ""
+# Transcripts file
+TRANSCRIPTS_FILE: ""
+# List genes
+LIST_GENES: ""
+
+# Path to scripts
+SCRIPTS_PATH: "/app/scripts"
+
+# Only analyse validation.bam/cram files
+VALIDATION_ONLY: False
+# List of files extension to process
+PROCESS_FILE: ['.bam']
+# How to process input files : cram/cp/rsync/ls/filterbam
+PROCESS_CMD: 'cp'
+
+# Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
+ALIGNER_NAME:
+
+# Path to a folder where intermediate files will be written
+TMP_DIR: "tmp"
+
+# Path to a folder where log files will be written
+LOG_DIR: "log"
+
+# Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
+EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
+
+# Sample filter
+FILTER_SAMPLE: []
+
+# Ext to index (endwith)
+EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".bam", ".bam.bai"]
+
+# Rsync options : if several files are added add {} at the start and end of the list
+# include_rsync must have more than one arguement
+EXCLUDE_RSYNC: "*"
+INCLUDE_RSYNC: "{'*.log', '*'}"
+
+# for log file copy if pipeline failed
+EXCLUDE_LOG_RSYNC: "*"
+INCLUDE_LOG_RSYNC: "{'*.txt', '*.log', '*.err'}"
+
+# Search parameters
+RECURSIVE_SEARCH: False
+SEARCH_ARGUMENT: "*/*"
+
+# MISC
+THREADS: "4"
+
+## DEBUG ##
+DEBUG_MODE: False
+
+
+################## Tools parameters ##################
+# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
+REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+# Path to Bcftools
+BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
+
+################## flt3_itd_ext ##################
+REF_ITD_PATH: "./FLT3_dna_e14e15"
+# Assembly (hg19/hg38)
+ASSEMBLY: "hg19"
+# Type of sequencing technology (HC = capture)
+NGS_TYPE: "HC"
+# Min of reads to considere an ITDs
+MINREADS: "5"

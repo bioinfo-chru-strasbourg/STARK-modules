@@ -1,0 +1,33 @@
+##############################################################
+# Module :             Structural variation
+# Submodule :          FILT3R
+# Services :           cli
+# Version :            1.0.0
+# Description:         Dockerfile to build container image FILT3R
+##############################################################
+
+# Ubuntu based
+FROM condaforge/mambaforge
+
+# Need to set timezone for cmake
+ENV TZ=Europe/Paris
+RUN ln -snf "/usr/share/zoneinfo/$TZ" /etc/localtime
+RUN echo "$TZ" > /etc/timezone
+
+# Libs
+RUN apt-get update
+RUN apt-get install -y tzdata git unzip vim time cmake g++ zlib1g-dev rsync
+# Install FILT3R
+RUN git clone https://gitlab.univ-lille.fr/filt3r/filt3r.git 
+RUN cd filt3r && make gatb && make
+
+ENV PATH="/filt3r/filt3r:$PATH"
+RUN source ~/.bashrc
+
+# Copy applications files (/app)
+COPY ./ /app
+# Mamba install 
+RUN mamba install -y -c conda-forge -c bioconda -c biobuilds samtools~=1.17.0 bcftools~=1.17.0 bedtools~=2.31.0 snakemake~=7.32.4 pandas~=2.0.3 && mamba clean -afy
+# End
+WORKDIR "/app"
+ENTRYPOINT [ "/bin/bash" ]
