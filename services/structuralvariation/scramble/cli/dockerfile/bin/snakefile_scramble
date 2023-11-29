@@ -44,7 +44,7 @@ from datetime import datetime
 from shutil import copy2
 
 ################## Configuration file and PATHS ##################
-configfile: "/app/config/default.yaml"
+configfile: "/app/config/snakefile/default.yaml"
 
 ### COMMON VARIABLES ###
 # Analysis only validation bam/cram files

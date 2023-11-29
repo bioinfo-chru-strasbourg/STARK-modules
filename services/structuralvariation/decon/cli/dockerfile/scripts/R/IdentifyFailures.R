@@ -13,7 +13,6 @@ option_list<-list(
     make_option("--mincorr",help='minimum correlation, default .98',default=.98,dest='mincorr'),
     make_option("--mincov",help='minimum coverage, default=100',default=100,dest='mincov'),
     make_option("--exons",default=NULL,help="File containing custom exon annotation",dest='exons'),
-    make_option("--custom",default=FALSE,help='Use custom reporting, default=FALSE',dest='custom'),
     make_option("--out",default='./',help='output directory, default=./',dest='out')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
@@ -28,8 +27,6 @@ if(length(corr_thresh)==0){corr_thresh=0.98}
 cov_thresh=as.numeric(opt$mincov)
 if(length(cov_thresh)==0){cov_thresh=100}
 exon_numbers=opt$exons
-Custom=as.logical(opt$custom)
-if(length(Custom)==0){Custom=FALSE}
 Output=opt$out
 
 # R workspace with the coverage data saved in - this workspace already has the bedfile, fasta file saved in it.
@@ -113,18 +110,12 @@ if(!is.null(exon_numbers)&any(Exon!="All")){
 	Custom_Numbering[paste(Exon)%in%row.names(failed.calls[exonlist,])] = exons$Custom[a]
 	Metrics<-data.frame(Sample,Exon,Types,Gene,Custom_Numbering,Details)
 	names(Metrics)=c("Sample","Exon","Type","Gene","Custom.numbering","Info")
-
-if(Custom){
 	Metrics_custom=Metrics[Metrics$Custom_Numbering!="NA" | Metrics$Types=="Whole sample",]
-	if(nrow(Metrics_custom)>0){
-	write.table(Metrics_custom,file=paste(Output,"Metrics.tsv",sep=""),quote=F,row.names=F,sep="\t")}
-}
-}else{
-Metrics<-data.frame(Sample,Exon,Types,Gene,Details)
-names(Metrics)=c("Sample","Exon","Type","Gene","Info")
-}
+	write.table(Metrics_custom,file=paste(Output,"Metrics_custom.tsv",sep=""),quote=F,row.names=F,sep="\t")}
 
-if(nrow(Metrics)>0){
+}else{
+	Metrics<-data.frame(Sample,Exon,Types,Gene,Details)
+	names(Metrics)=c("Sample","Exon","Type","Gene","Info")
 	write.table(Metrics,file=paste(Output,"Metrics.tsv",sep=""),quote=F,row.names=F,sep="\t")
 }
 

@@ -1,8 +1,0 @@
-# Old Bed formating
-OLD_BED: True
-
-plot: All
-
-DEPOT_COPY: True
-
-INCLUDE_RSYNC: "{'*Full.vcf.gz','*Full.vcf.gz.tbi','*Design.vcf.gz','*Design.vcf.gz.tbi','*AnnotSV.tsv','*/'}"

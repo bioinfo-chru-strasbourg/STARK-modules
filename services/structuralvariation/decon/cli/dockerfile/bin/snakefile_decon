@@ -24,8 +24,8 @@
 
 # PROD version 3 : 19/09/2023 changelog
 	# AnnotSV version 3.3.6 (include the vcf converter)
-	# DECON v2 (just install update)
 	# more options to process DECON bed, update the processalignedfiles function
+	# R scripts rewrite, to speed up ReadInBam, separate plotting, call CNV with a reference bam list (see changlog in the R scripts)
 
 ################## Context ##################
 # launch snakemake -s  snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
@@ -49,7 +49,7 @@ from datetime import datetime
 from shutil import copy2
 
 ################## Configuration file and PATHS ##################
-configfile: "/app/config/default.yaml"
+configfile: "/app/config/snakefile/default.yaml"
 
 ### COMMON VARIABLES ###
 # Analysis only validation bam/cram files
@@ -561,21 +561,21 @@ for gender in gender_list:
 		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 		df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
 		df = df.drop_duplicates()
-		df.to_csv(deconbed_file_F, sep='\t', index=False, header=False) # for decon.be no header
+		df.to_csv(deconbed_file_F, sep='\t', index=False, header=False) # for decon.bed no header
 	if gender == 'M':
 		deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M.bed'
 		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 		df = df[df['Chr'].isin(['chrX', 'chrY'])] # keep only chrY & chrX ref
 		df = df.drop_duplicates()
-		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.be no header
+		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.bed no header
 		deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M_noY.bed'
 		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 		df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
 		df = df.drop_duplicates()
-		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.be no header
+		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.bed no header
 
 if custom_exon == True:
-	# Set the customnumbering files for makeCNVcalls& Identify_failures
+	# Set the customnumbering files for makeCNVcalls
 	customnumberingfile_A = tmpdir + "/" + serviceName + "." +  date_time + '.A.CustomNumbering.txt'
 	customnumberingfile_F = tmpdir + "/" + serviceName + "." +  date_time + '.F.CustomNumbering.txt'
 	customnumberingfile_M = tmpdir + "/" + serviceName + "." +  date_time + '.M.CustomNumbering.txt'
@@ -616,6 +616,7 @@ if not bed_file:
 	exit()
 
 # Option to remove gender in the gender_list to force A, M or F analysis only
+# the calling of Y for male subject is not necessary
 remove_F = config['REMOVE_F']
 remove_M = config['REMOVE_M']
 remove_A = config['REMOVE_A']
@@ -677,7 +678,7 @@ rule all:
 	"""
 	input:
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
-		allfailtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.tsv", aligner=aligner_list),
+		failtsv = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.tsv", aligner=aligner_list),
 		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
@@ -718,18 +719,42 @@ rule ReadInBams:
 	Requirement : all .bam files must be indexed
 	"""
 	input:
-		bamlist = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.list.txt",
+		bamlist = tmpdir + "/" + serviceName + "." + date_time + ".list.txt",
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", sample=sample_list, aligner=aligner_list)
 	output:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.RData"
 	params:
-		output = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}",
-		deconbed_file = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.bed"
+		output = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.",
+		deconbed_file = tmpdir + "/" + serviceName + "." + date_time + ".bed"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.ReadInBams.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.ReadInBams.err"
 	shell:
 		"""
 		Rscript {decondir}/ReadInBams.R --bams {input.bamlist} --bed {params.deconbed_file} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
+		"""
+
+rule IdentifyFailures:
+	"""
+	The summary .RData file outputted can be used to flag any samples or exons where exon CNV calling may be suboptimal. Both exons and samples are evaluated based on their median coverage level. When coverage is low, accuracy of detection will be compromised and caution should be exercised when interpreting results. Samples are also evaluated based on their correlation with other samples. Samples which do not have a high correlation with other samples in the set are likely to have suboptimal detection across the entire target
+	Rscript IdentifyFailures.R --Rdata file.RData --mincorr .98 --mincov 100 --exons listofexonsforspecificannotation --custom TRUE/FALSE --out output.prefix
+	output is Metrics.tsv ; if --custom is true the output is named Metrics_custom.tsv
+	"""
+	input:
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.ReadInBams.RData"
+	params:
+		exons = tmpdir + "/" + serviceName + "." +  date_time + ".CustomNumbering.txt",
+		mincorr = config['mincorr'],
+		mincov = config['mincov'],
+		customreport = config['customreport'],
+		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics",
+		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.MetricsFailed"
+	output:
+		failtsv = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.tsv"
+	log: 
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.err"
+	shell:
+		"""
+		Rscript {decondir}/IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
 		"""
 
 rule makeCNVcalls:
@@ -737,67 +762,46 @@ rule makeCNVcalls:
 	This step calls exon CNVs in each sample by selecting reference samples from all other samples contained in the input summary .RData file. The correlation between samples and the number of samples used as a reference are thus calculated and outputted to aid interpretation of call quality
 	Rscript makeCNVcalls.R --Rdata summary.file --transProb 0.01 (default) --exons listofexonsforspecificannotation --custom TRUE/FALSE --out output.prefix –-plot  None, Custom or All --plotFolder Plotfoldertoset
 	output is _all.txt and a summary Rdata associated ; if custom is true, a second file is ouputed named _custom.txt
+	--refbams = txt file containing a list of reference bam files, full path
 	"""
 	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.ReadInBams.RData"
 	params:
 		prob = config['transProb'],
-		pdf = tmpdir + "/pdfs/",
 		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{gender}.CustomNumbering.txt",
-		plot = config['plot'],
-		customplot = config['customexon'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results",
-		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.AnalysisFailed"
+		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.CNVCalledFailed",
+		deconbed = tmpdir + "/" + serviceName + "." + date_time + "{gender}.bed",
+		refbamslist = config['REF_BAM_LIST']
 	output:
-		calltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt"
+		calltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.tsv"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.err"
 	shell:
 		"""
-		if [ {params.customplot} = True ];
-		then
-			Rscript {decondir}/makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --exons {params.exons} --custom {params.customplot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
-		else
-			Rscript {decondir}/makeCNVcalls.R --Rdata {input.rdata} --plot {params.plot} --transProb {params.prob} --plotFolder {params.pdf} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
-		fi
+		Rscript {decondir}/makeCNVcalls.R --Rdata {input.rdata} --bed {params.deconbed} --exons {params.exons} --transProb {params.prob} --refbams {params.refbamslist} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
 		"""
 
-rule IdentifyFailures:
-	"""
-	The summary .RData file outputted can be used to flag any samples or exons where exon CNV calling may be suboptimal. Both exons and samples are evaluated based on their median coverage level. When coverage is low, accuracy of detection will be compromised and caution should be exercised when interpreting results. Samples are also evaluated based on their correlation with other samples. Samples which do not have a high correlation with other samples in the set are likely to have suboptimal detection across the entire target
-	Rscript IdentifyFailures.R --Rdata file.RData --mincorr .98 --mincov 100 --exons listofexonsforspecificannotation --custom TRUE/FALSE --out output.prefix
-	output is _Failures.txt ; if --custom is true a second file is output named _custom_Failures.txt
-	"""
+rule plot:
 	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.CNVcall.RData"
 	params:
-		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{gender}.CustomNumbering.txt",
-		mincorr = config['mincorr'],
-		mincov = config['mincov'],
-		customplot = config['customexon'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify",
-		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.MetricsFailed"
+		plot = config['PLOT_OPTION']
 	output:
-		failtxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt"
+		folder = tmpdir + "/pdfs/"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.err"
 	shell:
 		"""
-		if [ {params.customplot} = True ];
-		then
-			Rscript {decondir}/IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
-		else
-			Rscript {decondir}/IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
-		fi
+		Rscript {decondir}/DECONplot.R --Rdata {input.rdata} --plot {params.plot} --plotFolder {output.folder} 1> {log.log1} 2> {log.log2}
 		"""
-
 
 rule merge_makeCNVcalls:
 	"""
-	Merge all call results
+	Merge all CNVs call results
 	"""
 	input:
-		calltxt =  expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.txt", gender=gender_list, aligner=aligner_list)
+		calltxt =  expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.tsv", gender=gender_list, aligner=aligner_list)
 	output:
 		allcalltsv = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.tsv"
 	shell:
@@ -805,19 +809,6 @@ rule merge_makeCNVcalls:
 		cat {input.calltxt} | sort -u | sort -r >> {output.allcalltsv}
 		"""
 
-
-rule merge_IdentifyFailures:
-	"""
-	Merge all metrics results
-	"""
-	input:
-		failtxt = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.txt", gender=gender_list, aligner=aligner_list)
-	output:
-		allfailtsv = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.tsv"
-	shell:
-		"""
-		cat {input.failtxt} | sort -u | sort -r >> {output.allfailtsv}
-		"""
 
 # crash if conversion goes wrong
 rule Decon_tsv2vcf:

@@ -17,9 +17,10 @@ library(dplyr)
 ######Parsing input options and setting defaults########
 option_list<-list(
     make_option("--bams",help="txt file containing a list of bam files or a directory containing all the bam files",dest='bams'),
+    make_option("--refbams",help="txt file containing a list of reference bam files, full path",dest='rbams'),
     make_option("--bed",help='bed file to be used',dest='bed'),
     make_option("--fasta",help='ref genome fasta file to be used, optional',default=NULL,dest='fasta'),
-    make_option("--out",default="DECoN",help="output prefix, default: DECoN",dest='out')
+    make_option("--out",default="DECoN",help="output folder, default: DECoN",dest='out')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 # location of bam files; can be a directory containing only bam files to be processed or the name of a file containing a list of bam files to be processed.
@@ -27,6 +28,7 @@ bam_file=opt$bams
 bedfile=opt$bed
 fasta=opt$fasta
 output=opt$out
+refbams_file=opt$rbams
 
 if(bam_file=="NULL"){bam_file=NULL}
 if(is.null(bam_file)){
@@ -40,26 +42,24 @@ print("ERROR bed file must be provided. Execution halted")
 quit()
 }
 
+# Read list of bams to process
+bams<-apply(read.table(paste(bam_file)),1,toString)
+if(length(refbam_file)==0){
+bams<-apply(read.table(paste(refbams_file)),1,toString)
+}
+
+# Check if bams is not empty
+if(length(bams)==0){
+print("ERROR NO BAM FILES DETECTED")
+quit()
+}
+
 # function which recursively splits x by an element of 'splits' then extracts the y element of the split vector
 multi_strsplit<-function(x,splits,y){
 	X<-x
 	for(i in 1:length(splits)){X=strsplit(X,splits[i], fixed = TRUE)[[1]][y[i]]}
 	return(X)
 }
-
-# if the input bam_file is a directory puts all .bam files in that directory on the 'bams' list
-# else expects bam_file to be a file containing a list of all the bam files to be used and reads in that list
-if(file.info(bam_file)$isdir){
-    bams<-list.files(bam_file,pattern=".bam",full.names=TRUE)
-    bais<-grep("bai",bams)
-    if(length(bais)>0){
-        bams<-bams[-bais]
-    }
-}else{
-    bams<-apply(read.table(paste(bam_file)),1,toString)
-}
-
-if(length(bams)==0){print("ERROR NO BAM FILES DETECTED")}
 
 # get the sample names from the path of the bams
 a<-length(strsplit(bams[1],"/")[[1]])
@@ -71,10 +71,13 @@ bed.file<-read.table(paste(bedfile))
 colnames(bed.file)<-c("chromosone","start","end","gene")
 
 # parallelisation
-# TODO add limitation to the numCores
+# add some limitation to the numCores (12 to start)
 nfiles <- length(bams)
 message('Parse ', nfiles, ' BAM files')
 numCores <- detectCores()
+if (numCores > 12) {
+    numCores <- 12
+}
 cl <- parallel::makeForkCluster(numCores)
 doParallel::registerDoParallel(cl)
 
@@ -91,6 +94,6 @@ filtrecount2 <- c("chromosome", "start", "end", "exon", "GC")
 filtrecount <-append(filtrecount2, filtrecount1)
 counts<-dplyr::select(unfilteredcounts, all_of(filtrecount))
 names(counts) <- unlist(lapply(strsplit(names(counts), "\\."), "[[", 1))
-save(counts,bams,bed.file,sample.names,fasta,file=paste(output,".RData",sep=""))
+save(counts,bams,bed.file,sample.names,fasta,file=paste(output,"DECoN.ReadInBams.RData",sep=""))
 
 print("END ReadInBams.R")

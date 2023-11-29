@@ -43,4 +43,4 @@ ENV PATH="/app:$PATH"
 
 WORKDIR /app
 
-CMD ["python","listener.py","--help"]
+CMD ["python3","listener.py","--help"]

@@ -203,6 +203,7 @@ if not os.path.exists(GENEHANCER_install_path) and os.path.exists(GENEHANCER_sou
 	os.makedirs(GENEHANCER_install_path, exist_ok = True)
 	systemcall("unzip -q "+GENEHANCER_source+" -d "+GENEHANCER_install_path+" ")
 
+
 #######################
 # Copy config files (service.conf & service.json) and launcher.py from app/config to /config/module/servicename/listener/
 #######################
@@ -214,6 +215,15 @@ if serviceName and moduleName:
 	systemcall("rsync -ar /app/config/ /STARK/config/"+moduleName+"/"+serviceName+"/listener 1>> "+logfile+" 2>> "+errfile+" ")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
+
+
+#############################
+# Indexing reference genome #
+#############################
+# Scramble Indels option : you will need a reference genome indexed with blast
+REFGENEFA_PATH="/STARK/databases/genomes/current/hg19.fa" # should be change for hg38
+if os.path.exists(REFGENEFA_PATH):
+	systemcall(" makeblastdb -in "+REFGENEFA_PATH+" -dbtype nucl  1>> "+logfile+" 2>> "+errfile+" ")
 
 # SETUPComplete cli services (condition for healthy cli)
 systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
