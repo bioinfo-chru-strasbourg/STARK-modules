@@ -52,16 +52,16 @@ serviceName: "DECON"
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
-# Default path to Refgene file
+# Default path to Refgene file containing custom exon numbers
 REFSEQGENE_PATH: "/STARK/databases/refGene/current/formated_refgene.tsv"
 # Path to Decon R directory
-DECON_PATH: "/tools/DECoN/current/bin/"
+DECON_PATH: "/app/scripts/R"
 # Path to Bedtools
 BEDTOOLS_PATH: "/tools/bedtools/current/bin/bedtools"
 # Path to Bcftools
 BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
 # Path to scripts
-SCRIPTS_PATH: "/app/src"
+SCRIPTS_PATH: "/app/scripts"
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
 # Sample filter
@@ -77,7 +77,7 @@ VALIDATION_ONLY: False
 # Process .bam or .cram
 PROCESS_FILE: ".bam"
 # Process input files : cram/cp/ls/filter
-PROCESS_CMD: 'ls'
+PROCESS_CMD: 'cp'
 
 # Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
 ALIGNER_NAME:
@@ -112,8 +112,9 @@ EXON_SEP: False
 OLD_BED: False
 
 # Remove Y or Y or Autosome analysis
+# Default is autosome with all the patients, and X only for Male and Female patients, with a separate call by sex
 REMOVE_F: False
-REMOVE_M: False
+REMOVE_M: True
 REMOVE_A: False
 REMOVE_M_noY: False
 
@@ -122,6 +123,8 @@ GENE_LIST_RESTRICT: []
 
 # List of chr to remove (essentially for chrY)
 CHR_LIST_RESTRICT: []
+
+
 
 ############## Tools specific parameters ##############
 
@@ -132,8 +135,10 @@ mincov: 100 # Minimum coverage threshold – the minimum median coverage for any
 ############# makeCNVcalls params
 transProb: 0.01 # Transition probability – the transition probability between normal copy number state and either deletion or duplication state in the hidden Markov model, 0.01 is a high threshold value to increase sensitivity (default 0.01)
 customexon: False # default False
-plot: All # default (plot argument should be one of: None, Custom or All)
+PLOT_OPTION: All # default (plot argument should be one of: None, Custom or All)
 plotFolder: # default DECoNPlots folder
+# path to the txt file containing the reference bams for the CNV calling, full path
+REF_BAM_LIST: "/app/bin/config/ref/refbams.txt"
 
 ############# AnnotSV params
 hpo: # HPO terms list describing the phenotype of the individual being investigated Values: use comma, semicolon or space separated class values Default = "" (e.g.: "HP:0001156,HP:0001363,HP:0011304") = only for individual analysis

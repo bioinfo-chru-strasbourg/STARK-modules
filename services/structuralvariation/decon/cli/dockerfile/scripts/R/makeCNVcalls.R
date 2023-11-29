@@ -1,6 +1,6 @@
 # Changelog 21/11/2023 TL
 # Refactor some code, remove packrat ref
-# TODO add a list of ref bam files
+# add a option to use a list of ref bam files for comparaison
 
 print("BEGIN makeCNVCalls.R")
 
@@ -11,10 +11,11 @@ library(ExomeDepth)
 ######Parsing input options and setting defaults########
 option_list<-list(
     make_option('--RData',help='Summary RData file (required)',dest='RData'),
+    make_option("--bed",help='bed file to be used',dest='bed'),
     make_option('--transProb',default=.01,help='Transition probability for the HMM statistical analysis, default: 0.01',dest='transProb'),
     make_option('--exons',default=NULL,help='Exon custom numbering (optional)',dest='exons'),
-	make_option("--bams",help="txt file containing a list of reference bam files",dest='bams'),
-    make_option('--out',default='results',help='output prefix, default: results',dest='out')
+	make_option("--refbams",help="txt file containing a list of reference bam files, full path",dest='rbams'),
+    make_option('--out',default='results',help='output folder, default: results',dest='out')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 
@@ -27,16 +28,17 @@ if(is.null(count_data)){
 }
 load(count_data)
 
-bam_file=opt$refbams
+bedfile=opt$bed
+refbams_file=opt$rbams
 trans_prob=as.numeric(opt$transProb)
 exon_numbers=opt$exons
 Custom=as.logical(opt$custom)
 out=opt$out
 
 # Read list of bams to process
-refbams<-apply(read.table(paste(bam_file)),1,toString)
-if(length(bams)==0){
-print("ERROR NO BAM FILES DETECTED")
+refbams<-apply(read.table(paste(refbams_file)),1,toString)
+if(length(refbams)==0){
+print("ERROR NO REFS BAM FILES DETECTED")
 quit()
 }
 
@@ -49,7 +51,9 @@ temp<-gsub('chr','',bed.file[,1])
 temp1<-order(as.numeric(temp))
 bed.file=bed.file[temp1,]
 
-#################CNV CALLING#######################################
+################# CNV CALLING #######################################
+# To call autosomes you need to use a bed containing autosome only
+# To call chrom X you need to use a bed containing chrom X only AND separate Male & Female patients 
 ExomeCount<-as(counts, 'data.frame')
 # remove any chr letters, and coerce to a string
 ExomeCount$chromosome <- gsub(as.character(ExomeCount$chromosome),pattern = 'chr',replacement = '') 
@@ -64,22 +68,28 @@ cnv.calls = NULL
 refs<-list()
 models<-list()
 
-# TODO use my.ref.samples with a ref set sample, not all the other samples
-# with an opt parse option : my.ref.samples <- sample.names[-i] should be sample.refs (=list of samples in the Exomecount dataframe)
-# for each sample:
+# for each sample :
 # extracts the sample to be tested, uses all other samples as the reference set, places coverage info for all samples in the reference set into a matrix 
 # from the reference set, selects correlated samples to be used.
 # places selected, correlated samples into a matrix, sums the selected samples across each exon
 # creates ExomeDepth object containing test data, reference data, and linear relationship between them. Automatically calculates likelihoods
 # fits a HMM with 3 states to read depth data; transition.probability - transition probability for HMM from normal to del/dup. Returns ExomeDepth object with CNVcalls
+# if refsample.names is not empty, the comparison will be made with those ref bams
+
+
+# filter sample.names removing refsample.names
+if(length(refsample.names)<>0){
+sample.names <- sample.names [! sample.names %in% refsample.names]
+}
+
 for(i in 1:length(sample.names)){
     print(paste("Processing sample: ",sample.names[i]," ", i,"/",length(sample.names),sep=""))
     my.test <- ExomeCount[,sample.names[i]]
-	if (ref=="TRUE"){
-	my.ref.samples <- refsample.names
-	}else{
-	my.ref.samples <- sample.names[-i]
-	}
+	if(length(refsample.names)==0){
+    my.ref.samples <- sample.names[-i]
+    }else{
+    my.ref.samples <- refsample.names # TODO check if no duplicate
+    }
     my.reference.set <- as.matrix(ExomeCount[,my.ref.samples])
     my.choice <- select.reference.set (test.counts = my.test,reference.counts = my.reference.set,bin.length = (ExomeCount$end - ExomeCount$start)/1000,n.bins.reduced = 10000)
     my.matrix <- as.matrix( ExomeCount[, my.choice$reference.choice, drop = FALSE])
@@ -105,7 +115,7 @@ cnv.calls$sample = paste(cnv.calls$sample)
 names(cnv.calls)[2] = "correlation"
 names(cnv.calls)[3] = "N.comp"
 
-#####################CONFIDENCE CALCULATION##############################
+##################### CONFIDENCE CALCULATION ##############################
 Flag<-rep("HIGH",nrow(cnv.calls))
 
 a<-which(cnv.calls$correlation<.985)
@@ -167,7 +177,7 @@ end.b<-Gene.index[cnv.calls_ids$end.p]
 cnv.calls_ids<-cbind(cnv.calls_ids,start.b,end.b)
 }
 
-#################ADD Custom EXON NUMBERS#####################
+################# ADD Custom EXON NUMBERS #####################
 if(!is.null(exon_numbers)){
     Custom.first = rep(NA,nrow(cnv.calls_ids))
     Custom.last=rep(NA,nrow(cnv.calls_ids))
@@ -191,20 +201,20 @@ if(!is.null(exon_numbers)){
     cnv.calls_ids=cbind(cnv.calls_ids,Custom.first,Custom.last)
 }
 
-#####################Output#######################
+##################### Output #######################
 if(!is.null(exon_numbers)){
 cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Custom.first,cnv.calls_ids$Custom.last)
 names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Custom.first","Custom.last")
-save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons,file=paste(out,".RData",sep=""))
+save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons,file=paste(out,".CNVcall.RData",sep=""))
 custom_calls=cnv.calls_ids_out[!is.na(cnv.calls_ids$Custom.first),]
-write.table(custom_calls,file=paste(out,"_custom.tsv",sep=""),sep="\t",quote=F,col.names=TRUE,row.names=FALSE)
+write.table(custom_calls,file=paste(out,"CNVcalls_custom.tsv",sep=""),sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
 
 }else{
 
 cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene)
 names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene")
-save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,file=paste(out,".RData",sep=""))
-write.table(cnv.calls_ids_out,file=paste(out,"_all.tsv",sep=""),sep="\t",quote=F,row.names=F,col.names=T)
+save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,file=paste(out,".CNVcall.RData",sep=""))
+write.table(cnv.calls_ids_out,file=paste(out,"CNVcalls.tsv",sep=""),sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
 }
 
 print("END makeCNVCalls.R")

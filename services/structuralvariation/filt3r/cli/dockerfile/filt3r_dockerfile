@@ -21,9 +21,6 @@ RUN apt-get install -y tzdata git unzip vim time cmake g++ zlib1g-dev rsync
 RUN git clone https://gitlab.univ-lille.fr/filt3r/filt3r.git 
 RUN cd filt3r && make gatb && make
 
-ENV PATH="/filt3r/filt3r:$PATH"
-RUN source ~/.bashrc
-
 # Copy applications files (/app)
 COPY ./ /app
 # Mamba install 

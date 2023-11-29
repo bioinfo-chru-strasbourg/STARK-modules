@@ -43,8 +43,6 @@ serviceName: "SCRAMBLE"
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
-# Default path to an FASTA file with MEI Ref sequences
-REFMEI_PATH: "/tools/scramble/current/resources/MEI_consensus_seqs.fa"
 # Path to Bedtools
 BEDTOOLS_PATH: "/tools/bedtools/current/bin/bedtools"
 # Path to Bcftools
@@ -108,7 +106,11 @@ nCluster: 5 # min cluster size to analyze(default 5)
 mei-score: 50 # min MEI alignment score to call (default 50)
 poly-a-frac: 0.75 # fraction of clipped length for calling polyA tail in MEIs (default 0.75)
 poly-a-dist: 100 # how far from MEI to look for polyA tail (default 100)
-indels: False
+# choose to evaluate meis or deletions, or both
+# --eval-meis / --eval-dels / --eval-meis --eval-dels
+scramble_mode: "--eval-meis --eval-dels"
+# Default path to an FASTA file with MEI Ref sequences
+REFMEI_PATH: "/tools/scramble/current/resources/MEI_consensus_seqs.fa"
 
 ################## AnnotSV params
 hpo: # HPO terms list describing the phenotype of the individual being investigated Values: use comma, semicolon or space separated class values Default = "" (e.g.: "HP:0001156,HP:0001363,HP:0011304") = only for individual analysis

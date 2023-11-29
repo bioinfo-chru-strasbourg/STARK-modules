@@ -427,7 +427,6 @@ rule samtools_fastq:
 		samtools fastq -1 {output.fastqR1} -2 {output.fastqR2} {input.bam}
 		"""
 
-# --nb-threads Number of threads (1)
 # --out Output filename. If the filename is empty the output will be written in a file whose name is the same as the input with an appended extension '.results.json'
 # --vcf Output an additional VCF file. The output name will be the same as the one for --out, but the .json extension will be replaced with .vcf
 rule filt3r:
