@@ -1,5 +1,17 @@
-# Changelog 21/11/2023 TL
-# Refactor some code, remove packrat ref
+##########################################################################
+# DECON script          Version: 1
+# Description:          R script to generate plots
+##########################################################################
+
+################## Context ##################
+# Original R script from https://github.com/RahmanTeam/DECoN
+# DECON is an ExomeDepth wrapper 
+########## Note ########################################################################################
+# PROD v1 21/11/2023
+# Changelog
+#   - separate plot script from makeCNVcall, refactor code, remove install system
+#   - optparse script
+########################################################################################################
 
 print("BEGIN DECONPlot.R")
 
@@ -8,15 +20,14 @@ library(grid)
 library(reshape)
 library(ggplot2)
 
-######Parsing input options and setting defaults########
+###### Parsing input options and setting defaults ########
 option_list<-list(
-    make_option('--RData',help='Summary RData file (required)',dest='RData'),
-    make_option('--plot',default='All',help='options: All (default), Custom',dest='plot'),
-    make_option('--plotFolder',default='DECoNPlots',help='default: DECoNPlots',dest='plotFolder')
+    make_option('--RData',help='Input summary RData file (required)',dest='RData'),
+    make_option('--out',default='./plots',help='Output directory, default=./plots',dest='plotFolder')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 
-# R workspace with all the results save : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
+# Load R workspace with all the results save : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
 count_data=opt$RData
 if(count_data=="NULL"){count_data=NULL}
 if(is.null(count_data)){
@@ -25,15 +36,13 @@ if(is.null(count_data)){
 }
 load(count_data)
 
-# if custom option is choose the cnv.calls_ids should have a Custom.first and Custom.last column
-plotOutput=opt$plot
-if(!plotOutput%in%c("None","Custom","All")){print("WARNING: plot argument should be : None, Custom or All")}
 plotFolder=opt$plotFolder
 if(!file.exists(plotFolder)){dir.create(plotFolder)}
 
 #################### Plots ####################################
 message('Start generating plots')
-if(plotOutput=="Custom"){
+
+if ("Custom.first" %in% colnames(cnv.calls_ids)){
     cnv.calls_plot=cnv.calls_ids[!is.na(cnv.calls_ids$Custom.first),]
 }else{
     cnv.calls_plot=cnv.calls_ids

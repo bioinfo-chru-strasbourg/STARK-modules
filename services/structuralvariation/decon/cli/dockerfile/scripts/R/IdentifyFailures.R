@@ -1,5 +1,16 @@
-# Changelog 21/11/2023 TL
-# Refactor some code, remove packrat ref & BRCA specific code
+##########################################################################
+# DECON script          Version: 1
+# Description:          R script to generate metrics from coverage datas
+##########################################################################
+
+################## Context ##################
+# Original R script from https://github.com/RahmanTeam/DECoN
+# DECON is an ExomeDepth wrapper 
+########## Note ########################################################################################
+# PROD v1 21/11/2023
+# Changelog
+#   - refactor code, remove install system, optparse script, update for ExomeDepth 1.16
+########################################################################################################
 
 print("BEGIN IdentifyFailures script")
 
@@ -7,13 +18,13 @@ library(R.utils)
 library(optparse)
 library(ExomeDepth)
 
-######Parsing input options and setting defaults########
+###### Parsing input options and setting defaults ########
 option_list<-list(
-    make_option("--RData",help="Summary RData file",dest='Rdata'),
-    make_option("--mincorr",help='minimum correlation, default .98',default=.98,dest='mincorr'),
-    make_option("--mincov",help='minimum coverage, default=100',default=100,dest='mincov'),
-    make_option("--exons",default=NULL,help="File containing custom exon annotation",dest='exons'),
-    make_option("--out",default='./',help='output directory, default=./',dest='out')
+    make_option("--RData",help="Input summary RData file (required)",dest='Rdata'),
+    make_option("--mincorr",help='Minimum correlation to consider, default=0.98',default=.98,dest='mincorr'),
+    make_option("--mincov",help='Minimum coverage to consider, default=100',default=100,dest='mincov'),
+    make_option("--exons",default=NULL,help="File containing custom exon annotation (optional)",dest='exons'),
+    make_option("--out",default='./metrics',help='Output directory, default=./metrics',dest='out')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 count_data=opt$Rdata
@@ -29,7 +40,7 @@ if(length(cov_thresh)==0){cov_thresh=100}
 exon_numbers=opt$exons
 Output=opt$out
 
-# R workspace with the coverage data saved in - this workspace already has the bedfile, fasta file saved in it.
+# R workspace with the coverage data, bedfile, GC content from ref genome saved in it.
 load(count_data)
 # converts counts, a ranged data object, to a data frame
 ExomeCount<-as(counts, 'data.frame')
