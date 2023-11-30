@@ -1,8 +1,19 @@
-# Changelog 21/11/2023 TL
-# Refactor some code, remove packrat ref & BRCA specific code
-# add parallel to speed up the process
+###############################################################################
+# DECON script          Version: 1
+# Description:          R script to extract coverage datas from a list of bams
+###############################################################################
 
-# TODO directory save and prefix should be different
+################## Context ###############################################
+# Original R script from https://github.com/RahmanTeam/DECoN
+# DECON is an ExomeDepth wrapper 
+########## Note ########################################################################################
+# PROD v1 21/11/2023
+# Changelog
+#   - refactor code, remove install system, update for ExomeDepth 1.16
+#   - parallelisation to speed up the process
+########################################################################################################
+
+# TODO : add a function to validate the bed
 
 print("BEGIN ReadInBams.R")
 
@@ -14,13 +25,13 @@ library(foreach)
 library(dplyr)
 
 
-######Parsing input options and setting defaults########
+###### Parsing input options and setting defaults ########
 option_list<-list(
-    make_option("--bams",help="txt file containing a list of bam files or a directory containing all the bam files",dest='bams'),
-    make_option("--refbams",help="txt file containing a list of reference bam files, full path",dest='rbams'),
-    make_option("--bed",help='bed file to be used',dest='bed'),
-    make_option("--fasta",help='ref genome fasta file to be used, optional',default=NULL,dest='fasta'),
-    make_option("--out",default="DECoN",help="output folder, default: DECoN",dest='out')
+    make_option("--bams",help="Text file containing a list of bam files to process (required)",dest='bams'),
+    make_option("--refbams",help="Text file containing a list of reference bam files to process (optional)",dest='rbams'),
+    make_option("--bed",help='Bed file 4 columns (chr, sart, stop, gene) used to generate coverage datas (required)',dest='bed'),
+    make_option("--fasta",help='Reference genome fasta file to use (optional)',default=NULL,dest='fasta'),
+    make_option("--out",default="./coverage",help="Output folder, default: ./coverage",dest='out')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 # location of bam files; can be a directory containing only bam files to be processed or the name of a file containing a list of bam files to be processed.
@@ -71,10 +82,10 @@ bed.file<-read.table(paste(bedfile))
 colnames(bed.file)<-c("chromosone","start","end","gene")
 
 # parallelisation
-# add some limitation to the numCores (12 to start)
 nfiles <- length(bams)
 message('Parse ', nfiles, ' BAM files')
 numCores <- detectCores()
+# add some limitation to the numCores (12 to start)
 if (numCores > 12) {
     numCores <- 12
 }

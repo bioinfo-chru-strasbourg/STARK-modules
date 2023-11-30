@@ -1,6 +1,19 @@
-# Changelog 21/11/2023 TL
-# Refactor some code, remove packrat ref
-# add a option to use a list of ref bam files for comparaison
+##########################################################################
+# DECON script          Version: 1
+# Description:          R script to call CNVs from coverage datas
+##########################################################################
+
+################## Context ###############################################
+# Original R script from https://github.com/RahmanTeam/DECoN
+# DECON is an ExomeDepth wrapper 
+########## Note ########################################################################################
+# PROD v1 21/11/2023
+# Changelog
+#   - refactor code, remove install system, update for ExomeDepth 1.16
+#   - optparse script, add a option to use a list of ref bam files for comparaison, and to override bed file saved in the rdatas
+########################################################################################################
+
+# TODO : add a function to validate the bed
 
 print("BEGIN makeCNVCalls.R")
 
@@ -8,18 +21,18 @@ library(R.utils)
 library(optparse)
 library(ExomeDepth)
 
-######Parsing input options and setting defaults########
+###### Parsing input options and setting defaults ########
 option_list<-list(
-    make_option('--RData',help='Summary RData file (required)',dest='RData'),
-    make_option("--bed",help='bed file to be used',dest='bed'),
-    make_option('--transProb',default=.01,help='Transition probability for the HMM statistical analysis, default: 0.01',dest='transProb'),
+    make_option('--RData',help='Input summary RData file containing coverage datas, bed file and GC content (required)',dest='RData'),
+    make_option("--bed",help='Bed file 4 columns, override the bed saved in the Rdata file (optional)',dest='bed'),
+    make_option('--transProb',default=.01,help='Transition probability for the HMM statistical analysis, default=0.01',dest='transProb'),
     make_option('--exons',default=NULL,help='Exon custom numbering (optional)',dest='exons'),
-	make_option("--refbams",help="txt file containing a list of reference bam files, full path",dest='rbams'),
-    make_option('--out',default='results',help='output folder, default: results',dest='out')
+	make_option("--refbams",help="Text file containing a list of reference bam files, full path (optional)",dest='rbams'),
+    make_option('--out',default='./CNVcallresults',help='Output folder, default=./CNVcallresults',dest='out')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 
-# R workspace with the coverage data saved in - this workspace already has the bedfile & ref genome fasta file saved in it
+# R workspace with the coverage data, the bedfile & ref genome fasta file saved in it
 count_data=opt$RData
 if(count_data=="NULL"){count_data=NULL}
 if(is.null(count_data)){
@@ -42,14 +55,20 @@ print("ERROR NO REFS BAM FILES DETECTED")
 quit()
 }
 
-# get the sample names (first part of the filename, separated by dot)
-a<-length(strsplit(refbams[1],"/")[[1]])
-refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
+# reads the bedfile if exist and gives each column a name - expects 4 columns: chr, start, stop, gene
+if(length(bedfile)<>0){
+bed.file<-read.table(paste(bedfile))
+colnames(bed.file)<-c("chromosone","start","end","gene")
+}
 
 # Make sure bed file is in chromosome order
 temp<-gsub('chr','',bed.file[,1])
 temp1<-order(as.numeric(temp))
 bed.file=bed.file[temp1,]
+
+# get the sample names (first part of the filename, separated by dot)
+a<-length(strsplit(refbams[1],"/")[[1]])
+refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
 
 ################# CNV CALLING #######################################
 # To call autosomes you need to use a bed containing autosome only
@@ -75,7 +94,6 @@ models<-list()
 # creates ExomeDepth object containing test data, reference data, and linear relationship between them. Automatically calculates likelihoods
 # fits a HMM with 3 states to read depth data; transition.probability - transition probability for HMM from normal to del/dup. Returns ExomeDepth object with CNVcalls
 # if refsample.names is not empty, the comparison will be made with those ref bams
-
 
 # filter sample.names removing refsample.names
 if(length(refsample.names)<>0){
@@ -107,7 +125,6 @@ for(i in 1:length(sample.names)){
 
 names(refs) = sample.names
 names(models) = sample.names
-
 
 if(!is.null(cnv.calls)){
 names(cnv.calls)[1] = "sample"
