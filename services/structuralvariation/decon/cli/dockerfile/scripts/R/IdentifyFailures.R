@@ -111,8 +111,8 @@ for(i in 1:length(ExonMedian)){
 	}
 }
 
-if((names(bed_file)[5]=="exon") & any(Exon!="All")){
-	exons <- bed_file
+if((names(bed.file)[5]=="exon") & any(Exon!="All")){
+	exons <- bed.file
 	failed.calls=bed.file[Exon[Exon!="All"],]
 	exonnumber<-sapply(failed.calls$chr, '==',exons$Chr) & sapply(failed.calls$start, '>=',exons$Start) & sapply(failed.calls$end, '<=',exons$End) | sapply(failed.calls$chr, '==',exons$Chr) & sapply(failed.calls$start, '<=',exons$Start) & sapply(failed.calls$end, '>=',exons$Start) | sapply(failed.calls$chr, '==',exons$Chr) & sapply(failed.calls$start, '<=',exons$End) & sapply(failed.calls$end, '>=',exons$End)
 	exonlist<-which(colSums(exonnumber)!=0)
@@ -122,7 +122,7 @@ if((names(bed_file)[5]=="exon") & any(Exon!="All")){
 	Metrics<-data.frame(Sample,Exon,Types,Gene,Custom_Numbering,Details)
 	names(Metrics)=c("Sample","Exon","Type","Gene","Custom.numbering","Info")
 	Metrics_custom=Metrics[Metrics$Custom_Numbering!="NA" | Metrics$Types=="Whole sample",]
-	write.table(Metrics_custom,file=paste(output,"/Metrics_custom.tsv",sep=""),quote=F,row.names=F,sep="\t")}
+	write.table(Metrics_custom,file=paste(output,"/Metrics_custom.tsv",sep=""),quote=F,row.names=F,sep="\t")
 
 }else{
 	Metrics<-data.frame(Sample,Exon,Types,Gene,Details)
