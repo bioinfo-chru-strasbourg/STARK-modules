@@ -371,10 +371,9 @@ gender_list = ['A']
 try:
 	for sample in sample_list:
 			if dico_run[sample]['gender'] == 'F':
-				gender_list.append('F')
+				gender_list.append('XX')
 			if dico_run[sample]['gender'] == 'M':
-				gender_list.append('M')
-				gender_list.append('M_noY')
+				gender_list.append('XY')
 except KeyError: pass
 
 # Removing duplicate
@@ -403,17 +402,15 @@ for sample in sample_list:
 # A = all ; F = Female only ; M = Male only
 # files_list_A contains the full path of all files (bam files for ex)
 files_list_A = searchfiles(inputdir, '/*', False)
-files_list_M = []
-files_list_M_noY = []
-files_list_F = []
+files_list_XY = []
+files_list_XX = []
 for files in files_list_A:
 	sample = os.path.basename(files).split(".")[0]
 	try:
 		if dico_run[sample]['gender'] == 'F':
-			files_list_F.append(files)
+			files_list_XX.append(files)
 		if dico_run[sample]['gender'] == 'M':
-			files_list_M.append(files)
-			files_list_M_noY.append(files)
+			files_list_XY.append(files)
 	except KeyError: pass
 
 # Creating a txt list for the bam files per aligner per gender (A, M & F)
@@ -543,44 +540,14 @@ if bed_file and bed_process == 'NO':
 	df = pd.read_csv(bed_file, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
 
-# DECON bed formating from intermediatebed file : always for autosome 
-deconbed_file_A = tmpdir + "/" + serviceName + "." + date_time + '.A.bed'
+# DECON bed formating from intermediatebed file
+deconbed_file = tmpdir + "/" + serviceName + "." + date_time + '.bed'
 if custom_exon == True:
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
 else:
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
 df = df.drop_duplicates()
-df.to_csv(deconbed_file_A, sep='\t', index=False, header=False) # for decon.bed no header
-
-# Formating Bed per gender
-for gender in gender_list:
-	if gender == 'F':
-		deconbed_file_F = tmpdir + "/" + serviceName + "." + date_time + '.F.bed'
-		if custom_exon == True:
-			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-		else:
-			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-		df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
-		df = df.drop_duplicates()
-		df.to_csv(deconbed_file_F, sep='\t', index=False, header=False) # for decon.bed no header
-	if gender == 'M':
-		deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M.bed'
-		if custom_exon == True:
-			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-		else:
-			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-		df = df[df['Chr'].isin(['chrX', 'chrY'])] # keep only chrY & chrX ref
-		df = df.drop_duplicates()
-		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.bed no header
-		deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M_noY.bed'
-		if custom_exon == True:
-			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-		else:
-			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-		df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
-		df = df.drop_duplicates()
-		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.bed no header
+df.to_csv(deconbed_file, sep='\t', index=False, header=False) # for decon.bed no header
 
 if not bed_file:
 	logsomefile(logfile, 'No bed found, DECON cannot continue, exiting', "\n")
@@ -591,11 +558,8 @@ if not bed_file:
 remove_F = config['REMOVE_F']
 remove_M = config['REMOVE_M']
 remove_A = config['REMOVE_A']
-remove_M_noY = config['REMOVE_M_noY']
 if remove_M == True:
 	gender_list.remove('M')
-if remove_M_noY == True:
-	gender_list.remove('M_noY')
 if remove_F == True:
 	gender_list.remove('F')
 if remove_A == True:
@@ -744,15 +708,15 @@ rule makeCNVcalls:
 		prob = config['transProb'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results",
 		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.CNVCalledFailed",
-		deconbed = tmpdir + "/" + serviceName + "." + date_time + "{gender}.bed",
-		refbamslist = config['REF_BAM_LIST']
+		chromosome = expand("{gender}", gender=gender_list),
+		refbamslist = config['REF_BAM_LIST'],
 	output:
 		calltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.tsv"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.err"
 	shell:
 		"""
-		Rscript {decondir}/makeCNVcalls.R --Rdata {input.rdata} --bed {params.deconbed} --transProb {params.prob} --refbams {params.refbamslist} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
+		Rscript {decondir}/makeCNVcalls.R --Rdata {input.rdata} --bed {params.deconbed} --transProb {params.prob} --chromosome {params.chromosome} --refbams {params.refbamslist} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
 		"""
 
 rule plot:

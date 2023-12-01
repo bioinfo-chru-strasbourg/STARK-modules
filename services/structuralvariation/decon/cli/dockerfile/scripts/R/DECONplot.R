@@ -15,6 +15,8 @@
 
 print("BEGIN DECONPlot script")
 
+suppressMessages(library(R.utils))
+suppressMessages(library(ExomeDepth))
 suppressMessages(library(optparse))
 suppressMessages(library(grid))
 suppressMessages(library(reshape))
@@ -59,7 +61,7 @@ for(i in 2:nrow(bed.file)){
     }
 }
 
-if(!is.null(exon_numbers)){
+if(colnames(counts)[5]=="exon"){
     for(i in 1:nrow(exons)){
         x=which(paste(bed.file[,4])==paste(exons[i,4]) & bed.file[,2]<=exons[i,3] & bed.file[,3]>=exons[i,2])
         Index[x]=exons[i,5]

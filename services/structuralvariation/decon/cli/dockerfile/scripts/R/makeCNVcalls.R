@@ -66,13 +66,12 @@ if (modechrom=="A"){
     ExomeCount<-subset(ExomeCount, chromosome!="X" & chromosome!="Y")
 }
 
-if (modechrom=="XX"){
+
+# we don't call chr Y
+if (modechrom=="XX" || modechrom=="XY"){
     ExomeCount<-subset(ExomeCount, chromosome=="X")
 }
 
-if (modechrom=="XY"){
-    ExomeCount<-subset(ExomeCount, chromosome=="X" | chromosome=="Y")
-}
 
 cnv.calls = NULL
 refs<-list()
@@ -130,28 +129,28 @@ names(cnv.calls)[2] = "correlation"
 names(cnv.calls)[3] = "N.comp"
 
 ##################### CONFIDENCE CALCULATION ##############################
-Flag<-rep("HIGH",nrow(cnv.calls))
+Confidence<-rep("HIGH",nrow(cnv.calls))
 
 a<-which(cnv.calls$correlation<.985)
-if(length(a)>0){Flag[a]="LOW"}
+if(length(a)>0){Confidence[a]="LOW"}
 
 a<-which(cnv.calls$reads.ratio<1.25 & cnv.calls$reads.ratio>.75)
-if(length(a)>0){Flag[a]="LOW"}
+if(length(a)>0){Confidence[a]="LOW"}
 
 a<-which(cnv.calls$N.comp<=3)
-if(length(a)>0){Flag[a]="LOW"}
+if(length(a)>0){Confidence[a]="LOW"}
 
 if(ncol(bed.file)>=4){
     genes<-apply(cnv.calls,1,function(x)paste(unique(bed.file[x[4]:x[5],4]),collapse=", "))
     a<-which(genes=="PMS2")
-    if(length(a)>0){Flag[a]="LOW"}
+    if(length(a)>0){Confidence[a]="LOW"}
 }
 
 cnv.calls<-cbind(cnv.calls,genes)
 names(cnv.calls)[ncol(cnv.calls)]="Gene"
 
-cnv.calls<-cbind(cnv.calls,Flag)
-names(cnv.calls)[ncol(cnv.calls)]="Flag"
+cnv.calls<-cbind(cnv.calls,Confidence)
+names(cnv.calls)[ncol(cnv.calls)]="Confidence"
 
 # replaces single calls involving multiple genes with multiple calls with a single call ID/gene
 cnv.calls_ids=cbind(1:nrow(cnv.calls),cnv.calls)
