@@ -66,12 +66,10 @@ if (modechrom=="A"){
     ExomeCount<-subset(ExomeCount, chromosome!="X" & chromosome!="Y")
 }
 
-
 # we don't call chr Y
 if (modechrom=="XX" || modechrom=="XY"){
     ExomeCount<-subset(ExomeCount, chromosome=="X")
 }
-
 
 cnv.calls = NULL
 refs<-list()

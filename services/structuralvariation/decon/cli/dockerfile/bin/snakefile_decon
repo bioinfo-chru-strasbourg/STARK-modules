@@ -399,8 +399,9 @@ for sample in sample_list:
 	processalignedfiles(inputdir, dico_run, sample, process_file, aligner_list, process_cmd, name=aligner_name)
 
 # Create file_list of bam by gender by searching the depot directory, depending on the gender_list
-# A = all ; F = Female only ; M = Male only
+# A = all ; XX = Female only ; XY = Male only
 # files_list_A contains the full path of all files (bam files for ex)
+# Warning the dictionnary for sexe is A/M/F but the gender_list is A/XY/XX
 files_list_A = searchfiles(inputdir, '/*', False)
 files_list_XY = []
 files_list_XX = []
@@ -420,15 +421,12 @@ for aligner in aligner_list:
 		if gender == 'A':
 			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + gender + '.list.txt'
 			create_list(bamlist, files_list_A, process_file, aligner)
-		if gender == 'F':
+		if gender == 'XX':
 			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + gender + '.list.txt'
-			create_list(bamlist, files_list_F, process_file, aligner)
-		if gender == 'M':
+			create_list(bamlist, files_list_XX, process_file, aligner)
+		if gender == 'XY':
 			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + gender + '.list.txt'
-			create_list(bamlist, files_list_M, process_file, aligner)
-		if gender == 'M_noY':
-			bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + gender + '.list.txt'
-			create_list(bamlist, files_list_M, process_file, aligner)
+			create_list(bamlist, files_list_XY, process_file, aligner)
 
 # If transcript file exist, create the annotation file for AnnotSV
 if os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
@@ -553,15 +551,15 @@ if not bed_file:
 	logsomefile(logfile, 'No bed found, DECON cannot continue, exiting', "\n")
 	exit()
 
-# Option to remove gender in the gender_list to force A, M or F analysis only
-# the calling of Y for male subject is not necessary
+# Option to remove gender in the gender_list to force A, XX or XY analysis only
+# the calling of Y for male subject is not done
 remove_F = config['REMOVE_F']
 remove_M = config['REMOVE_M']
 remove_A = config['REMOVE_A']
 if remove_M == True:
-	gender_list.remove('M')
+	gender_list.remove('XY')
 if remove_F == True:
-	gender_list.remove('F')
+	gender_list.remove('XX')
 if remove_A == True:
 	gender_list.remove('A')
 

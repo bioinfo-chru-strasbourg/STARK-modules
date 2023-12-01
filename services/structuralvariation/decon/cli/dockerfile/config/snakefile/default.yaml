@@ -114,7 +114,7 @@ OLD_BED: False
 # Remove Y or Y or Autosome analysis
 # Default is autosome with all the patients, and X only for Male and Female patients, with a separate call by sex
 REMOVE_F: False
-REMOVE_M: True
+REMOVE_M: False
 REMOVE_A: False
 
 # Limit the analysis to a list of genes
