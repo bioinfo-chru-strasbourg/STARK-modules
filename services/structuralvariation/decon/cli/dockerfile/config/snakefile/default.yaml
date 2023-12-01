@@ -116,7 +116,6 @@ OLD_BED: False
 REMOVE_F: False
 REMOVE_M: True
 REMOVE_A: False
-REMOVE_M_noY: False
 
 # Limit the analysis to a list of genes
 GENE_LIST_RESTRICT: []

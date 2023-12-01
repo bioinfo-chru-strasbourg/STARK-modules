@@ -30,8 +30,8 @@ suppressMessages(library(dplyr))
 option_list<-list(
     make_option("--bams",help="Text file containing a list of bam files to process (required)",dest='bamfiles'),
     make_option("--refbams",help="Text file containing a list of reference bam files to process (optional)",dest='rbams'),
-    make_option("--bed",help='Bed file 4 or 5 columns (chr, sart, stop, gene, +/- exon (optional)) used to generate coverage datas (required)',dest='bed'),
-    make_option("--fasta",help='Reference genome fasta file to use (optional)',default=NULL,dest='fasta'),
+    make_option("--bed",help='Bed file with 4 or 5 columns (chr, sart, stop, gene, +/- exon (optional)) used to generate coverage datas (required)',dest='bed'),
+    make_option("--fasta",help='Reference genome fasta file to use (required)',default=NULL,dest='fasta'),
     make_option("--out",default="./coverage",help="Output folder for the ReadInBams.Rdata, default: ./coverage",dest='out')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
@@ -47,6 +47,11 @@ if(!file.exists(output)){dir.create(output)}
 if(bedfile=="NULL"){bedfile=NULL}
 if(is.null(bedfile)){
 print("ERROR bed file must be provided. Execution halted")
+quit()
+}
+
+if(length(fasta)==0){
+print("ERROR NO FASTA FILES DETECTED")
 quit()
 }
 
