@@ -90,10 +90,10 @@ names(sample.names)<-NULL
 # reads in the bedfile and gives each column a name - expects 4 columns: chr, start, stop, gene, +/- exon
 bed.file<-read.table(paste(bedfile))
 if (ncol(bed.file) == 4){
-colnames(bed.file)<-c("chromosone","start","end","gene")
+colnames(bed.file)<-c("chromosome","start","end","gene")
 }
 if (ncol(bed.file) == 5){
-colnames(bed.file)<-c("chromosone","start","end","gene","exon_number")
+colnames(bed.file)<-c("chromosome","start","end","gene","exon_number")
 }
 
 # parallelisation
