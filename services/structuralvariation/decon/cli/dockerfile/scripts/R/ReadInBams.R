@@ -11,41 +11,38 @@
 # Changelog
 #   - refactor code, remove install system, update for ExomeDepth 1.16
 #   - parallelisation to speed up the process
+#   - detect bed file with a 5 column with exon numbers, remove custom exon options
 ########################################################################################################
 
-# TODO : add a function to validate the bed
+# TODO : add a function to validate the bed ?
 
-print("BEGIN ReadInBams.R")
+print("BEGIN ReadInBams script")
 
-library(R.utils)
-library(optparse)
-library(ExomeDepth)
-library(doParallel)
-library(foreach)
-library(dplyr)
+suppressMessages(library(R.utils))
+suppressMessages(library(optparse))
+suppressMessages(library(ExomeDepth))
+suppressMessages(library(doParallel))
+suppressMessages(library(foreach))
+suppressMessages(library(dplyr))
 
 
 ###### Parsing input options and setting defaults ########
 option_list<-list(
-    make_option("--bams",help="Text file containing a list of bam files to process (required)",dest='bams'),
+    make_option("--bams",help="Text file containing a list of bam files to process (required)",dest='bamfiles'),
     make_option("--refbams",help="Text file containing a list of reference bam files to process (optional)",dest='rbams'),
-    make_option("--bed",help='Bed file 4 columns (chr, sart, stop, gene) used to generate coverage datas (required)',dest='bed'),
+    make_option("--bed",help='Bed file 4 or 5 columns (chr, sart, stop, gene, +/- exon (optional)) used to generate coverage datas (required)',dest='bed'),
     make_option("--fasta",help='Reference genome fasta file to use (optional)',default=NULL,dest='fasta'),
-    make_option("--out",default="./coverage",help="Output folder, default: ./coverage",dest='out')
+    make_option("--out",default="./coverage",help="Output folder for the ReadInBams.Rdata, default: ./coverage",dest='out')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 # location of bam files; can be a directory containing only bam files to be processed or the name of a file containing a list of bam files to be processed.
-bam_file=opt$bams
+bam_file=opt$bamfiles
 bedfile=opt$bed
 fasta=opt$fasta
 output=opt$out
 refbams_file=opt$rbams
 
-if(bam_file=="NULL"){bam_file=NULL}
-if(is.null(bam_file)){
-print("ERROR bam files must be provided. Execution halted")
-quit()
-}
+if(!file.exists(output)){dir.create(output)}
 
 if(bedfile=="NULL"){bedfile=NULL}
 if(is.null(bedfile)){
@@ -53,16 +50,24 @@ print("ERROR bed file must be provided. Execution halted")
 quit()
 }
 
-# Read list of bams to process
-bams<-apply(read.table(paste(bam_file)),1,toString)
-if(length(refbam_file)==0){
-bams<-apply(read.table(paste(refbams_file)),1,toString)
+# Check if bams is not empty then read list of bams to process
+if(bam_file=="NULL"){bam_file=NULL}
+if(is.null(bam_file)){
+print("ERROR bam files must be provided. Execution halted")
+quit()
 }
 
-# Check if bams is not empty
-if(length(bams)==0){
+if(length(bam_file)==0){
 print("ERROR NO BAM FILES DETECTED")
 quit()
+}else{
+bams<-apply(read.table(paste(bam_file)),1,toString)
+}
+
+# Check if refbams is not empty then append refbams to bams
+if(length(refbams_file)>0){
+refbams<-apply(read.table(paste(refbams_file)),1,toString)
+bams <- append(refbams,bams)
 }
 
 # function which recursively splits x by an element of 'splits' then extracts the y element of the split vector
@@ -77,9 +82,14 @@ a<-length(strsplit(bams[1],"/")[[1]])
 sample.names<-sapply(bams,multi_strsplit,c("/","."),c(a,1))
 names(sample.names)<-NULL
 
-# reads in the bedfile and gives each column a name - expects 4 columns: chr, start, stop, gene
+# reads in the bedfile and gives each column a name - expects 4 columns: chr, start, stop, gene, +/- exon
 bed.file<-read.table(paste(bedfile))
+if (ncol(bed.file) == 4){
 colnames(bed.file)<-c("chromosone","start","end","gene")
+}
+if (ncol(bed.file) == 5){
+colnames(bed.file)<-c("chromosone","start","end","gene","exon_number")
+}
 
 # parallelisation
 nfiles <- length(bams)
@@ -99,12 +109,23 @@ unfilteredcounts <- foreach(i=1:nfiles, .combine='cbind') %dopar% {
 }
 parallel::stopCluster(cl)
 
-# counts should be chromosome, start, end, exon, GC, sample1, sample2, etc., so we need to clean up the df
-filtrecount1 <-basename(apply(read.table(paste(bam_file)),1,toString))
-filtrecount2 <- c("chromosome", "start", "end", "exon", "GC")
-filtrecount <-append(filtrecount2, filtrecount1)
-counts<-dplyr::select(unfilteredcounts, all_of(filtrecount))
+# counts should be chromosome, start, end, exon, +/- exon_number, GC, sample1, sample2, etc., so we need to clean up the df
+filtercount1 <-basename(bams)
+if (ncol(bed.file) == 4){
+filtercount2 <- c("chromosome", "start", "end", "exon", "GC")
+}
+if (ncol(bed.file) == 5){
+filtercount2 <- c("chromosome", "start", "end", "exon", "exon_number", "GC")
+}
+filtercount <-append(filtercount2, filtercount1)
+counts<-dplyr::select(unfilteredcounts, all_of(filtercount))
 names(counts) <- unlist(lapply(strsplit(names(counts), "\\."), "[[", 1))
-save(counts,bams,bed.file,sample.names,fasta,file=paste(output,"DECoN.ReadInBams.RData",sep=""))
+colnames(counts)[colnames(counts) == "exon"] <- "gene"
+colnames(counts)[colnames(counts) == "exon_number"] <- "exon"
+if (ncol(bed.file) == 5){
+    colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
+}
+# Rdata counts table is chromosome, start, end, gene, +/- exon, GC, sample1, sample2 & bed.file table & sample names & path to genome ref fasta file
+save(counts,bams,bed.file,sample.names,fasta,file=paste(output,"/ReadInBams.RData",sep=""))
 
-print("END ReadInBams.R")
+print("END ReadInBams script")
