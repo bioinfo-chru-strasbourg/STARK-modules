@@ -50,6 +50,8 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
     cnv.calls_plot=cnv.calls_ids
 }
 
+#cnv.calls_plot <- subset(cnv.calls_plot, select = -Confidence)
+
 cnv.calls_plot$chr=paste('chr',cnv.calls_plot$chromosome,sep='')
 Index=vector(length=nrow(bed.file))
 Index[1]=1
@@ -112,7 +114,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     levels(Data1$testref)=c("Test Sample","Reference Sample","Affected exon")
     new_cols=c("blue","gray","red")
     A1<-ggplot(data=Data1,aes(x=exonRange,y=value,group=variable,colour=testref))
-    A1<-A1 + geom_point(cex=2.5,lwd=1.5)                        #Have to set up points with scale to get correct legend, then re-plot in correct order etc.
+    A1<-A1 + geom_point(cex=2.5,size=1.5)                        #Have to set up points with scale to get correct legend, then re-plot in correct order etc.
     A1<-A1 + scale_colour_manual(values=new_cols)  
     A1<-A1 + geom_line(data=subset(Data1,testref=="Reference Sample"),lty="dashed",lwd=1.5,col="grey") 
     A1<-A1 + geom_point(data=subset(Data1,testref=="Reference Sample"),cex=2.5,col="grey")   

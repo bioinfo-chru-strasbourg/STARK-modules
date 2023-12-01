@@ -47,11 +47,7 @@ ExomeCount<-as(counts, 'data.frame')
 # remove any chr letters, and coerce to a string.
 ExomeCount$chromosome <- gsub(as.character(ExomeCount$chromosome),pattern = 'chr',replacement = '') 
 # assigns the sample names to each column
-if(names(ExomeCount)[5]=="GC"){ 
-	colnames(ExomeCount)[1:length(sample.names)+5]=sample.names
-	}else{
-	colnames(ExomeCount)[1:length(sample.names)+4]=sample.names
-	}
+colnames(ExomeCount)[1:length(sample.names)+5]=sample.names
 
 Sample<-vector()
 Exon<-vector()
