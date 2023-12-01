@@ -453,12 +453,8 @@ if not list_genes:
 # Chromosome Start End Gene but no header, bed format (tsv)
 # Chr must be formated chr1, Gene column must be a string, no negative numbers
 # ex	:	chr17	4511	4889	BCRA1
-
-### DECON Custom.Exon ###
-# DECON can use a customNumbering.txt exons description for the accurate formating of pdfs graph (makeCNVcalls) and the IdentifyFailures rule, file is not mandatory
-# Format is tab separated with a header	:	'Chr'	'Start'	'End'	'Gene'	'Custom.Exon'
-# exemple	:	17	4511	4889	BCRA1	26
-# ! No chr before chr number & documentation forgot to mention Gene column
+# DECON can also use a bed with the exons number for an accurate formating of pdfs graph (makeCNVcalls) and the IdentifyFailures metrics
+# ex	:	chr17	4511	4889	BCRA1	26
 
 inputbed = inputdir+"/"+serviceName+".input.bed"
 cat_panels_bed = inputdir+"/"+serviceName+".concatenatepanels.bed"
@@ -549,67 +545,42 @@ if bed_file and bed_process == 'NO':
 
 # DECON bed formating from intermediatebed file : always for autosome 
 deconbed_file_A = tmpdir + "/" + serviceName + "." + date_time + '.A.bed'
-df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+if custom_exon == True:
+	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+else:
+	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
 df = df.drop_duplicates()
 df.to_csv(deconbed_file_A, sep='\t', index=False, header=False) # for decon.bed no header
 
-#Formating Bed per gender
+# Formating Bed per gender
 for gender in gender_list:
 	if gender == 'F':
 		deconbed_file_F = tmpdir + "/" + serviceName + "." + date_time + '.F.bed'
-		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+		if custom_exon == True:
+			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+		else:
+			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 		df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
 		df = df.drop_duplicates()
 		df.to_csv(deconbed_file_F, sep='\t', index=False, header=False) # for decon.bed no header
 	if gender == 'M':
 		deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M.bed'
-		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+		if custom_exon == True:
+			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+		else:
+			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 		df = df[df['Chr'].isin(['chrX', 'chrY'])] # keep only chrY & chrX ref
 		df = df.drop_duplicates()
 		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.bed no header
 		deconbed_file_M = tmpdir + "/" + serviceName + "." + date_time + '.M_noY.bed'
-		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+		if custom_exon == True:
+			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+		else:
+			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 		df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
 		df = df.drop_duplicates()
 		df.to_csv(deconbed_file_M, sep='\t', index=False, header=False) # for decon.bed no header
-
-if custom_exon == True:
-	# Set the customnumbering files for makeCNVcalls
-	customnumberingfile_A = tmpdir + "/" + serviceName + "." +  date_time + '.A.CustomNumbering.txt'
-	customnumberingfile_F = tmpdir + "/" + serviceName + "." +  date_time + '.F.CustomNumbering.txt'
-	customnumberingfile_M = tmpdir + "/" + serviceName + "." +  date_time + '.M.CustomNumbering.txt'
-	customnumberingfile_M_noY = tmpdir + "/" + serviceName + "." +  date_time + '.M_noY.CustomNumbering.txt'
-
-	# Autosome
-	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-	df = df[-df['Chr'].isin(['chrX', 'chrY'])] # removing all chrX & chrY reference
-	df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-	df = df.drop_duplicates()
-	df.to_csv(customnumberingfile_A, sep='\t', index=False, header=True) # for custom.exon file, need a header
-
-	# Female
-	for gender in gender_list:
-		if gender == 'F':
-			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-			df = df[df['Chr'].isin(['chrX'])] # keep only chrX ref
-			df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-			df = df.drop_duplicates()
-			df.to_csv(customnumberingfile_F, sep='\t', index=False, header=True) # for custom.exon file, need a header
-
-	# Male
-	for gender in gender_list:
-		if gender == 'M':
-			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-			df = df[df['Chr'].isin(['chrX', 'chrY'])]# keep only chrX & ChrY ref
-			df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-			df = df.drop_duplicates()
-			df.to_csv(customnumberingfile_M, sep='\t', index=False, header=True) # for custom.exon file, need a header
-			df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-			df = df[df['Chr'].isin(['chrX'])]# keep only chrX ref
-			df['Chr'] = df['Chr'].str.replace('chr','') # remove prefix to Chr column value (for custom.exon file)
-			df = df.drop_duplicates()
-			df.to_csv(customnumberingfile_M_noY, sep='\t', index=False, header=True) # for custom.exon file, need a header
 
 if not bed_file:
 	logsomefile(logfile, 'No bed found, DECON cannot continue, exiting', "\n")
@@ -715,7 +686,7 @@ rule indexing:
 rule ReadInBams:
 	"""
 	DECoN uses a list of BAM files and a BED file of exons to calculate a coverage metric called the fragment per kilobase and million base pairs (FPKM) for each exon specified in the BED file in each sample’s BAM file
-	Rscript ReadInBams.R --bams listofbams.txt --bed file.bed (unique for all bams) --fasta refgenome.fasta --out output.(prefix).RData
+	Rscript ReadInBams.R --bams listofbams.txt --bed file.bed (unique for all bams) --fasta refgenome.fasta --out outputFolder
 	Requirement : all .bam files must be indexed
 	"""
 	input:
@@ -725,27 +696,30 @@ rule ReadInBams:
 		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.RData"
 	params:
 		output = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.",
-		deconbed_file = tmpdir + "/" + serviceName + "." + date_time + ".bed"
+		deconbed_file = tmpdir + "/" + serviceName + "." + date_time + ".bed",
+		refbamlist = config['REF_BAM_LIST']
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.ReadInBams.err"
 	shell:
 		"""
-		Rscript {decondir}/ReadInBams.R --bams {input.bamlist} --bed {params.deconbed_file} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
+		Rscript {decondir}/ReadInBams.R --bams {input.bamlist} --refbams {params.refbamlist} --bed {params.deconbed_file} --fasta {refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
 		"""
 
 rule IdentifyFailures:
 	"""
-	The summary .RData file outputted can be used to flag any samples or exons where exon CNV calling may be suboptimal. Both exons and samples are evaluated based on their median coverage level. When coverage is low, accuracy of detection will be compromised and caution should be exercised when interpreting results. Samples are also evaluated based on their correlation with other samples. Samples which do not have a high correlation with other samples in the set are likely to have suboptimal detection across the entire target
-	Rscript IdentifyFailures.R --Rdata file.RData --mincorr .98 --mincov 100 --exons listofexonsforspecificannotation --custom TRUE/FALSE --out output.prefix
-	output is Metrics.tsv ; if --custom is true the output is named Metrics_custom.tsv
+	The summary .RData file outputted can be used to flag any samples or exons where exon CNV calling may be suboptimal. 
+	Both exons and samples are evaluated based on their median coverage level. 
+	When coverage is low, accuracy of detection will be compromised and caution should be exercised when interpreting results. 
+	Samples are also evaluated based on their correlation with other samples. 
+	Samples which do not have a high correlation with other samples in the set are likely to have suboptimal detection across the entire target
+	Rscript IdentifyFailures.R --Rdata file.RData --mincorr 0.98 --mincov 100 --exons listofexonsforspecificannotation --out outputfolder
+	output is Metrics.tsv ; if custom exon annotation is used, the output is named Metrics_custom.tsv
 	"""
 	input:
 		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.ReadInBams.RData"
 	params:
-		exons = tmpdir + "/" + serviceName + "." +  date_time + ".CustomNumbering.txt",
 		mincorr = config['mincorr'],
 		mincov = config['mincov'],
-		customreport = config['customreport'],
 		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics",
 		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.MetricsFailed"
 	output:
@@ -754,21 +728,20 @@ rule IdentifyFailures:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.err"
 	shell:
 		"""
-		Rscript {decondir}/IdentifyFailures.R --Rdata {input.rdata} --exons {params.exons} --custom {params.customplot} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
+		Rscript {decondir}/IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
 		"""
 
 rule makeCNVcalls:
 	"""
-	This step calls exon CNVs in each sample by selecting reference samples from all other samples contained in the input summary .RData file. The correlation between samples and the number of samples used as a reference are thus calculated and outputted to aid interpretation of call quality
-	Rscript makeCNVcalls.R --Rdata summary.file --transProb 0.01 (default) --exons listofexonsforspecificannotation --custom TRUE/FALSE --out output.prefix –-plot  None, Custom or All --plotFolder Plotfoldertoset
-	output is _all.txt and a summary Rdata associated ; if custom is true, a second file is ouputed named _custom.txt
-	--refbams = txt file containing a list of reference bam files, full path
+	This step calls exon CNVs in each sample by selecting reference samples from all other samples contained in the input summary .RData file. 
+	The correlation between samples and the number of samples used as a reference are thus calculated and outputted to aid interpretation of call quality
+	Rscript makeCNVcalls.R --Rdata file.Rdata --transProb 0.01 (default) --exons bedwithexons.bed --out outputfolder --refbams = txt file containing a list of reference bam files
+	output is CNVcall.tsv and a summary Rdata associated ; if custom exon is used, the output is CNVcall_custom.tsv
 	"""
 	input:
 		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.ReadInBams.RData"
 	params:
 		prob = config['transProb'],
-		exons = tmpdir + "/" + serviceName + "." +  date_time + ".{gender}.CustomNumbering.txt",
 		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results",
 		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.CNVCalledFailed",
 		deconbed = tmpdir + "/" + serviceName + "." + date_time + "{gender}.bed",
@@ -779,21 +752,22 @@ rule makeCNVcalls:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.err"
 	shell:
 		"""
-		Rscript {decondir}/makeCNVcalls.R --Rdata {input.rdata} --bed {params.deconbed} --exons {params.exons} --transProb {params.prob} --refbams {params.refbamslist} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
+		Rscript {decondir}/makeCNVcalls.R --Rdata {input.rdata} --bed {params.deconbed} --transProb {params.prob} --refbams {params.refbamslist} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
 		"""
 
 rule plot:
+	"""
+	This step input the CNVcall.Rdata file to output the plot files in pdf format
+	"""
 	input:
 		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.CNVcall.RData"
-	params:
-		plot = config['PLOT_OPTION']
 	output:
 		folder = tmpdir + "/pdfs/"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.err"
 	shell:
 		"""
-		Rscript {decondir}/DECONplot.R --Rdata {input.rdata} --plot {params.plot} --plotFolder {output.folder} 1> {log.log1} 2> {log.log2}
+		Rscript {decondir}/DECONplot.R --Rdata {input.rdata} --plotFolder {output.folder} 1> {log.log1} 2> {log.log2}
 		"""
 
 rule merge_makeCNVcalls:

@@ -128,19 +128,20 @@ CHR_LIST_RESTRICT: []
 
 ############## Tools specific parameters ##############
 
-############# IdentifyFailures params
+# path to the txt file containing the reference bams for the CNV calling, full path
+REF_BAM_LIST: "/app/bin/config/ref/refbams.list.txt"
+
+# If bed file got a 5 column with exon number 
+customexon: FALSE
+
+############# IdentifyFailures params ##############
 mincorr: 0.98 # Minimum correlation threshold – the minimum correlation between a test sample and any other sample for the test sample to be considered well-correlated (default 0.98)
 mincov: 100 # Minimum coverage threshold – the minimum median coverage for any sample (measured across all exons in the target) or exon (measured across all samples) to be considered well-covered (default 100)
 
-############# makeCNVcalls params
+############# makeCNVcalls params ##############
 transProb: 0.01 # Transition probability – the transition probability between normal copy number state and either deletion or duplication state in the hidden Markov model, 0.01 is a high threshold value to increase sensitivity (default 0.01)
-customexon: False # default False
-PLOT_OPTION: All # default (plot argument should be one of: None, Custom or All)
-plotFolder: # default DECoNPlots folder
-# path to the txt file containing the reference bams for the CNV calling, full path
-REF_BAM_LIST: "/app/bin/config/ref/refbams.txt"
 
-############# AnnotSV params
+############# AnnotSV params ##############
 hpo: # HPO terms list describing the phenotype of the individual being investigated Values: use comma, semicolon or space separated class values Default = "" (e.g.: "HP:0001156,HP:0001363,HP:0011304") = only for individual analysis
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100

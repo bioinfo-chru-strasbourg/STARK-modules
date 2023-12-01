@@ -13,12 +13,12 @@
 #   - optparse script
 ########################################################################################################
 
-print("BEGIN DECONPlot.R")
+print("BEGIN DECONPlot script")
 
-library(optparse)
-library(grid)
-library(reshape)
-library(ggplot2)
+suppressMessages(library(optparse))
+suppressMessages(library(grid))
+suppressMessages(library(reshape))
+suppressMessages(library(ggplot2))
 
 ###### Parsing input options and setting defaults ########
 option_list<-list(
@@ -205,4 +205,4 @@ temp = cnv.calls[cnv.calls$sample==Sample,]
     dev.off()
 }
 
-print("END DeconPlot.R")
+print("END DeconPlot script")
