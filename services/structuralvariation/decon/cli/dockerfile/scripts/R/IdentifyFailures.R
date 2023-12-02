@@ -40,6 +40,7 @@ output=opt$out
 
 if(!file.exists(output)){dir.create(output)}
 
+
 # R workspace with the coverage data, bedfile, GC content from ref genome saved in it.
 load(count_data)
 # converts counts, a ranged data object, to a data frame
@@ -54,6 +55,12 @@ Exon<-vector()
 Details<-vector()
 Types<-vector()
 Gene<-vector()
+
+####### Make sure bed file is in chromosome order ################
+temp<-gsub('chr','',bed.file[,1])
+temp1<-order(as.numeric(temp))
+bed.file=bed.file[temp1,]
+
 
 # extracts just the read depths
 ReadDepths<-ExomeCount[,sample.names]
@@ -125,5 +132,5 @@ if((names(bed.file)[5]=="exon") & any(Exon!="All")){
 	names(Metrics)=c("Sample","Exon","Type","Gene","Info")
 	write.table(Metrics,file=paste(output,"/Metrics.tsv",sep=""),quote=F,row.names=F,sep="\t")
 }
-
+warnings()
 print("END IdentifyFailures script")

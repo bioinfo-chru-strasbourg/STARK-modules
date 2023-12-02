@@ -138,7 +138,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     ############## SECOND PLOT ###########
     genes_sel = unique(bed.file[exonRange,4])
     temp<-cbind(1:nrow(bed.file),bed.file)[exonRange,]
-    len<-table(temp$name)
+    len<-table(temp$gene)
     mp<-tapply(exonRange,temp[,5],mean)
     mp<-mp[genes_sel]
     len<-len[genes_sel]
@@ -146,13 +146,13 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     names(Genes)=c("Gene","MP","Length","Ind")
 
     if(!singlechr){
-        levels(Genes$Gene)=c(levels(Genes$Gene),newchr)
         if(prev){
             fakegene=c(newchr,min(exonRange)-5,3.5,1)
         }else{
             fakegene=c(newchr,max(exonRange)+5,3.5,1)
         }
         Genes<-rbind(Genes,fakegene)
+        levels(Genes$Gene)=c(levels(Genes$Gene),newchr)
         Genes$MP=as.numeric(Genes$MP)
         Genes$Length=as.numeric(Genes$Length)
     }
@@ -208,5 +208,5 @@ temp = cnv.calls[cnv.calls$sample==Sample,]
     print(CIPlot,vp=viewport(layout.pos.row=5:6,layout.pos.col=1))
     dev.off()
 }
-
+warnings()
 print("END DeconPlot script")
