@@ -132,5 +132,5 @@ if (ncol(bed.file) == 5){
 }
 # Rdata counts table is chromosome, start, end, gene, +/- exon, GC, sample1, sample2 & bed.file table & sample names & path to genome ref fasta file
 save(counts,bams,bed.file,sample.names,fasta,file=paste(output,"/ReadInBams.RData",sep=""))
-
+warnings()
 print("END ReadInBams script")

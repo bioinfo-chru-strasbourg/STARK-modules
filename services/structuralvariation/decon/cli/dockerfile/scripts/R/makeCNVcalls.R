@@ -240,5 +240,5 @@ names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","
 save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,file=paste(output,"/CNVcall.RData",sep=""))
 write.table(cnv.calls_ids_out,file=paste(output,"/CNVcalls.tsv",sep=""),sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
 }
-
+warnings()
 print("END makeCNVCalls script")
