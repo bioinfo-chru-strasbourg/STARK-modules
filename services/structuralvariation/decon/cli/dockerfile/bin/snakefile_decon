@@ -48,6 +48,8 @@ import pandas as pd
 from datetime import datetime
 from shutil import copy2
 
+import kmer.py
+
 ################## Configuration file and PATHS ##################
 configfile: "/app/config/snakefile/default.yaml"
 

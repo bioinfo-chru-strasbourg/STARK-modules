@@ -90,5 +90,5 @@ BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
 
 ################## filt3r ##################
 KMER: "12"
-# GRCH38 ref fasta sequence
-ITDREF: "/tools/filt3r/master/data/flt3_exon14-15.fa"
+# GRCH37 or 38 ref fasta sequence
+ITDREF: "/STARK/database/ITDs/FLT3/filt3r/flt3_hg19.fa"

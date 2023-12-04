@@ -88,7 +88,7 @@ REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
 
 ################## flt3_itd_ext ##################
-REF_ITD_PATH: "./FLT3_dna_e14e15"
+REF_ITD_PATH: "/STARK/databases/ITDs/flt3itdext/FLT3_dna_e14e15"
 # Assembly (hg19/hg38)
 ASSEMBLY: "hg19"
 # Type of sequencing technology (HC = capture)
