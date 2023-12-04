@@ -91,5 +91,16 @@ if serviceName and moduleName:
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
 
+#######################
+# Copy reference files
+#######################
+
+	logsomefile(logfile, 'Setup copying reference ITDs files:', "\n", items = date_time)
+	systemcall("rsync -ar --mkpath /app/reference/ /STARK/databases/ITDs/ 1>> "+logfile+" 2>> "+errfile+" ")
+	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
+	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
+
+# bwa index -p FLT3_dna_e1415 FLT3_dna_e14e15.fa
+
 # SETUPComplete cli services (condition for healthy cli)
 systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")

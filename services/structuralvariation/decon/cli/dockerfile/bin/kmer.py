@@ -3,7 +3,7 @@
 ###Author : RAUCH Mateusz###
 ###Maintainer : LAMOUCHE Jean-Baptiste###
 
-# changelog add gene columns TL
+# changelog : add gene columns TL
 
 from __future__ import division
 from __future__ import print_function
@@ -14,7 +14,6 @@ import re
 import time
 import subprocess
 import sys
-
 
 def main(args):
 	bedFile = args.input
@@ -106,10 +105,10 @@ def check_args(args):
 if __name__ == '__main__':
 	startTime = time.time()
 	parser = argparse.ArgumentParser(description='kmerization script')
-	parser.add_argument('-i', '--input', type=str, required=True, help='path to your original bed file')
-	parser.add_argument('-k', '--kmer', type=int, required=True, help='length of kmer you want in your bed file')
-	parser.add_argument('-f', '--output_folder', type=str, help='optionnal output folder, by default kmerized bed go to the same folder as original bed file')
-	parser.add_argument('-o', '--output', type=str, help='Absolute path and name of the output bedfile .bed')
+	parser.add_argument('-i', '--input', type=str, required=True, help='Path to your original bed file')
+	parser.add_argument('-k', '--kmer', type=int, required=True, help='Length of kmer to process')
+	parser.add_argument('-f', '--output_folder', type=str, help='Optional output folder (default: same folder as original bed file')
+	parser.add_argument('-o', '--output', type=str, help='Absolute path and name of the output bedfile')
 	args = parser.parse_args()
 	check_args(args)
 	main(args)
