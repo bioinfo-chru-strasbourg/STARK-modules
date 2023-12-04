@@ -103,9 +103,9 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 	# /bin/bash -c 'source activate variantconvert is mandatory to activate the conda environment, you have to run bash
 	if yaml_config_file and os.path.exists(yaml_config_file):
 	#	cmd = "docker run --rm --name="+containerName+" "+montage+" "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file+"'"
-		cmd = "docker compose run --rm --name="+containerName+" -f STARK.docker-compose.yml "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file+"'"
+		cmd = "docker compose -f STARK.docker-compose.yml run --rm --name="+containerName+" "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file+"'"
 	else:
-		cmd = "docker compose run --rm --name="+containerName+" -f STARK.docker-compose.yml "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+"'"
+		cmd = "docker compose -f STARK.docker-compose.yml run --rm --name="+containerName+" "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+"'"
 	# launch the cmd to the shell 
 	subprocess.call(cmd, shell = True)
 	# Create a log file

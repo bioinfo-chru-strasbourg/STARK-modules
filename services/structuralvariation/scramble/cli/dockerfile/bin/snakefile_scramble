@@ -180,13 +180,14 @@ def logsomefile(logfile, text, sep, items_list=None, items=None):
 # samples name are taken from bam files
 # [x] for x part of the filename separated by '.'
 # [0] is sample ; [-1] is extension ; [1] is aligner
-def extractlistfromfiles(file_list, extension, sep, position):
+def extractlistfromfiles(file_list, ext_list, sep, position):
 	""" Function for creating list from a file list, with a specific extension, a separator and the position of the string we want to extract """
 	output_list = []
 	for files in file_list:
 		filesname = os.path.basename(files)
-		if filesname.endswith(extension):
-			output_list.append(filesname.split(sep)[position])
+		for ext in ext_list:
+			if filesname.endswith(ext):
+				output_list.append(filesname.split(sep)[position])
 	output_list = list(set(output_list))
 	return output_list
 
