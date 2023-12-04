@@ -95,13 +95,26 @@ models<-list()
 
 # Read list of refbams to process
 if(length(refbams_file)>0){
-refbams<-apply(read.table(paste(refbams_file)),1,toString)
+refbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
+  if("gender" %in% colnames(refbams)){
+    if (modechrom=="XX"){
+      refbams = subset(refbams, refbams$gender=='F')
+      }
+    if (modechrom=="XY"){
+      refbams = subset(refbams, refbams$gender=='M')
+      }     
+  }else{
+    if (modechrom=="XX" || modechrom=="XY"){
+    message('ERROR: No gender specified in the reference bam list, calling of chrX is not possible')
+    quit()
+}
+
 # get the sample names (first part of the filename, separated by dot)
 a<-length(strsplit(refbams[1],"/")[[1]])
 refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
 sample.names <- sample.names[!sample.names %in% refsample.names]
-}else{
-refsample.names<-vector()
+  }else{
+    refsample.names<-vector()
 }
 
 for(i in 1:length(sample.names)){

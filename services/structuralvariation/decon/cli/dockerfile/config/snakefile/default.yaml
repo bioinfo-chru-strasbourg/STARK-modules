@@ -127,8 +127,8 @@ CHR_LIST_RESTRICT: []
 
 ############## Tools specific parameters ##############
 
-# path to the txt file containing the reference bams for the CNV calling, full path
-REF_BAM_LIST: "/app/bin/config/ref/refbams.list.txt"
+# path to the tsv file containing 2 columns : the reference bams for the CNV calling, full path (bam) and the gender (F/M)
+REF_BAM_LIST: "/app/bin/config/ref/refbams.list.tsv"
 
 # If bed file got a 5 column with exon number 
 customexon: FALSE
