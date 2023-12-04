@@ -63,7 +63,7 @@ EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.b
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False
 # Process .bam or .cram
-PROCESS_FILE: ".bam"
+PROCESS_FILE: [".bam"]
 # Process input files : samtools/cp/ls
 PROCESS_CMD: 'ls'
 

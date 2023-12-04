@@ -44,11 +44,10 @@ import os
 import os.path
 import glob
 import pandas as pd
+import json
 
 from datetime import datetime
 from shutil import copy2
-
-import kmer.py
 
 ################## Configuration file and PATHS ##################
 configfile: "/app/config/snakefile/default.yaml"
@@ -134,7 +133,7 @@ keep_unknown = config['KEEP_UNKNOWN']
 exon_sep = config['EXON_SEP']
 # Formatting Bed old style
 old_bed = config['OLD_BED']
-
+kmer = config['KMER']
 # List of gene to analysis
 gene_list_restrict = config['GENE_LIST_RESTRICT']
 
@@ -217,14 +216,15 @@ def logsomefile(logfile, text, sep, items_list=None, items=None):
 # samples name are taken from bam files
 # [x] for x part of the filename separated by '.'
 # [0] is sample ; [-1] is extension ; [1] is aligner
-def extractlistfromfiles(file_list, extension, sep, position):
+def extractlistfromfiles(file_list, ext_list, sep, position):
 	""" Function for creating list from a file list, with a specific extension, a separator and the position of the string we want to extract """
 	output_list = []
 	for files in file_list:
 		filesname = os.path.basename(files)
-		if filesname.endswith(extension):
-			output_list.append(filesname.split(sep)[position])
-	output_list = list(set(output_list)) # we don't want duplicate in the list
+		for ext in ext_list:
+			if filesname.endswith(ext):
+				output_list.append(filesname.split(sep)[position])
+	output_list = list(set(output_list))
 	return output_list
 
 def deconbedfromdesign(inputbed, outputbed, sepgenecolumn):
@@ -265,6 +265,31 @@ def extract_tag(tagfile, tag, tagsep, sep):
 			output_tag = items.split(sep)[-1]
 	return(output_tag)
 
+def kmerisation(kmerSize, bedFile, kmerBedFile):
+	count = 0
+	print(str(kmerSize) + ' k-merisation of your bed ' + bedFile + ' in progress...')
+	with open(bedFile, 'r') as readBed:
+		with open(kmerBedFile, 'w+') as writeKbed:
+			for line in readBed.readlines():
+				count += 1
+				if line.startswith('#'):
+					continue
+				else:
+					line = line.split()
+					diff = int(line[2])-int(line[1])
+					start = line[1]
+					end = line[2]
+					gene = line[3]
+					while diff >= kmerSize:
+						newEnd = int(start) + int(kmerSize) - 1
+						newLine = line[0] + '\t' + str(start) + '\t' + str(newEnd) + '\t' + gene
+						diff = diff - kmerSize
+						start = int(newEnd) + 1
+						writeKbed.write(newLine + '\n')
+					if diff > 0:
+						newLine = line[0] + '\t' + str(start) + '\t' + str(end) + '\t' + gene
+						writeKbed.write(newLine + '\n')
+	print('Done !')
 
 ### END OF FUNCTIONS ###
 
@@ -542,10 +567,14 @@ if bed_file and bed_process == 'NO':
 
 # DECON bed formating from intermediatebed file
 deconbed_file = tmpdir + "/" + serviceName + "." + date_time + '.bed'
+
 if custom_exon == True:
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
 else:
-	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+	if kmer:
+		kmerisation(kmer, intermediatebed, deconbed_file)
+	else:
+		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
 df = df.drop_duplicates()
 df.to_csv(deconbed_file, sep='\t', index=False, header=False) # for decon.bed no header
 
@@ -568,8 +597,8 @@ if remove_A == True:
 # Log
 logsomefile(logfile, 'Start of the analysis:', "\n", items = date_time)
 logsomefile(logfile, 'Input for all files:', "\n", items_list = files_list_A)
-logsomefile(logfile, 'Input files for male analysis:', "\n", items_list = files_list_F)
-logsomefile(logfile, 'Input files for female analysis:', "\n", items_list = files_list_M)
+logsomefile(logfile, 'Input files for male analysis:', "\n", items_list = files_list_XX)
+logsomefile(logfile, 'Input files for female analysis:', "\n", items_list = files_list_XY)
 logsomefile(logfile, 'List of samples:', "\n", items_list = sample_list)
 logsomefile(logfile, 'List of gender:', "\n", items_list = gender_list)
 logsomefile(logfile, 'Aligner list:', "\n", items_list = aligner_list)
@@ -615,7 +644,8 @@ rule all:
 		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
 		failtsv = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.tsv", aligner=aligner_list),
 		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
-		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
+		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv",
+		pdfs = expand(tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.pdfs", aligner=aligner_list, gender=gender_list)
 
 rule help:
 	"""
@@ -689,7 +719,7 @@ rule IdentifyFailures:
 	output:
 		failtsv = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.tsv"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Identify_Failures.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.err"
 	shell:
 		"""
 		Rscript {decondir}/IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
@@ -711,7 +741,8 @@ rule makeCNVcalls:
 		chromosome = expand("{gender}", gender=gender_list),
 		refbamslist = config['REF_BAM_LIST'],
 	output:
-		calltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.tsv"
+		calltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.tsv",
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.CNVcall.RData"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.err"
 	shell:
@@ -725,8 +756,10 @@ rule plot:
 	"""
 	input:
 		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.CNVcall.RData"
-	output:
+	params:
 		folder = tmpdir + "/pdfs/"
+	output:
+		pdfs = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.pdfs"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.err"
 	shell:
@@ -822,8 +855,8 @@ rule AnnotSV:
 		bcftools = config['BCFTOOLS_PATH'],
 		genome = config['genomeBuild'],
 		overlap = config ['overlap'],
-		mode = config['annotationMode'],
-		annotation = config['annotationdir']
+		mode = config['annotationMode']
+		#annotation = config['annotationdir']
 	shell:
 		"""
 		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsvuncorr} -bedtools {params.bedtools} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log.txt} && [[ -s {output.tsvuncorr} ]] || echo "#No data to annotate" > {output.tsvuncorr}

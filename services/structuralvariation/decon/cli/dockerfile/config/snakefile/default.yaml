@@ -60,8 +60,9 @@ DECON_PATH: "/app/scripts/R"
 BEDTOOLS_PATH: "/tools/bedtools/current/bin/bedtools"
 # Path to Bcftools
 BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
-# Path to scripts
+# Path to scripts/dummy
 SCRIPTS_PATH: "/app/scripts"
+DUMMY_PATH: "/app/scripts/dummy"
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
 # Sample filter
@@ -75,7 +76,7 @@ EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.b
 VALIDATION_ONLY: False
 
 # Process .bam or .cram
-PROCESS_FILE: ".bam"
+PROCESS_FILE: [".bam"]
 # Process input files : cram/cp/ls/filter
 PROCESS_CMD: 'cp'
 
@@ -103,7 +104,7 @@ DEBUG_MODE: False
 ############## Tools specific parameters ##############
 ### DECON BED processing ###
 # Regen exon number with IntersectBed and a refseqgene reference (True/False) containing a column with the exon number
-EXON_REGEN: False
+BED_PROCESS: "STANDARD"
 # Keep intergenic region when exon regen is done
 KEEP_UNKNOWN: False
 
@@ -132,6 +133,9 @@ REF_BAM_LIST: "/app/bin/config/ref/refbams.list.tsv"
 
 # If bed file got a 5 column with exon number 
 customexon: FALSE
+
+# kmerisation of DECON bed (integer) (ex 250)
+KMER: "200"
 
 ############# IdentifyFailures params ##############
 mincorr: 0.98 # Minimum correlation threshold – the minimum correlation between a test sample and any other sample for the test sample to be considered well-correlated (default 0.98)
