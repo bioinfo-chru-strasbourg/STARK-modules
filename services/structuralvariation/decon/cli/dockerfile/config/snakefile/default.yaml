@@ -100,8 +100,9 @@ THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: False
 
+############## Tools specific parameters ##############
 ### DECON BED processing ###
-# Regen exon number with IntersectBed and a refseqgene reference (True/False)
+# Regen exon number with IntersectBed and a refseqgene reference (True/False) containing a column with the exon number
 EXON_REGEN: False
 # Keep intergenic region when exon regen is done
 KEEP_UNKNOWN: False
@@ -111,23 +112,22 @@ EXON_SEP: False
 # Old Bed formating
 OLD_BED: False
 
-# Remove Y or Y or Autosome analysis
-# Default is autosome with all the patients, and X only for Male and Female patients, with a separate call by sex
+# Remove M or F or Autosome analysis
+# Default is autosome with all the patients ; chrX can be performed only for Male or Female patients, with a separate call by sex
 REMOVE_F: False
 REMOVE_M: False
 REMOVE_A: False
 
-# Limit the analysis to a list of genes
+# Limit the analysis to a list of genes (remove from DECON BED)
 GENE_LIST_RESTRICT: []
 
-# List of chr to remove (essentially for chrY)
+# List of chr to remove from DECON BED
 CHR_LIST_RESTRICT: []
 
-
-
-############## Tools specific parameters ##############
-
-# path to the tsv file containing 2 columns : the reference bams for the CNV calling, full path (bam) and the gender (F/M)
+# path to the tsv file containing 2 columns : bam for the list of reference bams for CNV calling (full path of bams), and gender (F/M)
+# the bam files have to be indexed
+# number of reference patients should be 10 or more, and if the gender is considere, 10 per gender
+# the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
 REF_BAM_LIST: "/app/bin/config/ref/refbams.list.tsv"
 
 # If bed file got a 5 column with exon number 
