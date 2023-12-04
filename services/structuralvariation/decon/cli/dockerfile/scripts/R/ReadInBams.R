@@ -71,8 +71,8 @@ bams<-apply(read.table(paste(bam_file)),1,toString)
 
 # Check if refbams is not empty then append refbams to bams
 if(length(refbams_file)>0){
-refbams<-apply(read.table(paste(refbams_file)),1,toString)
-bams <- append(refbams,bams)
+refbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
+bams <- append(refbams$bam,bams)
 }
 
 # function which recursively splits x by an element of 'splits' then extracts the y element of the split vector
