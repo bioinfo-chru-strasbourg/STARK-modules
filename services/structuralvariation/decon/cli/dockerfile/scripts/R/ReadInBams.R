@@ -32,19 +32,17 @@ option_list<-list(
     make_option("--refbams",help="Text file containing a list of reference bam files to process (optional)",dest='rbams'),
     make_option("--bed",help='Bed file with 4 or 5 columns (chr, sart, stop, gene, +/- exon) used to generate coverage datas (required)',dest='bed'),
     make_option("--fasta",help='Reference genome fasta file to use (required)',default=NULL,dest='fasta'),
-    make_option("--out",default="./coverage",help="Output folder for the ReadInBams.Rdata, default: ./coverage",dest='out'),
-    make_option("--filename",default="ReadInBams.Rdata",help="File name of the .Rdata, default: ReadInBams.Rdata",dest='filename')
+    make_option("--rdata",default="./ReadInBams.Rdata",help="Output Rdata file, default: ./ReadInBams.Rdata",dest='rdata')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 # location of bam files; can be a directory containing only bam files to be processed or the name of a file containing a list of bam files to be processed.
 bam_file=opt$bamfiles
 bedfile=opt$bed
 fasta=opt$fasta
-output=opt$out
-file_name=opt$filename
+output=opt$rdata
 refbams_file=opt$rbams
 
-if(!file.exists(output)){dir.create(output)}
+if(!file.exists(dirname(output))){dir.create(dirname(output))}
 
 if(bedfile=="NULL"){bedfile=NULL}
 if(is.null(bedfile)){
@@ -133,6 +131,6 @@ if (ncol(bed.file) == 5){
     colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
 }
 # Rdata counts table is chromosome, start, end, gene, +/- exon, GC, sample1, sample2 & bed.file table & sample names & path to genome ref fasta file
-save(counts,bams,bed.file,sample.names,fasta,file=paste(output,file_name, sep=""))
+save(counts,bams,bed.file,sample.names,fasta,output)
 warnings()
 print("END ReadInBams script")
