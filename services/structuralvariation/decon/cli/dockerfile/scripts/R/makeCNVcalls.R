@@ -26,7 +26,8 @@ option_list<-list(
     make_option('--RData',help='Input summary RData file containing coverage datas, bed file and GC content (required)',dest='RData'),
     make_option("--chromosome",default="A",help='Performe calling for Autosomes, XX or XY only',dest='chromosome'),
     make_option('--transProb',default=.01,help='Transition probability for the HMM statistical analysis, default=0.01',dest='transProb'),
-	make_option("--refbams",default=NULL,help="Text file containing a list of reference bam files for calling (full path) (optional)",dest='refbams'),
+	make_option("--refbams",default=NULL,help="Text file containing the list of reference bam files for calling (full path) (optional)",dest='refbams'),
+    make_option("--samples",default=NULL,help="Text file containing the list of sample bams to analyse",dest='samples'),
     make_option('--out',default='./results',help='Output folder, default=./results',dest='out')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
@@ -42,6 +43,7 @@ load(count_data)
 
 modechrom=opt$chromosome
 refbams_file=opt$refbams
+samples_file=opt$samples
 trans_prob=as.numeric(opt$transProb)
 output=opt$out
 
@@ -107,14 +109,22 @@ refbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
     if (modechrom=="XX" || modechrom=="XY"){
     message('ERROR: No gender specified in the reference bam list, calling of chrX is not possible')
     quit()
-}
-
+    }
 # get the sample names (first part of the filename, separated by dot)
 a<-length(strsplit(refbams[1],"/")[[1]])
 refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
 sample.names <- sample.names[!sample.names %in% refsample.names]
   }else{
     refsample.names<-vector()
+}
+
+if(length(samples_file)>0){
+    samplesbams<- read.csv(paste(samples_file), header=TRUE, sep="\t")
+    a<-length(strsplit(samplesbams[1],"/")[[1]])
+    sample.names<-sapply(samplesbams,multi_strsplit,c("/","."),c(a,1))
+}else{
+    message('ERROR: No samples to analyse')
+    quit()
 }
 
 for(i in 1:length(sample.names)){
