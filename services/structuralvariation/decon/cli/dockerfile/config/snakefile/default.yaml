@@ -135,7 +135,7 @@ REF_BAM_LIST: "/app/bin/config/ref/refbams.list.tsv"
 customexon: FALSE
 
 # kmerisation of DECON bed (integer) (ex 250)
-KMER: "200"
+KMER: ""
 
 ############# IdentifyFailures params ##############
 mincorr: 0.98 # Minimum correlation threshold – the minimum correlation between a test sample and any other sample for the test sample to be considered well-correlated (default 0.98)
