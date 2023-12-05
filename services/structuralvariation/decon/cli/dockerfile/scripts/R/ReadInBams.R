@@ -30,7 +30,7 @@ suppressMessages(library(dplyr))
 option_list<-list(
     make_option("--bams",help="Text file containing a list of bam files to process (required)",dest='bamfiles'),
     make_option("--refbams",help="Text file containing a list of reference bam files to process (optional)",dest='rbams'),
-    make_option("--bed",help='Bed file with 4 or 5 columns (chr, sart, stop, gene, +/- exon (optional)) used to generate coverage datas (required)',dest='bed'),
+    make_option("--bed",help='Bed file with 4 or 5 columns (chr, sart, stop, gene, +/- exon) used to generate coverage datas (required)',dest='bed'),
     make_option("--fasta",help='Reference genome fasta file to use (required)',default=NULL,dest='fasta'),
     make_option("--out",default="./coverage",help="Output folder for the ReadInBams.Rdata, default: ./coverage",dest='out')
 )
@@ -51,7 +51,7 @@ quit()
 }
 
 if(length(fasta)==0){
-print("ERROR NO FASTA FILES DETECTED")
+print("ERROR No reference fasta files detected. Execution halted")
 quit()
 }
 
@@ -63,7 +63,7 @@ quit()
 }
 
 if(length(bam_file)==0){
-print("ERROR NO BAM FILES DETECTED")
+print("ERROR No bam files found. Execution halted")
 quit()
 }else{
 bams<-apply(read.table(paste(bam_file)),1,toString)
