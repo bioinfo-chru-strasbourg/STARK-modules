@@ -28,9 +28,8 @@ option_list<-list(
     make_option('--transProb',default=.01,help='Transition probability for the HMM statistical analysis, default=0.01',dest='transProb'),
 	make_option("--refbams",default=NULL,help="Text file containing the list of reference bam files for calling (full path) (optional)",dest='refbams'),
     make_option("--samples",default=NULL,help="Text file containing the list of sample bams to analyse",dest='samples'),
-    make_option('--out',default='./results',help='Output folder, default=./results',dest='out'),
-    make_option("--filename",default="CNVcalls.csv",help="File name of the tsv file, default: CNVcalls.csv",dest='filename'),
-    make_option("--outRdata",default="CNVcalls.csv",help="File name of the tsv file, default: CNVcalls.csv",dest='outRdata')
+    make_option("--tsv",default="./CNVcalls.csv",help="File name of the tsv file, default: ./CNVcalls.csv",dest='tsv'),
+    make_option("--outRdata",default="CNVcalls.Rdata",help="File name of the Rdata file, default: CNVcalls.Rdata",dest='outRdata')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 
@@ -47,9 +46,8 @@ modechrom=opt$chromosome
 refbams_file=opt$refbams
 samples_file=opt$samples
 trans_prob=as.numeric(opt$transProb)
-output=opt$out
-file_name=opt$filename
-out_Rdata=opt$outRdata
+output=opt$tsv
+output_rdata=opt$outRdata
 
 if(!file.exists(output)){dir.create(output)}
 
@@ -257,15 +255,15 @@ if(colnames(counts)[5]=="exon"){
 if(colnames(counts)[5]=="exon"){
 cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence,cnv.calls_ids$Custom.first,cnv.calls_ids$Custom.last)
 names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence","Custom.first","Custom.last")
-save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons,file=paste(output,"Custom.",out_Rdata,sep=""))
+save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons,output_rdata)
 custom_calls=cnv.calls_ids_out[!is.na(cnv.calls_ids$Custom.first),]
-write.table(custom_calls,file=paste(output,"Custom.",file_name,sep=""),sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
+write.table(custom_calls,output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
 
 }else{
 cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence)
 names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence")
-save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,file=paste(output,out_Rdata,sep=""))
-write.table(cnv.calls_ids_out,file=paste(output,file_name,sep=""),sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
+save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,output_rdata)
+write.table(cnv.calls_ids_out,output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
 }
 warnings()
 print("END makeCNVCalls script")

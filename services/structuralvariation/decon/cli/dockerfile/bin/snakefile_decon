@@ -558,7 +558,7 @@ rule all:
 		failtsv = expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.tsv", aligner=aligner_list),
 		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		alltsv = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv",
-		pdfs = expand(tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.pdfs", aligner=aligner_list, gender=gender_list)
+		pdf = expand(tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.pdf", aligner=aligner_list, gender=gender_list)
 
 rule help:
 	"""
@@ -602,7 +602,6 @@ rule ReadInBams:
 	output:
 		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.ReadInBams.RData"
 	params:
-		output = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.",
 		deconbed_file = tmpdir + "/" + serviceName + "." + date_time + ".bed",
 		refbamlist = config['REF_BAM_LIST'],
 		decondir = config['DECON_PATH'],
@@ -613,9 +612,9 @@ rule ReadInBams:
 		"""
 		if [ -z {params.refbamlist} ];
 		then 
-		Rscript {params.decondir}/ReadInBams.R --bams {input.allbamlist} --bed {params.deconbed_file} --fasta {params.refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
+		Rscript {params.decondir}/ReadInBams.R --bams {input.allbamlist} --bed {params.deconbed_file} --fasta {params.refgene} --rdata {output.rdata} 1> {log.log1} 2> {log.log2}
 		else
-		Rscript {params.decondir}/ReadInBams.R --bams {input.allbamlist} --refbams {params.refbamlist} --bed {params.deconbed_file} --fasta {params.refgene} --out {params.output} 1> {log.log1} 2> {log.log2}
+		Rscript {params.decondir}/ReadInBams.R --bams {input.allbamlist} --refbams {params.refbamlist} --bed {params.deconbed_file} --fasta {params.refgene} --rdata {output.rdata} 1> {log.log1} 2> {log.log2}
 		fi
 		"""
 
@@ -634,16 +633,15 @@ rule IdentifyFailures:
 	params:
 		mincorr = config['mincorr'],
 		mincov = config['mincov'],
-		output = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics",
 		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.MetricsFailed",
 		decondir = config['DECON_PATH']
 	output:
 		failtsv = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.tsv"
 	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Identify_Failures.err"
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.err"
 	shell:
 		"""
-		Rscript {params.decondir}/IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtxt} ]] || touch {params.analysisfailure} ; [[ -s {output.failtxt} ]] || touch {output.failtxt}
+		Rscript {params.decondir}/IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --tsv {output.failtsv} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtsv} ]] || touch {params.analysisfailure} ; [[ -s {output.failtsv} ]] || touch {output.failtsv}
 		"""
 
 rule makeCNVcalls:
@@ -664,17 +662,17 @@ rule makeCNVcalls:
 		refbamslist = config['REF_BAM_LIST'],
 		decondir = config['DECON_PATH']
 	output:
-		calltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.tsv",
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.CNVcall.RData"
+		calltsv = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.tsv",
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.CNVcalls.RData"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.err"
 	shell:
 		"""
 		if [ -z {params.refbamlist} ];
 		then 
-		Rscript {params.decondir}/makeCNVcalls.R --Rdata {input.rdata} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
+		Rscript {params.decondir}/makeCNVcalls.R --Rdata {input.rdata} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --tsv {output.calltsv} --outRdata {output.rdata} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltsv} ]] || touch {output.calltsv}
 		else
-		Rscript {params.decondir}/makeCNVcalls.R --Rdata {input.rdata} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --refbams {params.refbamslist} --out {params.output} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltxt} ]] || touch {output.calltxt}
+		Rscript {params.decondir}/makeCNVcalls.R --Rdata {input.rdata} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --refbams {params.refbamslist} --tsv {output.calltsv} --outRdata {output.rdata} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltsv} ]] || touch {params.analysisfailure} ; [[ -s {output.calltsv} ]] || touch {output.calltsv}
 		fi
 		"""
 
@@ -683,12 +681,12 @@ rule plot:
 	This step input the CNVcall.Rdata file to output the plot files in pdf format
 	"""
 	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.CNVcall.RData"
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.CNVcalls.RData"
 	params:
 		folder = tmpdir + "/pdfs/",
 		decondir = config['DECON_PATH']
 	output:
-		pdfs = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.pdfs"
+		pdf = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.pdf"
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.err"
 	shell:
@@ -701,12 +699,12 @@ rule merge_makeCNVcalls:
 	Merge all CNVs call results
 	"""
 	input:
-		calltxt =  expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.tsv", gender=gender_list, aligner=aligner_list)
+		calltsv =  expand(tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.tsv", gender=gender_list, aligner=aligner_list)
 	output:
 		allcalltsv = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.tsv"
 	shell:
 		"""
-		cat {input.calltxt} | sort -u | sort -r >> {output.allcalltsv}
+		cat {input.calltsv} | sort -u | sort -r >> {output.allcalltsv}
 		"""
 
 
