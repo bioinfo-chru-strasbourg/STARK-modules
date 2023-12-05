@@ -429,6 +429,14 @@ onstart:
 onsuccess:
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Complete.txt")
 	shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
+	# Move pdfs file into each sample directory
+	pdf_list = os.listdir(tmpdir+"/pdfs")
+	for sample in sample_list:
+		for pdf in pdf_list:
+			if sample in pdf:
+				shell("mv "+tmpdir+ "/pdfs/"+pdf+" " +tmpdir+"/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/")
+	# rmdir the /pdfs dir
+	shell("rm -rf "+tmpdir+"/pdfs")
 	# Add end time of the analysis to the log file
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
@@ -438,16 +446,16 @@ onsuccess:
 	for sample in sample_list:
 		shell("rm -f " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
 	# Rsync all files into final destination
-	shell("rsync -azvh --include={config['INCLUDE_RSYNC']} --exclude {config['EXCLUDE_RSYNC']} {tmpdir}/ {config['OUTPUT_DIR']}")
+	shell("rsync -azvh --include="+config['INCLUDE_RSYNC']+" --exclude "+config['EXCLUDE_RSYNC']+" {tmpdir}/ "+config['OUTPUT_DIR']+"")
 	# Copy new files
 	for sample in sample_list:
-		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/ || true")
+		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/")
 	if config['DEPOT_COPY'] == True:
-		shell("rsync -azvh --include={config['INCLUDE_RSYNC']} --exclude {config['EXCLUDE_RSYNC']} {tmpdir}/ {depotdir}")
+		shell("rsync -azvh --include="+config['INCLUDE_RSYNC']+" --exclude "+config['EXCLUDE_RSYNC']+" {tmpdir}/ {depotdir}")
 		for sample in sample_list:
-			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/ || true")
+			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/")
 
 onerror:
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Failed.txt")
 	#shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
-	shell("rsync -azvh --include={config['INCLUDE_LOG_RSYNC']} --exclude {config['EXCLUDE_LOG_RSYNC']} {tmpdir}/ {config['OUTPUT_DIR']}")
+	shell("rsync -azvh --include="+config['INCLUDE_LOG_RSYNC']+" --exclude "+config['EXCLUDE_RSYNC']+" {tmpdir}/ "+config['OUTPUT_DIR']+"")

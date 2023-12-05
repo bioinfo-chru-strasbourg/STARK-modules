@@ -23,7 +23,8 @@ option_list<-list(
     make_option("--RData",help="Input summary RData file (required)",dest='Rdata'),
     make_option("--mincorr",help='Minimum correlation to consider, default=0.98',default=.98,dest='mincorr'),
     make_option("--mincov",help='Minimum coverage to consider, default=100',default=100,dest='mincov'),
-    make_option("--out",default='./metrics',help='Output directory, default=./metrics',dest='out')
+    make_option("--out",default='./metrics',help='Output directory, default=./metrics',dest='out'),
+	make_option("--filename",default="ReadInBams.Rdata",help="File name of the .Rdata, default: ReadInBams.Rdata",dest='filename')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 count_data=opt$Rdata
@@ -37,7 +38,7 @@ if(length(corr_thresh)==0){corr_thresh=0.98}
 cov_thresh=as.numeric(opt$mincov)
 if(length(cov_thresh)==0){cov_thresh=100}
 output=opt$out
-
+file_name=opt$filename
 if(!file.exists(output)){dir.create(output)}
 
 
@@ -125,12 +126,12 @@ if((names(bed.file)[5]=="exon") & any(Exon!="All")){
 	Metrics<-data.frame(Sample,Exon,Types,Gene,Custom_Numbering,Details)
 	names(Metrics)=c("Sample","Exon","Type","Gene","Custom.numbering","Info")
 	Metrics_custom=Metrics[Metrics$Custom_Numbering!="NA" | Metrics$Types=="Whole sample",]
-	write.table(Metrics_custom,file=paste(output,"/Metrics_custom.tsv",sep=""),quote=F,row.names=F,sep="\t")
+	write.table(Metrics_custom,file=paste(output,"Custom.",file_name,sep=""),quote=F,row.names=F,sep="\t")
 
 }else{
 	Metrics<-data.frame(Sample,Exon,Types,Gene,Details)
 	names(Metrics)=c("Sample","Exon","Type","Gene","Info")
-	write.table(Metrics,file=paste(output,"/Metrics.tsv",sep=""),quote=F,row.names=F,sep="\t")
+	write.table(Metrics,file=paste(output,file_name,sep=""),quote=F,row.names=F,sep="\t")
 }
 warnings()
 print("END IdentifyFailures script")
