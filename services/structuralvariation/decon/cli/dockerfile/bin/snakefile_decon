@@ -898,4 +898,4 @@ onsuccess:
 onerror:
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Failed.txt")
 	#shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
-	shell("rsync -azvh --include="+config['INCLUDE_LOG_RSYNC']+" --exclude "+config['EXCLUDE_RSYNC']+" {tmpdir}/ "+{config['OUTPUT_DIR']}+"")
+	shell("rsync -azvh --include="+config['INCLUDE_LOG_RSYNC']+" --exclude "+config['EXCLUDE_RSYNC']+" {tmpdir}/ "+config['OUTPUT_DIR']+"")
