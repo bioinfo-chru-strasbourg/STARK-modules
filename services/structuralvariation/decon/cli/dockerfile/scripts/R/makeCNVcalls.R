@@ -113,10 +113,11 @@ refbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
     quit()
     }
 # get the sample names (first part of the filename, separated by dot)
-a<-length(strsplit(refbams[1],"/")[[1]])
-refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
-sample.names <- sample.names[!sample.names %in% refsample.names]
-  }else{
+if(length(refbams)>0){
+    a<-length(strsplit(refbams[1],"/")[[1]])
+    refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
+    sample.names <- sample.names[!sample.names %in% refsample.names]
+}else{
     refsample.names<-vector()
 }
 
