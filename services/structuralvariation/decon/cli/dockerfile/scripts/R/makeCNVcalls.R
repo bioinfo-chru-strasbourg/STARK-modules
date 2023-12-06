@@ -28,8 +28,8 @@ option_list<-list(
     make_option('--transProb',default=.01,help='Transition probability for the HMM statistical analysis, default=0.01',dest='transProb'),
 	make_option("--refbams",default=NULL,help="Text file containing the list of reference bam files for calling (full path) (optional)",dest='refbams'),
     make_option("--samples",default=NULL,help="Text file containing the list of sample bams to analyse",dest='samples'),
-    make_option("--tsv",default="./CNVcalls.csv",help="File name of the tsv file, default: ./CNVcalls.csv",dest='tsv'),
-    make_option("--outrdata",default="CNVcalls.Rdata",help="File name of the Rdata file, default: CNVcalls.Rdata",dest='outdata')
+    make_option("--tsv",default="./CNVcalls.csv",help="Output tsv file, default: ./CNVcalls.csv",dest='tsv'),
+    make_option("--outrdata",default="./CNVcalls.Rdata",help="Output Rdata file, default: ./CNVcalls.Rdata",dest='outdata')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 
@@ -145,8 +145,8 @@ for(i in 1:length(sample.names)){
     all.exons <- CallCNVs(x = all.exons, transition.probability = trans_prob, chromosome = ExomeCount$chromosome, start = ExomeCount$start, end = ExomeCount$end, name = ExomeCount$gene)
     my.ref.counts <- apply(my.matrix, MAR = 1, FUN = sum)
     if(nrow(all.exons@CNV.calls)>0){
-        name.comparator <- paste(my.choice$reference.choice, collapse = ",")
-        cnvs= cbind(sample.names[i],cor(my.test, my.ref.counts),length( my.choice[[1]] ),name.comparator,all.exons@CNV.calls)
+        Comparator.name <- paste(my.choice$reference.choice, collapse = ",")
+        cnvs= cbind(sample.names[i],cor(my.test, my.ref.counts),length( my.choice[[1]] ),Comparator.name,all.exons@CNV.calls)
         cnv.calls = rbind(cnv.calls,cnvs)
     }
     refs[[i]] = my.choice$reference.choice
