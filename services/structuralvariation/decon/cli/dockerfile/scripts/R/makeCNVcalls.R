@@ -88,6 +88,7 @@ if (modechrom=="XX" || modechrom=="XY"){
 cnv.calls = NULL
 refs<-list()
 models<-list()
+refsample.names<-vector()
 # for each sample :
 # extracts the sample to be tested, uses all other samples as the reference set, places coverage info for all samples in the reference set into a matrix 
 # from the reference set, selects correlated samples to be used.
@@ -99,7 +100,10 @@ models<-list()
 
 # Read list of refbams to process
 if(length(refbams_file)>0){
-refbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
+    refbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
+    a<-length(strsplit(refbams[1],"/")[[1]])
+    refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
+    sample.names <- sample.names[!sample.names %in% refsample.names]
   if("gender" %in% colnames(refbams)){
     if (modechrom=="XX"){
       refbams = subset(refbams, refbams$gender=='F')
@@ -107,20 +111,12 @@ refbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
     if (modechrom=="XY"){
       refbams = subset(refbams, refbams$gender=='M')
       }
-  }     
-}else{
-    if (modechrom=="XX" || modechrom=="XY"){
-    message('ERROR: No gender specified in the reference bam list, calling of chrX is not possible')
-    quit()
+    }else{
+        if (modechrom=="XX" || modechrom=="XY"){
+        message('ERROR: No gender specified in the reference bam list, calling of chrX is not possible')
+        quit()
+        }
     }
-}
-# get the sample names (first part of the filename, separated by dot)
-if(length(refbams)>0){
-    a<-length(strsplit(refbams[1],"/")[[1]])
-    refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
-    sample.names <- sample.names[!sample.names %in% refsample.names]
-}else{
-    refsample.names<-vector()
 }
 
 if(length(samples_file)>0){
