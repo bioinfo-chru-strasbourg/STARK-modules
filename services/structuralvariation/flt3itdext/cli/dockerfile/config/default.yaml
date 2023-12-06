@@ -64,7 +64,6 @@ EXCLUDE_RSYNC: "*"
 INCLUDE_RSYNC: "{'*.log', '*'}"
 
 # for log file copy if pipeline failed
-EXCLUDE_LOG_RSYNC: "*"
 INCLUDE_LOG_RSYNC: "{'*.txt', '*.log', '*.err'}"
 
 # Search parameters

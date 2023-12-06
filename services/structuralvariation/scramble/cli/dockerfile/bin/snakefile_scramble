@@ -352,7 +352,7 @@ if not config['BED_FILE']:
 		"""
 		input:
 			vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz", sample=sample_list, aligner=aligner_list),
-			tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv"
+			tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv"
 
 else:
 	rule all:
@@ -361,7 +361,7 @@ else:
 		"""
 		input:
 			tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list),
-			tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Unfiltered.tsv",
+			tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv",
 			alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
 rule help:
@@ -516,7 +516,7 @@ rule vcf2gz:
 	input:
 		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf"
 	output:
-		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz"
+		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
 	shell:
 		"""
 		bgzip -c {input.vcfsort} > {output.vcfgz} ; tabix {output.vcfgz}
