@@ -23,7 +23,7 @@ option_list<-list(
     make_option("--rdata",help="Input summary RData file (required)",dest='data'),
     make_option("--mincorr",help='Minimum correlation to consider, default=0.98',default=.98,dest='mincorr'),
     make_option("--mincov",help='Minimum coverage to consider, default=100',default=100,dest='mincov'),
-    make_option("--tsv",default='./Metrics.tsv',help='Output metrics csv file, default=./Metrics.tsv',dest='out')
+    make_option("--tsv",default='./Metrics.tsv',help='Output metrics tsv file, default=./Metrics.tsv',dest='out')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 count_data=opt$data
@@ -113,7 +113,7 @@ for(i in 1:length(ExonMedian)){
 	}
 }
 
-if((names(bed.file)[5]=="exon") & any(Exon!="All")){
+if("exon" %in% colnames(bed.file) & any(Exon!="All")){
 	exons <- bed.file
 	failed.calls=bed.file[Exon[Exon!="All"],]
 	exonnumber<-sapply(failed.calls$chr, '==',exons$Chr) & sapply(failed.calls$start, '>=',exons$Start) & sapply(failed.calls$end, '<=',exons$End) | sapply(failed.calls$chr, '==',exons$Chr) & sapply(failed.calls$start, '<=',exons$Start) & sapply(failed.calls$end, '>=',exons$Start) | sapply(failed.calls$chr, '==',exons$Chr) & sapply(failed.calls$start, '<=',exons$End) & sapply(failed.calls$end, '>=',exons$End)

@@ -51,7 +51,9 @@
 			"N.exons": "N.exons",
 			"Start.b": "Start.b",
 			"End.b": "End.b",
-			"Genomic.ID": "Genomic.ID"
+			"Genomic.ID": "Genomic.ID",
+			"Confidence": "Confidence",
+			"Comparator.name": "Comparator.name"
 		},
 		"FORMAT": {
 			"GT": "",
