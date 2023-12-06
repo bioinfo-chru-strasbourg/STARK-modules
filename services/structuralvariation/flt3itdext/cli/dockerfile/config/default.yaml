@@ -33,9 +33,6 @@ TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
 
-# Path to scripts
-SCRIPTS_PATH: "/app/scripts"
-
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False
 # List of files extension to process
@@ -72,7 +69,7 @@ INCLUDE_LOG_RSYNC: "{'*.txt', '*.log', '*.err'}"
 
 # Search parameters
 RECURSIVE_SEARCH: False
-SEARCH_ARGUMENT: "*/*"
+SEARCH_ARGUMENT: "/*/STARK/*"
 
 # MISC
 THREADS: "4"
@@ -84,8 +81,6 @@ DEBUG_MODE: False
 ################## Tools parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
-# Path to Bcftools
-BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
 
 ################## flt3_itd_ext ##################
 REF_ITD_PATH: "/STARK/databases/ITDs/flt3itdext/FLT3_dna_e14e15"

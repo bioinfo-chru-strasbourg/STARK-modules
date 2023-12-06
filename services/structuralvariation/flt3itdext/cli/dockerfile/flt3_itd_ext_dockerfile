@@ -6,17 +6,14 @@
 # Description:         Dockerfile to build container image
 ##############################################################
 
-
 # PROD version 1 : 10/09/2023
 # Authoring : Thomas LAVAUX
-
 
 # Ubuntu based (minimal focal)
 FROM condaforge/mambaforge
 ARG DEBIAN_FRONTEND=noninteractive
-# Update and install some tools
-RUN apt-get update
-RUN apt-get install -y unzip vim rsync perl
+RUN apt-get update --fix-missing
+RUN apt-get install -y perl rsync unzip vim
 # Copy applications files (/app)
 COPY ./ /app
 # Mamba install 

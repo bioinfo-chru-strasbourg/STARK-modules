@@ -100,11 +100,13 @@ refsample.names<-vector()
 
 # Read list of refbams to process
 if(length(refbams_file)>0){
-    refbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
+    rawrefbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
+    refbams<-apply(rawrefbams,1,toString)
     a<-length(strsplit(refbams[1],"/")[[1]])
     refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
+    names(refsample.names)<-NULL    
     sample.names <- sample.names[!sample.names %in% refsample.names]
-  if("gender" %in% colnames(refbams)){
+  if("gender" %in% colnames(rawrefbams)){
     if (modechrom=="XX"){
       refbams = subset(refbams, refbams$gender=='F')
       }
@@ -120,9 +122,10 @@ if(length(refbams_file)>0){
 }
 
 if(length(samples_file)>0){
-    samplesbams<- read.csv(paste(samples_file), header=TRUE, sep="\t")
+    samplesbams<-apply(read.table(paste(samples_file)),1,toString)
     a<-length(strsplit(samplesbams[1],"/")[[1]])
     sample.names<-sapply(samplesbams,multi_strsplit,c("/","."),c(a,1))
+    names(sample.names)<-NULL
 }else{
     message('ERROR: No samples to analyse')
     quit()
@@ -156,99 +159,101 @@ names(refs) = sample.names
 names(models) = sample.names
 
 if(!is.null(cnv.calls)){
-names(cnv.calls)[1] = "sample"
-cnv.calls$sample = paste(cnv.calls$sample)
-names(cnv.calls)[2] = "correlation"
-names(cnv.calls)[3] = "N.comp"
+    names(cnv.calls)[1] = "sample"
+    cnv.calls$sample = paste(cnv.calls$sample)
+    names(cnv.calls)[2] = "correlation"
+    names(cnv.calls)[3] = "N.comp"
 
-##################### CONFIDENCE CALCULATION ##############################
-Confidence<-rep("HIGH",nrow(cnv.calls))
+    ##################### CONFIDENCE CALCULATION ##############################
+    Confidence<-rep("HIGH",nrow(cnv.calls))
 
-a<-which(cnv.calls$correlation<.985)
-if(length(a)>0){Confidence[a]="LOW"}
-
-a<-which(cnv.calls$reads.ratio<1.25 & cnv.calls$reads.ratio>.75)
-if(length(a)>0){Confidence[a]="LOW"}
-
-a<-which(cnv.calls$N.comp<=3)
-if(length(a)>0){Confidence[a]="LOW"}
-
-if(ncol(bed.file)>=4){
-    genes<-apply(cnv.calls,1,function(x)paste(unique(bed.file[x[4]:x[5],4]),collapse=", "))
-    a<-which(genes=="PMS2")
+    a<-which(cnv.calls$correlation<.985)
     if(length(a)>0){Confidence[a]="LOW"}
-}
 
-cnv.calls<-cbind(cnv.calls,genes)
-names(cnv.calls)[ncol(cnv.calls)]="Gene"
+    a<-which(cnv.calls$reads.ratio<1.25 & cnv.calls$reads.ratio>.75)
+    if(length(a)>0){Confidence[a]="LOW"}
 
-cnv.calls<-cbind(cnv.calls,Confidence)
-names(cnv.calls)[ncol(cnv.calls)]="Confidence"
+    a<-which(cnv.calls$N.comp<=3)
+    if(length(a)>0){Confidence[a]="LOW"}
 
-# replaces single calls involving multiple genes with multiple calls with a single call ID/gene
-cnv.calls_ids=cbind(1:nrow(cnv.calls),cnv.calls)
-names(cnv.calls_ids)[1]="ID"
-trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+    if(ncol(bed.file)>=4){
+        genes<-apply(cnv.calls,1,function(x)paste(unique(bed.file[x[4]:x[5],4]),collapse=", "))
+        a<-which(genes=="PMS2")
+        if(length(a)>0){Confidence[a]="LOW"}
 
-for(i in 1:nrow(cnv.calls_ids)){
-    genes=strsplit(paste(cnv.calls_ids[i,]$Gene),",")[[1]]
-    genes=trim(genes)
-    whole.index=cnv.calls_ids[i,]$start.p:cnv.calls_ids[i,]$end.p
-    if(length(genes)>1){
-        temp=cnv.calls_ids[rep(i,length(genes)),]
-        temp$Gene=genes
-        for(j in 1:length(genes)){
-            gene.index=which(bed.file[,4]==genes[j])
-            overlap=gene.index[gene.index%in%whole.index]
-            temp[j,]$start.p=min(overlap)
-            temp[j,]$end.p=max(overlap)
-        }
-        if(i==1){
-            cnv.calls_ids=rbind(temp,cnv.calls_ids[(i+1):nrow(cnv.calls_ids),])
-        }else if(i==nrow(cnv.calls_ids)){
-            cnv.calls_ids=rbind(cnv.calls_ids[1:(i-1),],temp)
-        }else{
-            cnv.calls_ids=rbind(cnv.calls_ids[1:(i-1),],temp,cnv.calls_ids[(i+1):nrow(cnv.calls_ids),])
-        }
-    }
-}
+    cnv.calls<-cbind(cnv.calls,genes)
+    names(cnv.calls)[ncol(cnv.calls)]="Gene"
 
-cnv.calls_ids$Gene=trim(cnv.calls_ids$Gene)
-Gene.index=vector()
-genes_unique<-unique(bed.file[,4])
+    cnv.calls<-cbind(cnv.calls,Confidence)
+    names(cnv.calls)[ncol(cnv.calls)]="Confidence"
 
-for(i in 1:length(genes_unique)){
-    Gene.index=c(Gene.index,1:sum(bed.file[,4]==genes_unique[i]))
-}
+    # replaces single calls involving multiple genes with multiple calls with a single call ID/gene
+    cnv.calls_ids=cbind(1:nrow(cnv.calls),cnv.calls)
+    names(cnv.calls_ids)[1]="ID"
+    trim <- function (x) gsub("^\\s+|\\s+$", "", x)
 
-start.b<-Gene.index[cnv.calls_ids$start.p]
-end.b<-Gene.index[cnv.calls_ids$end.p]
-cnv.calls_ids<-cbind(cnv.calls_ids,start.b,end.b)
-}
-
-################# ADD Custom EXON NUMBERS #####################
-if(colnames(counts)[5]=="exon"){
-    Custom.first = rep(NA,nrow(cnv.calls_ids))
-    Custom.last=rep(NA,nrow(cnv.calls_ids))
-    # exons<-read.table(exon_numbers,sep="\t",header=T)
-    exons <- bed.file
-    exonnumber<-sapply(cnv.calls_ids$Gene, '==',exons$Gene)
-    for(i in 1:nrow(exonnumber)){
-        for(j in 1:ncol(exonnumber)){
-            temp=cnv.calls_ids$start[j]<=exons$End[i] & cnv.calls_ids$end[j]>=exons$Start[i]
-            exonnumber[i,j]=exonnumber[i,j] & temp
+    for(i in 1:nrow(cnv.calls_ids)){
+        genes=strsplit(paste(cnv.calls_ids[i,]$Gene),",")[[1]]
+        genes=trim(genes)
+        whole.index=cnv.calls_ids[i,]$start.p:cnv.calls_ids[i,]$end.p
+        if(length(genes)>1){
+            temp=cnv.calls_ids[rep(i,length(genes)),]
+            temp$Gene=genes
+            for(j in 1:length(genes)){
+                gene.index=which(bed.file[,4]==genes[j])
+                overlap=gene.index[gene.index%in%whole.index]
+                temp[j,]$start.p=min(overlap)
+                temp[j,]$end.p=max(overlap)
+            }
+            if(i==1){
+                cnv.calls_ids=rbind(temp,cnv.calls_ids[(i+1):nrow(cnv.calls_ids),])
+            }else if(i==nrow(cnv.calls_ids)){
+                cnv.calls_ids=rbind(cnv.calls_ids[1:(i-1),],temp)
+            }else{
+                cnv.calls_ids=rbind(cnv.calls_ids[1:(i-1),],temp,cnv.calls_ids[(i+1):nrow(cnv.calls_ids),])
+            }
         }
     }
-    exonlist<-which(colSums(exonnumber)!=0)
-    if(length(exonlist)>0){
-        a<-list(length=length(exonlist))
-        for(i in 1:length(exonlist)){a[[i]]=which(exonnumber[,exonlist[i]])}
-        first_exon<-unlist(lapply(a,function(a,b)min(b[a,]$Custom),exons))		#identifies the  first and last Custom exon in the deletion/duplication.
-        last_exon<-unlist(lapply(a,function(a,b)max(b[a,]$Custom),exons))
-        Custom.first[exonlist] = first_exon
-        Custom.last[exonlist] = last_exon
+
+    cnv.calls_ids$Gene=trim(cnv.calls_ids$Gene)
+    Gene.index=vector()
+    genes_unique<-unique(bed.file[,4])
+
+    for(i in 1:length(genes_unique)){
+        Gene.index=c(Gene.index,1:sum(bed.file[,4]==genes_unique[i]))
     }
-    cnv.calls_ids=cbind(cnv.calls_ids,Custom.first,Custom.last)
+
+    start.b<-Gene.index[cnv.calls_ids$start.p]
+    end.b<-Gene.index[cnv.calls_ids$end.p]
+    cnv.calls_ids<-cbind(cnv.calls_ids,start.b,end.b)
+    }
+
+    ################# ADD Custom EXON NUMBERS #####################
+    if(colnames(counts)[5]=="exon"){
+        Custom.first = rep(NA,nrow(cnv.calls_ids))
+        Custom.last=rep(NA,nrow(cnv.calls_ids))
+        # exons<-read.table(exon_numbers,sep="\t",header=T)
+        exons <- bed.file
+        exonnumber<-sapply(cnv.calls_ids$Gene, '==',exons$Gene)
+        for(i in 1:nrow(exonnumber)){
+            for(j in 1:ncol(exonnumber)){
+                temp=cnv.calls_ids$start[j]<=exons$End[i] & cnv.calls_ids$end[j]>=exons$Start[i]
+                exonnumber[i,j]=exonnumber[i,j] & temp
+            }
+        }
+        exonlist<-which(colSums(exonnumber)!=0)
+        if(length(exonlist)>0){
+            a<-list(length=length(exonlist))
+            for(i in 1:length(exonlist)){a[[i]]=which(exonnumber[,exonlist[i]])}
+            first_exon<-unlist(lapply(a,function(a,b)min(b[a,]$Custom),exons))		#identifies the  first and last Custom exon in the deletion/duplication.
+            last_exon<-unlist(lapply(a,function(a,b)max(b[a,]$Custom),exons))
+            Custom.first[exonlist] = first_exon
+            Custom.last[exonlist] = last_exon
+        }
+        cnv.calls_ids=cbind(cnv.calls_ids,Custom.first,Custom.last)
+    }
+}else{
+cnv.calls_ids=NULL
 }
 
 ##################### Output #######################
