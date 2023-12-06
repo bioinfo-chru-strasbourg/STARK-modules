@@ -390,7 +390,7 @@ rule vcf2gz:
 	input:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	output:
-		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
+		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", aligner=aligner_list, sample=sample_list)
 	shell:
 		"""
 		bgzip -c {input.vcf} > {output.vcfgz} ; tabix {output.vcfgz}
@@ -401,7 +401,7 @@ rule cpvcffull:
 	Copy or merge with bcftools several vcfs
 	"""
 	input:
-		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", aligner=aligner_list, sample=sample_list)
+		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
 	output:
 		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
 	shell:

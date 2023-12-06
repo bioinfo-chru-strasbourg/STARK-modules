@@ -245,30 +245,34 @@ if(!is.null(cnv.calls)){
         if(length(exonlist)>0){
             a<-list(length=length(exonlist))
             for(i in 1:length(exonlist)){a[[i]]=which(exonnumber[,exonlist[i]])}
-            first_exon<-unlist(lapply(a,function(a,b)min(b[a,]$Custom),exons))		#identifies the  first and last Custom exon in the deletion/duplication.
+            # identifies the  first and last Custom exon in the deletion/duplication.
+            first_exon<-unlist(lapply(a,function(a,b)min(b[a,]$Custom),exons))		
             last_exon<-unlist(lapply(a,function(a,b)max(b[a,]$Custom),exons))
             Custom.first[exonlist] = first_exon
             Custom.last[exonlist] = last_exon
         }
         cnv.calls_ids=cbind(cnv.calls_ids,Custom.first,Custom.last)
     }
+
+    ##################### Output #######################
+    if(colnames(counts)[5]=="exon"){
+    cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence,cnv.calls_ids$Custom.first,cnv.calls_ids$Custom.last)
+    names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence","Custom.first","Custom.last")
+    save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons,file=output_rdata)
+    custom_calls=cnv.calls_ids_out[!is.na(cnv.calls_ids$Custom.first),]
+    write.table(custom_calls,file=output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
+
+    }else{
+    cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence)
+    names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence")
+    save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,file=output_rdata)
+    write.table(cnv.calls_ids_out,file=output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
+    }
+
 }else{
+print('No CNV detected')
 cnv.calls_ids=NULL
-}
-
-##################### Output #######################
-if(colnames(counts)[5]=="exon"){
-cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence,cnv.calls_ids$Custom.first,cnv.calls_ids$Custom.last)
-names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence","Custom.first","Custom.last")
-save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons,file=output_rdata)
-custom_calls=cnv.calls_ids_out[!is.na(cnv.calls_ids$Custom.first),]
-write.table(custom_calls,file=output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
-
-}else{
-cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence)
-names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence")
 save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,file=output_rdata)
-write.table(cnv.calls_ids_out,file=output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
 }
 warnings()
 print("END makeCNVCalls script")
