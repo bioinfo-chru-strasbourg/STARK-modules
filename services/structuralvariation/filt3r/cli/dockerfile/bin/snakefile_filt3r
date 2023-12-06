@@ -210,7 +210,7 @@ for samples in sample_list:
 	dico_run[samples] = {}
 # Populating dictionary
 for samples in sample_list:
-	for ext in ext_list:
+	for ext in config['EXT_INDEX_LIST']:
 		for files in files_list:
 			if os.path.basename(files).split(".")[0] == samples and os.path.basename(files).endswith(ext):
 				if config['VALIDATION_ONLY'] == False:
@@ -237,11 +237,6 @@ files_list_depot = searchfiles(inputdir, '/*', False)
 
 # log
 logsomefile(logfile, 'Input file:', "\n", items_list = files_list_depot)
-
-# Creating a txt list for the bam files per aligner
-for aligner in aligner_list:
-	bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + '.list.txt'
-	create_list(bamlist, files_list_depot, processconfig['PROCESS_FILE']_file, aligner)
 
 # Find bed file (Design)
 if not config['BED_FILE']:
@@ -343,7 +338,7 @@ rule samtools_fastq:
 	Extract fastq from a bam or a cram file
 	"""
 	input:
-		bam = expand(tmpdir + "/" + {sample}.{aligner}.bam, sample=sample_list)
+		bam = tmpdir + "/" + "{sample}.{aligner}.bam"
 	output:
 		fastqR1 = inputdir + "/{sample}.R1.fastq.gz",
 		fastqR2 = inputdir + "/{sample}.R2.fastq.gz"
@@ -363,13 +358,13 @@ rule filt3r:
 		fastqR1 = inputdir + "/{sample}.R1.fastq.gz",
 		fastqR2 = inputdir + "/{sample}.R2.fastq.gz"
 	output:
-		json = expand(tmpdir + "/{sample}.filt3r", sample=sample_list)
+		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	params:
 		kmer = config['KMER'], 
 		itdrefseq = config['ITDREF']
 	shell:
 		"""
-		/filt3r/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --vcf;
+		/filt3r/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {output.vcfuncorr} --vcf;
 		"""
 
 
@@ -378,13 +373,13 @@ rule correctvcf:
 	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification.
 	"""
 	input:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
+		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	output:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	params:
 	shell:
 		"""
-		(grep "^##" {input.vcf} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcf} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcf} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf}
+		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf}
 		"""
 
 # bcftools need vcf.gz.tbi index for the merge all
@@ -393,12 +388,12 @@ rule vcf2gz:
 	Compress vcf with bgzip
 	"""
 	input:
-		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
+		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	output:
 		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
 	shell:
 		"""
-		bgzip -c {input.vcfsort} > {output.vcfgz} ; tabix {output.vcfgz}
+		bgzip -c {input.vcf} > {output.vcfgz} ; tabix {output.vcfgz}
 		"""
 
 rule cpvcffull:

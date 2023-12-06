@@ -210,7 +210,7 @@ for samples in sample_list:
 	dico_run[samples] = {}
 # Populating dictionary
 for samples in sample_list:
-	for ext in ext_list:
+	for ext in config['EXT_INDEX_LIST']:
 		for files in files_list:
 			if os.path.basename(files).split(".")[0] == samples and os.path.basename(files).endswith(ext):
 				if config['VALIDATION_ONLY'] == False:
@@ -237,11 +237,6 @@ files_list_depot = searchfiles(inputdir, '/*', False)
 
 # log
 logsomefile(logfile, 'Input file:', "\n", items_list = files_list_depot)
-
-# Creating a txt list for the bam files per aligner
-for aligner in aligner_list:
-	bamlist = tmpdir + "/" + serviceName + "." + date_time + "." + aligner + '.list.txt'
-	create_list(bamlist, files_list_depot, processconfig['PROCESS_FILE']_file, aligner)
 
 # Find bed file (Design)
 if not config['BED_FILE']:
@@ -343,7 +338,7 @@ rule flt3_itd_ext:
 	input:
 		bam = inputdir + "/{sample}.{aligner}.bam"
 	output:
-		vcf = expand(tmpdir + "/{sample}.flt3_itd_ext.vcf", sample=sample_list)
+		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	params:
 		assembly = config['ASSEMBLY'],
 		index = config['REF_ITD_PATH'],
