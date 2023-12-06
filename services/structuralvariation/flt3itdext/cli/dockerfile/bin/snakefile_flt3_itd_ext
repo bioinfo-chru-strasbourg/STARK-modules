@@ -346,7 +346,7 @@ rule flt3_itd_ext:
 		mr = config ['MINREADS']
 	shell:
 		"""
-		flt3_itd_ext -b {input.bam} -mr {params.mr} -g {params.assembly} --ngstype [params.ngstype] -i {params.index} -o {output.vcf};
+		perl /app/bin/FLT3_ITD_ext.pl -b {input.bam} -mr {params.mr} -g {params.assembly} --ngstype [params.ngstype] -i {params.index} -o {output.vcf};
 		"""
 
 rule correctvcf:
