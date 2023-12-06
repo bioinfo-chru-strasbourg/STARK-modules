@@ -26,18 +26,21 @@ option_list<-list(
     make_option("--tsv",default='./Metrics.tsv',help='Output metrics tsv file, default=./Metrics.tsv',dest='out')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
+
 count_data=opt$data
 if(count_data=="NULL"){count_data=NULL}
 if(is.null(count_data)){
 print("ERROR: no Rdata summary file provided -- Execution halted")
 quit()
 }
+
 corr_thresh=as.numeric(opt$mincorr)
 if(length(corr_thresh)==0){corr_thresh=0.98}
 cov_thresh=as.numeric(opt$mincov)
 if(length(cov_thresh)==0){cov_thresh=100}
+
 output=opt$out
-if(!file.exists(output)){dir.create(output)}
+if(!file.exists(dirname(output))){dir.create(dirname(output))}
 
 
 # R workspace with the coverage data, bedfile, GC content from ref genome saved in it.

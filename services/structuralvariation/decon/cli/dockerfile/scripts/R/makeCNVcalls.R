@@ -49,7 +49,7 @@ trans_prob=as.numeric(opt$transProb)
 output=opt$tsv
 output_rdata=opt$outdata
 
-if(!file.exists(output)){dir.create(output)}
+if(!file.exists(dirname(output))){dir.create(dirname(output))}
 
 ####### Make sure bed file is in chromosome order ################
 temp<-gsub('chr','',bed.file[,1])
