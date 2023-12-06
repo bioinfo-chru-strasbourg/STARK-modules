@@ -130,6 +130,7 @@ CHR_LIST_RESTRICT: []
 # number of reference patients should be 10 or more, and if the gender is considere, 10 per gender
 # the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
 REF_BAM_LIST: ""
+# REF_BAM_LIST: "--refbams /app/res/list.tsv"
 
 # If bed file got a 5 column with exon number 
 customexon: FALSE
