@@ -106,12 +106,14 @@ refbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
       }
     if (modechrom=="XY"){
       refbams = subset(refbams, refbams$gender=='M')
-      }     
-  }else{
+      }
+  }     
+}else{
     if (modechrom=="XX" || modechrom=="XY"){
     message('ERROR: No gender specified in the reference bam list, calling of chrX is not possible')
     quit()
     }
+}
 # get the sample names (first part of the filename, separated by dot)
 if(length(refbams)>0){
     a<-length(strsplit(refbams[1],"/")[[1]])
