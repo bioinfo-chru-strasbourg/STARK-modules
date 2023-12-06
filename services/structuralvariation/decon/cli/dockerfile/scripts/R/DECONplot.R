@@ -24,13 +24,13 @@ suppressMessages(library(ggplot2))
 
 ###### Parsing input options and setting defaults ########
 option_list<-list(
-    make_option('--RData',help='Input summary RData file (required)',dest='RData'),
+    make_option('--rdata',help='Input summary RData file (required)',dest='data'),
     make_option('--out',default='./plots',help='Output directory, default=./plots',dest='plotFolder')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 
 # Load R workspace with all the results save : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
-count_data=opt$RData
+count_data=opt$data
 if(count_data=="NULL"){count_data=NULL}
 if(is.null(count_data)){
     print("ERROR: no RData summary file provided -- Execution halted")

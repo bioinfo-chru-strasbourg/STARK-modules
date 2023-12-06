@@ -23,18 +23,18 @@ suppressMessages(library(ExomeDepth))
 
 ###### Parsing input options and setting defaults ########
 option_list<-list(
-    make_option('--RData',help='Input summary RData file containing coverage datas, bed file and GC content (required)',dest='RData'),
+    make_option('--rdata',help='Input summary RData file containing coverage datas, bed file and GC content (required)',dest='data'),
     make_option("--chromosome",default="A",help='Performe calling for Autosomes, XX or XY only',dest='chromosome'),
     make_option('--transProb',default=.01,help='Transition probability for the HMM statistical analysis, default=0.01',dest='transProb'),
 	make_option("--refbams",default=NULL,help="Text file containing the list of reference bam files for calling (full path) (optional)",dest='refbams'),
     make_option("--samples",default=NULL,help="Text file containing the list of sample bams to analyse",dest='samples'),
     make_option("--tsv",default="./CNVcalls.csv",help="File name of the tsv file, default: ./CNVcalls.csv",dest='tsv'),
-    make_option("--outRdata",default="CNVcalls.Rdata",help="File name of the Rdata file, default: CNVcalls.Rdata",dest='outRdata')
+    make_option("--outrdata",default="CNVcalls.Rdata",help="File name of the Rdata file, default: CNVcalls.Rdata",dest='outdata')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 
 # R workspace with the coverage data, the bedfile & ref genome fasta file saved in it
-count_data=opt$RData
+count_data=opt$data
 if(count_data=="NULL"){count_data=NULL}
 if(is.null(count_data)){
     print("ERROR: no RData summary file provided -- Execution halted")
@@ -47,7 +47,7 @@ refbams_file=opt$refbams
 samples_file=opt$samples
 trans_prob=as.numeric(opt$transProb)
 output=opt$tsv
-output_rdata=opt$outRdata
+output_rdata=opt$outdata
 
 if(!file.exists(output)){dir.create(output)}
 
@@ -64,8 +64,8 @@ multi_strsplit<-function(x,splits,y){
 }
 
 ################# CNV CALLING #######################################
-# To call autosomes you need to use a bed containing autosome only
-# To call chrom X you need to use a bed containing chrom X only AND separate Male & Female patients 
+# To call autosomes you need to use modechrom=="A" option
+# To call chrom X you need to use modechrom=="XX" or modechrom=="XY" options AND separate Male & Female samples 
 ExomeCount<-as(counts, 'data.frame')
 
 colnames(ExomeCount)[1:length(sample.names)+5]=sample.names
@@ -145,7 +145,8 @@ for(i in 1:length(sample.names)){
     all.exons <- CallCNVs(x = all.exons, transition.probability = trans_prob, chromosome = ExomeCount$chromosome, start = ExomeCount$start, end = ExomeCount$end, name = ExomeCount$gene)
     my.ref.counts <- apply(my.matrix, MAR = 1, FUN = sum)
     if(nrow(all.exons@CNV.calls)>0){
-        cnvs= cbind(sample.names[i],cor(my.test, my.ref.counts),length( my.choice[[1]] ),all.exons@CNV.calls)
+        name.comparator <- paste(my.choice$reference.choice, collapse = ",")
+        cnvs= cbind(sample.names[i],cor(my.test, my.ref.counts),length( my.choice[[1]] ),name.comparator,all.exons@CNV.calls)
         cnv.calls = rbind(cnv.calls,cnvs)
     }
     refs[[i]] = my.choice$reference.choice
@@ -255,15 +256,15 @@ if(colnames(counts)[5]=="exon"){
 if(colnames(counts)[5]=="exon"){
 cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence,cnv.calls_ids$Custom.first,cnv.calls_ids$Custom.last)
 names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence","Custom.first","Custom.last")
-save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons,output_rdata)
+save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons,file=output_rdata)
 custom_calls=cnv.calls_ids_out[!is.na(cnv.calls_ids$Custom.first),]
-write.table(custom_calls,output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
+write.table(custom_calls,file=output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
 
 }else{
 cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence)
 names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence")
-save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,output_rdata)
-write.table(cnv.calls_ids_out,output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
+save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,file=output_rdata)
+write.table(cnv.calls_ids_out,file=output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
 }
 warnings()
 print("END makeCNVCalls script")

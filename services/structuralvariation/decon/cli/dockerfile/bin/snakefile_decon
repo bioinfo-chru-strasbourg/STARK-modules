@@ -610,7 +610,7 @@ rule ReadInBams:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.ReadInBams.err"
 	shell:
 		"""
-		Rscript {params.decondir}/ReadInBams.R --bams {input.allbamlist} --bed {params.deconbed_file} --fasta {params.refgene} --rdata {output.rdata} 1> {log.log1} 2> {log.log2}
+		Rscript {params.decondir}/ReadInBams.R --bams {input.allbamlist} --bed {params.deconbed_file} --fasta {params.refgene} --rdata {output.rdata} {params.refbamlist} 1> {log.log1} 2> {log.log2}
 		"""
 
 rule IdentifyFailures:
@@ -636,7 +636,7 @@ rule IdentifyFailures:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.err"
 	shell:
 		"""
-		Rscript {params.decondir}/IdentifyFailures.R --Rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --tsv {output.failtsv} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtsv} ]] || touch {params.analysisfailure} ; [[ -s {output.failtsv} ]] || touch {output.failtsv}
+		Rscript {params.decondir}/IdentifyFailures.R --rdata {input.rdata} --mincorr {params.mincorr} --mincov {params.mincov} --tsv {output.failtsv} 1> {log.log1} 2> {log.log2} && [[ -s {output.failtsv} ]] || touch {params.analysisfailure} ; [[ -s {output.failtsv} ]] || touch {output.failtsv}
 		"""
 
 rule makeCNVcalls:
@@ -654,7 +654,7 @@ rule makeCNVcalls:
 		analysisfailure = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.CNVCalledFailed",
 		bamlist = tmpdir + "/" + serviceName + "." + date_time + ".{gender}.list.txt",
 		chromosome = expand("{gender}", gender=gender_list),
-		refbamslist = config['REF_BAM_LIST'],
+		refbamlist = config['REF_BAM_LIST'],
 		decondir = config['DECON_PATH']
 	output:
 		calltsv = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.Design_results_all.tsv",
@@ -663,12 +663,7 @@ rule makeCNVcalls:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.makeCNVcalls.err"
 	shell:
 		"""
-		if [ -z {params.refbamlist} ];
-		then 
-		Rscript {params.decondir}/makeCNVcalls.R --Rdata {input.rdata} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --tsv {output.calltsv} --outRdata {output.rdata} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltxt} ]] || touch {params.analysisfailure} ; [[ -s {output.calltsv} ]] || touch {output.calltsv}
-		else
-		Rscript {params.decondir}/makeCNVcalls.R --Rdata {input.rdata} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --refbams {params.refbamslist} --tsv {output.calltsv} --outRdata {output.rdata} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltsv} ]] || touch {params.analysisfailure} ; [[ -s {output.calltsv} ]] || touch {output.calltsv}
-		fi
+		Rscript {params.decondir}/makeCNVcalls.R --rdata {input.rdata} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} {params.refbamlist} --tsv {output.calltsv} --outrdata {output.rdata} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltsv} ]] || touch {params.analysisfailure} ; [[ -s {output.calltsv} ]] || touch {output.calltsv}
 		"""
 
 rule plot:
@@ -686,7 +681,7 @@ rule plot:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.err"
 	shell:
 		"""
-		Rscript {params.decondir}/DECONplot.R --Rdata {input.rdata} --plotFolder {output.folder} 1> {log.log1} 2> {log.log2}
+		Rscript {params.decondir}/DECONplot.R --rdata {input.rdata} --plotFolder {output.folder} 1> {log.log1} 2> {log.log2}
 		"""
 
 rule merge_makeCNVcalls:
@@ -860,6 +855,9 @@ onstart:
 		f.write("\n")
 
 onsuccess:
+	include = config['INCLUDE_RSYNC']
+	exclude = config['EXCLUDE_RSYNC']
+	
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Complete.txt")
 	shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
 	# Move pdfs file into each sample directory
@@ -879,16 +877,19 @@ onsuccess:
 	for sample in sample_list:
 		shell("rm -f " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
 	# Rsync all files into final destination
-	shell("rsync -azvh --include={"+config['INCLUDE_RSYNC']+"} --exclude {"+config['EXCLUDE_RSYNC']+"} {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include} --exclude {exclude} {tmpdir}/ "+config['OUTPUT_DIR']+"")
 	# Copy new files
 	for sample in sample_list:
 		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/")
 	if config['DEPOT_COPY'] == True:
-		shell("rsync -azvh --include={"+config['INCLUDE_RSYNC']+"} --exclude {"+config['EXCLUDE_RSYNC']+"} {tmpdir}/ {depotdir}")
+		shell("rsync -azvh --include={include} --exclude {exclude} {tmpdir}/ {depotdir}")
 		for sample in sample_list:
 			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/")
 
 onerror:
+	include_log = config['INCLUDE_LOG_RSYNC']
+	exclude_log = config['EXCLUDE_RSYNC']
+	
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Failed.txt")
 	#shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
-	shell("rsync -azvh --include={"+config['INCLUDE_LOG_RSYNC']+"} --exclude {"+config['EXCLUDE_RSYNC']+"} {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include_log} --exclude {exclude_log} {tmpdir}/ "+config['OUTPUT_DIR']+"")
