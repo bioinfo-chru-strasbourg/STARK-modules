@@ -450,13 +450,15 @@ deconbed_file = tmpdir + "/" + serviceName + "." + date_time + '.bed'
 
 if config['customexon'] == True:
 	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
+	df = df.drop_duplicates()
+	df.to_csv(deconbed_file, sep='\t', index=False, header=False) # for decon.bed no header
 else:
 	if config['KMER']:
 		kmerisation(config['KMER'], intermediatebed, deconbed_file)
 	else:
 		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-df = df.drop_duplicates()
-df.to_csv(deconbed_file, sep='\t', index=False, header=False) # for decon.bed no header
+		df = df.drop_duplicates()
+		df.to_csv(deconbed_file, sep='\t', index=False, header=False) # for decon.bed no header
 
 if not config['BED_FILE']:
 	logsomefile(logfile, 'No bed found, DECON cannot continue, exiting', "\n")

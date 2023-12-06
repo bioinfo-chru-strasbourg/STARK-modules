@@ -35,7 +35,6 @@ option_list<-list(
     make_option("--rdata",default="./ReadInBams.Rdata",help="Output Rdata file, default: ./ReadInBams.Rdata",dest='data')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
-# location of bam files; can be a directory containing only bam files to be processed or the name of a file containing a list of bam files to be processed.
 bam_file=opt$bamfiles
 bedfile=opt$bed
 fasta=opt$fasta

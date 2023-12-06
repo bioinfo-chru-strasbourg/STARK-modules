@@ -50,8 +50,6 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
     cnv.calls_plot=cnv.calls_ids
 }
 
-#cnv.calls_plot <- subset(cnv.calls_plot, select = -Confidence)
-
 cnv.calls_plot$chr=paste('chr',cnv.calls_plot$chromosome,sep='')
 Index=vector(length=nrow(bed.file))
 Index[1]=1
@@ -91,7 +89,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
         exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$chr]
     }
 
-    ###### First Plot ###############
+    ###### Part of plot containing the coverage points ###############
     VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$sample==Sample,]$start.p,cnv.calls[cnv.calls$sample==Sample,]$end.p))
     refs_sample<-refs[[Sample]]
     Data<-cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
@@ -135,7 +133,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     }else{A1<-A1 + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
 
 
-    ############## SECOND PLOT ###########
+    ############## Part of plot containing the gene names ###########
     genes_sel = unique(bed.file[exonRange,4])
     temp<-cbind(1:nrow(bed.file),bed.file)[exonRange,]
     len<-table(temp$gene)
@@ -160,7 +158,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     GenesPlot<-ggplot(data=Genes, aes(x=MP,y=Ind,fill=Gene,width=Length,label=Gene)) +geom_tile() + geom_text() + theme_bw() + theme(legend.position="None",panel.grid.major = element_blank(), panel.grid.minor = element_blank(),axis.text.y = element_blank(),axis.ticks.y=element_blank(),plot.margin=unit(c(.5,.5,.5,.55),"cm")) + ylab(" ") + xlab(" ")
     GenesPlot<-GenesPlot + theme(axis.text.x=element_blank(),axis.ticks.x=element_blank())
 
-    ####### THIRD PLOT #############
+    ####### Part of the plot containing the normalized ratio of the coverage #############
     Totals<-rowSums(ExomeCount[exonRange,c(Sample,refs_sample)])
     ratio = (ExomeCount[exonRange,Sample]/Totals)/models[[Sample]][1]
     mins <- vector(length=length(exonRange))
@@ -190,7 +188,7 @@ temp = cnv.calls[cnv.calls$sample==Sample,]
         }else{CIPlot<-CIPlot + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75))}
     }else{CIPlot<-CIPlot + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
 
-    ######### WRITE PLOTS TO FILE ###########
+    ######### Save plot in pdf format ###########
     cnv_genes_sample=cnv.calls_plot[cnv.calls_plot$sample==Sample,]$Gene
     if(sum(cnv_genes_sample==Gene)==1){
         pdf(file=paste(plotFolder,"/",Sample,"_",Gene,".pdf",sep=""),useDingbats=FALSE)
