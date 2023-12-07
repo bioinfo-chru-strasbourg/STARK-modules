@@ -2,24 +2,26 @@
 # Config Yaml Version:     0.1
 # Description:             Yaml file to run Snakefile SCRAMBLE module
 ##########################################################################
-
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
 # PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
-
 # Add here variables that will extend default configuration yaml file.
 # If a variable was already defined in the default configuration yaml file, it will be replace.
 # launch snakemake -s snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory var1=0.05 var2=12
 # separate multiple variable with a space
 ################## Directories and variables ##################
 
+# Name of the module = {serviceName} from listener.py/launcher.py
+serviceName: "SCRAMBLE"
+
 # Default repository/depository path for STARK directories structure
 repository: "/STARK/output/repository"
 depository: "/STARK/output/depository"
-
 # Output directory if not repository
 OUTPUT_DIR: ""
+# Copy to depot directory (archive)
+DEPOT_COPY: True
 
 # Group and App default name
 GROUP_NAME: "UNKNOWN"
@@ -27,7 +29,6 @@ APP_NAME: "UNKNOWN"
 
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
-
 # Bed file
 BED_FILE: ""
 # Genes file
@@ -37,18 +38,6 @@ TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
 
-# Name of the module = {serviceName} from listener.py/launcher.py
-serviceName: "SCRAMBLE"
-
-### TOOLS PATH ###
-# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
-# Path to Bedtools
-BEDTOOLS_PATH: "/tools/bedtools/current/bin/bedtools"
-# Path to Bcftools
-BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
-# Path to Scramble R directory scripts
-SCRAMBLE_PATH: "/tools/scramble/current/bin"
 # Path to scripts
 SCRIPTS_PATH: "/app/scripts"
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
@@ -59,19 +48,14 @@ FILTER_SAMPLE: []
 ### Indexing files options
 # Ext to index (endwith)
 EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes"]
-
-# Only analyse validation.bam/cram files
-VALIDATION_ONLY: False
 # Process .bam or .cram
 PROCESS_FILE: [".bam"]
 # Process input files : samtools/cp/ls
 PROCESS_CMD: 'cp'
-
+# Only analyse validation.bam/cram files
+VALIDATION_ONLY: False
 # Append an aligner name if missing (from sample.bam to sample.aligner_name.bam)
 ALIGNER_NAME:
-
-# Analyse only CRAM files
-CRAM_ONLY: False
 
 # Rsync option for copy
 # include_rsync must have more than one arguement
@@ -81,25 +65,24 @@ EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
-# Copy to depot directory (archive)
-DEPOT_COPY: True
-
 ##### Search parameters for inputs ####
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
-
 ## DEBUG ##
 DEBUG_MODE: False
-
 # MISC
 THREADS: "4"
 
 ################## Tools specific parameters ##################
+# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
+REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+# Path to Scramble R directory scripts
+SCRAMBLE_PATH: "/opt/conda/share/scramble/bin"
+
 ################## cluster_identifier params
 m: 10 # min soft clipped bases to be put in a cluster (default 10)
 s: 5 # min soft clipped reads to be a cluster (default 5)
 r: all # region (default all : format ex chr9:1-20000)
-
 
 ################## scramble params
 nCluster: 5 # min cluster size to analyze(default 5)

@@ -1511,7 +1511,7 @@ my $fbase; my $outname; my %umitags = (); my %umisWt = (); my %umisMut = ();
 if( length($inbam) > 0 ) {
   @line_cells = split(/\//, $inbam);
   $outname = $line_cells[scalar(@line_cells)-1]; $outname =~ s/\.bam$//; $outname .= "_FLT3";
-  $fbase = $outpath . "/" . $outname;
+  $fbase = $outpath . "./" . $outname;
   $fastq1 = $fbase . ".R1.fastq";
   $fastq2 = $fbase . ".R2.fastq";
 

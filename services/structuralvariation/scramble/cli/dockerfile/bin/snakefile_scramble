@@ -360,6 +360,7 @@ else:
 		Rule will create an unfiltered vcf.gz & design vcf.gz and corresponding tsv
 		"""
 		input:
+			vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz", sample=sample_list, aligner=aligner_list),
 			tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list),
 			tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv",
 			alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
@@ -436,8 +437,9 @@ rule scramble:
 		mode = config['scramble_mode'],
 		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr"
 	output:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
-	log: log1 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.ScrambleR.log", log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.ScrambleR.err"
+		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
+	log: 
+		log1 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.ScrambleR.log", log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.ScrambleR.err"
 	shell:
 		"""
 		Rscript --vanilla {params.scrambledir}/SCRAMble.R \
@@ -446,7 +448,7 @@ rule scramble:
 		--install-dir {params.scrambledir} \
 		--mei-refs {params.refmei} \
 		--ref {refgene} \
-		--mei-score {params.meiscore} --nCluster {params.nCluster} --poly-a-dist {params.polyadist} --poly-a-frac {params.polyafrac} {params.mode} > {log.log1} 2> {log.log2} && [[ -s {output.vcf} ]] || cat {dummypath}/empty.vcf > {output.vcf}
+		--mei-score {params.meiscore} --nCluster {params.nCluster} --poly-a-dist {params.polyadist} --poly-a-frac {params.polyafrac} {params.mode} > {log.log1} 2> {log.log2} && [[ -s {output.vcfuncorr} ]] || cat {dummypath}/empty.vcf > {output.vcfuncorr}
 		"""
 
 # escape " with \" for bash or awk or use triple """ to avoid the use of \ ; use double {{ and }} for awk integration to differentiate snakefile variable and awk variable
@@ -455,7 +457,7 @@ rule correctvcf:
 	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification.
 	"""
 	input:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
+		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	output:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	params:
@@ -464,9 +466,9 @@ rule correctvcf:
 		"""
 		if [ {params.mode} = "--eval-dels" ];
 		then
-		(grep "^##" {input.vcf} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcf} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcf} | awk '{{print $0"\tGT\t0/1"}}' | awk '{{FS=OFS="\t"}}; {{$4=substr($4, 0, 1); print}}' | awk '{{FS=OFS="\t"}} $3=="DEL" {{$5="<DEL>"}}1') > {output.vcf} && [[ -s {output.vcf} ]] || cat {dummypath}/empty.vcf > {output.vcf}
+		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}' | awk '{{FS=OFS="\t"}}; {{$4=substr($4, 0, 1); print}}' | awk '{{FS=OFS="\t"}} $3=="DEL" {{$5="<DEL>"}}1') > {output.vcf} && [[ -s {output.vcf} ]] || cat {dummypath}/empty.vcf > {output.vcf}
 		else
-		(grep "^##" {input.vcf} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcf} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcf} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf} && [[ -s {output.vcf} ]] || cat {dummypath}/empty.vcf > {output.vcf}
+		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf} && [[ -s {output.vcf} ]] || cat {dummypath}/empty.vcf > {output.vcf}
 		fi
 		"""
 
@@ -481,7 +483,7 @@ rule AnnotSV:
 	input:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	output:
-		tsvuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
+		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
 	log:
 		txt = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.log"
 	params:
@@ -491,7 +493,7 @@ rule AnnotSV:
 		annotation = config['annotationdir']
 	shell:
 		"""
-		AnnotSV -SVinputFile {input.vcf} -outputFile {output.tsvuncorr} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log.txt} && [[ -s {output.tsvuncorr} ]] || cat {dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.tsvuncorr}
+		AnnotSV -SVinputFile {input.vcf} -outputFile {output.vcfunsort} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log.txt} && [[ -s {output.vcfunsort} ]] || cat {dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
 		"""
 
 # bcftools sort don't sort correctly
@@ -516,7 +518,7 @@ rule vcf2gz:
 	input:
 		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf"
 	output:
-		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
+		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz"
 	shell:
 		"""
 		bgzip -c {input.vcfsort} > {output.vcfgz} ; tabix {output.vcfgz}
