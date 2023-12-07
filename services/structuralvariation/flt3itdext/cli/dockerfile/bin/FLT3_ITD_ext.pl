@@ -1510,7 +1510,9 @@ sub proc_vcf_from_keyfull {
 my $fbase; my $outname; my %umitags = (); my %umisWt = (); my %umisMut = ();
 if( length($inbam) > 0 ) {
   @line_cells = split(/\//, $inbam);
-  $outname = $line_cells[scalar(@line_cells)-1]; $outname =~ s/\.bam$//; $outname .= "_FLT3";
+  # Format sample name
+  #$outname = $line_cells[scalar(@line_cells)-1]; $outname =~ s/\.bam$//; $outname .= "_FLT3";
+  $outname = $line_cells[scalar(@line_cells)-1]; $outname =~ s/\.bam$//;
   $fbase = $outpath . "/" . $outname;
   $fastq1 = $fbase . ".R1.fastq";
   $fastq2 = $fbase . ".R2.fastq";
@@ -1618,7 +1620,7 @@ if( length($inbam) > 0 ) {
   $outname = $line_cells[scalar(@line_cells)-1];
   $outname =~ s/\.gz$//; $outname =~ s/\.fastq$//;
   $outname =~ s/\.R1$//; $outname =~ s/\_R1$//;
-  $outname .= "_FLT3";
+  #$outname .= "_FLT3";
   $fbase = $outpath . "/" . $outname;
 }
 
