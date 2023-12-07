@@ -508,13 +508,29 @@ rule sortvcf:
 	input:
 		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
 	output:
-		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf"
+		vcfunfilter = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unfilter.vcf"
 	params:
 		dummypath = config['DUMMY_PATH']
 	shell:
 		"""
 		grep \"^#\" {input.vcfunsort} > {output.vcfsort} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfsort} && [[ -s {output.vcfsort} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfsort}
 		"""
+
+
+rule bcftools_filter:
+	"""
+	Filter with bcftools
+	"""
+	input:
+		vcfunfilter = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unfilter.vcf"
+	output:
+		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf"
+	params:
+		bcffilter = config['BCFTOOLS_FILTER']
+	shell:
+		"""
+		bcftools view {params.bcffilter} {input.vcfunfilter} -o {output.vcfsort} 
+
 
 # bcftools need vcf.gz.tbi index for the merge all
 rule vcf2gz:

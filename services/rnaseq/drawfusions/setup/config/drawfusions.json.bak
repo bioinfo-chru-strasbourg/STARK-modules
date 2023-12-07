@@ -21,11 +21,10 @@
 						"AND_2":{
 							"group":[
 								"HUSHEMATO",
-								"DIAG",
 								"HUSTUMSOL"
 							],
 							"project":[
-								"FASTQ_ONLY"
+								"XTHS"
 							]
 						}
 					},
