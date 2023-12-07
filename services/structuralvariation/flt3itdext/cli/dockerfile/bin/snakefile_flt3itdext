@@ -375,8 +375,11 @@ rule correctvcf:
 	params:
 	shell:
 		"""
-		(grep "^##" {input.vcfraw} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfraw} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfraw} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcfunfilter}
+		cat {input.vcfraw} > {output.vcfunfilter}
 		"""
+
+# (grep "^##" {input.vcfraw} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfraw} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfraw} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcfunfilter}
+
 
 rule bcftools_filter:
 	"""
