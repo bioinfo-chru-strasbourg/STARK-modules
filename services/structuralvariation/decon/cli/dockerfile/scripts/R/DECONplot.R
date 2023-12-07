@@ -25,7 +25,7 @@ suppressMessages(library(ggplot2))
 ###### Parsing input options and setting defaults ########
 option_list<-list(
     make_option('--rdata',help='Input summary RData file (required)',dest='data'),
-    make_option('--out',default='./plots',help='Output directory, default=./plots',dest='plotFolder')
+    make_option('--out',default='./plots',help='Output directory, default=./plots',dest='pfolder')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 
@@ -38,7 +38,7 @@ if(is.null(count_data)){
 }
 load(count_data)
 
-plotFolder=opt$plotFolder
+plotFolder=opt$pfolder
 if(!file.exists(plotFolder)){dir.create(plotFolder)}
 
 #################### Plots ####################################

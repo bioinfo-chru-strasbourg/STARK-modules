@@ -435,6 +435,7 @@ rule scramble:
 		polyafrac = config['poly-a-frac'],
 		polyadist = config['poly-a-dist'],
 		mode = config['scramble_mode'],
+		refgene = config['REFGENEFA_PATH'],
 		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr"
 	output:
 		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
@@ -447,7 +448,7 @@ rule scramble:
 		--out-name {params.output} \
 		--install-dir {params.scrambledir} \
 		--mei-refs {params.refmei} \
-		--ref {refgene} \
+		--ref {params.refgene} \
 		--mei-score {params.meiscore} --nCluster {params.nCluster} --poly-a-dist {params.polyadist} --poly-a-frac {params.polyafrac} {params.mode} > {log.log1} 2> {log.log2} && [[ -s {output.vcfuncorr} ]] || cat {dummypath}/empty.vcf > {output.vcfuncorr}
 		"""
 

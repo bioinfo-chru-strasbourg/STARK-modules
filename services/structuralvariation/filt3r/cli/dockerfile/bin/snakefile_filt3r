@@ -322,7 +322,6 @@ if config['DEBUG_MODE']:
 # 1 is stdout, 2 is stderr 
 ################################################################################
 
-
 ################################################## RULES ##################################################
 
 # check the number of sample for copy or merge vcf rule
@@ -330,7 +329,6 @@ sample_count = len(sample_list)
 
 rule all:
 	input:
-		vcfuncorr = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf", sample=sample_list, aligner=aligner_list),
 		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", sample=sample_list, aligner=aligner_list),
 		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
 

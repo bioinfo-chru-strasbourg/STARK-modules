@@ -1,0 +1,8 @@
+{
+  "code" : "rnaseq",
+  "name": "RNA Seq",
+  "fullname": "RNA Seq analysis",
+  "description": "Several tools for RNA seq analysis",
+  "release": "1.0",
+  "available": true
+}
