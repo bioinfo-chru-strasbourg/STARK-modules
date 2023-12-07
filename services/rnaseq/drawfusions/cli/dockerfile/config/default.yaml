@@ -1,0 +1,84 @@
+##########################################################################
+# Config Yaml Version:     1
+# Description:             Yaml file to run rdraw snakefile module
+##########################################################################
+
+# DEV version 1 : 23/11/2022
+# Authoring : Thomas LAVAUX
+
+##########################################################################
+# Add here variables that will extend default configuration yaml file.
+# If a variable was already defined in the default configuration yaml file, it will be replace.
+# launch snakemake -s snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory var1=0.05 var2=12
+# separate multiple variable with a space
+################## Directories and variables ##################
+# Name of the module = {serviceName} from listener.py/launcher.py
+serviceName: "Rdraw"
+
+# Default repository/depository path from listener.py/launcher.py
+repository: "/STARK/output/repository"
+depository: "/STARK/output/depository"
+# Output directory if not repository
+OUTPUT_DIR: ""
+# Copy to depot directory (archive)
+DEPOT_COPY: False
+
+# Group and App default name
+GROUP_NAME: "UNKNOWN"
+APP_NAME: "UNKNOWN"
+
+# Default path to the input datas == {run} from listener.py/launcher.py
+run: ""
+# Bed file
+BED_FILE: ""
+# Genes file
+GENES_FILE: ""
+# Transcripts file
+TRANSCRIPTS_FILE: ""
+# List genes
+LIST_GENES: ""
+
+### Indexing files options
+# Ext to index (endwith)
+EXT_INDEX_LIST: [".transcripts", ".genes.bed", ".design.bed", ".vcf.gz", ".list.genes", ".tag", ".bam", ".arriba.fusions.tsv"]
+# Extension of the input files to copy
+PROCESS_FILE: ['.bam', ''.arriba.fusions.tsv']
+# Process input files : cram/cp/rsync/ls/filterbam
+PROCESS_CMD: 'cp'
+# Only analyse bam/cram files named *.validation.bam or *.validation.cram
+VALIDATION_ONLY: False
+# Insert an aligner name to the bam/cram file name (from sample.bam to sample.aligner_name.bam)
+ALIGNER_NAME:
+
+# Samples list exclusion (not to be analyse) (startswith)
+EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
+# Sample filter
+FILTER_SAMPLE: []
+
+# rsync options : if several files are added add {} at the start and end of the list
+# include_rsync must have more than one argument
+INCLUDE_RSYNC: "{'*.pdf','*.txt'}"
+# exclude_rsync can only take on argument
+EXCLUDE_RSYNC: "'*'"
+# for log file copy if pipeline failed
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed'}"
+
+##### Search parameters of input for the search function #####
+RECURSIVE_SEARCH: False
+SEARCH_ARGUMENT: "/*/STARK/*"
+
+# MISC
+THREADS: "4"
+## DEBUG ##
+DEBUG_MODE: True
+
+############## Tools specific parameters ##############
+### TOOLS PATH ###
+# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
+REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+# GTF file (Gencode)
+REFGTFGENCODE_PATH: "/STARK/databases/gtf/current/gencode.v19.annotation.gtf_withproteinids"
+# Arriba specifics databases
+REFPROTDOMAIN_PATH: "/opt/conda/share/arriba/database/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
+REFCYTOBAND_PATH: "/opt/conda/share/arriba/database/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
+ARRIBA_SCRIPTS: "/opt/conda/share/arriba/scripts"
