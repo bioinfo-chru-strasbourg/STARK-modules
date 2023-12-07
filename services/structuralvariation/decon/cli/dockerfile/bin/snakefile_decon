@@ -689,7 +689,8 @@ rule variantconvert:
 		vcfunsortall = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.allsamples.Design.unsort.vcf"
 	params:
 		scriptspath = config['SCRIPTS_PATH'],
-		scriptsconfig = config['SCRIPTS_CONFIG']
+		scriptsconfig = config['SCRIPTS_CONFIG'],
+		dummypath = config['DUMMY_PATH']
 	log:
 		log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.variantconvert.log"
 	shell:
