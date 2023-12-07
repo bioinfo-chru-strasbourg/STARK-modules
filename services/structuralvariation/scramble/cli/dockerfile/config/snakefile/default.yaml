@@ -50,7 +50,7 @@ FILTER_SAMPLE: []
 EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes"]
 # Process .bam or .cram
 PROCESS_FILE: [".bam"]
-# Process input files : samtools/cp/ls
+# Process input files : cram/cp/rsync/ls/filterbam
 PROCESS_CMD: 'cp'
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False

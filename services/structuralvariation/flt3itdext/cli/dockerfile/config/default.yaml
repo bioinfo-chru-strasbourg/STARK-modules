@@ -6,7 +6,7 @@
 # Authoring : Thomas LAVAUX
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
-serviceName: "FLT3_ITD_EXT"
+serviceName: "FLT3ITDEXT"
 
 # Default repository/depository path from listener.py/launcher.py
 repository: "/STARK/output/repository"
@@ -15,13 +15,12 @@ depository: "/STARK/output/depository"
 DEPOT_COPY: False
 # Output directory if not repository
 OUTPUT_DIR: ""
+
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
-
 # Group and App default name
 GROUP_NAME: "UNKNOWN"
 APP_NAME: "UNKNOWN"
-
 # Bed file
 BED_FILE: ""
 # Genes file
@@ -50,9 +49,9 @@ FILTER_SAMPLE: []
 # Rsync options : if several files are added add {} at the start and end of the list
 # include_rsync must have more than one arguement
 EXCLUDE_RSYNC: "'*'"
-INCLUDE_RSYNC: "{'*.txt', '*.vcf.gz'}"
+INCLUDE_RSYNC: "{'*.tsv', '*.vcf.gz'}"
 # for log file copy if pipeline failed
-INCLUDE_LOG_RSYNC: "{'*.txt', '*.log', '*.err'}"
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
 # Search parameters
 RECURSIVE_SEARCH: False
@@ -62,10 +61,7 @@ THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: False
 
-
 ################## Tools parameters ##################
-# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 
 ################## flt3_itd_ext ##################
 REF_ITD_PATH: "/STARK/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
@@ -73,5 +69,5 @@ REF_ITD_PATH: "/STARK/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
 ASSEMBLY: "hg19"
 # Type of sequencing technology (HC = capture)
 NGS_TYPE: "HC"
-# Min of reads to considere an ITDs
+# Min of reads to considere an ITD
 MINREADS: "5"

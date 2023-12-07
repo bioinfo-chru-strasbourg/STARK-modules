@@ -701,7 +701,7 @@ rule merge_makeCNVcalls:
 
 
 # crash if conversion goes wrong
-rule Decon_tsv2vcf:
+rule variantconvert:
 	input:
 		allcalltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.tsv"
 	output:
@@ -713,7 +713,7 @@ rule Decon_tsv2vcf:
 		log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.DeconTsv2Vcf.log"
 	shell:
 		"""
-		python {params.scriptspath}/file_converter.py -i {input.allcalltxt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {params.scriptsconfig}/config_decon.json 2> {log.log2}
+		variantconvert -i {input.allcalltxt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {params.scriptsconfig}/config_decon.json 2> {log.log2}
 		"""
 
 # bcftools sort don't sort correctly
