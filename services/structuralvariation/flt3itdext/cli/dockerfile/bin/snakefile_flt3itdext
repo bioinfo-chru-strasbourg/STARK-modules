@@ -333,9 +333,9 @@ rule indexing:
 	Indexing bam files with samtools
 	"""
 	input:
-		bam = inputdir + "/" + "{sample}.{aligner}.bam"
+		bam = inputdir + "/{sample}.{aligner}.bam"
 	output:
-		bai = inputdir + "/" + "{sample}.{aligner}.bai"
+		bai = inputdir + "/{sample}.{aligner}.bai"
 	params:
 		threads = config['THREADS']
 	shell:
@@ -350,9 +350,9 @@ rule flt3_itd_ext:
 	"""
 	input:
 		bam = inputdir + "/{sample}.{aligner}.bam",
-		bai = inputdir + "/" + "{sample}.{aligner}.bai"
+		bai = inputdir + "/{sample}.{aligner}.bai"
 	output:
-		vcfraw = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/{sample}.{aligner}_FLT3_ITD.vcf"
+		vcfraw = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/{sample}.{aligner}.vcf"
 	params:
 		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/",
 		assembly = config['ASSEMBLY'],
