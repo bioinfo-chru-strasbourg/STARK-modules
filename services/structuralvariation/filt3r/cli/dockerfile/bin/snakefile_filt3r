@@ -316,6 +316,7 @@ if config['DEBUG_MODE']:
 #
 ############################################################################################################
 
+
 ##### NOTE ####
 # Tools that output a file adding a extension should be set with params: params.output as the output of the command without the extension, and output: output.ext exist only to connect rules
 # For programs that do not have an explicit log parameter, you may always use 2> {log} to redirect standard output to a file (here, the log file) in Linux-based systems. Note that it is also supported to have multiple (named) log files being specified
@@ -339,8 +340,8 @@ rule samtools_fastq:
 	input:
 		bam = tmpdir + "/" + "{sample}.{aligner}.bam"
 	output:
-		fastqR1 = inputdir + "/{sample}.R1.fastq.gz",
-		fastqR2 = inputdir + "/{sample}.R2.fastq.gz"
+		fastqR1 = inputdir + "/{sample}.{aligner}.R1.fastq.gz",
+		fastqR2 = inputdir + "/{sample}.{aligner}.R2.fastq.gz"
 	params:
 	shell:
 		"""
@@ -354,8 +355,8 @@ rule filt3r:
 	FiLT3r is a software that detects internal duplications in raw sequencing data
 	"""
 	input:
-		fastqR1 = inputdir + "/{sample}.R1.fastq.gz",
-		fastqR2 = inputdir + "/{sample}.R2.fastq.gz"
+		fastqR1 = inputdir + "/{sample}.{aligner}.R1.fastq.gz",
+		fastqR2 = inputdir + "/{sample}.{aligner}.R2.fastq.gz"
 	output:
 		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	params:
@@ -374,11 +375,26 @@ rule correctvcf:
 	input:
 		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	output:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
-	params:
+		vcfunfilter = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
 	shell:
 		"""
-		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf}
+		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcfunfilter}
+		"""
+
+
+rule bcftools_filter:
+	"""
+	Filter with bcftools
+	"""
+	input:
+		vcfunfilter = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
+	output:
+		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
+	params:
+		bcffilter = config['BCFTOOLS_FILTER']
+	shell:
+		"""
+		bcftools view {params.bcffilter} {input.vcfunfilter} -o {output.vcf} 
 		"""
 
 # bcftools need vcf.gz.tbi index for the merge all

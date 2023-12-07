@@ -343,6 +343,7 @@ rule indexing:
 		samtools index -b -@ {params.threads} {input.bam} {output.bai}
 		"""
 
+# ouput file is sample.aligner_FLT3_ITD.vcf & sample.aligner_FLT3_ITD_summary.txt (same results as vcf but in txt format)
 rule flt3_itd_ext:
 	"""
 	flt3_itd_ext is a software that detects internal duplications in bam files
@@ -351,15 +352,16 @@ rule flt3_itd_ext:
 		bam = inputdir + "/{sample}.{aligner}.bam",
 		bai = inputdir + "/" + "{sample}.{aligner}.bai"
 	output:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
+		vcfraw = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/{sample}.{aligner}_FLT3_ITD.vcf"
 	params:
+		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/",
 		assembly = config['ASSEMBLY'],
 		index = config['REF_ITD_PATH'],
 		ngstype = config['NGS_TYPE'],
 		mr = config ['MINREADS']
 	shell:
 		"""
-		perl /app/bin/FLT3_ITD_ext.pl -b {input.bam} -mr {params.mr} -g {params.assembly} --ngstype {params.ngstype} -i {params.index} -o {output.vcf};
+		perl /app/bin/FLT3_ITD_ext.pl -b {input.bam} -mr {params.mr} -g {params.assembly} --ngstype {params.ngstype} -i {params.index} -o {params.output};
 		"""
 
 rule correctvcf:
@@ -367,13 +369,28 @@ rule correctvcf:
 	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification.
 	"""
 	input:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
+		vcfraw = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/{sample}.{aligner}_FLT3_ITD.vcf"
 	output:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
+		vcfunfilter = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
 	params:
 	shell:
 		"""
-		(grep "^##" {input.vcf} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcf} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcf} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf}
+		(grep "^##" {input.vcfraw} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfraw} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfraw} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcfunfilter}
+		"""
+
+rule bcftools_filter:
+	"""
+	Filter with bcftools
+	"""
+	input:
+		vcfunfilter = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
+	output:
+		vcfcorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
+	params:
+		bcffilter = config['BCFTOOLS_FILTER']
+	shell:
+		"""
+		bcftools view {params.bcffilter} {input.vcfunfilter} -o {output.vcfcorr} 
 		"""
 
 # bcftools need vcf.gz.tbi index for the merge all
@@ -382,12 +399,12 @@ rule vcf2gz:
 	Compress vcf with bgzip
 	"""
 	input:
-		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
+		vcfcorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	output:
 		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
 	shell:
 		"""
-		bgzip -c {input.vcfsort} > {output.vcfgz} ; tabix {output.vcfgz}
+		bgzip -c {input.vcfcorr} > {output.vcfgz} ; tabix {output.vcfgz}
 		"""
 
 rule cpvcffull:

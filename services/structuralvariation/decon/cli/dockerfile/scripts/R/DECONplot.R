@@ -36,7 +36,14 @@ if(is.null(count_data)){
     print("ERROR: no RData summary file provided -- Execution halted")
     quit()
 }
+message('Loading Rdata')
 load(count_data)
+message('Loading done')
+
+if (length(cnv.calls_ids)==0){
+    message('No CNVcalls in the Rdata file. No plot to draw')
+    quit()
+}
 
 plotFolder=opt$pfolder
 if(!file.exists(plotFolder)){dir.create(plotFolder)}
