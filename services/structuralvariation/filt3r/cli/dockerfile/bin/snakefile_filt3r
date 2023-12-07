@@ -330,15 +330,15 @@ sample_count = len(sample_list)
 
 rule all:
 	input:
-		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", sample=sample_list, aligner=aligner_list)
-#		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
+		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
+		#vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
 
 rule samtools_fastq:
 	"""
 	Extract fastq from a bam or a cram file
 	"""
 	input:
-		bam = tmpdir + "/" + "{sample}.{aligner}.bam"
+		bam = tmpdir + "/{sample}.{aligner}.bam"
 	output:
 		fastqR1 = inputdir + "/{sample}.{aligner}.R1.fastq.gz",
 		fastqR2 = inputdir + "/{sample}.{aligner}.R2.fastq.gz"
@@ -358,7 +358,7 @@ rule filt3r:
 		fastqR1 = inputdir + "/{sample}.{aligner}.R1.fastq.gz",
 		fastqR2 = inputdir + "/{sample}.{aligner}.R2.fastq.gz"
 	output:
-		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
+		vcfuncorr = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf", sample=sample_list, aligner=aligner_list)
 	params:
 		kmer = config['KMER'], 
 		itdrefseq = config['ITDREF']
@@ -405,29 +405,29 @@ rule vcf2gz:
 	input:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	output:
-		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", sample=sample_list, aligner=aligner_list)
+		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
 	shell:
 		"""
 		bgzip -c {input.vcf} > {output.vcfgz} ; tabix {output.vcfgz}
 		"""
 
-#rule cpvcffull:
-#	"""
-#	Copy or merge with bcftools several vcfs
-#	"""
-#	input:
-#		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", sample=sample_list, aligner=aligner_list)
-#	output:
-#		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
-#	shell:
-#		"""
-#		if [ {sample_count} -eq 1 ]
-#		then
-#			cp {input.vcfgz} {output.vcfgzallfull} && tabix {output.vcfgzallfull}
-#		else
-#			bcftools merge {input.vcfgz} -O z -o {output.vcfgzallfull} && tabix {output.vcfgzallfull}
-#		fi
-#		"""
+rule cpvcffull:
+	"""
+	Copy or merge with bcftools several vcfs
+	"""
+	input:
+		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", sample=sample_list, aligner=aligner_list)
+	output:
+		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
+	shell:
+		"""
+		if [ {sample_count} -eq 1 ]
+		then
+			cp {input.vcfgz} {output.vcfgzallfull} && tabix {output.vcfgzallfull}
+		else
+			bcftools merge {input.vcfgz} -O z -o {output.vcfgzallfull} && tabix {output.vcfgzallfull}
+		fi
+		"""
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']

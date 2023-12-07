@@ -581,9 +581,9 @@ rule indexing:
 	Indexing bam files with samtools
 	"""
 	input:
-		bam = inputdir + "/" + "{sample}.{aligner}.bam"
+		bam = inputdir + "/{sample}.{aligner}.bam"
 	output:
-		bai = inputdir + "/" + "{sample}.{aligner}.bai"
+		bai = inputdir + "/{sample}.{aligner}.bai"
 	params:
 		threads = config['THREADS']
 	shell:
@@ -600,7 +600,7 @@ rule ReadInBams:
 	"""
 	input:
 		allbamlist = tmpdir + "/" + serviceName + "." + date_time + ".A.list.txt",
-		bai = expand(inputdir + "/" + "{sample}.{aligner}.bai", sample=sample_list, aligner=aligner_list)
+		bai = expand(inputdir + "/{sample}.{aligner}.bai", sample=sample_list, aligner=aligner_list)
 	output:
 		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.ReadInBams.RData"
 	params:
@@ -695,7 +695,7 @@ rule variantconvert:
 		log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.variantconvert.log"
 	shell:
 		"""
-		variantconvert convert -i {input.allcalltxt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {params.scriptsconfig}/config_decon.json 2> {log.log2} && [[ -s {output.vcfunsortall} ]] || cat {params.dummypath}/empty.vcf > {output.output.vcfunsortall}
+		variantconvert convert -i {input.allcalltxt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {params.scriptsconfig}/config_decon.json 2> {log.log2} && [[ -s {output.vcfunsortall} ]] || cat {params.dummypath}/empty.vcf > {output.vcfunsortall}
 		"""
 
 # bcftools sort don't sort correctly
@@ -844,7 +844,7 @@ rule plot:
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.err"
 	shell:
 		"""
-		Rscript {params.decondir}/DECONplot.R --rdata {input.rdata} --out {params.folder} 1> {log.log1} 2> {log.log2} && [[ -s {output.pdf} ]] || touch {params.analysisfailure}
+		mkdir {params.folder} && Rscript {params.decondir}/DECONplot.R --rdata {input.rdata} --out {params.folder} 1> {log.log1} 2> {log.log2} && [[ -s {output.pdf} ]] || touch {params.analysisfailure}
 		"""
 
 onstart:

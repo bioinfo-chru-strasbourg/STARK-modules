@@ -1968,7 +1968,8 @@ foreach $j ( sort {$extByLength{$b}<=>$extByLength{$a}} keys %extByLength ) {
 
 if( length( $sumaclust ) == 0 ) {
     print "NO ITD CANDIDATE CLUSTERS GENERATED. Exiting...\n"; 
-    system( "touch " . $fbase . "_ITD_none.vcf" );
+    #system( "touch " . $fbase . "_ITD_none.vcf" );
+	system( "touch " . $fbase . ".vcf" );
     if( !$debug && ( system( "rm " . $fbase . ".nowt.R*.fastq" ) || 
         ( $inbam ne "" && system( "rm " . $fbase . ".R*.fastq" ) ) ) ) {
       die "Error removing fastq files. Exiting...";
@@ -2168,7 +2169,8 @@ foreach( keys %adets ) {
 }
 if( scalar( keys %itdkeys ) == 0 ) {
     print "NO ITD CANDIDATES. Exiting...\n";
-    system( "touch " . $fbase . "_ITD_none.vcf" );
+    #system( "touch " . $fbase . "_ITD_none.vcf" );
+	system( "touch " . $fbase . ".vcf" );
     if( !$debug && ( system( "rm " . $fbase . ".nowt.R*.fastq" ) || 
         ( $inbam ne "" && system( "rm " . $fbase . ".R*.fastq" ) ) ) ) {
       die "Error removing fastq files. Exiting...";
@@ -2274,7 +2276,8 @@ foreach my $size ( keys %svkeysByBinTot ) {
 
 if( scalar( keys %itdkeysfiltered ) == 0 ) {
     print "NO *FILTERED* ITD CANDIDATES. Exiting...\n";
-    system( "touch " . $fbase . "_ITD_none.vcf" );
+    #system( "touch " . $fbase . "_ITD_none.vcf" );
+	system( "touch " . $fbase . ".vcf" );
     if( !$debug && ( system( "rm " . $fbase . ".nowt.R*.fastq" ) || 
         ( $inbam ne "" && system( "rm " . $fbase . ".R*.fastq" ) ) ) ) {
       die "Error removing fastq files. Exiting...";
@@ -3347,12 +3350,14 @@ foreach( keys %itdkeysfiltered ) {
 }
 
 if( $outvcf ne "" ) {
-  open( FO, ">" . $fbase . "_ITD.vcf" ) or die $!;
+  #open( FO, ">" . $fbase . "_ITD.vcf" ) or die $!;
+  open( FO, ">" . $fbase . ".vcf" ) or die $!;
   print FO $vcfheader . $shortkey . "\n";
   print FO $outvcf;
   close FO;
 } else {
-  system( "touch " . $fbase . "_ITD_none.vcf" );
+  #system( "touch " . $fbase . "_ITD_none.vcf" );
+  system( "touch " . $fbase . ".vcf" );
 }
 
 if( $outsummary ne "" ) {
