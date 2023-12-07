@@ -351,7 +351,7 @@ if not config['BED_FILE']:
 		Rule will create an unfiltered vcf.gz and corresponding tsv
 		"""
 		input:
-			vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz", sample=sample_list, aligner=aligner_list),
+			vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
 			tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv"
 
 else:
@@ -360,7 +360,7 @@ else:
 		Rule will create an unfiltered vcf.gz & design vcf.gz and corresponding tsv
 		"""
 		input:
-			vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Unfiltered.vcf.gz", sample=sample_list, aligner=aligner_list),
+			vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}AnnotSV.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
 			tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list),
 			tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv",
 			alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"

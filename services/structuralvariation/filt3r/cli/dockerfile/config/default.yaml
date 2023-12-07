@@ -7,6 +7,7 @@
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "FILT3R"
+
 # Default repository/depository path from listener.py/launcher.py
 repository: "/STARK/output/repository"
 depository: "/STARK/output/depository"
@@ -14,12 +15,12 @@ depository: "/STARK/output/depository"
 DEPOT_COPY: False
 # Output directory if not repository
 OUTPUT_DIR: ""
+
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 # Group and App default name
 GROUP_NAME: "UNKNOWN"
 APP_NAME: "UNKNOWN"
-
 # Bed file
 BED_FILE: ""
 # Genes file
@@ -29,12 +30,14 @@ TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
 
-# Only analyse validation.bam/cram files
-VALIDATION_ONLY: False
+# Ext to index (endwith)
+EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".bam", ".bam.bai"]
 # List of files extension to process
 PROCESS_FILE: ['.bam']
 # How to process input files : cram/cp/rsync/ls/filterbam
 PROCESS_CMD: 'cp'
+# Only analyse validation.bam/cram files
+VALIDATION_ONLY: False
 # Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
 ALIGNER_NAME:
 
@@ -43,15 +46,12 @@ EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC',
 # Sample filter
 FILTER_SAMPLE: []
 
-# Ext to index (endwith)
-EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".R1.fastq.gz", ".R2.fastq.gz", ".bam", ".bam.bai"]
-
 # Rsync options : if several files are added add {} at the start and end of the list
 # include_rsync must have more than one argument
 EXCLUDE_RSYNC: "'*'"
-INCLUDE_RSYNC: "{'*.log', '*'}"
+INCLUDE_RSYNC: "{'*.tsv', '*.vcf.gz'}"
 # for log file copy if pipeline failed
-INCLUDE_LOG_RSYNC: "{'*.txt', '*.log', '*.err'}"
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
 # Search parameters
 RECURSIVE_SEARCH: False
@@ -63,8 +63,6 @@ THREADS: "4"
 DEBUG_MODE: False
 
 ################## Tools parameters ##################
-# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 
 ################## filt3r ##################
 KMER: "12"
