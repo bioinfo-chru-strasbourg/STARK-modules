@@ -78,7 +78,7 @@ THREADS: "4"
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Path to Scramble R directory scripts
 SCRAMBLE_PATH: "/opt/conda/share/scramble/bin"
-
+DUMMY_PATH: "/app/scripts/dummy"
 ################## cluster_identifier params
 m: 10 # min soft clipped bases to be put in a cluster (default 10)
 s: 5 # min soft clipped reads to be a cluster (default 5)
@@ -93,7 +93,7 @@ poly-a-dist: 100 # how far from MEI to look for polyA tail (default 100)
 # --eval-meis / --eval-dels / --eval-meis --eval-dels
 scramble_mode: "--eval-meis --eval-dels"
 # Default path to an FASTA file with MEI Ref sequences
-REFMEI_PATH: "/tools/scramble/current/resources/MEI_consensus_seqs.fa"
+REFMEI_PATH: "/opt/conda/share/scramble/resources/MEI_consensus_seqs.fa"
 
 ################## AnnotSV params
 hpo: # HPO terms list describing the phenotype of the individual being investigated Values: use comma, semicolon or space separated class values Default = "" (e.g.: "HP:0001156,HP:0001363,HP:0011304") = only for individual analysis

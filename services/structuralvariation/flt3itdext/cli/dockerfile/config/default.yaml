@@ -62,7 +62,9 @@ THREADS: "4"
 DEBUG_MODE: False
 
 ################## Tools parameters ##################
-
+# Option to filter vcf with bcftools
+# ex "-i 'FORMAT/DP>=30 && FORMAT/VAF>=0.01'"
+BCFTOOLS_FILTER: "-i 'FORMAT/VAF>=0.01'"
 ################## flt3_itd_ext ##################
 REF_ITD_PATH: "/STARK/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
 # Assembly (hg19/hg38)

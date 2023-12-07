@@ -668,24 +668,6 @@ rule makeCNVcalls:
 		Rscript {params.decondir}/makeCNVcalls.R --rdata {input.rdata} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} {params.refbamlist} --tsv {output.calltsv} --outrdata {output.rdata} 1> {log.log1} 2> {log.log2} && [[ -s {output.calltsv} ]] || touch {params.analysisfailure} ; [[ -s {output.calltsv} ]] || touch {output.calltsv}
 		"""
 
-rule plot:
-	"""
-	This step input the CNVcall.Rdata file to output the plot files in pdf format
-	"""
-	input:
-		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.CNVcalls.RData"
-	params:
-		folder = tmpdir + "/pdfs/",
-		decondir = config['DECON_PATH']
-	output:
-		pdf = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.pdf"
-	log: 
-		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.err"
-	shell:
-		"""
-		Rscript {params.decondir}/DECONplot.R --rdata {input.rdata} --plotFolder {params.folder} 1> {log.log1} 2> {log.log2}
-		"""
-
 rule merge_makeCNVcalls:
 	"""
 	Merge all CNVs call results
@@ -762,7 +744,6 @@ rule splitvcf:
 		"""
 		mkdir -p {params.path} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output.vcfgzsplit} {input.vcfgzdesign} && [[ -s {output.vcfgzsplit} ]] || cat {params.dummypath}/empty.vcf.gz > {output.vcfgzsplit} ; tabix {output.vcfgzsplit}
 		"""
-
 
 rule AnnotSV:
 	"""
@@ -847,6 +828,23 @@ rule convertvcf_alldesign:
 		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzalldesign} --out_tsv {output.tsvalldesign}
 		"""
 
+rule plot:
+	"""
+	This step input the CNVcall.Rdata file to output the plot files in pdf format
+	"""
+	input:
+		rdata = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.CNVcalls.RData"
+	params:
+		folder = tmpdir + "/pdfs/",
+		decondir = config['DECON_PATH']
+	output:
+		pdf = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.pdf"
+	log: 
+		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.{gender}.plots.err"
+	shell:
+		"""
+		Rscript {params.decondir}/DECONplot.R --rdata {input.rdata} --out {params.folder} 1> {log.log1} 2> {log.log2}
+		"""
 
 onstart:
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Running.txt")

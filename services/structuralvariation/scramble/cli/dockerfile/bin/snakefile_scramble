@@ -436,6 +436,7 @@ rule scramble:
 		polyadist = config['poly-a-dist'],
 		mode = config['scramble_mode'],
 		refgene = config['REFGENEFA_PATH'],
+		dummypath = config['DUMMY_PATH'],
 		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr"
 	output:
 		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
@@ -449,7 +450,7 @@ rule scramble:
 		--install-dir {params.scrambledir} \
 		--mei-refs {params.refmei} \
 		--ref {params.refgene} \
-		--mei-score {params.meiscore} --nCluster {params.nCluster} --poly-a-dist {params.polyadist} --poly-a-frac {params.polyafrac} {params.mode} > {log.log1} 2> {log.log2} && [[ -s {output.vcfuncorr} ]] || cat {dummypath}/empty.vcf > {output.vcfuncorr}
+		--mei-score {params.meiscore} --nCluster {params.nCluster} --poly-a-dist {params.polyadist} --poly-a-frac {params.polyafrac} {params.mode} > {log.log1} 2> {log.log2} && [[ -s {output.vcfuncorr} ]] || cat {params.dummypath}/empty.vcf > {output.vcfuncorr}
 		"""
 
 # escape " with \" for bash or awk or use triple """ to avoid the use of \ ; use double {{ and }} for awk integration to differentiate snakefile variable and awk variable
@@ -462,14 +463,15 @@ rule correctvcf:
 	output:
 		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	params:
-		mode = config['scramble_mode']
+		mode = config['scramble_mode'],
+		dummypath = config['DUMMY_PATH']
 	shell:
 		"""
 		if [ {params.mode} = "--eval-dels" ];
 		then
-		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}' | awk '{{FS=OFS="\t"}}; {{$4=substr($4, 0, 1); print}}' | awk '{{FS=OFS="\t"}} $3=="DEL" {{$5="<DEL>"}}1') > {output.vcf} && [[ -s {output.vcf} ]] || cat {dummypath}/empty.vcf > {output.vcf}
+		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}' | awk '{{FS=OFS="\t"}}; {{$4=substr($4, 0, 1); print}}' | awk '{{FS=OFS="\t"}} $3=="DEL" {{$5="<DEL>"}}1') > {output.vcf} && [[ -s {output.vcf} ]] || cat {params.dummypath}/empty.vcf > {output.vcf}
 		else
-		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf} && [[ -s {output.vcf} ]] || cat {dummypath}/empty.vcf > {output.vcf}
+		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf} && [[ -s {output.vcf} ]] || cat {params.dummypath}/empty.vcf > {output.vcf}
 		fi
 		"""
 
@@ -491,10 +493,11 @@ rule AnnotSV:
 		genome = config['genomeBuild'],
 		overlap = config ['overlap'],
 		mode = config['annotationMode'],
-		annotation = config['annotationdir']
+		annotation = config['annotationdir'],
+		dummypath = config['DUMMY_PATH']
 	shell:
 		"""
-		AnnotSV -SVinputFile {input.vcf} -outputFile {output.vcfunsort} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log.txt} && [[ -s {output.vcfunsort} ]] || cat {dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
+		AnnotSV -SVinputFile {input.vcf} -outputFile {output.vcfunsort} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log.txt} && [[ -s {output.vcfunsort} ]] || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
 		"""
 
 # bcftools sort don't sort correctly
@@ -506,9 +509,11 @@ rule sortvcf:
 		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
 	output:
 		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf"
+	params:
+		dummypath = config['DUMMY_PATH']
 	shell:
 		"""
-		grep \"^#\" {input.vcfunsort} > {output.vcfsort} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfsort} && [[ -s {output.vcfsort} ]] || cat {dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfsort}
+		grep \"^#\" {input.vcfunsort} > {output.vcfsort} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfsort} && [[ -s {output.vcfsort} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfsort}
 		"""
 
 # bcftools need vcf.gz.tbi index for the merge all
