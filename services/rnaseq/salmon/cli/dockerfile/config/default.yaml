@@ -1,12 +1,13 @@
 ##########################################################################
-# Config Yaml Version:     0.2
-# Description:             Yaml file to run Snakefile FLT3_ITD_EXT module
+# Config Yaml Version:     1.0
+# Description:             Yaml file to run Snakefile Salmon count module
 ##########################################################################
-# DEV version 0.2 : 05/03/2023
+# DEV version 1 : 05/03/2023
 # Authoring : Thomas LAVAUX
+
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
-serviceName: "FLT3ITDEXT"
+serviceName: "Salmon"
 
 # Default repository/depository path from listener.py/launcher.py
 repository: "/STARK/output/repository"
@@ -15,9 +16,9 @@ depository: "/STARK/output/depository"
 DEPOT_COPY: False
 # Output directory if not repository
 OUTPUT_DIR: ""
-
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
+
 # Group and App default name
 GROUP_NAME: "UNKNOWN"
 APP_NAME: "UNKNOWN"
@@ -31,15 +32,16 @@ TRANSCRIPTS_FILE: ""
 LIST_GENES: ""
 
 # Ext to index (endwith)
-EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".bam", ".bam.bai"]
+EXT_INDEX_LIST : [".R1.fastq.gz", ".R2.fastq.gz"]
 # List of files extension to process
-PROCESS_FILE: ['.bam']
+PROCESS_FILE: ['.R1.fastq.gz', '.R2.fastq.gz']
 # How to process input files : cram/cp/rsync/ls/filterbam
 PROCESS_CMD: 'cp'
-# Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
-ALIGNER_NAME:
+
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False
+# Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
+ALIGNER_NAME:
 
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
@@ -49,25 +51,26 @@ FILTER_SAMPLE: []
 # Rsync options : if several files are added add {} at the start and end of the list
 # include_rsync must have more than one arguement
 EXCLUDE_RSYNC: "'*'"
-INCLUDE_RSYNC: "{'*.tsv', '*.vcf.gz'}"
+INCLUDE_RSYNC: "{'*.log', '*'}"
 # for log file copy if pipeline failed
-INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
+INCLUDE_LOG_RSYNC: "{'*.txt', '*.log', '*.err'}"
 
 # Search parameters
 RECURSIVE_SEARCH: False
-SEARCH_ARGUMENT: "/*/STARK/*"
-# For samtools
-THREADS: "4"
+SEARCH_ARGUMENT: "*/*"
+
 ## DEBUG ##
 DEBUG_MODE: False
 
 ################## Tools parameters ##################
+# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
+REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+################## Salmon ##################
+# Thread to use
+THREADS: "4"
+# For Salmon quantification fastq mode, path to the index file
+REFSALMONQUANTFASTQ_PATH: "/STARK/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
+# SE ou PE Reads
+SALMON_FASTQ_TYPE: "PE"
+MISC_SALMON_OPTIONS: ""
 
-################## flt3_itd_ext ##################
-REF_ITD_PATH: "/STARK/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
-# Assembly (hg19/hg38)
-ASSEMBLY: "hg19"
-# Type of sequencing technology (HC = capture)
-NGS_TYPE: "HC"
-# Min of reads to considere an ITD
-MINREADS: "5"

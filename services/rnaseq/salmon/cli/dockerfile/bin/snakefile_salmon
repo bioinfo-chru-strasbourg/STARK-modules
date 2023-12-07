@@ -1,10 +1,10 @@
 ##########################################################################
 # Snakemakefile Version:   1.0
-# Description:             Snakemake file to run flt3itdext module
+# Description:             Snakemake file to run Salmon module
 ##########################################################################
 
 ################## Context ##################
-# launch snakemake -s  snakefile_filt3r -c(numberofthreads) --config run=absolutepathoftherundirectory
+# launch snakemake -s  snakefile_count -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
 # to launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
 # every variable defined in the yaml file can be change
 # separate multiple variable with a space (ex  --config run=runname var1=0.05 var2=12)
@@ -14,11 +14,20 @@
 # use --lt to display docstrings of rules
 
 # input file = fastq files
-# output file = vcf
+# output file = salmon count files (quant.sf)
 ################## Import libraries ##################
 
 ########## Note ########################################################################################
-
+# recipe for Salmon index to perform count extraction
+# GRch38 assembly and gencode.vxx.transcripts.fa.gz can be found on https://www.gencodegenes.org/human/
+# release can be change (actually v41 is used, relase is 07.2022)
+# for GRch38 primary assembly v42 : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
+# for gencode transcripts : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
+# grep "^>" <(gunzip -c GRCh38.primary_assembly.genome.fa.gz) | cut -d " " -f 1 > decoys.txt
+# sed -i.bak -e 's/>//g' decoys.txt
+# cat gencode.v41.transcripts.fa.gz GRCh38.primary_assembly.genome.fa.gz > gentrome.fa.gz
+# salmon index -t gentrome.fa.gz -d decoys.txt -p 12 -i salmon_index --gencode
+# eventually use --keepDuplicates for isoform analysis
 ########################################################################################################
 
 import os
@@ -30,11 +39,8 @@ import json
 from datetime import datetime
 from shutil import copy2
 
-
-################## Configuration file ##################
+################## Configuration file and PATHS ##################
 configfile: "/app/config/default.yaml"
-
-####################### FUNCTIONS #####################
 
 def finditemindico(sample_list, ext_list, dictionary, include_ext, exclude_ext):
 	""" Function to search in a dictionary a file path itering by the first key (sample_list) and second key (extension_list) with an including and excluding filter """
@@ -315,6 +321,7 @@ if config['DEBUG_MODE']:
 # /nameoftherun/global results & global logs with ServiceName index
 #
 ############################################################################################################
+
 ##### NOTE ####
 # Tools that output a file adding a extension should be set with params: params.output as the output of the command without the extension, and output: output.ext exist only to connect rules
 # For programs that do not have an explicit log parameter, you may always use 2> {log} to redirect standard output to a file (here, the log file) in Linux-based systems. Note that it is also supported to have multiple (named) log files being specified
@@ -325,96 +332,37 @@ if config['DEBUG_MODE']:
 
 rule all:
 	input:
-		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", sample=sample_list, aligner=aligner_list),
-		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
+		quant = expand(tmpdir + "/{sample}.salmon.quant/", sample=sample_list)
 
-rule indexing:
-	"""
-	Indexing bam files with samtools
-	"""
+if config['SALMON_FASTQ_TYPE'] == "SE":
+	R_list = ['R1']
+
+if config['SALMON_FASTQ_TYPE'] == "PE":
+	R_list = ['R1','R2']
+
+
+rule salmon:
 	input:
-		bam = inputdir + "/" + "{sample}.{aligner}.bam"
+		fastqR1 = inputdir + "/{sample}.R1.fastq.gz", 
+		fastqR2 = inputdir + "/{sample}.R2.fastq.gz"
 	output:
-		bai = inputdir + "/" + "{sample}.{aligner}.bai"
+		quant = directory(tmpdir + "/{sample}.salmon.quant/")
 	params:
-		threads = config['THREADS']
+		threads = config['THREADS'],
+		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
+		fastq_type = config['SALMON_FASTQ_TYPE'],
+		misc_options = config['MISC_SALMON_OPTIONS']
 	shell:
 		"""
-		samtools index -b -@ {params.threads} {input.bam} {output.bai}
-		"""
-
-rule flt3_itd_ext:
-	"""
-	flt3_itd_ext is a software that detects internal duplications in bam files
-	"""
-	input:
-		bam = inputdir + "/{sample}.{aligner}.bam",
-		bai = inputdir + "/" + "{sample}.{aligner}.bai"
-	output:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
-	params:
-		assembly = config['ASSEMBLY'],
-		index = config['REF_ITD_PATH'],
-		ngstype = config['NGS_TYPE'],
-		mr = config ['MINREADS']
-	shell:
-		"""
-		perl /app/bin/FLT3_ITD_ext.pl -b {input.bam} -mr {params.mr} -g {params.assembly} --ngstype {params.ngstype} -i {params.index} -o {output.vcf};
-		"""
-
-rule correctvcf:
-	"""
-	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification.
-	"""
-	input:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
-	output:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
-	params:
-	shell:
-		"""
-		(grep "^##" {input.vcf} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcf} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcf} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf}
-		"""
-
-# bcftools need vcf.gz.tbi index for the merge all
-rule vcf2gz:
-	"""
-	Compress vcf with bgzip
-	"""
-	input:
-		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
-	output:
-		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
-	shell:
-		"""
-		bgzip -c {input.vcfsort} > {output.vcfgz} ; tabix {output.vcfgz}
-		"""
-
-rule cpvcffull:
-	"""
-	Copy or merge with bcftools several vcfs
-	"""
-	input:
-		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", aligner=aligner_list, sample=sample_list)
-	output:
-		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
-	shell:
-		"""
-		if [ {sample_count} -eq 1 ]
+		if [ {params.fastq_type} = 'PE' ];
 		then
-			cp {input.vcfgz} {output.vcfgzallfull} && tabix {output.vcfgzallfull}
-		else
-			bcftools merge {input.vcfgz} -O z -o {output.vcfgzallfull} && tabix {output.vcfgzallfull}
+		salmon quant -p {params.threads} -i {params.fastquantref} -l A -1 {input.fastqR1} -2 {input.fastqR2} {params.misc_options} -o {output.quant}
+		fi
+		if [ {params.fastq_type} = 'SE' ];
+		then
+		salmon quant -p {params.threads} -i {params.fastquantref} -l A -r {input.fastqR1} {params.misc_options} -o {output.quant}
 		fi
 		"""
-
-
-onstart:
-	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
-	# Add the snakemake parameters to log
-	with open(logfile, "a+") as f:
-		json.dump(config, f)
-		f.write("\n")
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']
