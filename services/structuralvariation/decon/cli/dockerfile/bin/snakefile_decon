@@ -682,7 +682,6 @@ rule merge_makeCNVcalls:
 		"""
 
 
-# crash if conversion goes wrong
 rule variantconvert:
 	input:
 		allcalltxt = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.tsv"
@@ -692,10 +691,10 @@ rule variantconvert:
 		scriptspath = config['SCRIPTS_PATH'],
 		scriptsconfig = config['SCRIPTS_CONFIG']
 	log:
-		log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.DeconTsv2Vcf.log"
+		log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.variantconvert.log"
 	shell:
 		"""
-		variantconvert -i {input.allcalltxt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {params.scriptsconfig}/config_decon.json 2> {log.log2}
+		variantconvert convert -i {input.allcalltxt} -o {output.vcfunsortall} -fi tsv -fo vcf -c {params.scriptsconfig}/config_decon.json 2> {log.log2} && [[ -s {output.vcfunsortall} ]] || cat {params.dummypath}/empty.vcf > {output.output.vcfunsortall}
 		"""
 
 # bcftools sort don't sort correctly
