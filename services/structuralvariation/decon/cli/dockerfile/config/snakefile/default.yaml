@@ -2,17 +2,14 @@
 # Config Yaml Version:     0.1
 # Description:             Yaml file to run DECON Snakefile module
 ##########################################################################
-
 # DEV version 0.1 : 10/11/2021
 # INT version 0.1 : 17/03/2022
 # PROD version 1 : 03/06/2022
 # Authoring : Thomas LAVAUX
-
 # PROD version 2 : 16/06/2022 changelog
 # add the possibility to analyse gender separately, extract gender from tag files ; gender analysis can be set with REMOVE_F & REMOVE_M & REMOVE_A options
 # add a gene list restriction to limit the analysis to a certain list of gene's name (GENE_FILTER & GENE_LIST_RESTRICT)
 # add a chr filter option to remove chrosome (essentially chrY) CHR_FILTER & CHR_LIST_RESTRICT)
-
 ##########################################################################
 # Add here variables that will extend default configuration yaml file.
 # If a variable was already defined in the default configuration yaml file, it will be replace.
@@ -20,21 +17,19 @@
 # separate multiple variable with a space
 ################## Directories and variables ##################
 
+# Name of the module = {serviceName} from listener.py/launcher.py
+serviceName: "DECON"
 # Default repository/depository path from listener.py/launcher.py
 repository: "/STARK/output/repository"
 depository: "/STARK/output/depository"
 # Output directory if not repository
 OUTPUT_DIR: ""
-# Path to a folder where intermediate files will be written
-TMP_DIR: "tmp"
-
 # Copy to depot directory (archive)
 DEPOT_COPY: True
 
 # Group and App default name
 GROUP_NAME: "UNKNOWN"
 APP_NAME: "UNKNOWN"
-
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 # Bed file
@@ -46,23 +41,17 @@ TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
 
-# Name of the module = {serviceName} from listener.py/launcher.py
-serviceName: "DECON"
-
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Default path to Refgene file containing custom exon numbers
 REFSEQGENE_PATH: "/STARK/databases/refGene/current/formated_refgene.tsv"
-# Path to Decon R directory
-DECON_PATH: "/app/scripts/R"
-# Path to Bedtools
-BEDTOOLS_PATH: "/tools/bedtools/current/bin/bedtools"
-# Path to Bcftools
-BCFTOOLS_PATH: "/tools/bedtools/current/bin/bcftools"
-# Path to scripts/dummy
-SCRIPTS_PATH: "/app/scripts"
+
+# Paths
+SCRIPTS_PATH: "/app/scripts/python"
+SCRIPTS_CONFIG: "/app/config/fileconversion"
 DUMMY_PATH: "/app/scripts/dummy"
+
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
 # Sample filter
@@ -71,22 +60,19 @@ FILTER_SAMPLE: []
 ### Indexing files options
 # Ext to index (endwith)
 EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes", ".tag"]
-
-# Only analyse validation.bam/cram files
-VALIDATION_ONLY: False
-
 # Process .bam or .cram
 PROCESS_FILE: [".bam"]
 # Process input files : cram/cp/ls/filter
 PROCESS_CMD: 'cp'
-
+# Only analyse validation.bam/cram files
+VALIDATION_ONLY: False
 # Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
 ALIGNER_NAME:
 
 # Rsync options : if several files are added add {} at the start and end of the list
-# include_rsync must have more than one arguement
+# include_rsync must have more than one argument
 INCLUDE_RSYNC: "{'*Unfiltered.vcf.gz','*Unfiltered.vcf.gz.tbi','*Design.vcf.gz','Design.vcf.gz.tbi','*AnnotSV.Unfiltered.tsv','*AnnotSV.Design.tsv','*Design_results_all.tsv','*Identify_Failures.tsv','*.bed','*list.txt','*.pdf','*/'}"
-# exclude_rsync can only take on arguement
+# exclude_rsync can only take on argument
 EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed'}"
@@ -94,10 +80,8 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed'}"
 ##### Search parameters of input for the search function #####
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
-
-# MISC
+# For samtools indexing
 THREADS: "4"
-
 ## DEBUG ##
 DEBUG_MODE: False
 
@@ -107,36 +91,36 @@ DEBUG_MODE: False
 BED_PROCESS: "STANDARD"
 # Keep intergenic region when exon regen is done
 KEEP_UNKNOWN: False
-
 # Patch for some gene name
 EXON_SEP: False
 # Old Bed formating
-OLD_BED: False
-
+OLD_BED: True
 # Remove M or F or Autosome analysis
 # Default is autosome with all the patients ; chrX can be performed only for Male or Female patients, with a separate call by sex
 REMOVE_F: False
 REMOVE_M: False
 REMOVE_A: False
-
 # Limit the analysis to a list of genes (remove from DECON BED)
 GENE_LIST_RESTRICT: []
-
 # List of chr to remove from DECON BED
 CHR_LIST_RESTRICT: []
 
+# If bed file got a 5 column with exon number 
+customexon: FALSE
+# kmerisation of DECON bed (integer) (ex 250)
+KMER: ""
+
+
+# Path to Decon R directory
+DECON_PATH: "/app/scripts/R"
+
+############# ReadInbams params ##############
 # path to the tsv file containing 2 columns : bam for the list of reference bams for CNV calling (full path of bams), and gender (F/M)
 # the bam files have to be indexed
 # number of reference patients should be 10 or more, and if the gender is considere, 10 per gender
 # the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
-REF_BAM_LIST: ""
 # REF_BAM_LIST: "--refbams /app/res/list.tsv"
-
-# If bed file got a 5 column with exon number 
-customexon: FALSE
-
-# kmerisation of DECON bed (integer) (ex 250)
-KMER: ""
+REF_BAM_LIST: ""
 
 ############# IdentifyFailures params ##############
 mincorr: 0.98 # Minimum correlation threshold – the minimum correlation between a test sample and any other sample for the test sample to be considered well-correlated (default 0.98)

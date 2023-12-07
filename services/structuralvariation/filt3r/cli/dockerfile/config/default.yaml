@@ -2,14 +2,11 @@
 # Config Yaml Version:     1.0
 # Description:             Yaml file to run Snakefile Filt3r module
 ##########################################################################
-
 # DEV version 1 : 28/11/2023
 # Authoring : Thomas LAVAUX
-
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "FILT3R"
-
 # Default repository/depository path from listener.py/launcher.py
 repository: "/STARK/output/repository"
 depository: "/STARK/output/depository"
@@ -19,7 +16,6 @@ DEPOT_COPY: False
 OUTPUT_DIR: ""
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
-
 # Group and App default name
 GROUP_NAME: "UNKNOWN"
 APP_NAME: "UNKNOWN"
@@ -39,19 +35,11 @@ VALIDATION_ONLY: False
 PROCESS_FILE: ['.bam']
 # How to process input files : cram/cp/rsync/ls/filterbam
 PROCESS_CMD: 'cp'
-
 # Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
 ALIGNER_NAME:
 
-# Path to a folder where intermediate files will be written
-TMP_DIR: "tmp"
-
-# Path to a folder where log files will be written
-LOG_DIR: "log"
-
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
-
 # Sample filter
 FILTER_SAMPLE: []
 
@@ -59,12 +47,10 @@ FILTER_SAMPLE: []
 EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".R1.fastq.gz", ".R2.fastq.gz", ".bam", ".bam.bai"]
 
 # Rsync options : if several files are added add {} at the start and end of the list
-# include_rsync must have more than one arguement
-EXCLUDE_RSYNC: "*"
+# include_rsync must have more than one argument
+EXCLUDE_RSYNC: "'*'"
 INCLUDE_RSYNC: "{'*.log', '*'}"
-
 # for log file copy if pipeline failed
-EXCLUDE_LOG_RSYNC: "*"
 INCLUDE_LOG_RSYNC: "{'*.txt', '*.log', '*.err'}"
 
 # Search parameters
@@ -73,10 +59,8 @@ SEARCH_ARGUMENT: "/*/STARK/*"
 
 # MISC
 THREADS: "4"
-
 ## DEBUG ##
 DEBUG_MODE: False
-
 
 ################## Tools parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)

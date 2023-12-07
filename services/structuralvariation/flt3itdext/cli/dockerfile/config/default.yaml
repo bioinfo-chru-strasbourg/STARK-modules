@@ -2,10 +2,8 @@
 # Config Yaml Version:     0.2
 # Description:             Yaml file to run Snakefile FLT3_ITD_EXT module
 ##########################################################################
-
 # DEV version 0.2 : 05/03/2023
 # Authoring : Thomas LAVAUX
-
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "FLT3_ITD_EXT"
@@ -33,46 +31,34 @@ TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
 
-# Only analyse validation.bam/cram files
-VALIDATION_ONLY: False
+# Ext to index (endwith)
+EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".bam", ".bam.bai"]
 # List of files extension to process
 PROCESS_FILE: ['.bam']
 # How to process input files : cram/cp/rsync/ls/filterbam
 PROCESS_CMD: 'cp'
-
 # Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
 ALIGNER_NAME:
-
-# Path to a folder where intermediate files will be written
-TMP_DIR: "tmp"
-
-# Path to a folder where log files will be written
-LOG_DIR: "log"
+# Only analyse validation.bam/cram files
+VALIDATION_ONLY: False
 
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
-
 # Sample filter
 FILTER_SAMPLE: []
 
-# Ext to index (endwith)
-EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".bam", ".bam.bai"]
-
 # Rsync options : if several files are added add {} at the start and end of the list
 # include_rsync must have more than one arguement
-EXCLUDE_RSYNC: "*"
-INCLUDE_RSYNC: "{'*.log', '*'}"
-
+EXCLUDE_RSYNC: "'*'"
+INCLUDE_RSYNC: "{'*.txt', '*.vcf.gz'}"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.txt', '*.log', '*.err'}"
 
 # Search parameters
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
-
 # MISC
 THREADS: "4"
-
 ## DEBUG ##
 DEBUG_MODE: False
 
@@ -82,7 +68,7 @@ DEBUG_MODE: False
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 
 ################## flt3_itd_ext ##################
-REF_ITD_PATH: "/STARK/databases/ITDs/flt3itdext/FLT3_dna_e14e15"
+REF_ITD_PATH: "/STARK/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
 # Assembly (hg19/hg38)
 ASSEMBLY: "hg19"
 # Type of sequencing technology (HC = capture)
