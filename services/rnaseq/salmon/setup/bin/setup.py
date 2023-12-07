@@ -72,8 +72,8 @@ date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 ######################
 
 DATABASES = "/STARK/databases"
-serviceName = "decon"
-moduleName = "structuralvariation"
+serviceName = "salmon"
+moduleName = "rnaseq"
 
 #serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')
 #moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')

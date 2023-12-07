@@ -12,7 +12,7 @@ version: '3'
 services:
 
     #setup
-    stark-module-rnaseq-submodule-salmon-service-setup:
+    stark-module-rnaseq-submodule-drawfusions-service-setup:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_IMAGE}
         build:
             context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_IMAGE_CONTEXT}
@@ -37,7 +37,7 @@ services:
             - ${DOCKER_STARK_MAIN_NETWORK}
 
     # cli
-    stark-module-rnaseq-submodule-salmon-service-cli:
+    stark-module-rnaseq-submodule-drawfusions-service-cli:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
         build:
             context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT}
@@ -80,7 +80,7 @@ services:
             retries: 30
 
     # listener
-    stark-module-rnaseq-submodule-salmon-service-listener:
+    stark-module-rnaseq-submodule-drawfusions-service-listener:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE}
         container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_NAME}
         entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_ENTRYPOINT}
@@ -121,7 +121,7 @@ services:
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
         depends_on:
-            stark-module-rnaseq-submodule-salmon-service-cli:
+            stark-module-rnaseq-submodule-drawfusions-service-cli:
                 condition: service_healthy
 
 ###########
