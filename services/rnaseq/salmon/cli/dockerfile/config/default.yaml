@@ -48,9 +48,7 @@ EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC',
 # Sample filter
 FILTER_SAMPLE: []
 
-# Rsync options : if several files are added add {} at the start and end of the list
-# include_rsync must have more than one arguement
-EXCLUDE_RSYNC: "'*'"
+# Rsync options
 INCLUDE_RSYNC: "{'*.log', '*'}"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.txt', '*.log', '*.err'}"
@@ -58,7 +56,6 @@ INCLUDE_LOG_RSYNC: "{'*.txt', '*.log', '*.err'}"
 # Search parameters
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "*/*"
-
 ## DEBUG ##
 DEBUG_MODE: False
 

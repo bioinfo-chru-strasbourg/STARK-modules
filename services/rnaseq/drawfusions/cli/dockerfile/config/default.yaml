@@ -40,7 +40,7 @@ LIST_GENES: ""
 
 ### Indexing files options
 # Ext to index (endwith)
-EXT_INDEX_LIST: [".transcripts", ".genes.bed", ".design.bed", ".vcf.gz", ".list.genes", ".tag", ".bam", ".arriba.fusions.tsv"]
+EXT_INDEX_LIST: [".transcripts", ".genes.bed", ".design.bed",".list.genes", ".tag", ".bam", ".arriba.fusions.tsv"]
 # Extension of the input files to copy
 PROCESS_FILE: ['.bam', ''.arriba.fusions.tsv']
 # Process input files : cram/cp/rsync/ls/filterbam
@@ -55,11 +55,8 @@ EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
 # Sample filter
 FILTER_SAMPLE: []
 
-# rsync options : if several files are added add {} at the start and end of the list
-# include_rsync must have more than one argument
+# rsync options
 INCLUDE_RSYNC: "{'*.pdf','*.txt'}"
-# exclude_rsync can only take on argument
-EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed'}"
 
