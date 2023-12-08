@@ -58,10 +58,7 @@ VALIDATION_ONLY: False
 ALIGNER_NAME:
 
 # Rsync option for copy
-# include_rsync must have more than one arguement
 INCLUDE_RSYNC: "{'*Full.vcf.gz','*Full.vcf.gz.tbi','*Design.vcf.gz','*Design.vcf.gz.tbi','*AnnotSV.Full.tsv','*AnnotSV.Design.tsv'}"
-# exclude_rsync can only take on arguement
-EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 

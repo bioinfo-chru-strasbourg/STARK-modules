@@ -351,8 +351,8 @@ if not config['BED_FILE']:
 		Rule will create an unfiltered vcf.gz and corresponding tsv
 		"""
 		input:
-			vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
-			tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv"
+			expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
+			tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv"
 
 else:
 	rule all:
@@ -360,10 +360,10 @@ else:
 		Rule will create an unfiltered vcf.gz & design vcf.gz and corresponding tsv
 		"""
 		input:
-			vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}AnnotSV.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
-			tsvdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list),
-			tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv",
-			alltsvdesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
+			expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}AnnotSV.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
+			expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list),
+			tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv",
+			tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 
 rule help:
 	"""
@@ -384,14 +384,14 @@ rule indexing:
 	Indexing bam files with samtools
 	"""
 	input:
-		bam = inputdir + "/{sample}.{aligner}.bam"
+		inputdir + "/{sample}.{aligner}.bam"
 	output:
-		bai = inputdir + "/{sample}.{aligner}.bai"
+		inputdir + "/{sample}.{aligner}.bai"
 	params:
 		threads = config['THREADS']
 	shell:
 		"""
-		samtools index -b -@ {params.threads} {input.bam} {output.bai}
+		samtools index -b -@ {params.threads} {input} {output}
 		"""
 
 rule cluster_identifier:
@@ -408,14 +408,14 @@ rule cluster_identifier:
 		bam = inputdir + "/{sample}.{aligner}.bam",
 		bai = inputdir + "/{sample}.{aligner}.bai"
 	output:
-		txt = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.clusters.txt"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.clusters.txt"
 	params:
 		mini = config['m'],
 		soft = config['s'],
 		region = config['r']
 	shell:
 		"""
-		cluster_identifier -m {params.mini} -s {params.soft} -r {params.region} {input.bam} > {output.txt}
+		cluster_identifier -m {params.mini} -s {params.soft} -r {params.region} {input.bam} > {output}
 		"""
 
 # Indels option : you will need a reference genome indexed with the following command for blast (indels mode) to work : makeblastdb -in refgene.fa -dbtype nucl
@@ -426,7 +426,7 @@ rule scramble:
 	Calling SCRAMble.R with --eval-dels produced a VCF and a tab delimted file. The <out-name>_PredictedDeletions.txt output is a tab delimited text file with deletion calls. If no deletions are present an output file will still be produced with only the header.
 	"""
 	input:
-		txt = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.clusters.txt"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.clusters.txt"
 	params:
 		scrambledir = config['SCRAMBLE_PATH'],
 		refmei = config['REFMEI_PATH'],
@@ -439,18 +439,18 @@ rule scramble:
 		dummypath = config['DUMMY_PATH'],
 		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr"
 	output:
-		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	log: 
 		log1 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.ScrambleR.log", log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.ScrambleR.err"
 	shell:
 		"""
 		Rscript --vanilla {params.scrambledir}/SCRAMble.R \
-		--cluster-file {input.txt} \
+		--cluster-file {input} \
 		--out-name {params.output} \
 		--install-dir {params.scrambledir} \
 		--mei-refs {params.refmei} \
 		--ref {params.refgene} \
-		--mei-score {params.meiscore} --nCluster {params.nCluster} --poly-a-dist {params.polyadist} --poly-a-frac {params.polyafrac} {params.mode} > {log.log1} 2> {log.log2} && [[ -s {output.vcfuncorr} ]] || cat {params.dummypath}/empty.vcf > {output.vcfuncorr}
+		--mei-score {params.meiscore} --nCluster {params.nCluster} --poly-a-dist {params.polyadist} --poly-a-frac {params.polyafrac} {params.mode} > {log.log1} 2> {log.log2} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
 		"""
 
 # escape " with \" for bash or awk or use triple """ to avoid the use of \ ; use double {{ and }} for awk integration to differentiate snakefile variable and awk variable
@@ -459,9 +459,9 @@ rule correctvcf:
 	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification.
 	"""
 	input:
-		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	output:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	params:
 		mode = config['scramble_mode'],
 		dummypath = config['DUMMY_PATH']
@@ -469,9 +469,9 @@ rule correctvcf:
 		"""
 		if [ "{params.mode}" = "--eval-dels" ];
 		then
-		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}' | awk '{{FS=OFS="\t"}}; {{$4=substr($4, 0, 1); print}}' | awk '{{FS=OFS="\t"}} $3=="DEL" {{$5="<DEL>"}}1') > {output.vcf} && [[ -s {output.vcf} ]] || cat {params.dummypath}/empty.vcf > {output.vcf}
+		(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}' | awk '{{FS=OFS="\t"}}; {{$4=substr($4, 0, 1); print}}' | awk '{{FS=OFS="\t"}} $3=="DEL" {{$5="<DEL>"}}1') > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
 		else
-		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcf} && [[ -s {output.vcf} ]] || cat {params.dummypath}/empty.vcf > {output.vcf}
+		(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
 		fi
 		"""
 
@@ -484,9 +484,9 @@ rule AnnotSV:
 	-genomeBuild must be specified if not hg19
 	"""
 	input:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
 	output:
-		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
 	log:
 		txt = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.log"
 	params:
@@ -497,7 +497,7 @@ rule AnnotSV:
 		dummypath = config['DUMMY_PATH']
 	shell:
 		"""
-		AnnotSV -SVinputFile {input.vcf} -outputFile {output.vcfunsort} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log.txt} && [[ -s {output.vcfunsort} ]] || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunsort}
+		AnnotSV -SVinputFile {input} -outputFile {output} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log.txt} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
 # bcftools sort don't sort correctly
@@ -506,14 +506,14 @@ rule sortvcf:
 	Bash script to sort a vcf
 	"""
 	input:
-		vcfunsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
 	output:
-		vcfunfilter = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unfilter.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unfilter.vcf"
 	params:
 		dummypath = config['DUMMY_PATH']
 	shell:
 		"""
-		grep \"^#\" {input.vcfunsort} > {output.vcfunfilter} && grep -v \"^#\" {input.vcfunsort} | sort -k1,1V -k2,2g >> {output.vcfunfilter} && [[ -s {output.vcfunfilter} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output.vcfunfilter}
+		grep \"^#\" {input} > {output} && grep -v \"^#\" {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
 
@@ -522,14 +522,14 @@ rule bcftools_filter:
 	Filter with bcftools
 	"""
 	input:
-		vcfunfilter = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unfilter.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unfilter.vcf"
 	output:
-		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf"
 	params:
 		bcffilter = config['BCFTOOLS_FILTER']
 	shell:
 		"""
-		bcftools view {params.bcffilter} {input.vcfunfilter} -o {output.vcfsort} 
+		bcftools view {params.bcffilter} {input} -o {output} 
 		"""
 
 # bcftools need vcf.gz.tbi index for the merge all
@@ -538,12 +538,12 @@ rule vcf2gz:
 	Compress vcf with bgzip
 	"""
 	input:
-		vcfsort = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf"
 	output:
-		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz"
 	shell:
 		"""
-		bgzip -c {input.vcfsort} > {output.vcfgz} ; tabix {output.vcfgz}
+		bgzip -c {input} > {output} ; tabix {output}
 		"""
 
 rule cpvcffull:
@@ -551,16 +551,16 @@ rule cpvcffull:
 	Copy or merge with bcftools several vcfs
 	"""
 	input:
-		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
+		expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
 	output:
-		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.vcf.gz"
+		tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.vcf.gz"
 	shell:
 		"""
 		if [ {sample_count} -eq 1 ]
 		then
-			cp {input.vcfgz} {output.vcfgzallfull} && tabix {output.vcfgzallfull}
+			cp {input} {output} && tabix {output}
 		else
-			bcftools merge {input.vcfgz} -O z -o {output.vcfgzallfull} && tabix {output.vcfgzallfull}
+			bcftools merge {input} -O z -o {output} && tabix {output}
 		fi
 		"""
 
@@ -570,14 +570,14 @@ rule filtervcfdesign:
 	Filter vcf with a bed file
 	"""
 	input:
-		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full.vcf.gz"
 	output:
-		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.vcf.gz"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.vcf.gz"
 	params:
 		bed = config['BED_FILE']
 	shell:
 		"""
-		bcftools view {input.vcfgz} -R {params.bed} -O z -o {output.vcfgzdesign} && tabix {output.vcfgzdesign}
+		bcftools view {input} -R {params.bed} -O z -o {output} && tabix {output}
 		"""
 
 rule cpvcfdesign:
@@ -585,16 +585,16 @@ rule cpvcfdesign:
 	Copy or merge with bcftools several vcfs
 	"""
 	input:
-		vcfgzdesign = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
+		expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output:
-		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf.gz"
+		tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf.gz"
 	shell:
 		"""
 		if [ {sample_count} -eq 1 ]
 		then
-			cp {input.vcfgzdesign} {output.vcfgzalldesign} && tabix {output.vcfgzalldesign}
+			cp {input} {output} && tabix {output}
 		else
-			bcftools merge {input.vcfgzdesign} -O z -o {output.vcfgzalldesign} && tabix {output.vcfgzalldesign}
+			bcftools merge {input} -O z -o {output} && tabix {output}
 		fi
 		"""
 
@@ -603,14 +603,14 @@ rule convertvcf_sampledesign:
 	Vcf 2 tsv conversion
 	"""
 	input:
-		vcfgzdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.vcf.gz"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.vcf.gz"
 	output:
-		tsvdesign = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design.tsv"
 	log:
 		log2 = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf2tsv_converter.log"
 	shell:
 		"""
-		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzdesign} --out_tsv {output.tsvdesign} 2> {log.log2}
+		vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output} 2> {log.log2}
 		"""
 
 rule convertvcf_alldesign:
@@ -618,14 +618,14 @@ rule convertvcf_alldesign:
 	Vcf 2 tsv conversion
 	"""
 	input:
-		vcfgzalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf.gz"
+		tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf.gz"
 	output:
-		tsvalldesign = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
+		tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv"
 	log:
 		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.vcf2tsv_converter.log"
 	shell:
 		"""
-		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzalldesign} --out_tsv {output.tsvalldesign} 2> {log.log2}
+		vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output} 2> {log.log2}
 		"""
 
 rule convertvcf_allunfiltered:
@@ -633,19 +633,18 @@ rule convertvcf_allunfiltered:
 	Vcf 2 tsv conversion
 	"""
 	input:
-		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.vcf.gz"
+		 tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.vcf.gz"
 	output:
-		tsvallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv"
+		tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.tsv"
 	log:
 		log2 = tmpdir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Full.vcf2tsv_converter.log"
 	shell:
 		"""
-		vcf2tsvpy --keep_rejected_calls --input_vcf {input.vcfgzallfull} --out_tsv {output.tsvallfull} 2> {log.log2}
+		vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output} 2> {log.log2}
 		"""
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']
-	exclude = config['EXCLUDE_RSYNC']
 	
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Complete.txt")
 	shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
@@ -659,19 +658,18 @@ onsuccess:
 	for sample in sample_list:
 		shell("rm -f " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
 	# Rsync all files into final destination
-	shell("rsync -azvh --include={include} --exclude {exclude} {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include} --exclude '*' {tmpdir}/ "+config['OUTPUT_DIR']+"")
 	# Copy new files
 	for sample in sample_list:
-		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/")
+		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/ || true")
 	if config['DEPOT_COPY'] == True:
-		shell("rsync -azvh --include={include} --exclude {exclude} {tmpdir}/ {depotdir}")
+		shell("rsync -azvh --include={include} --exclude '*' {tmpdir}/ {depotdir}")
 		for sample in sample_list:
-			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/")
+			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/ || true")
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
-	exclude_log = config['EXCLUDE_RSYNC']
 	
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Failed.txt")
 	#shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
-	shell("rsync -azvh --include={include_log} --exclude {exclude_log} {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include_log} --exclude '*' {tmpdir}/ "+config['OUTPUT_DIR']+"")
