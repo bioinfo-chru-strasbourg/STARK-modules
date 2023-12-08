@@ -256,17 +256,6 @@ if not config['GENES_FILE']:
 if not config['TRANSCRIPTS_FILE']:
 	config['TRANSCRIPTS_FILE'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], dico_run, '.transcripts', '.list.transcripts')
 
-# If transcript file exist, create the annotation file for AnnotSV
-if os.path.exists(config['TRANSCRIPTS_FILE']) and os.path.getsize(config['TRANSCRIPTS_FILE']) != 0:
-	df = pd.read_csv(config['TRANSCRIPTS_FILE'], sep='\t', names=["NM", "Gene"])
-	df = df.drop(columns=['Gene'])
-	NM_list = df.loc[:,'NM'].tolist()
-	with open(annotation_file, 'w+') as f:
-		f.write('\t'.join(NM_list))
-else:
-	with open(annotation_file, 'w') as f:
-		f.write("No NM found")
-
 # Find list.genes files 
 if not config['LIST_GENES']:
 	config['LIST_GENES'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], dico_run, '.list.genes', '.list.transcripts')
@@ -332,7 +321,7 @@ if config['DEBUG_MODE']:
 
 rule all:
 	input:
-		quant = expand(tmpdir + "/{sample}.salmon.quant/", sample=sample_list)
+		expand(tmpdir + "/{sample}.{aligner}.salmon.quant/", sample=sample_list, aligner=aligner_list)
 
 if config['SALMON_FASTQ_TYPE'] == "SE":
 	R_list = ['R1']
@@ -343,10 +332,10 @@ if config['SALMON_FASTQ_TYPE'] == "PE":
 
 rule salmon:
 	input:
-		fastqR1 = inputdir + "/{sample}.R1.fastq.gz", 
-		fastqR2 = inputdir + "/{sample}.R2.fastq.gz"
+		fastqR1 = inputdir + "/{sample}.{aligner}.R1.fastq.gz", 
+		fastqR2 = inputdir + "/{sample}.{aligner}.R2.fastq.gz"
 	output:
-		quant = directory(tmpdir + "/{sample}.salmon.quant/")
+		directory(tmpdir + "/{sample}.{aligner}.salmon.quant/")
 	params:
 		threads = config['THREADS'],
 		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
@@ -354,19 +343,18 @@ rule salmon:
 		misc_options = config['MISC_SALMON_OPTIONS']
 	shell:
 		"""
-		if [ {params.fastq_type} = 'PE' ];
+		if [ "{params.fastq_type}" = 'PE' ];
 		then
-		salmon quant -p {params.threads} -i {params.fastquantref} -l A -1 {input.fastqR1} -2 {input.fastqR2} {params.misc_options} -o {output.quant}
+		salmon quant -p {params.threads} -i {params.fastquantref} -l A -1 {input.fastqR1} -2 {input.fastqR2} {params.misc_options} -o {output}
 		fi
-		if [ {params.fastq_type} = 'SE' ];
+		if [ "{params.fastq_type}" = 'SE' ];
 		then
-		salmon quant -p {params.threads} -i {params.fastquantref} -l A -r {input.fastqR1} {params.misc_options} -o {output.quant}
+		salmon quant -p {params.threads} -i {params.fastquantref} -l A -r {input.fastqR1} {params.misc_options} -o {output}
 		fi
 		"""
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']
-	exclude = config['EXCLUDE_RSYNC']
 	
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Complete.txt")
 	shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
@@ -380,19 +368,18 @@ onsuccess:
 	for sample in sample_list:
 		shell("rm -f " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
 	# Rsync all files into final destination
-	shell("rsync -azvh --include={include} --exclude {exclude} {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include} --exclude * {tmpdir}/ "+config['OUTPUT_DIR']+"")
 	# Copy new files
 	for sample in sample_list:
-		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/")
+		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/ || true")
 	if config['DEPOT_COPY'] == True:
-		shell("rsync -azvh --include={include} --exclude {exclude} {tmpdir}/ {depotdir}")
+		shell("rsync -azvh --include={include} --exclude * {tmpdir}/ {depotdir}")
 		for sample in sample_list:
-			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/")
+			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/ || true")
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
-	exclude_log = config['EXCLUDE_RSYNC']
 	
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Failed.txt")
 	#shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
-	shell("rsync -azvh --include={include_log} --exclude {exclude_log} {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include_log} --exclude * {tmpdir}/ "+config['OUTPUT_DIR']+"")

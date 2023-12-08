@@ -250,17 +250,6 @@ if not config['GENES_FILE']:
 if not config['TRANSCRIPTS_FILE']:
 	config['TRANSCRIPTS_FILE'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], dico_run, '.transcripts', '.list.transcripts')
 
-# If transcript file exist, create the annotation file for AnnotSV
-if os.path.exists(config['TRANSCRIPTS_FILE']) and os.path.getsize(config['TRANSCRIPTS_FILE']) != 0:
-	df = pd.read_csv(config['TRANSCRIPTS_FILE'], sep='\t', names=["NM", "Gene"])
-	df = df.drop(columns=['Gene'])
-	NM_list = df.loc[:,'NM'].tolist()
-	with open(annotation_file, 'w+') as f:
-		f.write('\t'.join(NM_list))
-else:
-	with open(annotation_file, 'w') as f:
-		f.write("No NM found")
-
 # Find list.genes files 
 if not config['LIST_GENES']:
 	config['LIST_GENES'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], dico_run, '.list.genes', '.list.transcripts')
@@ -367,6 +356,7 @@ rule filt3r:
 		/filt3r/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --vcf;
 		"""
 
+# TODO output is not a valid vcf (bcftools)
 
 rule correctvcf:
 	"""
@@ -444,12 +434,12 @@ onsuccess:
 	for sample in sample_list:
 		shell("rm -f " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
 	# Rsync all files into final destination
-	shell("rsync -azvh --include={include} --exclude '*' {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include} --exclude * {tmpdir}/ "+config['OUTPUT_DIR']+"")
 	# Copy new files
 	for sample in sample_list:
 		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/ || true")
 	if config['DEPOT_COPY'] == True:
-		shell("rsync -azvh --include={include} --exclude '*' {tmpdir}/ {depotdir}")
+		shell("rsync -azvh --include={include} --exclude * {tmpdir}/ {depotdir}")
 		for sample in sample_list:
 			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/ || true")
 
@@ -458,4 +448,4 @@ onerror:
 	
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Failed.txt")
 	#shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
-	shell("rsync -azvh --include={include_log} --exclude '*' {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include_log} --exclude * {tmpdir}/ "+config['OUTPUT_DIR']+"")
