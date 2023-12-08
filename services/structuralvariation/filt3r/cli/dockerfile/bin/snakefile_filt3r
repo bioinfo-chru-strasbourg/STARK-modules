@@ -354,7 +354,7 @@ rule filt3r:
 		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr"
 	shell:
 		"""
-		{filterpath}/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --vcf;
+		{params.filterpath}/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --vcf;
 		"""
 
 rule bcftools_filter:
@@ -364,7 +364,7 @@ rule bcftools_filter:
 	input:
 		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	output:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.filter.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfix.vcf"
 	params:
 		bcffilter = config['BCFTOOLS_FILTER']
 	shell:
@@ -372,6 +372,18 @@ rule bcftools_filter:
 		bcftools view {params.bcffilter} {input} -o {output} 
 		"""
 
+rule vcf_fix:
+	"""
+	Filter with bcftools
+	"""
+	input:
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfix.vcf"
+	output:
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.filter.vcf"
+	shell:
+		"""
+		(grep "^##" {input} && echo '##INFO=<ID=lenght,Number=.,Type=String,Description="Lenght of the ITD">') > {output}
+		"""
 
 rule sortvcf:
 	"""
@@ -387,7 +399,6 @@ rule sortvcf:
 		"""
 		grep \"^#\" {input} > {output} && grep -v \"^#\" {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""		
-
 
 
 # bcftools need vcf.gz.tbi index for the merge all
