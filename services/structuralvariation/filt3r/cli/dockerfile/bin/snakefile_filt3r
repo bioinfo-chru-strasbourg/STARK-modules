@@ -368,9 +368,10 @@ rule correctvcf:
 		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
 	shell:
 		"""
-		(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output}
+		cat {input} | sed 's/^.*#CHROM.*$/#CHROM\tPOS\tID\tREF\tALT\tQUAL\tINFO/' | sed 's/M[/]WT/MWT/g' | sed -n '/#CHROM/,$ p' | awk 'BEGIN{ FS=OFS="\t" } {$6 = $6 FS (NR==1? "FILTER" : ".") }1' > {output}}
 		"""
-
+# (grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output}
+# sed  '/##sample/d' | grep "^##" | echo '##INFO=<ID=lenght,Number=.,Type=String,Description="Lenght of the ITD">'
 
 rule bcftools_filter:
 	"""

@@ -607,12 +607,13 @@ rule ReadInBams:
 		deconbed_file = tmpdir + "/" + serviceName + "." + date_time + ".bed",
 		refbamlist = config['REF_BAM_LIST'],
 		decondir = config['DECON_PATH'],
-		refgene = config['REFGENEFA_PATH']
+		refgene = config['REFGENEFA_PATH'],
+		mcores = config['MCORES']
 	log: 
 		log1 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.ReadInBams.log", log2 = tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.ReadInBams.err"
 	shell:
 		"""
-		Rscript {params.decondir}/ReadInBams.R --bams {input.allbamlist} --bed {params.deconbed_file} --fasta {params.refgene} --rdata {output} {params.refbamlist} 1> {log.log1} 2> {log.log2}
+		Rscript {params.decondir}/ReadInBams.R --maxcores {params.mcores} --bams {input.allbamlist} --bed {params.deconbed_file} --fasta {params.refgene} --rdata {output} {params.refbamlist} 1> {log.log1} 2> {log.log2}
 		"""
 
 rule IdentifyFailures:

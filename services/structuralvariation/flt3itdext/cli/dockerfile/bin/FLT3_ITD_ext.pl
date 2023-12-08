@@ -1512,9 +1512,9 @@ if( length($inbam) > 0 ) {
   @line_cells = split(/\//, $inbam);
   # Format sample name
   #$outname = $line_cells[scalar(@line_cells)-1]; $outname =~ s/\.bam$//; $outname .= "_FLT3";
-  #$outname = $line_cells[scalar(@line_cells)-1]; $outname =~ s/\.bam$//;
+  my $outnamefile = $line_cells[scalar(@line_cells)-1]; $outnamefile =~ s/\.bam$//;
   $outname = $line_cells[scalar(@line_cells)-1];  $outname = (split /\./, $outname)[0];
-  $fbase = $outpath . "/" . $outname;
+  $fbase = $outpath . "/" . $outnamefile;
   $fastq1 = $fbase . ".R1.fastq";
   $fastq2 = $fbase . ".R2.fastq";
 
