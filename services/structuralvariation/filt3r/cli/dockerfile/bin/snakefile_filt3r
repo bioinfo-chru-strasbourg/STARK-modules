@@ -416,7 +416,7 @@ rule cpvcffull:
 	Copy or merge with bcftools several vcfs
 	"""
 	input:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
+		expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output:
 		tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
 	shell:
