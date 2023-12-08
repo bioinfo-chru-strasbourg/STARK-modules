@@ -350,35 +350,19 @@ rule filt3r:
 	params:
 		kmer = config['KMER'], 
 		itdrefseq = config['ITDREF'],
+		filterpath = config['FILTER_PATH'],
 		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr"
 	shell:
 		"""
-		/filt3r/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --vcf;
+		{filterpath}/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --vcf;
 		"""
-
-# TODO output is not a valid vcf (bcftools)
-
-rule correctvcf:
-	"""
-	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification.
-	"""
-	input:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
-	output:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
-	shell:
-		"""
-		cat {input} | sed 's/^.*#CHROM.*$/#CHROM\tPOS\tID\tREF\tALT\tQUAL\tINFO/' | sed 's/M[/]WT/MWT/g' | sed -n '/#CHROM/,$ p' | awk 'BEGIN{ FS=OFS="\t" } {$6 = $6 FS (NR==1? "FILTER" : ".") }1' > {output}}
-		"""
-# (grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output}
-# sed  '/##sample/d' | grep "^##" | echo '##INFO=<ID=lenght,Number=.,Type=String,Description="Lenght of the ITD">'
 
 rule bcftools_filter:
 	"""
 	Filter with bcftools
 	"""
 	input:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	output:
 		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.filter.vcf"
 	params:
@@ -388,13 +372,31 @@ rule bcftools_filter:
 		bcftools view {params.bcffilter} {input} -o {output} 
 		"""
 
+
+rule sortvcf:
+	"""
+	Bash script to sort a vcf
+	"""
+	input:
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.filter.vcf"
+	output:
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.sort.vcf"
+	params:
+		dummypath = config['DUMMY_PATH']
+	shell:
+		"""
+		grep \"^#\" {input} > {output} && grep -v \"^#\" {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		"""		
+
+
+
 # bcftools need vcf.gz.tbi index for the merge all
 rule vcf2gz:
 	"""
 	Compress vcf with bgzip
 	"""
 	input:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.filter.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.sort.vcf"
 	output:
 		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
 	shell:
@@ -435,12 +437,12 @@ onsuccess:
 	for sample in sample_list:
 		shell("rm -f " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
 	# Rsync all files into final destination
-	shell("rsync -azvh --include={include} --exclude * {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include} --exclude='*' {tmpdir}/ "+config['OUTPUT_DIR']+"")
 	# Copy new files
 	for sample in sample_list:
 		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/ || true")
 	if config['DEPOT_COPY'] == True:
-		shell("rsync -azvh --include={include} --exclude * {tmpdir}/ {depotdir}")
+		shell("rsync -azvh --include={include} --exclude='*' {tmpdir}/ {depotdir}")
 		for sample in sample_list:
 			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/ || true")
 
@@ -449,4 +451,4 @@ onerror:
 	
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Failed.txt")
 	#shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
-	shell("rsync -azvh --include={include_log} --exclude * {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include_log} --exclude='*' {tmpdir}/ "+config['OUTPUT_DIR']+"")

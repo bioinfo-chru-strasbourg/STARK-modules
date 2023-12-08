@@ -47,7 +47,7 @@ EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC',
 FILTER_SAMPLE: []
 
 # Rsync options : if several files are added add {} at the start and end of the list (bash syntax)
-INCLUDE_RSYNC: "{'*.tsv', '*.vcf.gz'}"
+INCLUDE_RSYNC: "{'*.vcf.gz.tbi', '*.vcf.gz'}"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 

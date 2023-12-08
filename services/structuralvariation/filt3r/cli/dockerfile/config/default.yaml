@@ -47,7 +47,7 @@ EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC',
 FILTER_SAMPLE: []
 
 # Rsync options : if several files are added add {} at the start and end of the list (bash syntax)
-INCLUDE_RSYNC: "{'*.tsv', '*.vcf.gz'}"
+INCLUDE_RSYNC: "{'*.vcf.gz.tbi', '*.vcf.gz'}"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
@@ -68,6 +68,7 @@ DUMMY_PATH: "/app/config/"
 BCFTOOLS_FILTER: ""
 
 ################## filt3r ##################
+FILTER_PATH: "/app/bin"
 KMER: "12"
 # GRCH37 or 38 ref fasta sequence
 ITDREF: "/STARK/databases/ITDs/FLT3/filt3r/hg19/flt3_hg19.fa"
