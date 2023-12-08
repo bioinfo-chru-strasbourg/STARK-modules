@@ -416,7 +416,7 @@ rule cpvcffull:
 		"""
 		if [ {sample_count} -eq 1 ]
 		then
-			cp {input.vcfgz} {output} && tabix {output}
+			cp {input} {output} && tabix {output}
 		else
 			bcftools merge {input} -O z -o {output} && tabix {output}
 		fi
