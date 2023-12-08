@@ -35,7 +35,7 @@ EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".de
 # List of files extension to process
 PROCESS_FILE: ['.bam']
 # How to process input files : cram/cp/rsync/ls/filterbam
-PROCESS_CMD: 'cp'
+PROCESS_CMD: 'ls'
 # Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
 ALIGNER_NAME:
 # Only analyse validation.bam/cram files
@@ -46,9 +46,7 @@ EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC',
 # Sample filter
 FILTER_SAMPLE: []
 
-# Rsync options : if several files are added add {} at the start and end of the list
-# include_rsync must have more than one arguement
-EXCLUDE_RSYNC: "'*'"
+# Rsync options : if several files are added add {} at the start and end of the list (bash syntax)
 INCLUDE_RSYNC: "{'*.tsv', '*.vcf.gz'}"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"

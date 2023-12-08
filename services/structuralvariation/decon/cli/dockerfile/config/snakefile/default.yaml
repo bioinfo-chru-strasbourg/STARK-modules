@@ -69,11 +69,8 @@ VALIDATION_ONLY: False
 # Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
 ALIGNER_NAME:
 
-# Rsync options : if several files are added add {} at the start and end of the list
-# include_rsync must have more than one argument
+# Rsync options bash notation
 INCLUDE_RSYNC: "{'*Unfiltered.vcf.gz','*Unfiltered.vcf.gz.tbi','*Design.vcf.gz','Design.vcf.gz.tbi','*AnnotSV.Unfiltered.tsv','*AnnotSV.Design.tsv','*Design_results_all.tsv','*Metrics.tsv','*.bed','*list.txt','*.pdf','*/'}"
-# exclude_rsync can only take on argument
-EXCLUDE_RSYNC: "'*'"
 # for log file copy if pipeline failed
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed'}"
 

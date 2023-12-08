@@ -330,22 +330,21 @@ sample_count = len(sample_list)
 
 rule all:
 	input:
-		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
-		#vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
+		expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf", sample=sample_list, aligner=aligner_list),
+		tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
 
 rule samtools_fastq:
 	"""
 	Extract fastq from a bam or a cram file
 	"""
 	input:
-		bam = tmpdir + "/{sample}.{aligner}.bam"
+		inputdir + "/{sample}.{aligner}.bam"
 	output:
 		fastqR1 = inputdir + "/{sample}.{aligner}.R1.fastq.gz",
 		fastqR2 = inputdir + "/{sample}.{aligner}.R2.fastq.gz"
-	params:
 	shell:
 		"""
-		samtools fastq -1 {output.fastqR1} -2 {output.fastqR2} {input.bam}
+		samtools fastq -1 {output.fastqR1} -2 {output.fastqR2} {input}
 		"""
 
 # --out Output filename. If the filename is empty the output will be written in a file whose name is the same as the input with an appended extension '.results.json'
@@ -358,13 +357,14 @@ rule filt3r:
 		fastqR1 = inputdir + "/{sample}.{aligner}.R1.fastq.gz",
 		fastqR2 = inputdir + "/{sample}.{aligner}.R2.fastq.gz"
 	output:
-		vcfuncorr = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	params:
 		kmer = config['KMER'], 
-		itdrefseq = config['ITDREF']
+		itdrefseq = config['ITDREF'],
+		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr"
 	shell:
 		"""
-		/filt3r/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {output.vcfuncorr} --vcf;
+		/filt3r/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --vcf;
 		"""
 
 
@@ -373,12 +373,12 @@ rule correctvcf:
 	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification.
 	"""
 	input:
-		vcfuncorr = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf", sample=sample_list, aligner=aligner_list)
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr.vcf"
 	output:
-		vcfunfilter = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
 	shell:
 		"""
-		(grep "^##" {input.vcfuncorr} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input.vcfuncorr} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input.vcfuncorr} | awk '{{print $0"\tGT\t0/1"}}') > {output.vcfunfilter}
+		(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output}
 		"""
 
 
@@ -387,14 +387,14 @@ rule bcftools_filter:
 	Filter with bcftools
 	"""
 	input:
-		vcfunfilter = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
 	output:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.filter.vcf"
 	params:
 		bcffilter = config['BCFTOOLS_FILTER']
 	shell:
 		"""
-		bcftools view {params.bcffilter} {input.vcfunfilter} -o {output.vcf} 
+		bcftools view {params.bcffilter} {input} -o {output} 
 		"""
 
 # bcftools need vcf.gz.tbi index for the merge all
@@ -403,12 +403,12 @@ rule vcf2gz:
 	Compress vcf with bgzip
 	"""
 	input:
-		vcf = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.filter.vcf"
 	output:
-		vcfgz = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
 	shell:
 		"""
-		bgzip -c {input.vcf} > {output.vcfgz} ; tabix {output.vcfgz}
+		bgzip -c {input} > {output} ; tabix {output}
 		"""
 
 rule cpvcffull:
@@ -416,22 +416,21 @@ rule cpvcffull:
 	Copy or merge with bcftools several vcfs
 	"""
 	input:
-		vcfgz = expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", sample=sample_list, aligner=aligner_list)
+		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
 	output:
-		vcfgzallfull = tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
+		tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
 	shell:
 		"""
 		if [ {sample_count} -eq 1 ]
 		then
-			cp {input.vcfgz} {output.vcfgzallfull} && tabix {output.vcfgzallfull}
+			cp {input.vcfgz} {output} && tabix {output}
 		else
-			bcftools merge {input.vcfgz} -O z -o {output.vcfgzallfull} && tabix {output.vcfgzallfull}
+			bcftools merge {input} -O z -o {output} && tabix {output}
 		fi
 		"""
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']
-	exclude = config['EXCLUDE_RSYNC']
 	
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Complete.txt")
 	shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
@@ -445,19 +444,18 @@ onsuccess:
 	for sample in sample_list:
 		shell("rm -f " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
 	# Rsync all files into final destination
-	shell("rsync -azvh --include={include} --exclude {exclude} {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include} --exclude '*' {tmpdir}/ "+config['OUTPUT_DIR']+"")
 	# Copy new files
 	for sample in sample_list:
-		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/")
+		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/ || true")
 	if config['DEPOT_COPY'] == True:
-		shell("rsync -azvh --include={include} --exclude {exclude} {tmpdir}/ {depotdir}")
+		shell("rsync -azvh --include={include} --exclude '*' {tmpdir}/ {depotdir}")
 		for sample in sample_list:
-			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/")
+			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/ || true")
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
-	exclude_log = config['EXCLUDE_RSYNC']
 	
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Failed.txt")
 	#shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
-	shell("rsync -azvh --include={include_log} --exclude {exclude_log} {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include_log} --exclude '*' {tmpdir}/ "+config['OUTPUT_DIR']+"")
