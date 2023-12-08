@@ -59,6 +59,8 @@ THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: False
 
+DUMMY_PATH: "/app/config/"
+
 ################## Tools parameters ##################
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/RAF>=0.01'"

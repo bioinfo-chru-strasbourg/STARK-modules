@@ -32,7 +32,8 @@ option_list<-list(
     make_option("--refbams",help="Text file containing a list of reference bam files to process (optional)",dest='rbams'),
     make_option("--bed",help='Bed file with 4 or 5 columns (chr, sart, stop, gene, +/- exon) used to generate coverage datas (required)',dest='bed'),
     make_option("--fasta",help='Reference genome fasta file to use (required)',default=NULL,dest='fasta'),
-    make_option("--rdata",default="./ReadInBams.Rdata",help="Output Rdata file, default: ./ReadInBams.Rdata",dest='data')
+    make_option("--rdata",default="./ReadInBams.Rdata",help="Output Rdata file, default: ./ReadInBams.Rdata",dest='data'),
+    make_option("--maxcores",default=16,help="Maximum cores to use, default: 16",dest='mcore'),
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 bam_file=opt$bamfiles
@@ -40,6 +41,7 @@ bedfile=opt$bed
 fasta=opt$fasta
 output=opt$data
 refbams_file=opt$rbams
+maxcores=opt$mcore
 
 if(!file.exists(dirname(output))){dir.create(dirname(output))}
 
@@ -100,8 +102,8 @@ nfiles <- length(bams)
 message('Parse ', nfiles, ' BAM files')
 numCores <- detectCores()
 # add some limitation to the numCores (12 to start)
-if (numCores > 12) {
-    numCores <- 12
+if (numCores > maxcores) {
+    numCores <- maxcores
 }
 cl <- parallel::makeForkCluster(numCores)
 doParallel::registerDoParallel(cl)

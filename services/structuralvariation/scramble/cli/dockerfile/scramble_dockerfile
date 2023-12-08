@@ -33,8 +33,9 @@ RUN git clone https://github.com/SamuelNicaise/variantconvert.git && cd variantc
 RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py init
 # Default genome is hg19
 RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/STARK/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
-
+ 
 # Copy applications files (/app)
 COPY ./ /app
+COPY ./scripts/R/make.vcf.R /opt/conda/share/scramble/bin/
 WORKDIR "/app"
 ENTRYPOINT [ "/bin/bash" ]

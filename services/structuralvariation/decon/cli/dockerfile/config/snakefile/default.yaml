@@ -118,7 +118,8 @@ DECON_PATH: "/app/scripts/R"
 # the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
 # REF_BAM_LIST: "--refbams /app/res/list.tsv"
 REF_BAM_LIST: ""
-
+# Max cores to use
+MCORES: 16
 ############# IdentifyFailures params ##############
 mincorr: 0.98 # Minimum correlation threshold – the minimum correlation between a test sample and any other sample for the test sample to be considered well-correlated (default 0.98)
 mincov: 100 # Minimum coverage threshold – the minimum median coverage for any sample (measured across all exons in the target) or exon (measured across all samples) to be considered well-covered (default 100)
