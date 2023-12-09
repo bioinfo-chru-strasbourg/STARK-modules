@@ -376,7 +376,12 @@ rule DrawR:
 		"""
 		Rscript {arriba_scripts}/draw_fusions.R --annotation={params.refgtfgencode} --fusions={input.arribafusiontsv} --output={output} --alignments={input.bam} --cytobands={params.cytoband} --proteinDomains={params.refprot}
 		"""
-
+onstart:
+	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
+	# Add the snakemake parameters to log
+	with open(logfile, "a+") as f:
+		json.dump(config, f)
+		f.write("\n")
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']

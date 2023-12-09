@@ -432,7 +432,13 @@ rule cpvcffull:
 			bcftools merge {input} -O z -o {output} && tabix {output}
 		fi
 		"""
-
+onstart:
+	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
+	# Add the snakemake parameters to log
+	with open(logfile, "a+") as f:
+		json.dump(config, f)
+		f.write("\n")
+		
 onsuccess:
 	include = config['INCLUDE_RSYNC']
 	
