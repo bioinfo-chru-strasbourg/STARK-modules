@@ -642,7 +642,13 @@ rule convertvcf_allunfiltered:
 		"""
 		vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output} 2> {log.log2}
 		"""
-
+onstart:
+	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
+	# Add the snakemake parameters to log
+	with open(logfile, "a+") as f:
+		json.dump(config, f)
+		f.write("\n")
+		
 onsuccess:
 	include = config['INCLUDE_RSYNC']
 	
