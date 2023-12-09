@@ -356,7 +356,6 @@ rule filt3r:
 		"""
 		{params.filterpath}/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --vcf;
 		"""
-
 rule bcftools_filter:
 	"""
 	Filter with bcftools
@@ -382,7 +381,7 @@ rule vcf_fix:
 		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.filter.vcf"
 	shell:
 		"""
-		(grep "^##" {input} && echo '##INFO=<ID=lenght,Number=.,Type=String,Description="Lenght of the ITD">') > {output}
+		sed '/##fileformat=/ a ##INFO=<ID=lenght,Number=.,Type=String,Description="Lenght of the ITD">' {input}} > {output}
 		"""
 
 rule sortvcf:
