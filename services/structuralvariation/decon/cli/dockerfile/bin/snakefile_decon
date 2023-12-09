@@ -616,6 +616,7 @@ rule ReadInBams:
 		Rscript {params.decondir}/ReadInBams.R --maxcores {params.mcores} --bams {input.allbamlist} --bed {params.deconbed_file} --fasta {params.refgene} --rdata {output} {params.refbamlist} 1> {log.log1} 2> {log.log2}
 		"""
 
+
 rule IdentifyFailures:
 	"""
 	The summary .RData file outputted can be used to flag any samples or exons where exon CNV calling may be suboptimal. 
