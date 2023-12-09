@@ -23,6 +23,7 @@ RUN apt-get install -y tzdata git unzip vim time cmake g++ zlib1g-dev rsync
 
 # Copy applications files (/app)
 COPY ./ /app
+RUN chmod +x /app/bin/filt3r
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds samtools~=1.17.0 bcftools~=1.17.0 bedtools~=2.31.0 snakemake~=7.32.4 pandas~=2.0.3 && mamba clean -afy
 # End
