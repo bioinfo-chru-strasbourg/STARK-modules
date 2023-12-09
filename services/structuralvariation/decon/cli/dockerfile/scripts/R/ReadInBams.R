@@ -33,7 +33,7 @@ option_list<-list(
     make_option("--bed",help='Bed file with 4 or 5 columns (chr, sart, stop, gene, +/- exon) used to generate coverage datas (required)',dest='bed'),
     make_option("--fasta",help='Reference genome fasta file to use (required)',default=NULL,dest='fasta'),
     make_option("--rdata",default="./ReadInBams.Rdata",help="Output Rdata file, default: ./ReadInBams.Rdata",dest='data'),
-    make_option("--maxcores",default=16,help="Maximum cores to use, default: 16",dest='mcore'),
+    make_option("--maxcores",default=16,help="Maximum cores to use, default: 16",dest='mcore')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 bam_file=opt$bamfiles
