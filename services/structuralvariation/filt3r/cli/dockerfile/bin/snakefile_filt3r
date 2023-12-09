@@ -383,7 +383,7 @@ rule vcf_fix:
 		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unsample.vcf"
 	shell:
 		"""
-		sed '/##fileformat=/ a ##INFO=<ID=lenght,Number=.,Type=String,Description="Lenght of the ITD">' {input} > {output}
+		sed '/##fileformat=/ a ##INFO=<ID=length,Number=.,Type=String,Description="Length of the ITD">' {input} > {output}
 		"""
 
 rule vcf_fixsample:
