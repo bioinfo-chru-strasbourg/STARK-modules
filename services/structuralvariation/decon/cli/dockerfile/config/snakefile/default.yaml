@@ -80,7 +80,7 @@ SEARCH_ARGUMENT: "/*/STARK/*"
 # For samtools indexing
 THREADS: "4"
 ## DEBUG ##
-DEBUG_MODE: False
+DEBUG_MODE: FALSE
 
 ############## Tools specific parameters ##############
 ### DECON BED processing ###
@@ -120,6 +120,7 @@ DECON_PATH: "/app/scripts/R"
 REF_BAM_LIST: ""
 # Max cores to use
 MCORES: 16
+
 ############# IdentifyFailures params ##############
 mincorr: 0.98 # Minimum correlation threshold – the minimum correlation between a test sample and any other sample for the test sample to be considered well-correlated (default 0.98)
 mincov: 100 # Minimum coverage threshold – the minimum median coverage for any sample (measured across all exons in the target) or exon (measured across all samples) to be considered well-covered (default 100)

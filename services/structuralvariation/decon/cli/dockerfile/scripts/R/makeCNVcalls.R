@@ -106,6 +106,7 @@ if(length(refbams_file)>0){
     refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
     names(refsample.names)<-NULL    
     sample.names <- sample.names[!sample.names %in% refsample.names]
+  
   if("gender" %in% colnames(rawrefbams)){
     if (modechrom=="XX"){
       refbams = subset(refbams, refbams$gender=='F')
@@ -177,7 +178,7 @@ if(!is.null(cnv.calls)){
     if(length(a)>0){Confidence[a]="LOW"}
 
     if(ncol(bed.file)>=4){
-        genes<-apply(cnv.calls,1,function(x)paste(unique(bed.file[x[4]:x[5],4]),collapse=", "))
+        genes<-apply(cnv.calls,1,function(x)paste(unique(bed.file[x[5]:x[6],4]),collapse=", "))
         a<-which(genes=="PMS2")
         if(length(a)>0){Confidence[a]="LOW"}
 
@@ -256,15 +257,15 @@ if(!is.null(cnv.calls)){
 
     ##################### Output #######################
     if(colnames(counts)[5]=="exon"){
-    cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence,cnv.calls_ids$Custom.first,cnv.calls_ids$Custom.last)
-    names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence","Custom.first","Custom.last")
+    cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$Comparator.name,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence,cnv.calls_ids$Custom.first,cnv.calls_ids$Custom.last)
+    names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Comparator.name","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence","Custom.first","Custom.last")
     save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons,file=output_rdata)
     custom_calls=cnv.calls_ids_out[!is.na(cnv.calls_ids$Custom.first),]
     write.table(custom_calls,file=output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
 
     }else{
-    cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence)
-    names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence")
+    cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$Comparator.name,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence)
+    names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Comparator.name","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence")
     save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,file=output_rdata)
     write.table(cnv.calls_ids_out,file=output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
     }

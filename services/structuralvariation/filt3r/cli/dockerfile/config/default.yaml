@@ -68,7 +68,11 @@ DUMMY_PATH: "/app/config/"
 BCFTOOLS_FILTER: ""
 
 ################## filt3r ##################
+# Path of the filt3t executable
 FILTER_PATH: "/app/bin"
+# Maximal length of the indels to ignore
+SHORT_INDELS: "2"
+# kmer size
 KMER: "12"
 # GRCH37 or 38 ref fasta sequence
 ITDREF: "/STARK/databases/ITDs/FLT3/filt3r/hg19/flt3_hg19.fa"
