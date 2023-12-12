@@ -351,10 +351,11 @@ rule filt3r:
 		kmer = config['KMER'], 
 		itdrefseq = config['ITDREF'],
 		filterpath = config['FILTER_PATH'],
+		shortindels = config['SHORT_INDELS']n
 		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.uncorr"
 	shell:
 		"""
-		{params.filterpath}/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --vcf;
+		{params.filterpath}/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --ignore-short-indels {params.shortindels} --vcf;
 		"""
 
 

@@ -107,14 +107,12 @@ if (numCores > maxcores) {
 }
 cl <- parallel::makeForkCluster(numCores)
 doParallel::registerDoParallel(cl)
-
 # reads in coverage info from each bam file in 'bams'; expects chromosomes to be given as numbers, eg 1, 2 etc, not chr1, chr2 etc.
 unfilteredcounts <- foreach(i=1:nfiles, .combine='cbind') %dopar% {
 	bam <- bams[i]
 	unfilteredcounts <- getBamCounts(bed.frame = bed.file, bam.files = bam, include.chr = FALSE, referenceFasta = fasta)
 }
 parallel::stopCluster(cl)
-
 # counts should be chromosome, start, end, exon, +/- exon_number, GC, sample1, sample2, etc., so we need to clean up the df
 filtercount1 <-basename(bams)
 if (ncol(bed.file) == 4){
@@ -128,6 +126,7 @@ counts<-dplyr::select(unfilteredcounts, all_of(filtercount))
 names(counts) <- unlist(lapply(strsplit(names(counts), "\\."), "[[", 1))
 colnames(counts)[colnames(counts) == "exon"] <- "gene"
 colnames(counts)[colnames(counts) == "exon_number"] <- "exon"
+
 if (ncol(bed.file) == 5){
     colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
 }
