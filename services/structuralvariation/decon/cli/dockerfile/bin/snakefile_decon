@@ -549,6 +549,9 @@ if config['DEBUG_MODE']:
 # 1 is stdout, 2 is stderr 
 ##################
 
+# check the number of sample for copy or merge vcf rule
+sample_count = len(sample_list) 
+
 ruleorder: indexing > ReadInBams
 
 rule all:
@@ -801,7 +804,6 @@ rule vcf2gz:
 		bgzip -c {input} > {output} ; tabix {output}
 		"""
 
-
 rule mergedesign:
 	"""
 	Copy or merge with bcftools several vcfs
@@ -812,7 +814,12 @@ rule mergedesign:
 		tmpdir + "/" + serviceName + "." + date_time + ".all.Design.vcf.gz"
 	shell:
 		"""
-		bcftools merge {input} -O z -o {output} && tabix {output}
+		if [ {sample_count} -eq 1 ]
+		then
+			cp {input} {output} && tabix {output}
+		else
+			bcftools merge {input} -O z -o {output} && tabix {output}
+		fi
 		"""
 
 rule convertvcf_alldesign:
