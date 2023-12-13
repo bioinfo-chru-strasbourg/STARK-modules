@@ -107,6 +107,14 @@
 			"Genes": {
 				"Type": "String",
 				"Description": "The affected genes from the analyzed bed file (from DECoN)"
+			},
+			"Confidence": {
+				"Type": "String",
+				"Description": "Confidence score (from DECoN)"
+			},
+			"Comparator.name": {
+				"Type": "String",
+				"Description": "Comparator name (from DECoN)"
 			}
 		},
 		"FORMAT": {
