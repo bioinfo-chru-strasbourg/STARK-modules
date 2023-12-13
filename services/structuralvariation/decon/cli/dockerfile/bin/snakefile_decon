@@ -760,6 +760,7 @@ rule AnnotSV:
 	log:
 		tmpdir + "/{sample}/" + serviceName +  "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.log"
 	params:
+		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Design_unsort",
 		genome = config['genomeBuild'],
 		overlap = config ['overlap'],
 		mode = config['annotationMode'],
@@ -767,7 +768,7 @@ rule AnnotSV:
 		# HPO -hpo HP:0001156,HP:0001363,HP:0011304"
 	shell:
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {output} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || echo "#No data to annotate" > {output}
+		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || echo "#No data to annotate" > {output}
 		"""
 
 # bcftools sort don't sort correctly
