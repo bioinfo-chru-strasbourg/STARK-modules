@@ -837,7 +837,7 @@ rule plot:
 	input:
 		tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.CNVcalls.RData"
 	params:
-		analysisfailure = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.pdf",
+		analysisfailure = tmpdir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.plotFailed",
 		folder = tmpdir + "/pdfs/",
 		decondir = config['DECON_PATH']
 	output:
