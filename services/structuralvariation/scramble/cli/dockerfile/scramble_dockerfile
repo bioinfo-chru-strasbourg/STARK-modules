@@ -33,7 +33,10 @@ RUN git clone https://github.com/SamuelNicaise/variantconvert.git && cd variantc
 RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py init
 # Default genome is hg19
 RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/STARK/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
- 
+
+# Copy config file for AnnotSV exomiser  
+COPY ./config/annotsv/application.properties /opt/conda/etc/AnnotSV/
+
 # Copy applications files (/app)
 COPY ./ /app
 COPY ./scripts/R/make.vcf.R /opt/conda/share/scramble/bin/

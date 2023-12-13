@@ -29,6 +29,8 @@ RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py init
 # Default genome is hg19
 RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/STARK/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
 
+# Copy config file for AnnotSV exomiser  
+COPY ./config/annotsv/application.properties /opt/conda/etc/AnnotSV/
 COPY ./ /app
 WORKDIR "/app"
 ENTRYPOINT [ "/bin/bash" ]

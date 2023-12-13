@@ -683,7 +683,6 @@ rule merge_makeCNVcalls:
 		cat {input} | sort -u | sort -r >> {output}
 		"""
 
-
 rule variantconvert:
 	input:
 		tmpdir + "/" + serviceName + "." + date_time + ".{aligner}.Design_results_all.tsv"
