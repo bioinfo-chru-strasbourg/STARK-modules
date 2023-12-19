@@ -2,7 +2,7 @@
 # Config Yaml Version:     1.0
 # Description:             Yaml file to run Snakefile Filt3r module
 ##########################################################################
-# DEV version 1 : 28/11/2023
+# PROD version 1 : 28/11/2023
 # Authoring : Thomas LAVAUX
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
@@ -13,7 +13,7 @@ repository: "/STARK/output/repository"
 depository: "/STARK/output/depository"
 # Copy to depot directory (archive)
 DEPOT_COPY: False
-# Output directory if not repository
+# Output directory if not repository to copy results
 OUTPUT_DIR: ""
 
 # Default path to the input datas == {run} from listener.py/launcher.py
@@ -30,26 +30,27 @@ TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
 
-# Ext to index (endwith)
-EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".bam", ".bam.bai"]
+# Files to index into the dictionary depending on extension (endwith)
+EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".bam", ".bam.bai", ".R1.fastq.gz", ".R2.fastq.gz"]
 # List of files extension to process
-PROCESS_FILE: ['.bam']
-# How to process input files : cram/cp/rsync/ls/filterbam
+#PROCESS_FILE: ['.bam']
+PROCESS_FILE: [".R1.fastq.gz", ".R2.fastq.gz"]
+# How to copy input files : ls or rsync
 PROCESS_CMD: 'ls'
-# Only analyse validation.bam/cram files
-VALIDATION_ONLY: False
 # Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
 ALIGNER_NAME:
+# Only analyse sample.validation.aligner.bam/cram files
+VALIDATION_ONLY: False
 
-# Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
+# Samples list exclusion (not to be analysed) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
-# Sample filter
+# Sample filter : only analyse those samples
 FILTER_SAMPLE: []
 
-# Rsync options : if several files are added add {} at the start and end of the list (bash syntax)
-INCLUDE_RSYNC: "{'*.vcf.gz.tbi', '*.vcf.gz'}"
-# for log file copy if pipeline failed
-INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
+# Extension files to copy after pipeline success
+INCLUDE_RSYNC: ['*.vcf.gz.tbi', '*.vcf.gz']
+# Extensions files to copy after pipeline failure
+INCLUDE_LOG_RSYNC: ['*.log','*.err','*Failed.txt']
 
 # Search parameters
 RECURSIVE_SEARCH: False
@@ -60,19 +61,20 @@ THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: False
 
-DUMMY_PATH: "/app/config/"
-
 ################## Tools parameters ##################
+# Folder to store dummy.vcf for ex
+DUMMY_PATH: "/app/config/"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/VAF>=0.01'"
 BCFTOOLS_FILTER: "-i 'INFO/VAF>=0.01'"
-
+# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
+REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 ################## filt3r ##################
 # Path of the filt3t executable
 FILTER_PATH: "/app/bin"
-# Maximal length of the indels to ignore
-SHORT_INDELS: "2"
-# kmer size
+# Maximal length of the indels to ignore (default 0)
+SHORT_INDELS: "2" 
+# Kmer size (default 12)
 KMER: "12"
-# GRCH37 or 38 ref fasta sequence
+# GRCH37 or 38 refrence fasta sequence for FLT3
 ITDREF: "/STARK/databases/ITDs/FLT3/filt3r/hg19/flt3_hg19.fa"
