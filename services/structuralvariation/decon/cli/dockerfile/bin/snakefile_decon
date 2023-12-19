@@ -219,7 +219,7 @@ def kmerisation(kmerSize, bedFile, kmerBedFile):
 serviceName = config['serviceName']
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 runName = os.path.basename(os.path.normpath(config['run']))
-inputdir = "/app/res/" + runName + "/" + date_time + "/input"
+inputDir = "/app/res/" + runName + "/" + date_time + "/input"
 tmpDir = "/app/res/" + runName + "/" + date_time + "/tmp"
 try:
 	config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
@@ -230,7 +230,7 @@ if not config['OUTPUT_DIR']:
 	config['OUTPUT_DIR'] = config['run']
 logfile = tmpDir + "/" + serviceName + "." + date_time + '.parameters.log'
 annotation_file = tmpDir + "/" + serviceName + "." + date_time + '.AnnotSV.txt'
-os.makedirs(inputdir, exist_ok = True)
+os.makedirs(inputDir, exist_ok = True)
 os.makedirs(tmpDir, exist_ok = True)
 os.makedirs(config['OUTPUT_DIR'], exist_ok = True)
 if config['DEPOT_COPY'] == True:
@@ -338,12 +338,12 @@ if not config['LIST_GENES']:
 # DECON can also use a bed with the exons number for an accurate formating of pdfs graph (makeCNVcalls) and the IdentifyFailures metrics
 # ex	:	chr17	4511	4889	BCRA1	26
 
-inputbed = inputdir+"/"+serviceName+".input.bed"
-cat_panels_bed = inputdir+"/"+serviceName+".concatenatepanels.bed"
-cat_list_genes = inputdir+"/"+serviceName+".fullpath.genes.list"
-cat_noduplicate_panels_bed = inputdir+"/"+serviceName+".concatenatepanelsnoduplicate.bed"
-outputbed = inputdir + "/" + serviceName + ".output.bed"
-intermediatebed = inputdir + "/" + serviceName + '.intermediate.bed'
+inputbed = inputDir+"/"+serviceName+".input.bed"
+cat_panels_bed = inputDir+"/"+serviceName+".concatenatepanels.bed"
+cat_list_genes = inputDir+"/"+serviceName+".fullpath.genes.list"
+cat_noduplicate_panels_bed = inputDir+"/"+serviceName+".concatenatepanelsnoduplicate.bed"
+outputbed = inputDir + "/" + serviceName + ".output.bed"
+intermediatebed = inputDir + "/" + serviceName + '.intermediate.bed'
 
 # Case if genes file bed don't have gene name & exon number
 # We always create a custom exon file from the design bed and intersectBed with a refseqgene database to get the exon number
@@ -503,9 +503,9 @@ logsomefile(logfile, 'List of genes files:', "\n", items = config['LIST_GENES'])
 # Copy2 bed_file & genes_file & transcripts_file for debug
 if config['DEBUG_MODE']:
 	try:
-		copy2(config['BED_FILE'], inputdir)
-		copy2(config['GENES_FILE'], inputdir)
-		copy2(config['TRANSCRIPTS_FILE'], inputdir)
+		copy2(config['BED_FILE'], inputDir)
+		copy2(config['GENES_FILE'], inputDir)
+		copy2(config['TRANSCRIPTS_FILE'], inputDir)
 	except FileNotFoundError: pass
 
 ################################################## RULES ##################################################
@@ -524,7 +524,7 @@ rule all:
 	Rule will create a design vcf.gz with the gene list file provided
 	"""
 	input:
-		expand(inputdir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
+		expand(inputDir + "/" + "{sample}.{aligner}.bai", aligner=aligner_list, sample=sample_list),
 		expand(tmpDir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.tsv", aligner=aligner_list),
 		expand(tmpDir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		tmpDir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv",
@@ -604,9 +604,9 @@ rule indexing:
 	Indexing bam files with samtools
 	"""
 	input:
-		inputdir+"/{sample}.{aligner}.bam"
+		inputDir+"/{sample}.{aligner}.bam"
 	output:
-		temp(inputdir+"/{sample}.{aligner}.bai")
+		temp(inputDir+"/{sample}.{aligner}.bai")
 	params:
 		threads = config['THREADS']
 	shell:
@@ -623,7 +623,7 @@ rule ReadInBams:
 	"""
 	input:
 		allbamlist = tmpDir+"/"+serviceName+"."+date_time+".A.list.txt",
-		bai = expand(inputdir+"/{sample}.{aligner}.bai",sample=sample_list,aligner=aligner_list)
+		bai = expand(inputDir+"/{sample}.{aligner}.bai",sample=sample_list,aligner=aligner_list)
 	output:
 		tmpDir+"/"+serviceName+'.'+date_time+".{aligner}.ReadInBams.RData"
 	params:
@@ -712,11 +712,10 @@ rule variantconvert:
 	output:
 		temp(tmpDir+"/"+serviceName+"."+date_time+".{aligner}.allsamples.Design.unsort.vcf")
 	params:
-		scriptspath = config['SCRIPTS_PATH'],
 		scriptsconfig = config['SCRIPTS_CONFIG'],
 		dummypath = config['DUMMY_PATH']
 	log:
-		tmpdtmpDir+"/"+serviceName+"."+date_time+".{aligner}.variantconvert.log"
+		tmpDir+"/"+serviceName+"."+date_time+".{aligner}.variantconvert.log"
 	shell:
 		"""
 		variantconvert convert -i {input} -o {output} -fi tsv -fo vcf -c {params.scriptsconfig}/config_decon.json 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
@@ -797,7 +796,7 @@ rule sortvcf:
 	Bash script to sort a vcf
 	"""
 	input:
-		rules.AnnotSV.ouput
+		rules.AnnotSV.output
 	output:
 		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.Design.vcf"
 	params:

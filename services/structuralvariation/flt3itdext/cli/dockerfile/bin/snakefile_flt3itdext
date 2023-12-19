@@ -101,7 +101,6 @@ def finditemindico(sample_list, ext_list, dictionary, include_ext, exclude_ext):
 def searchfiles(directory, search_arg, recursive_arg):
 	""" Function to search all files in a directory, adding a search arguement append to the directory and a recursive_search options (True/False) """
 	return sorted(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
-				shell("samtools view -b -T "+refgenome+" -L "+bedfile+" -o "+outputfile+".bam "+inputfiles)	# samtools view -b -h -L bedfile.bed -o newbam.bam originalbam.bam
 
 def logsomefile(logfile, text, sep, items_list=None, items=None):
 	""" Function to log a variable value or a list of values into a log file """
@@ -151,8 +150,8 @@ def extract_tag(tagfile, tag, tagsep, sep):
 serviceName = config['serviceName']
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 runName = os.path.basename(os.path.normpath(config['run']))
-inputdir = "/app/res/" + runName + "/" + date_time + "/input"
-tmpdir = "/app/res/" + runName + "/" + date_time + "/tmp"
+inputDir = "/app/res/" + runName + "/" + date_time + "/input"
+tmpDir = "/app/res/" + runName + "/" + date_time + "/tmp"
 try:
 	config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
 	config['APP_NAME'] = os.path.normpath(config['run']).split('/')[5]
@@ -160,11 +159,11 @@ except IndexError: pass
 depotdir = config['depository'] + "/" + config['GROUP_NAME'] + "/" + config['APP_NAME'] + "/" + runName + "/"
 if not config['OUTPUT_DIR']:
 	config['OUTPUT_DIR'] = config['run']
-logfile = tmpdir + "/" + serviceName + "." + date_time + '.parameters.log'
+logfile = tmpDir + "/" + serviceName + "." + date_time + '.parameters.log'
 
 # Create directories
-os.makedirs(inputdir, exist_ok = True)
-os.makedirs(tmpdir, exist_ok = True)
+os.makedirs(inputDir, exist_ok = True)
+os.makedirs(tmpDir, exist_ok = True)
 os.makedirs(config['OUTPUT_DIR'], exist_ok = True)
 if config['DEPOT_COPY'] == True:
 	os.makedirs(depotdir, exist_ok = True)
@@ -233,13 +232,13 @@ if config['LIST_GENES']:
 		panel_list = f.read().splitlines()
 elif config['GENES_FILE'] and not config['LIST_GENES']:
 	panel_list.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
-# cp files from panel_list to inputdir and rename them
+# cp files from panel_list to inputDir and rename them
 if panel_list:
 	for panel in panel_list:
 		inputfile = os.path.dirname(config['LIST_GENES']) + "/" + panel + ".bed" # panel_list don't have the bed extension, need that for the copy
 		# cut sample. and .genes from file name so files will have the same name as the truncated name list
 		panel_trunc = panel.split(".", 1)[1].split(".genes",1)[0]
-		outputfile = tmpdir + "/" + panel_trunc
+		outputfile = tmpDir + "/" + panel_trunc
 		copy2(inputfile, outputfile)
 		# Create a new list for expand, names are filenames without sample and .genes.bed ext
 		panel_list_trunc.append(panel_trunc)
@@ -261,9 +260,9 @@ if config['LIST_GENES']:
 # Copy2 bed_file & genes_file & transcripts_file for debug
 if config['DEBUG_MODE']:
 	try:
-		copy2(config['BED_FILE'], inputdir)
-		copy2(config['GENES_FILE'], inputdir)
-		copy2(config['TRANSCRIPTS_FILE'], inputdir)
+		copy2(config['BED_FILE'], inputDir)
+		copy2(config['GENES_FILE'], inputDir)
+		copy2(config['TRANSCRIPTS_FILE'], inputDir)
 	except FileNotFoundError: pass
 
 ################################################## RULES ##################################################
@@ -275,8 +274,8 @@ ruleorder: copy_bam > cramtobam
 
 rule all:
 	input:
-		expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz",aligner=aligner_list, sample=sample_list),
-		tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
+		expand(tmpDir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz",aligner=aligner_list, sample=sample_list),
+		tmpDir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
 
 
 rule copy_bam:
@@ -326,7 +325,7 @@ rule cramtobam:
 	input:
 		rules.copy_cram.output
 	output:
-		temp(inputdir+"/{sample}.{aligner}.bam")
+		temp(inputDir+"/{sample}.{aligner}.bam")
 	params:
 		refgenome = config['REFGENEFA_PATH']
 	shell:
@@ -340,9 +339,9 @@ rule indexing:
 	Indexing bam files with samtools
 	"""
 	input:
-		inputdir+"/{sample}.{aligner}.bam"
+		inputDir+"/{sample}.{aligner}.bam"
 	output:
-		temp(inputdir+"/{sample}.{aligner}.bai")
+		temp(inputDir+"/{sample}.{aligner}.bai")
 	params:
 		threads = config['THREADS']
 	shell:
@@ -356,13 +355,13 @@ rule flt3_itd_ext:
 	Flt3_itd_ext is a software that detects internal duplications in bam files
 	"""
 	input:
-		bam = inputdir + "/{sample}.{aligner}.bam",
+		bam = inputDir + "/{sample}.{aligner}.bam",
 		bai = rules.indexing.output
 	output:
-		tmpdir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw.vcf"
+		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw.vcf"
 	params:
-		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/",
-		outputfile = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/{sample}.{aligner}.raw.vcf",
+		output = tmpDir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/",
+		outputfile = tmpDir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/{sample}.{aligner}.raw.vcf",
 		assembly = config['ASSEMBLY'],
 		index = config['REF_ITD_PATH'],
 		ngstype = config['NGS_TYPE'],
@@ -380,7 +379,7 @@ rule correctvcf:
 	input:
 		rules.flt3_itd_ext.output
 	output:
-		temp(tmpdir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.fixGT.vcf")
+		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.fixGT.vcf")
 	shell:
 		"""
 		cat {input} {output}
@@ -393,7 +392,7 @@ rule bcftools_filter:
 	input:
 		rules.correctvcf.output
 	output:
-		temp(tmpdir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.filter.vcf")
+		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.filter.vcf")
 	params:
 		bcffilter = config['BCFTOOLS_FILTER']
 	shell:
@@ -408,7 +407,7 @@ rule sortvcf:
 	input:
 		rules.bcftools_filter.output
 	output:
-		temp(tmpdir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.sort.vcf")
+		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.sort.vcf")
 	params:
 		dummypath = config['DUMMY_PATH']
 	shell:
@@ -424,7 +423,7 @@ rule vcf2gz:
 	input:
 		rules.sortvcf.output
 	output:
-		 tmpdir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.vcf.gz"
+		 tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.vcf.gz"
 	shell:
 		"""
 		bgzip -c {input} > {output} ; tabix {output}
@@ -435,9 +434,9 @@ rule cpvcffull:
 	Copy or merge with bcftools several vcfs
 	"""
 	input:
-		expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", sample=sample_list, aligner=aligner_list)
+		expand(tmpDir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output:
-		tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
+		tmpDir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
 	shell:
 		"""
 		if [ {sample_count} -eq 1 ]

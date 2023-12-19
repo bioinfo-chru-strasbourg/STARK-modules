@@ -167,7 +167,7 @@ def extract_tag(tagfile, tag, tagsep, sep):
 serviceName = config['serviceName']
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 runName = os.path.basename(os.path.normpath(config['run']))
-inputdir = "/app/res/" + runName + "/" + date_time + "/input"
+inputDir = "/app/res/" + runName + "/" + date_time + "/input"
 tmpDir = "/app/res/" + runName + "/" + date_time + "/tmp"
 try:
 	config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
@@ -179,7 +179,7 @@ if not config['OUTPUT_DIR']:
 logfile = tmpDir + "/" + serviceName + "." + date_time + '.parameters.log'
 annotation_file = tmpDir + "/" + serviceName + "." + date_time + '.AnnotSV.txt'
 
-os.makedirs(inputdir, exist_ok = True)
+os.makedirs(inputDir, exist_ok = True)
 os.makedirs(tmpDir, exist_ok = True)
 os.makedirs(config['OUTPUT_DIR'], exist_ok = True)
 if config['DEPOT_COPY'] == True:
@@ -249,7 +249,7 @@ else:
 
 # Find list.genes files 
 if not config['LIST_GENES']:
-	config['LIST_GENES'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], dico_run, '.list.genes', '.list.transcripts')
+	config['LIST_GENES'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
 panel_list = []
@@ -259,13 +259,13 @@ if config['LIST_GENES']:
 		panel_list = f.read().splitlines()
 elif config['GENES_FILE'] and not config['LIST_GENES']:
 	panel_list.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
-# cp files from panel_list to inputdir and rename them
+# cp files from panel_list to inputDir and rename them
 if panel_list:
 	for panel in panel_list:
 		inputfile = os.path.dirname(config['LIST_GENES']) + "/" + panel + ".bed" # panel_list don't have the bed extension, need that for the copy
 		# cut sample. and .genes from file name so files will have the same name as the truncated name list
 		panel_trunc = panel.split(".", 1)[1].split(".genes",1)[0]
-		outputfile = tmpdir + "/" + panel_trunc
+		outputfile = tmpDir + "/" + panel_trunc
 		copy2(inputfile, outputfile)
 		# Create a new list for expand, names are filenames without sample and .genes.bed ext
 		panel_list_trunc.append(panel_trunc)
@@ -287,9 +287,9 @@ if config['LIST_GENES']:
 # Copy2 bed_file & genes_file & transcripts_file for debug
 if config['DEBUG_MODE']:
 	try:
-		copy2(config['BED_FILE'], inputdir)
-		copy2(config['GENES_FILE'], inputdir)
-		copy2(config['TRANSCRIPTS_FILE'], inputdir)
+		copy2(config['BED_FILE'], inputDir)
+		copy2(config['GENES_FILE'], inputDir)
+		copy2(config['TRANSCRIPTS_FILE'], inputDir)
 	except FileNotFoundError: pass
 
 ################################################## RULES ##################################################
@@ -396,9 +396,9 @@ rule indexing:
 	Indexing bam files with samtools
 	"""
 	input:
-		inputdir+"/{sample}.{aligner}.bam"
+		inputDir+"/{sample}.{aligner}.bam"
 	output:
-		temp(inputdir+"/{sample}.{aligner}.bai")
+		temp(inputDir+"/{sample}.{aligner}.bai")
 	params:
 		threads = config['THREADS']
 	shell:
@@ -417,8 +417,8 @@ rule cluster_identifier:
 	Requirement : .bam file must have a .bai file associated in the same folder
 	"""
 	input:
-		bam = inputdir+"/{sample}.{aligner}.bam",
-		bai = inputdir+"/{sample}.{aligner}.bai"
+		bam = inputDir+"/{sample}.{aligner}.bam",
+		bai = inputDir+"/{sample}.{aligner}.bai"
 	output:
 		temp(tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.clusters.txt")
 	params:
@@ -453,7 +453,7 @@ rule scramble:
 	output:
 		tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw.vcf"
 	log: 
-		log1 = tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.ScrambleR.log", log2 = tmpdir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.ScrambleR.err"
+		log1 = tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.ScrambleR.log", log2 = tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.ScrambleR.err"
 	shell:
 		"""
 		Rscript --vanilla {params.scrambledir}/SCRAMble.R \
@@ -580,7 +580,7 @@ rule filtervcfdesign:
 	Filter vcf with a bed file
 	"""
 	input:
-		rules.vcfg2gz.output
+		rules.vcf2gz.output
 	output:
 		tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Design.vcf.gz"
 	params:
