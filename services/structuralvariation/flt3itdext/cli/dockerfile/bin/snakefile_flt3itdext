@@ -382,7 +382,7 @@ rule correctvcf:
 		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.fixGT.vcf")
 	shell:
 		"""
-		cat {input} {output}
+		cat {input} > {output}
 		"""
 
 rule bcftools_filter:
