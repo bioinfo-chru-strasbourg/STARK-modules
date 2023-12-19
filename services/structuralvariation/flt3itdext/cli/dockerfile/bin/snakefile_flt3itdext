@@ -458,8 +458,8 @@ onstart:
 onsuccess:
 	include = config['INCLUDE_RSYNC']
 		
-	shell("touch "+config['OUTPUT_DIR']+serviceName+"Complete.txt")
-	shell("rm -f "+config['OUTPUT_DIR']+serviceName+"Running.txt")
+	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Complete.txt")
+	shell("rm -f "+config['OUTPUT_DIR']+"/"+serviceName+"Running.txt")
 	
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
@@ -478,6 +478,6 @@ onsuccess:
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
 	
-	shell("touch "+config['OUTPUT_DIR']+serviceName+"Failed.txt")
+	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Failed.txt")
 	#shell("rm -f "+config['OUTPUT_DIR']+serviceName+"Running.txt")
 	shell("rsync -azvh --include={include_log} {tmpDir}/ "+config['OUTPUT_DIR']+"")

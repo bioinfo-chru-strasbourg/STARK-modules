@@ -98,15 +98,12 @@ REMOVE_A: False
 GENE_LIST_RESTRICT: []
 # List of chr to remove from DECON BED
 CHR_LIST_RESTRICT: []
-
 # If bed file got a 5 column with exon number 
 customexon: FALSE
 # kmerisation of DECON bed (integer) (ex 250)
 KMER: ""
-
 # Path to Decon R directory
 DECON_PATH: "/app/scripts/R"
-
 ############# ReadInbams params ##############
 # path to the tsv file containing 2 columns : bam for the list of reference bams for CNV calling (full path of bams), and gender (F/M)
 # the bam files have to be indexed
