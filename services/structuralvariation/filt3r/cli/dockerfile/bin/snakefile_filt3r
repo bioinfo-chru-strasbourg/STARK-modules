@@ -120,10 +120,6 @@ def logsomefile(logfile, text, sep, items_list=None, items=None):
 			else:
 				f.write(str(items) + sep)
 
-# structure of bam files are sample.aligner.(validation).bam or sample.archive.cram
-# samples name are taken from bam files
-# [x] for x part of the filename separated by '.'
-# [0] is sample ; [-1] is extension ; [1] is aligner
 def extractlistfromfiles(file_list, ext_list, sep, position):
 	""" Function for creating list from a file list, with a specific extension, a separator and the position of the string we want to extract """
 	output_list = []
@@ -271,26 +267,11 @@ if config['DEBUG_MODE']:
 	except FileNotFoundError: pass
 
 ################################################## RULES ##################################################
-# The input for the rule all is the output of the pipeline
-# The expand for the {sample} {aligner} is done only at this step
-# Final results will follow this structure in the output directory 
-# /runName/SAMPLENAME/ServiceName / individual results
-# /runName/global results & global logs with ServiceName index
-############################################################################################################
-
-##### NOTE #################################################################################################
-# Tools that output a file adding a extension should be set with params: params.output as the output of the command without the extension, and output: output.ext exist only to connect rules
-# For programs that do not have an explicit log parameter, you may always use 2> {log} to redirect standard output to a file (here, the log file) in Linux-based systems. Note that it is also supported to have multiple (named) log files being specified
-# 1 is stdout, 2 is stderr 
-############################################################################################################
 
 # check the number of sample for merge vcf rule
 sample_count = len(sample_list) 
 
-if config['PROCESS_FILE'] == [".R1.fastq.gz", ".R2.fastq.gz"]:
-	ruleorder: copy_fastq > samtools_fastq
-else:
-	ruleorder: copy_bam > cramtobam
+ruleorder: copy_bam > samtools_fastq > copy_fastq > cramtobam
 
 rule all:
 	input:
@@ -302,8 +283,8 @@ rule copy_fastq:
 	Copy input files
 	"""
 	output:
-		fastqR1=inputDir+"/{sample}.{aligner}.R1.fastq.gz",
-		fastqR2=inputDir+"/{sample}.{aligner}.R2.fastq.gz"
+		fastqR1=temp(inputDir+"/{sample}.{aligner}.R1.fastq.gz"),
+		fastqR2=temp(inputDir+"/{sample}.{aligner}.R2.fastq.gz")
 	params:
 		process = config['PROCESS_CMD'],
 		download_link1 = lambda wildcards: runDict[wildcards.sample]['.R1.fastq.gz'],
@@ -323,7 +304,7 @@ rule copy_bam:
 	Copy input files
 	"""
 	output:
-		inputDir+"/{sample}.{aligner}.bam"
+		temp(inputDir+"/{sample}.{aligner}.bam")
 	params:
 		process = config['PROCESS_CMD'],
 		download_link = lambda wildcards: runDict[wildcards.sample]['.bam']
@@ -343,7 +324,7 @@ rule copy_cram:
 	Copy input files
 	"""
 	output:
-		inputDir+"/{sample}.{aligner}.cram"
+		temp(inputDir+"/{sample}.{aligner}.cram")
 	params:
 		process = config['PROCESS_CMD'],
 		download_link = lambda wildcards: runDict[wildcards.sample]['.cram']
@@ -365,7 +346,7 @@ rule cramtobam:
 	input:
 		rules.copy_cram.output
 	output:
-		inputDir+"/{sample}.{aligner}.bam"
+		temp(inputDir+"/{sample}.{aligner}.bam")
 	params:
 		refgenome = config['REFGENEFA_PATH']
 	shell:
@@ -380,8 +361,8 @@ rule samtools_fastq:
 	input:
 		inputDir+"/{sample}.{aligner}.bam"
 	output:
-		fastqR1=inputDir+"/{sample}.{aligner}.R1.fastq.gz",
-		fastqR2=inputDir+"/{sample}.{aligner}.R2.fastq.gz"
+		fastqR1=temp(inputDir+"/{sample}.{aligner}.R1.fastq.gz"),
+		fastqR2=temp(inputDir+"/{sample}.{aligner}.R2.fastq.gz")
 	shell:
 		"""
 		samtools fastq -1 {output.fastqR1} -2 {output.fastqR2} {input}
@@ -396,13 +377,13 @@ rule filt3r:
 		fastqR1=inputDir+"/{sample}.{aligner}.R1.fastq.gz",
 		fastqR2=inputDir+"/{sample}.{aligner}.R2.fastq.gz"
 	output:
-		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.uncorr.vcf"
+		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw.vcf"
 	params:
 		kmer = config['KMER'], 
 		itdrefseq = config['ITDREF'],
 		filterpath = config['FILTER_PATH'],
 		shortindels = config['SHORT_INDELS'],
-		output=tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.uncorr"
+		output=tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw"
 	shell:
 		"""
 		{params.filterpath}/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --ignore-short-indels {params.shortindels} --vcf;
@@ -416,7 +397,7 @@ rule vcf_infofix:
 	input:
 		rules.filt3r.output
 	output:
-		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.fixGT.vcf"
+		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.fixGT.vcf")
 	shell:
 		"""
 		sed 's/##INFO=<ID=VAF,Number=.,Type=String,Description="Variant Allele Frequency (ratio)">/##INFO=<ID=VAF,Number=.,Type=Float,Description="Variant Allele Frequency (ratio)">/g' {input} > {output}
@@ -429,7 +410,7 @@ rule vcf_fixgenotype:
 	input:
 		rules.vcf_infofix.output
 	output:
-		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.fixINFO.vcf"
+		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.fixINFO.vcf")
 	shell:
 		"""
 		(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output}
@@ -443,7 +424,7 @@ rule bcftools_filter:
 	input:
 		rules.vcf_fixgenotype.output
 	output:
-		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.unfilter.vcf"
+		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.unfilter.vcf")
 	params:
 		bcffilter = config['BCFTOOLS_FILTER']
 	shell:
@@ -460,7 +441,7 @@ rule sortvcf:
 	input:
 		rules.bcftools_filter.output
 	output:
-		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.unsort.vcf"
+		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.unsort.vcf")
 	params:
 		dummypath = config['DUMMY_PATH']
 	shell:
@@ -500,31 +481,31 @@ rule mergevcf:
 			bcftools merge {input} -O z -o {output} && tabix {output}
 		fi
 		"""
-onstart:
-	shell("touch "+config['OUTPUT_DIR']+serviceName+"Running.txt")
-	# Add the snakemake parameters to log
-	with open(logfile, "a+") as f:
-		json.dump(config, f)
-		f.write("\n")
-		
+
+
 onsuccess:
-	include=config['INCLUDE_RSYNC']
+	include = config['INCLUDE_RSYNC']
+		
 	shell("touch "+config['OUTPUT_DIR']+serviceName+"Complete.txt")
 	shell("rm -f "+config['OUTPUT_DIR']+serviceName+"Running.txt")
+	
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write("End of the analysis : ")
 		f.write((date_time_end) + "\n")
-	# Remove old files TODO add a test if files in folder to avoid stderr
 	for sample in sample_list:
 		shell("rm -f "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/* || true") # if rm stderr, the true will avoid exiting snakemake
 	shell("rsync -azvh --include={include} {tmpDir}/ "+config['OUTPUT_DIR']+"")
-	# Copy new files
 	for sample in sample_list:
 		shell("cp "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/ || true")
-	
+	if config['DEPOT_COPY'] == True:
+		shell("rsync -azvh --include={include} {tmpDir}/ {depotdir}")
+		for sample in sample_list:
+			shell("cp "+depotdir+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+depotdir+sample+"/"+serviceName+"/ || true")
+
 onerror:
-	include_log=config['INCLUDE_LOG_RSYNC']
+	include_log = config['INCLUDE_LOG_RSYNC']
+	
 	shell("touch "+config['OUTPUT_DIR']+serviceName+"Failed.txt")
-	#shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
+	#shell("rm -f "+config['OUTPUT_DIR']+serviceName+"Running.txt")
 	shell("rsync -azvh --include={include_log} {tmpDir}/ "+config['OUTPUT_DIR']+"")

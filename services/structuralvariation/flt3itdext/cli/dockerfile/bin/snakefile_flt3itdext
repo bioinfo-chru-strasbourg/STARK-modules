@@ -35,6 +35,54 @@ from shutil import copy2
 configfile: "/app/config/default.yaml"
 
 ####################### FUNCTIONS #####################
+def parse_samplesheet(samplesheet_path):
+	"""
+	samplesheet_path: absolute path of a samplesheet file, Illumina format
+	return: a dataframe containing 9 columns :
+	Sample_ID,Sample_Plate,Sample_Well,I7_Index_ID,index,Manifest,GenomeFolder,Sample_Project,Description
+	The description field contains tag separated by ! ; the name of the tag and the value is separated by # (ex : SEX#F!APP#DIAG.BBS_RP)
+	"""
+	samplesheet_data = []
+	samplesheet_header = []
+	with open(samplesheet_path, 'r') as f:
+		v = False
+		for lines in f:
+			lines = lines.strip()
+			if v:
+				samplesheet_data.append(lines.split(','))
+			if 'Sample_ID' in lines:
+				v = True
+				samplesheet_header.append(lines.split(','))
+	df = pd.DataFrame(samplesheet_data, columns=samplesheet_header)
+	sample_list = df.iloc[:, 0].tolist()
+	return df
+
+def getSampleInfos(samplesheet_path, dictionary):
+	"""
+	samplesheet_path: absolute path of a samplesheet file, Illumina format
+	return a dictionnary with Sample_ID from samplesheet as key and 'gender': 'F or M or NULL'
+	"""
+	dictionary = {}
+	if samplesheet_path:
+		parse_samplesheet(samplesheet_path)
+		for i, rows in parse_samplesheet(samplesheet_path).iterrows():
+			if not any(exclude in rows['Sample_ID'] for exclude in config['EXCLUDE_SAMPLE']):
+				sampleID = rows["Sample_ID"]
+				dictionary[sampleID] = {}
+				tags = rows['Description'].split('!')
+				for tag in tags:
+					if 'SEX' in tag and '_' in tag:
+						tag = tag.split('_')[-1]
+						dictionary[sampleID]['gender'] = tag
+						break
+					elif 'SEX' in tag and '#' in tag:
+						tag = tag.split('#')[-1]
+						dictionary[sampleID]['gender'] = tag
+						break
+					else:
+						tag = ''
+						dictionary[sampleID]['gender'] = tag
+	return dictionary
 
 def finditemindico(sample_list, ext_list, dictionary, include_ext, exclude_ext):
 	""" Function to search in a dictionary a file path itering by the first key (sample_list) and second key (extension_list) with an including and excluding filter """
@@ -71,10 +119,6 @@ def logsomefile(logfile, text, sep, items_list=None, items=None):
 			else:
 				f.write(str(items) + sep)
 
-# structure of bam files are sample.aligner.(validation).bam or sample.archive.cram
-# samples name are taken from bam files
-# [x] for x part of the filename separated by '.'
-# [0] is sample ; [-1] is extension ; [1] is aligner
 def extractlistfromfiles(file_list, ext_list, sep, position):
 	""" Function for creating list from a file list, with a specific extension, a separator and the position of the string we want to extract """
 	output_list = []
@@ -104,35 +148,18 @@ def extract_tag(tagfile, tag, tagsep, sep):
 	return(output_tag)
 
 ### END OF FUNCTIONS ###
-
-# Variables initialisation
-# set datetime to add to output file name
+serviceName = config['serviceName']
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-
-# Return last directory of the path run (without /)
-# ex == /STARK/output/repository/GROUP/APP/run
-nameoftherun = os.path.basename(os.path.normpath(config['run']))
-
-# Set directories to save tempory results and input files
-inputdir = "/app/res/" + nameoftherun + "/" + date_time + "/input"
-tmpdir = "/app/res/" + nameoftherun + "/" + date_time + "/tmp"
-
-# Get group [4] and app [5] name from run (or -1 and -2 ?)
-# run structure is "/STARK/output/repository/group/app/run"
-# Default is UNKNOW in the yaml file
+runName = os.path.basename(os.path.normpath(config['run']))
+inputdir = "/app/res/" + runName + "/" + date_time + "/input"
+tmpdir = "/app/res/" + runName + "/" + date_time + "/tmp"
 try:
 	config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
 	config['APP_NAME'] = os.path.normpath(config['run']).split('/')[5]
 except IndexError: pass
-
-# Construct repository and depository dir structure (outputdir will be the default output)
-depotdir = config['depository'] + "/" + config['GROUP_NAME'] + "/" + config['APP_NAME'] + "/" + nameoftherun + "/"
-
+depotdir = config['depository'] + "/" + config['GROUP_NAME'] + "/" + config['APP_NAME'] + "/" + runName + "/"
 if not config['OUTPUT_DIR']:
-	config['OUTPUT_DIR'] = config['repository'] + "/" + config['GROUP_NAME'] + "/" + config['APP_NAME'] + "/" + nameoftherun + "/"
-
-# Set log path file
-serviceName = config['serviceName']
+	config['OUTPUT_DIR'] = config['run']
 logfile = tmpdir + "/" + serviceName + "." + date_time + '.parameters.log'
 
 # Create directories
@@ -149,8 +176,7 @@ files_list = searchfiles(os.path.normpath(config['run']), config['SEARCH_ARGUMEN
 sample_list = extractlistfromfiles(files_list, config['PROCESS_FILE'], '.', 0)
 aligner_list = extractlistfromfiles(files_list, config['PROCESS_FILE'], '.', 1)
 
-# Exclude samples from the exclude_list
-# Case insensitive
+# Exclude samples from the exclude_list case insensitive
 for sample_exclude in config['EXCLUDE_SAMPLE']:
 	for sample in sample_list:
 		if sample.upper().startswith(sample_exclude.upper()):
@@ -165,11 +191,10 @@ if config['VALIDATION_ONLY'] == True:
 	append_aligner = '.validation'
 	aligner_list = [sub + append_aligner for sub in aligner_list]
 
-# Init dictionary
-dico_run = {}
+# Create run dictionary
+runDict = {}
 for samples in sample_list:
-	dico_run[samples] = {}
-# Populating dictionary
+	runDict[samples] = {}
 for samples in sample_list:
 	for ext in config['EXT_INDEX_LIST']:
 		for files in files_list:
@@ -177,43 +202,28 @@ for samples in sample_list:
 				if config['VALIDATION_ONLY'] == False:
 					for filext in config['PROCESS_FILE']:
 						if ext == filext and not 'validation' in files:
-							dico_run[samples][ext] = files
+							runDict[samples][ext] = files
 						if ext != config['PROCESS_FILE']:
-							dico_run[samples][ext] = files
+							runDict[samples][ext] = files
 				if config['VALIDATION_ONLY'] == True:
 					for filext in config['PROCESS_FILE']:
 						if ext == filext and 'validation' in files:
-							dico_run[samples][ext] = files
+							runDict[samples][ext] = files
 						if ext != config['PROCESS_FILE']:
-							dico_run[samples][ext] = files
-
-# Separate cram/bam processing
-# for cram extract to bam into the input directory
-# for bam copy or symlink the bam files to input directory
-#for sample in sample_list:
-#	processalignedfiles(inputdir, dico_run, sample, config['PROCESS_FILE'], aligner_list, config['PROCESS_CMD'], name=config['ALIGNER_NAME'])
-
-# Create the file_list by searching the depot directory
-#files_list_depot = searchfiles(inputdir, '/*', False)
-
-# log
-#logsomefile(logfile, 'Input file:', "\n", items_list = files_list_depot)
+							runDict[samples][ext] = files
 
 # Find bed file (Design)
 if not config['BED_FILE']:
-	config['BED_FILE'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], dico_run, '.design.bed', '.genes.bed')
-
+	config['BED_FILE'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
 # Find genes file (Panel)
 if not config['GENES_FILE']:
-	config['GENES_FILE'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], dico_run, '.genes', '.list.genes')
-
+	config['GENES_FILE'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes', '.list.genes')
 # Find transcripts files (NM)
 if not config['TRANSCRIPTS_FILE']:
-	config['TRANSCRIPTS_FILE'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], dico_run, '.transcripts', '.list.transcripts')
-
+	config['TRANSCRIPTS_FILE'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
 # Find list.genes files 
 if not config['LIST_GENES']:
-	config['LIST_GENES'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], dico_run, '.list.genes', '.list.transcripts')
+	config['LIST_GENES'] = finditemindico(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
 panel_list = []
@@ -234,10 +244,9 @@ if panel_list:
 		# Create a new list for expand, names are filenames without sample and .genes.bed ext
 		panel_list_trunc.append(panel_trunc)
 
-# Log
 logsomefile(logfile, 'Start of the analysis:', "\n", items = date_time)
 logsomefile(logfile, 'List of samples:', "\n", items_list = sample_list)
-logsomefile(logfile, 'Analyse run:', "\n", items = nameoftherun)
+logsomefile(logfile, 'Analyse run:', "\n", items = runName)
 if aligner_list:
 	logsomefile(logfile, 'Aligner list:', "\n", items_list = aligner_list)
 if config['BED_FILE']:
@@ -249,7 +258,7 @@ if config['TRANSCRIPTS_FILE']:
 if config['LIST_GENES']:
 	logsomefile(logfile, 'List of genes files:', "\n", items = config['LIST_GENES'])
 
-# Copy2 bed_file & genes_file & transcripts_file (for debug)
+# Copy2 bed_file & genes_file & transcripts_file for debug
 if config['DEBUG_MODE']:
 	try:
 		copy2(config['BED_FILE'], inputdir)
@@ -258,26 +267,11 @@ if config['DEBUG_MODE']:
 	except FileNotFoundError: pass
 
 ################################################## RULES ##################################################
-# The input for the rule all is the output of the pipeline
-# The expand for the {sample} {aligner} is done only at this step
-# Final results will follow this structure in the output directory 
-# /nameoftherun/SAMPLENAME/ServiceName / individual results
-# /nameoftherun/global results & global logs with ServiceName index
-#
-############################################################################################################
-##### NOTE ####
-# Tools that output a file adding a extension should be set with params: params.output as the output of the command without the extension, and output: output.ext exist only to connect rules
-# For programs that do not have an explicit log parameter, you may always use 2> {log} to redirect standard output to a file (here, the log file) in Linux-based systems. Note that it is also supported to have multiple (named) log files being specified
-# 1 is stdout, 2 is stderr 
-################################################################################
-
-
-################################################## RULES ##################################################
 
 # check the number of sample for copy or merge vcf rule
 sample_count = len(sample_list) 
 
-ruleorder: copy > indexing
+ruleorder: copy_bam > cramtobam
 
 rule all:
 	input:
@@ -285,16 +279,35 @@ rule all:
 		tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
 
 
-# add copy2({input}, {output}) ?
-rule copy:
+rule copy_bam:
 	"""
 	Copy input files
 	"""
 	output:
-		inputdir + "/{sample}.{aligner}.bam"
+		temp(inputDir+"/{sample}.{aligner}.bam")
 	params:
 		process = config['PROCESS_CMD'],
-		download_link = lambda wildcards: dico_run[wildcards.sample]['.bam']
+		download_link = lambda wildcards: runDict[wildcards.sample]['.bam']
+	shell:
+		"""
+		if [ "{params.process}" = "ls" ];
+		then
+		ln -sfn {params.download_link} {output}
+		else
+		rsync -azvh {params.download_link} {output}
+		fi
+		"""
+
+
+rule copy_cram:
+	"""
+	Copy input files
+	"""
+	output:
+		temp(inputDir+"/{sample}.{aligner}.cram")
+	params:
+		process = config['PROCESS_CMD'],
+		download_link = lambda wildcards: runDict[wildcards.sample]['.cram']
 	shell:
 		"""
 		if [ "{params.process}" = "ls" ];
@@ -311,9 +324,9 @@ rule cramtobam:
 	Extract bam from a cram file
 	"""
 	input:
-		inputdir + "/{sample}.{aligner}.cram"
+		rules.copy_cram.output
 	output:
-		inputdir + "/{sample}.{aligner}.bam"
+		temp(inputdir+"/{sample}.{aligner}.bam")
 	params:
 		refgenome = config['REFGENEFA_PATH']
 	shell:
@@ -321,31 +334,15 @@ rule cramtobam:
 		samtools view -b -T {params.refgenome} -o {output} {input}
 		"""
 
-#rule filter_bam:
-#	"""
-#	Filter bam with the bed provided
-#	"""
-#	input:
-#		bam_unfiltered = inputdir + "/{sample}.{aligner}.bam"
-#	output:
-#		bam_filtered = inputdir + "/{sample}.{aligner}.bam"
-#	params:
-#		refgenome = config['REFGENEFA_PATH'],
-#		bedfile = config['BED_FILE']
-#	shell:
-#		"""
-#		samtools view -b -T {params.refgenome} -L {params.bedfile} -o {output.bam_filtered} {input.bam_unfiltered}
-#		"""
-
 
 rule indexing:
 	"""
 	Indexing bam files with samtools
 	"""
 	input:
-		inputdir + "/{sample}.{aligner}.bam"
+		inputdir+"/{sample}.{aligner}.bam"
 	output:
-		inputdir + "/{sample}.{aligner}.bai"
+		temp(inputdir+"/{sample}.{aligner}.bai")
 	params:
 		threads = config['THREADS']
 	shell:
@@ -356,16 +353,16 @@ rule indexing:
 # ouput file is sample.aligner_FLT3_ITD.vcf & sample.aligner_FLT3_ITD_summary.txt (same results as vcf but in txt format)
 rule flt3_itd_ext:
 	"""
-	flt3_itd_ext is a software that detects internal duplications in bam files
+	Flt3_itd_ext is a software that detects internal duplications in bam files
 	"""
 	input:
 		bam = inputdir + "/{sample}.{aligner}.bam",
-		bai = inputdir + "/{sample}.{aligner}.bai"
+		bai = rules.indexing.output
 	output:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
+		tmpdir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw.vcf"
 	params:
 		output = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/",
-		outputfile = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/{sample}.{aligner}.vcf",
+		outputfile = tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/{sample}.{aligner}.raw.vcf",
 		assembly = config['ASSEMBLY'],
 		index = config['REF_ITD_PATH'],
 		ngstype = config['NGS_TYPE'],
@@ -381,9 +378,9 @@ rule correctvcf:
 	Correction of vcf output, add genotype to be consistent with the vcf format specification.
 	"""
 	input:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf"
+		rules.flt3_itd_ext.output
 	output:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
+		temp(tmpdir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.fixGT.vcf")
 	shell:
 		"""
 		cat {input} {output}
@@ -394,9 +391,9 @@ rule bcftools_filter:
 	Filter with bcftools
 	"""
 	input:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.unfilter.vcf"
+		rules.correctvcf.output
 	output:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.filter.vcf"
+		temp(tmpdir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.filter.vcf")
 	params:
 		bcffilter = config['BCFTOOLS_FILTER']
 	shell:
@@ -409,9 +406,9 @@ rule sortvcf:
 	Bash script to sort a vcf
 	"""
 	input:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.filter.vcf"
+		rules.bcftools_filter.output
 	output:
-		tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.sort.vcf"
+		temp(tmpdir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.sort.vcf")
 	params:
 		dummypath = config['DUMMY_PATH']
 	shell:
@@ -419,16 +416,15 @@ rule sortvcf:
 		grep \"^#\" {input} > {output} && grep -v \"^#\" {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""		
 
-
 # bcftools need vcf.gz.tbi index for the merge all
 rule vcf2gz:
 	"""
 	Compress vcf with bgzip
 	"""
 	input:
-		 tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.sort.vcf"
+		rules.sortvcf.output
 	output:
-		 tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz"
+		 tmpdir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.vcf.gz"
 	shell:
 		"""
 		bgzip -c {input} > {output} ; tabix {output}
@@ -463,30 +459,26 @@ onstart:
 onsuccess:
 	include = config['INCLUDE_RSYNC']
 		
-	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Complete.txt")
-	shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
+	shell("touch "+config['OUTPUT_DIR']+serviceName+"Complete.txt")
+	shell("rm -f "+config['OUTPUT_DIR']+serviceName+"Running.txt")
 	
-	# Add end time of the analysis to the log file
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write("End of the analysis : ")
 		f.write((date_time_end) + "\n")
-	# Remove old files
 	for sample in sample_list:
-		shell("rm -f " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
-	# Rsync all files into final destination
-	shell("rsync -azvh --include={include} {tmpdir}/ "+config['OUTPUT_DIR']+"")
-	# Copy new files
+		shell("rm -f "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/* || true") # if rm stderr, the true will avoid exiting snakemake
+	shell("rsync -azvh --include={include} {tmpDir}/ "+config['OUTPUT_DIR']+"")
 	for sample in sample_list:
-		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/ || true")
+		shell("cp "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/ || true")
 	if config['DEPOT_COPY'] == True:
-		shell("rsync -azvh --include={include} {tmpdir}/ {depotdir}")
+		shell("rsync -azvh --include={include} {tmpDir}/ {depotdir}")
 		for sample in sample_list:
-			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/ || true")
+			shell("cp "+depotdir+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+depotdir+sample+"/"+serviceName+"/ || true")
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
 	
-	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Failed.txt")
-	#shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
-	shell("rsync -azvh --include={include_log} {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("touch "+config['OUTPUT_DIR']+serviceName+"Failed.txt")
+	#shell("rm -f "+config['OUTPUT_DIR']+serviceName+"Running.txt")
+	shell("rsync -azvh --include={include_log} {tmpDir}/ "+config['OUTPUT_DIR']+"")
