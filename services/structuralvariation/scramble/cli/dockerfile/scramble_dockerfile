@@ -16,7 +16,7 @@
 # DEV version 3 : 07/09/2023
 	# switch to Mamba installer
 	# add aria2
-	# update AnnotSV (vcf converter is included) and several dependencies, version of each package is specified 
+	# update AnnotSV 3.3.7 (vcf converter is included) and several dependencies, version of each package is specified 
 
 # Ubuntu based (minimal focal)
 FROM condaforge/mambaforge
