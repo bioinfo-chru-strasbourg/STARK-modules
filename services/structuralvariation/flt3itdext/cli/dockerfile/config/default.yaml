@@ -63,6 +63,7 @@ DEBUG_MODE: False
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
 DUMMY_PATH: "/app/config/"
+REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/RAF>=0.01'"
 BCFTOOLS_FILTER: "-i 'INFO/RAF>=0.01'"
