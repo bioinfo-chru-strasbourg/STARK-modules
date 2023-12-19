@@ -528,7 +528,7 @@ rule all:
 		expand(tmpDir + "/" + serviceName + "." + date_time + ".{aligner}.Metrics.tsv", aligner=aligner_list),
 		expand(tmpDir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		tmpDir + "/" + serviceName + "." + date_time + ".all.AnnotSV.Design.tsv",
-		expand(tmpDir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.pdf", aligner=aligner_list, gender=gender_list)
+		expand(tmpDir + "/" + serviceName + '.' + date_time + ".{aligner}.{gender}.plotSuccess", aligner=aligner_list, gender=gender_list)
 
 rule help:
 	"""
@@ -864,12 +864,12 @@ rule plot:
 		folder = tmpDir+"/pdfs/",
 		decondir = config['DECON_PATH']
 	output:
-		tmpDir+"/"+serviceName+"."+date_time+".{aligner}.{gender}.pdf"
+		tmpDir+"/"+serviceName+"."+date_time+".{aligner}.{gender}.plotSuccess"
 	log: 
 		log1 = tmpDir+"/"+serviceName+"."+date_time+".{aligner}.{gender}.plots.log", log2 = tmpDir+"/"+serviceName+"."+date_time+".{aligner}.{gender}.plots.err"
 	shell:
 		"""
-		mkdir {params.folder} && Rscript {params.decondir}/DECONplot.R --rdata {input} --out {params.folder} 1> {log.log1} 2> {log.log2} && [[ -s {output} ]] || touch {params.analysisfailure}
+		mkdir {params.folder} && Rscript {params.decondir}/DECONplot.R --rdata {input} --out {params.folder} 1> {log.log1} 2> {log.log2} && touch {output} &&[[ -s {output} ]] || touch {params.analysisfailure}
 		"""
 
 onstart:

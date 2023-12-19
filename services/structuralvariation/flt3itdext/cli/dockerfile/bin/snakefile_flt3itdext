@@ -355,13 +355,13 @@ rule flt3_itd_ext:
 	Flt3_itd_ext is a software that detects internal duplications in bam files
 	"""
 	input:
-		bam = inputDir + "/{sample}.{aligner}.bam",
+		bam = inputDir+"/{sample}.{aligner}.bam",
 		bai = rules.indexing.output
 	output:
-		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw.vcf"
+		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.vcf"
 	params:
-		output = tmpDir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/",
-		outputfile = tmpDir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/{sample}.{aligner}.raw.vcf",
+		output = tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/",
+		outputfile = tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/{sample}.{aligner}.vcf",
 		assembly = config['ASSEMBLY'],
 		index = config['REF_ITD_PATH'],
 		ngstype = config['NGS_TYPE'],
