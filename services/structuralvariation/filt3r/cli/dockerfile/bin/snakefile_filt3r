@@ -275,7 +275,7 @@ ruleorder: copy_bam > samtools_fastq > copy_fastq > cramtobam
 
 rule all:
 	input:
-		expand(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.uncorr.vcf",sample=sample_list,aligner=aligner_list),
+		expand(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw.vcf",sample=sample_list,aligner=aligner_list),
 		tmpDir+"/"+serviceName+"."+date_time+".all.vcf.gz"
 
 rule copy_fastq:
@@ -481,7 +481,6 @@ rule mergevcf:
 			bcftools merge {input} -O z -o {output} && tabix {output}
 		fi
 		"""
-
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']
