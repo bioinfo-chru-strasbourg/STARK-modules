@@ -53,44 +53,7 @@ def finditemindico(sample_list, ext_list, dictionary, include_ext, exclude_ext):
 def searchfiles(directory, search_arg, recursive_arg):
 	""" Function to search all files in a directory, adding a search arguement append to the directory and a recursive_search options (True/False) """
 	return sorted(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
-
-# TODO include all the files treatement to snakemake rules
-# so we should only create files list for the input rules
-def processalignedfiles(storedir, dictionary, sample, ext_list, aligner_list, process_cmd, name=None, refgenome=None, bedfile=None):
-	""" Function to process files who's path are stored in a dictionary by sample/ext name"""
-	""" You can either cp, rsync, ls files ; or use samtools to extract bam from a cram file into a storedir"""
-	""" You can append a name to the end of the files if you specify a name """
-	for ext in ext_list:
-		inputfiles = dictionary[sample][ext]
-		file_without_ext = os.path.basename(inputfiles.replace(ext,''))
-		# option to append name file with an aligner name (if file is sample.bam we need to rename it to sample.aligner.bam for the pipeline)
-		if name:
-			outputfile = storedir + "/" + file_without_ext  + "." + name
-			aligner_list.append(name)
-		else:
-			outputfile = storedir + "/" + file_without_ext
-		for aligner in aligner_list:
-			if aligner in inputfiles:
-				if process_cmd == 'cram':
-					print("Uncompress cram files with samtools")
-					print(inputfiles)
-					shell("samtools view -b -T "+refgenome+" -o "+outputfile+".bam "+inputfiles)	# samtools view -b -T ref_sequence.fa -o sample.bam sample.cram
-				if process_cmd == 'cp':
-					print("Copying files to analyse with copy2")
-					print(inputfiles)
-					copy2(inputfiles, outputfile+ext)
-				if process_cmd == 'rsync':
-					print("Copying files to analyse with rsync")
-					print(inputfiles)
-					shell("rsync -azvh "+inputfiles+" "+storedir)
-				if process_cmd == 'ls':
-					print("Creating symobling links for the files to analyse with ln")
-					print(inputfiles)
-					shell("ln -sfn "+inputfiles+" "+outputfile+ext)
-				if process_cmd == 'filterbam':
-					print("Filter bam files with samtools with the bed provided")
-					print(inputfiles)
-					shell("samtools view -b -T "+refgenome+" -L "+bedfile+" -o "+outputfile+".bam "+inputfiles)	# samtools view -b -h -L bedfile.bed -o newbam.bam originalbam.bam
+				shell("samtools view -b -T "+refgenome+" -L "+bedfile+" -o "+outputfile+".bam "+inputfiles)	# samtools view -b -h -L bedfile.bed -o newbam.bam originalbam.bam
 
 def logsomefile(logfile, text, sep, items_list=None, items=None):
 	""" Function to log a variable value or a list of values into a log file """
@@ -171,8 +134,6 @@ if not config['OUTPUT_DIR']:
 # Set log path file
 serviceName = config['serviceName']
 logfile = tmpdir + "/" + serviceName + "." + date_time + '.parameters.log'
-# Set annotation file path
-annotation_file = tmpdir + "/" + serviceName + "." + date_time + '.AnnotSV.txt'
 
 # Create directories
 os.makedirs(inputdir, exist_ok = True)
@@ -229,14 +190,14 @@ for samples in sample_list:
 # Separate cram/bam processing
 # for cram extract to bam into the input directory
 # for bam copy or symlink the bam files to input directory
-for sample in sample_list:
-	processalignedfiles(inputdir, dico_run, sample, config['PROCESS_FILE'], aligner_list, config['PROCESS_CMD'], name=config['ALIGNER_NAME'])
+#for sample in sample_list:
+#	processalignedfiles(inputdir, dico_run, sample, config['PROCESS_FILE'], aligner_list, config['PROCESS_CMD'], name=config['ALIGNER_NAME'])
 
 # Create the file_list by searching the depot directory
-files_list_depot = searchfiles(inputdir, '/*', False)
+#files_list_depot = searchfiles(inputdir, '/*', False)
 
 # log
-logsomefile(logfile, 'Input file:', "\n", items_list = files_list_depot)
+#logsomefile(logfile, 'Input file:', "\n", items_list = files_list_depot)
 
 # Find bed file (Design)
 if not config['BED_FILE']:
@@ -316,10 +277,66 @@ if config['DEBUG_MODE']:
 # check the number of sample for copy or merge vcf rule
 sample_count = len(sample_list) 
 
+ruleorder: copy > indexing
+
 rule all:
 	input:
 		expand(tmpdir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.vcf.gz",aligner=aligner_list, sample=sample_list),
 		tmpdir + "/" + serviceName + "." + date_time + ".all.vcf.gz"
+
+
+# add copy2({input}, {output}) ?
+rule copy:
+	"""
+	Copy input files
+	"""
+	output:
+		inputdir + "/{sample}.{aligner}.bam"
+	params:
+		process = config['PROCESS_CMD'],
+		download_link = lambda wildcards: dico_run[wildcards.sample]['.bam']
+	shell:
+		"""
+		if [ "{params.process}" = "ls" ];
+		then
+		ln -sfn {params.download_link} {output}
+		else
+		rsync -azvh {params.download_link} {output}
+		fi
+		"""
+
+
+rule cramtobam:
+	"""
+	Extract bam from a cram file
+	"""
+	input:
+		inputdir + "/{sample}.{aligner}.cram"
+	output:
+		inputdir + "/{sample}.{aligner}.bam"
+	params:
+		refgenome = config['REFGENEFA_PATH']
+	shell:
+		"""
+		samtools view -b -T {params.refgenome} -o {output} {input}
+		"""
+
+#rule filter_bam:
+#	"""
+#	Filter bam with the bed provided
+#	"""
+#	input:
+#		bam_unfiltered = inputdir + "/{sample}.{aligner}.bam"
+#	output:
+#		bam_filtered = inputdir + "/{sample}.{aligner}.bam"
+#	params:
+#		refgenome = config['REFGENEFA_PATH'],
+#		bedfile = config['BED_FILE']
+#	shell:
+#		"""
+#		samtools view -b -T {params.refgenome} -L {params.bedfile} -o {output.bam_filtered} {input.bam_unfiltered}
+#		"""
+
 
 rule indexing:
 	"""
@@ -458,12 +475,12 @@ onsuccess:
 	for sample in sample_list:
 		shell("rm -f " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
 	# Rsync all files into final destination
-	shell("rsync -azvh --include={include} --exclude * {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include} {tmpdir}/ "+config['OUTPUT_DIR']+"")
 	# Copy new files
 	for sample in sample_list:
 		shell("cp " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/ || true")
 	if config['DEPOT_COPY'] == True:
-		shell("rsync -azvh --include={include} --exclude * {tmpdir}/ {depotdir}")
+		shell("rsync -azvh --include={include} {tmpdir}/ {depotdir}")
 		for sample in sample_list:
 			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/ || true")
 
@@ -472,4 +489,4 @@ onerror:
 	
 	shell("touch " + config['OUTPUT_DIR'] + serviceName + "Failed.txt")
 	#shell("rm -f " + config['OUTPUT_DIR'] + serviceName + "Running.txt")
-	shell("rsync -azvh --include={include_log} --exclude * {tmpdir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include_log} {tmpdir}/ "+config['OUTPUT_DIR']+"")
