@@ -46,6 +46,7 @@ import os.path
 import glob
 import pandas as pd
 import json
+import csv
 
 from datetime import datetime
 from shutil import copy2
@@ -219,8 +220,8 @@ def kmerisation(kmerSize, bedFile, kmerBedFile):
 serviceName = config['serviceName']
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 runName = os.path.basename(os.path.normpath(config['run']))
-inputDir = "/app/res/" + runName + "/" + date_time + "/input"
-tmpDir = "/app/res/" + runName + "/" + date_time + "/tmp"
+inputDir = "/app/res/"+runName+"/"+ date_time+"/input"
+tmpDir = "/app/res/"+runName+"/"+date_time+"/tmp"
 try:
 	config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
 	config['APP_NAME'] = os.path.normpath(config['run']).split('/')[5]
@@ -228,8 +229,8 @@ except IndexError: pass
 depotdir = config['depository'] + "/" + config['GROUP_NAME'] + "/" + config['APP_NAME']  + "/" + runName + "/"
 if not config['OUTPUT_DIR']:
 	config['OUTPUT_DIR'] = config['run']
-logfile = tmpDir + "/" + serviceName + "." + date_time + '.parameters.log'
-annotation_file = tmpDir + "/" + serviceName + "." + date_time + '.AnnotSV.txt'
+logfile = tmpDir+"/"+serviceName+"."+date_time+'.parameters.log'
+annotation_file = tmpDir+"/"+serviceName+"."+date_time+'.AnnotSV.txt'
 os.makedirs(inputDir, exist_ok = True)
 os.makedirs(tmpDir, exist_ok = True)
 os.makedirs(config['OUTPUT_DIR'], exist_ok = True)
@@ -465,6 +466,23 @@ for files in files_list_A:
 			files_list_XY.append(files)
 	except KeyError: pass
 
+files_list_all = []
+files_list_all.append(files_list_A)
+if config['REF_BAM_LIST']:
+	reflist = config['REF_BAM_LIST']
+	reflist = reflist.split(' ')[1]
+	with open(reflist, 'r') as file:
+		csvreader = csv.reader(file)
+		headings = next(csvreader)
+		for row in csvreader:
+			files_list_all.append(row)
+
+allbamlist = tmpDir + "/" + serviceName + "." + date_time +'.list.txt'
+with open(allbamlist, 'w') as f:
+    write = csv.writer(f)
+    write.writerows(files_list_all)
+
+
 # Creating a txt list for the bam files per aligner per gender (A, M & F) ; the file_list_whatever must be prefiltered
 for aligner in aligner_list:
 	for gender in gender_list:
@@ -622,7 +640,7 @@ rule ReadInBams:
 	Requirement : all .bam files must be indexed
 	"""
 	input:
-		allbamlist = tmpDir+"/"+serviceName+"."+date_time+".A.list.txt",
+		allbamlist = tmpDir+"/"+serviceName+"."+date_time+".list.txt",
 		bai = expand(inputDir+"/{sample}.{aligner}.bai",sample=sample_list,aligner=aligner_list)
 	output:
 		tmpDir+"/"+serviceName+'.'+date_time+".{aligner}.ReadInBams.RData"
@@ -873,7 +891,7 @@ rule plot:
 		"""
 
 onstart:
-	shell("touch " +config['OUTPUT_DIR']+serviceName +"Running.txt")
+	shell("touch "+config['OUTPUT_DIR']+serviceName+"Running.txt")
 	with open(logfile, "a+") as f:
 		json.dump(config, f)
 		f.write("\n")
@@ -881,8 +899,8 @@ onstart:
 onsuccess:
 	include = config['INCLUDE_RSYNC']
 		
-	shell("touch "+config['OUTPUT_DIR']+serviceName+"Complete.txt")
-	shell("rm -f "+config['OUTPUT_DIR']+serviceName+"Running.txt")
+	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Complete.txt")
+	shell("rm -f "+config['OUTPUT_DIR']+"/"+serviceName+"Running.txt")
 
 	pdf_list = os.listdir(tmpDir+"/pdfs")
 	for sample in sample_list:
@@ -907,6 +925,6 @@ onsuccess:
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
 	
-	shell("touch "+config['OUTPUT_DIR']+serviceName+"Failed.txt")
+	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Failed.txt")
 	#shell("rm -f "+config['OUTPUT_DIR']+serviceName+"Running.txt")
 	shell("rsync -azvh --include={include_log} {tmpDir}/ "+config['OUTPUT_DIR']+"")
