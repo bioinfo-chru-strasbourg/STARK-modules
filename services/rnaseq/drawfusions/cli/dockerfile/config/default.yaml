@@ -13,7 +13,7 @@
 # separate multiple variable with a space
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
-serviceName: "Rdraw"
+serviceName: "Drawfusion"
 
 # Default repository/depository path from listener.py/launcher.py
 repository: "/STARK/output/repository"
@@ -38,27 +38,27 @@ TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
 
-### Indexing files options
-# Ext to index (endwith)
-EXT_INDEX_LIST: [".transcripts", ".genes.bed", ".design.bed",".list.genes", ".tag", ".bam", ".arriba.fusions.tsv"]
-# Extension of the input files to copy
-PROCESS_FILE: ['.bam', ''.arriba.fusions.tsv']
-# Process input files : cram/cp/rsync/ls/filterbam
-PROCESS_CMD: 'cp'
+# Files to index into the dictionary depending on extension (endwith)
+EXT_INDEX_LIST: [".transcripts",".genes.bed",".design.bed",".list.genes",".tag",".bam",".arriba.fusions.tsv"]
+# List of files extension to process
+PROCESS_FILE: ['.bam','.arriba.fusions.tsv']
+# How to copy input files : ls or rsync 
+PROCESS_CMD: 'ls'
 # Only analyse bam/cram files named *.validation.bam or *.validation.cram
 VALIDATION_ONLY: False
 # Insert an aligner name to the bam/cram file name (from sample.bam to sample.aligner_name.bam)
 ALIGNER_NAME:
 
-# Samples list exclusion (not to be analyse) (startswith)
+# Samples list exclusion (not to be analysed) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
 # Sample filter
 FILTER_SAMPLE: []
 
-# rsync options
-INCLUDE_RSYNC: "{'*.pdf','*.txt'}"
-# for log file copy if pipeline failed
-INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed'}"
+# Extension files to copy after pipeline success
+# using brace extension, remove space between extensions
+INCLUDE_RSYNC: "{'*.pdf','*/'}"
+# Extensions files to copy after pipeline failure
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
 ##### Search parameters of input for the search function #####
 RECURSIVE_SEARCH: False
