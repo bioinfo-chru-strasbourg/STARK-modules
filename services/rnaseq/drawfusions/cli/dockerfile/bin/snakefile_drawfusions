@@ -172,7 +172,7 @@ rule all:
 	Rule will create an pdf for arriba result's visualization
 	"""
 	input:
-		expand(tmpDir + "/{sample}.{aligner}.arribareport.pdf", aligner=aligner_list, sample=sample_list)
+		expand(tmpDir+"/{sample}.{aligner}.arribareport.pdf",aligner=aligner_list,sample=sample_list)
 
 rule help:
 	"""
@@ -193,7 +193,7 @@ rule copy_tsv:
 	Copy input files
 	"""
 	output:
-		temp(inputDir + "/{sample}.arriba.fusions.tsv")
+		temp(inputDir+"/{sample}.arriba.fusions.tsv")
 	params:
 		process = config['PROCESS_CMD'],
 		download_link = lambda wildcards: runDict[wildcards.sample]['arriba.fusions.tsv']
@@ -267,7 +267,7 @@ rule indexing:
 	Indexing bam files with samtools
 	"""
 	input:
-		inputDir + "/{sample}.{aligner}.bam"
+		inputDir+"/{sample}.{aligner}.bam"
 	output:
 		temp(inputDir+"/{sample}.{aligner}.bai")
 	params:
@@ -280,9 +280,9 @@ rule indexing:
 # bam must be sorted by coordinate and indexed
 rule DrawR:
 	input:
-		bam = inputDir + "/{sample}.{aligner}.bam", 
-		arribafusiontsv = inputDir + "/{sample}.arriba.fusions.tsv",
-		bai = inputDir + "/{sample}.{aligner}.bai"
+		bam = inputDir+"/{sample}.{aligner}.bam", 
+		arribafusiontsv = inputDir+"/{sample}.arriba.fusions.tsv",
+		bai = inputDir+"/{sample}.{aligner}.bai"
 	output:
 		tmpDir + "/{sample}.{aligner}.arribareport.pdf"
 	params:
@@ -295,7 +295,7 @@ rule DrawR:
 		Rscript {arriba_scripts}/draw_fusions.R --annotation={params.refgtfgencode} --fusions={input.arribafusiontsv} --output={output} --alignments={input.bam} --cytobands={params.cytoband} --proteinDomains={params.refprot}
 		"""
 onstart:
-	shell("touch " + config['OUTPUT_DIR']+"/"+ serviceName + "Running.txt")
+	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Running.txt")
 	with open(logfile, "a+") as f:
 		json.dump(config, f)
 		f.write("\n")
@@ -303,8 +303,8 @@ onstart:
 onsuccess:
 	include = config['INCLUDE_RSYNC']
 	
-	shell("touch " + config['OUTPUT_DIR']+"/" + serviceName + "Complete.txt")
-	shell("rm -f " + config['OUTPUT_DIR']+"/" + serviceName + "Running.txt")
+	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Complete.txt")
+	shell("rm -f "+config['OUTPUT_DIR']+"/"+serviceName+"Running.txt")
 	
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
@@ -314,15 +314,15 @@ onsuccess:
 		shell("rm -f " + config['OUTPUT_DIR']+"/"+ sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
 	shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ "+config['OUTPUT_DIR']+"")
 	for sample in sample_list:
-		shell("cp " + config['OUTPUT_DIR']+"/"+sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/ || true")
+		shell("cp " + config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/ || true")
 	if config['DEPOT_COPY'] == True:
 		shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ {depotdir}")
 		for sample in sample_list:
-			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/ || true")
+			shell("cp " + depotdir+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+depotdir+sample+"/"+serviceName+"/ || true")
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
 	
-	shell("touch " + config['OUTPUT_DIR']+"/" + serviceName + "Failed.txt")
-	#shell("rm -f " + config['OUTPUT_DIR']+"/" + serviceName + "Running.txt")
+	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Failed.txt")
+	#shell("rm -f "+config['OUTPUT_DIR']+"/"+serviceName+"Running.txt")
 	shell("rsync -azvh --include={include_log} --exclude='*' {tmpDir}/ "+config['OUTPUT_DIR']+"")

@@ -889,7 +889,7 @@ onsuccess:
 	for sample in sample_list:
 		for pdf in pdf_list:
 			if sample in pdf:
-				shell("mv "+tmpDir+ "/pdfs/"+pdf+" " +tmpDir+"/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/")
+				shell("mv "+tmpDir+"/pdfs/"+pdf+" "+tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/")
 	shell("rm -rf "+tmpDir+"/pdfs")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
@@ -899,7 +899,7 @@ onsuccess:
 		shell("rm -f "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/* || true") # if rm stderr, the true will avoid exiting snakemake
 	shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ "+config['OUTPUT_DIR']+"")
 	for sample in sample_list:
-		shell("cp "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/ || true")
+		shell("cp "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/ || true")
 	if config['DEPOT_COPY'] == True:
 		shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ {depotdir}")
 		for sample in sample_list:
@@ -909,5 +909,5 @@ onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
 	
 	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Failed.txt")
-	#shell("rm -f "+config['OUTPUT_DIR']+serviceName+"Running.txt")
+	#shell("rm -f "+config['OUTPUT_DIR']+"/"+serviceName+"Running.txt")
 	shell("rsync -azvh --include={include_log} --exclude='*' {tmpDir}/ "+config['OUTPUT_DIR']+"")
