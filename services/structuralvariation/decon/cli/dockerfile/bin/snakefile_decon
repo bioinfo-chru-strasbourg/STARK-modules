@@ -466,23 +466,6 @@ for files in files_list_A:
 			files_list_XY.append(files)
 	except KeyError: pass
 
-files_list_all = []
-files_list_all.append(files_list_A)
-if config['REF_BAM_LIST']:
-	reflist = config['REF_BAM_LIST']
-	reflist = reflist.split(' ')[1]
-	with open(reflist, 'r') as file:
-		csvreader = csv.reader(file)
-		headings = next(csvreader)
-		for row in csvreader:
-			files_list_all.append(row)
-
-allbamlist = tmpDir + "/" + serviceName + "." + date_time +'.list.txt'
-with open(allbamlist, 'w') as f:
-    write = csv.writer(f)
-    write.writerows(files_list_all)
-
-
 # Creating a txt list for the bam files per aligner per gender (A, M & F) ; the file_list_whatever must be prefiltered
 for aligner in aligner_list:
 	for gender in gender_list:
@@ -640,7 +623,7 @@ rule ReadInBams:
 	Requirement : all .bam files must be indexed
 	"""
 	input:
-		allbamlist = tmpDir+"/"+serviceName+"."+date_time+".list.txt",
+		allbamlist = tmpDir+"/"+serviceName+"."+date_time+".A.list.txt",
 		bai = expand(inputDir+"/{sample}.{aligner}.bai",sample=sample_list,aligner=aligner_list)
 	output:
 		tmpDir+"/"+serviceName+'.'+date_time+".{aligner}.ReadInBams.RData"
@@ -913,12 +896,12 @@ onsuccess:
 		f.write("End of the analysis : ")
 		f.write((date_time_end) + "\n")
 	for sample in sample_list:
-		shell("rm -f "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/* || true") # if rm stderr, the true will avoid exiting snakemake
-	shell("rsync -azvh --include={include} {tmpDir}/ "+config['OUTPUT_DIR']+"")
+		shell("rm -f "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/* || true") # if rm stderr, the true will avoid exiting snakemake
+	shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ "+config['OUTPUT_DIR']+"")
 	for sample in sample_list:
-		shell("cp "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/ || true")
+		shell("cp "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/ || true")
 	if config['DEPOT_COPY'] == True:
-		shell("rsync -azvh --include={include} {tmpDir}/ {depotdir}")
+		shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ {depotdir}")
 		for sample in sample_list:
 			shell("cp "+depotdir+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+depotdir+sample+"/"+serviceName+"/ || true")
 
@@ -927,4 +910,4 @@ onerror:
 	
 	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Failed.txt")
 	#shell("rm -f "+config['OUTPUT_DIR']+serviceName+"Running.txt")
-	shell("rsync -azvh --include={include_log} {tmpDir}/ "+config['OUTPUT_DIR']+"")
+	shell("rsync -azvh --include={include_log} --exclude='*' {tmpDir}/ "+config['OUTPUT_DIR']+"")

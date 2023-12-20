@@ -47,9 +47,10 @@ EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC',
 FILTER_SAMPLE: []
 
 # Extension files to copy after pipeline success
-INCLUDE_RSYNC: ['*.vcf.gz.tbi', '*.vcf.gz']
+# using brace extension, remove space between extensions
+INCLUDE_RSYNC: "{'*.vcf.gz.tbi','*.vcf.gz'}"
 # Extensions files to copy after pipeline failure
-INCLUDE_LOG_RSYNC: ['*.log','*.err','*Failed.txt']
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
 # Search parameters
 RECURSIVE_SEARCH: False
