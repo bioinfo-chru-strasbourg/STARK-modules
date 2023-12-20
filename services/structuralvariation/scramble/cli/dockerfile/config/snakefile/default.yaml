@@ -58,9 +58,10 @@ ALIGNER_NAME:
 VALIDATION_ONLY: False
 
 # Extension files to copy after pipeline success
-INCLUDE_RSYNC: ['*Full.vcf.gz','*Full.vcf.gz.tbi','*Design.vcf.gz','*Design.vcf.gz.tbi','*AnnotSV.Full.tsv','*AnnotSV.Design.tsv']
+# using brace extension, remove space between extensions
+INCLUDE_RSYNC: "{'*Full.vcf.gz','*Full.vcf.gz.tbi','*Design.vcf.gz','*Design.vcf.gz.tbi','*AnnotSV.Full.tsv','*AnnotSV.Design.tsv'}"
 # Extensions files to copy after pipeline failure
-INCLUDE_LOG_RSYNC: ['*.log','*.err','*Failed.txt']
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
 ##### Search parameters for inputs ####
 RECURSIVE_SEARCH: False
