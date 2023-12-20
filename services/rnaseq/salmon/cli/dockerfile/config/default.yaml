@@ -31,27 +31,28 @@ TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
 
-# Ext to index (endwith)
-EXT_INDEX_LIST : [".R1.fastq.gz", ".R2.fastq.gz"]
+# Files to index into the dictionary depending on extension (endwith)
+EXT_INDEX_LIST : [".R1.fastq.gz",".R2.fastq.gz"]
 # List of files extension to process
-PROCESS_FILE: ['.R1.fastq.gz', '.R2.fastq.gz']
-# How to process input files : cram/cp/rsync/ls/filterbam
-PROCESS_CMD: 'cp'
+PROCESS_FILE: [".R1.fastq.gz",".R2.fastq.gz"]
+# How to copy input files : ls or rsync 
+PROCESS_CMD: 'ls'
 
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False
 # Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
 ALIGNER_NAME:
 
-# Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
+# Samples list exclusion (not to be analysed) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
-# Sample filter
+# Sample filter : only analyse those samples
 FILTER_SAMPLE: []
 
-# Rsync options
-INCLUDE_RSYNC: "{'*.log', '*'}"
-# for log file copy if pipeline failed
-INCLUDE_LOG_RSYNC: "{'*.txt', '*.log', '*.err'}"
+# Extension files to copy after pipeline success
+# using brace extension, remove space between extensions
+INCLUDE_RSYNC: "{'*.sf','*/'}"
+# Extensions files to copy after pipeline failure
+INCLUDE_LOG_RSYNC: "{'*Failed.txt','*.log','*.err'}"
 
 # Search parameters
 RECURSIVE_SEARCH: False

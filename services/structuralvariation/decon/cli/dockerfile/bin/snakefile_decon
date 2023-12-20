@@ -254,7 +254,7 @@ for sample_exclude in config['EXCLUDE_SAMPLE']:
 if config['FILTER_SAMPLE']:
 	sample_list = list(config['FILTER_SAMPLE'])
 
-# For validation analyse bam will be sample.aligner.validation.bam
+# For validation analyse bam will be sample.aligner.validation.bam, so we append .validation to all the aligner strings
 if config['VALIDATION_ONLY'] == True:
 	append_aligner = '.validation'
 	aligner_list = [sub + append_aligner for sub in aligner_list]
