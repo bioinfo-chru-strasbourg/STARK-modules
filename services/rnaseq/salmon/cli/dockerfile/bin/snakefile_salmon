@@ -220,7 +220,7 @@ ruleorder: copy_bam > samtools_fastq > copy_fastq > cramtobam
 
 rule all:
 	input:
-		expand(tmpDir + "/{sample}.{aligner}.salmon.quant/", sample=sample_list, aligner=aligner_list)
+		expand(tmpDir+"/{sample}.{aligner}.salmon.quant/",sample=sample_list,aligner=aligner_list)
 
 if config['SALMON_FASTQ_TYPE'] == "SE":
 	R_list = ['R1']
@@ -334,10 +334,10 @@ rule samtools_fastq:
 
 rule salmon:
 	input:
-		fastqR1 = inputDir + "/{sample}.{aligner}.R1.fastq.gz", 
-		fastqR2 = inputDir + "/{sample}.{aligner}.R2.fastq.gz"
+		fastqR1 = inputDir+"/{sample}.{aligner}.R1.fastq.gz", 
+		fastqR2 = inputDir+"/{sample}.{aligner}.R2.fastq.gz"
 	output:
-		directory(tmpDir + "/{sample}.{aligner}.salmon.quant/")
+		directory(tmpDir+"/{sample}.{aligner}.salmon.quant/")
 	params:
 		threads = config['THREADS'],
 		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
@@ -372,18 +372,18 @@ onsuccess:
 		f.write("End of the analysis : ")
 		f.write((date_time_end) + "\n")
 	for sample in sample_list:
-		shell("rm -f " + config['OUTPUT_DIR']+"/"+ sample + "/" + serviceName + "/* || true") # if rm stderr, the true will avoid exiting snakemake
+		shell("rm -f " +config['OUTPUT_DIR']+"/"+ sample+"/"+serviceName+"/* || true") # if rm stderr, the true will avoid exiting snakemake
 	shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ "+config['OUTPUT_DIR']+"")
 	for sample in sample_list:
-		shell("cp " + config['OUTPUT_DIR']+"/"+sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + config['OUTPUT_DIR'] + sample + "/" + serviceName + "/ || true")
+		shell("cp " +config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/ || true")
 	if config['DEPOT_COPY'] == True:
 		shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ {depotdir}")
 		for sample in sample_list:
-			shell("cp " + depotdir + sample + "/" + serviceName + "/" + sample + "_" + date_time + "_" + serviceName + "/* " + depotdir + sample + "/" + serviceName + "/ || true")
+			shell("cp "+depotdir+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+depotdir+sample+"/"+serviceName+"/ || true")
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
 	
-	shell("touch " + config['OUTPUT_DIR']+"/" + serviceName + "Failed.txt")
-	#shell("rm -f " + config['OUTPUT_DIR']+"/" + serviceName + "Running.txt")
+	shell("touch " +config['OUTPUT_DIR']+"/"+serviceName+"Failed.txt")
+	#shell("rm -f "+config['OUTPUT_DIR']+"/"+serviceName+"Running.txt")
 	shell("rsync -azvh --include={include_log} --exclude='*' {tmpDir}/ "+config['OUTPUT_DIR']+"")

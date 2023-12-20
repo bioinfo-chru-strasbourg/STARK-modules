@@ -420,7 +420,7 @@ rule cluster_identifier:
 		bam = inputDir+"/{sample}.{aligner}.bam",
 		bai = inputDir+"/{sample}.{aligner}.bai"
 	output:
-		temp(tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.clusters.txt")
+		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.clusters.txt")
 	params:
 		mini = config['m'],
 		soft = config['s'],
@@ -449,11 +449,11 @@ rule scramble:
 		mode = config['scramble_mode'],
 		refgene = config['REFGENEFA_PATH'],
 		dummypath = config['DUMMY_PATH'],
-		output = tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw"
+		output = tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw"
 	output:
-		tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw.vcf"
+		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.raw.vcf"
 	log: 
-		log1 = tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.ScrambleR.log", log2 = tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.ScrambleR.err"
+		log1 = tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.ScrambleR.log", log2 = tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.ScrambleR.err"
 	shell:
 		"""
 		Rscript --vanilla {params.scrambledir}/SCRAMble.R \
@@ -472,7 +472,7 @@ rule correctvcf:
 	input:
 		rules.scramble.output
 	output:
-		temp(tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.corr.vcf")
+		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.corr.vcf")
 	params:
 		mode = config['scramble_mode'],
 		dummypath = config['DUMMY_PATH']
@@ -496,16 +496,16 @@ rule AnnotSV:
 	input:
 		rules.correctvcf.output
 	output:
-		tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
+		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Full_unsort.vcf"
 	log:
-		tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.log"
+		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.log"
 	params:
 		genome = config['genomeBuild'],
 		overlap = config ['overlap'],
 		mode = config['annotationMode'],
 		annotation = config['annotationdir'],
 		dummypath = config['DUMMY_PATH'],
-		output = tmpDir + "/{sample}/" + serviceName + "/{sample}_" + date_time + "_" + serviceName + "/" + serviceName + "." + date_time + ".{sample}.{aligner}.AnnotSV.Full_unsort"
+		output = tmpDir + "/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Full_unsort"
 	shell:
 		"""
 		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
@@ -518,7 +518,7 @@ rule sortvcf:
 	input:
 		rules.AnnotSV.output
 	output:
-		temp(tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Full_unfilter.vcf")
+		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Full_unfilter.vcf")
 	params:
 		dummypath = config['DUMMY_PATH']
 	shell:
@@ -534,7 +534,7 @@ rule bcftools_filter:
 	input:
 		rules.sortvcf.output	
 	output:
-		temp(tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Full.vcf")
+		temp(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Full.vcf")
 	params:
 		bcffilter = config['BCFTOOLS_FILTER']
 	shell:
@@ -550,7 +550,7 @@ rule vcf2gz:
 	input:
 		rules.bcftools_filter.output
 	output:
-		tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Full.vcf.gz"
+		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Full.vcf.gz"
 	shell:
 		"""
 		bgzip -c {input} > {output} ; tabix {output}
@@ -561,7 +561,7 @@ rule cpvcffull:
 	Copy or merge with bcftools several vcfs
 	"""
 	input:
-		expand(tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
+		expand(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
 	output:
 		tmpDir+"/"+serviceName+"."+date_time+".all.AnnotSV.Full.vcf.gz"
 	shell:
@@ -582,7 +582,7 @@ rule filtervcfdesign:
 	input:
 		rules.vcf2gz.output
 	output:
-		tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Design.vcf.gz"
+		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Design.vcf.gz"
 	params:
 		bed = config['BED_FILE']
 	shell:
@@ -595,7 +595,7 @@ rule cpvcfdesign:
 	Copy or merge with bcftools several vcfs
 	"""
 	input:
-		expand(tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
+		expand(tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output:
 		tmpDir+"/"+serviceName+"."+date_time+".all.AnnotSV.Design.vcf.gz"
 	shell:
@@ -615,9 +615,9 @@ rule convertvcf_sampledesign:
 	input:
 		rules.filtervcfdesign.output
 	output:
-		tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Design.tsv"
+		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.AnnotSV.Design.tsv"
 	log:
-		tmpDir+"/{sample}/"+ serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.vcf2tsv_converter.log"
+		tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/"+serviceName+"."+date_time+".{sample}.{aligner}.vcf2tsv_converter.log"
 	shell:
 		"""
 		vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output} 2> {log}
@@ -653,8 +653,7 @@ rule convertvcf_allunfiltered:
 		vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output} 2> {log}
 		"""
 onstart:
-	shell("touch " + config['OUTPUT_DIR']+"/"+serviceName+"Running.txt")
-	# Add the snakemake parameters to log
+	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Running.txt")
 	with open(logfile, "a+") as f:
 		json.dump(config, f)
 		f.write("\n")
@@ -673,7 +672,7 @@ onsuccess:
 		shell("rm -f "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/* || true") # if rm stderr, the true will avoid exiting snakemake
 	shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ "+config['OUTPUT_DIR']+"")
 	for sample in sample_list:
-		shell("cp "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/ || true")
+		shell("cp "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/ || true")
 	if config['DEPOT_COPY'] == True:
 		shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ {depotdir}")
 		for sample in sample_list:
@@ -683,5 +682,5 @@ onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
 	
 	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Failed.txt")
-	#shell("rm -f "+config['OUTPUT_DIR']+serviceName+"Running.txt")
+	#shell("rm -f "+config['OUTPUT_DIR']+"/"+serviceName+"Running.txt")
 	shell("rsync -azvh --include={include_log} --exclude='*' {tmpDir}/ "+config['OUTPUT_DIR']+"")

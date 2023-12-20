@@ -501,7 +501,7 @@ onsuccess:
 		shell("rm -f "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/* || true") # if rm stderr, the true will avoid exiting snakemake
 	shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ "+config['OUTPUT_DIR']+"")
 	for sample in sample_list:
-		shell("cp "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+sample+"/"+serviceName+"/ || true")
+		shell("cp "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/"+sample+"_"+date_time+"_"+serviceName+"/* "+config['OUTPUT_DIR']+"/"+sample+"/"+serviceName+"/ || true")
 	if config['DEPOT_COPY'] == True:
 		shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ {depotdir}")
 		for sample in sample_list:
