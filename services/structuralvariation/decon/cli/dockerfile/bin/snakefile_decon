@@ -874,7 +874,7 @@ rule plot:
 		"""
 
 onstart:
-	shell("touch "+config['OUTPUT_DIR']+serviceName+"Running.txt")
+	shell("touch "+config['OUTPUT_DIR']+"/"+serviceName+"Running.txt")
 	with open(logfile, "a+") as f:
 		json.dump(config, f)
 		f.write("\n")
