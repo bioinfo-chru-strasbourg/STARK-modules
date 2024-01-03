@@ -24,7 +24,7 @@ suppressMessages(library(ExomeDepth))
 ###### Parsing input options and setting defaults ########
 option_list<-list(
     make_option('--rdata',help='Input summary RData file containing coverage datas, bed file and GC content (required)',dest='data'),
-    make_option("--chromosome",default="A",help='Performe calling for Autosomes, XX or XY only',dest='chromosome'),
+    make_option("--chromosome",default="A",help='Perform calling for autosomes or chr XX or chr XY ',dest='chromosome'),
     make_option('--transProb',default=.01,help='Transition probability for the HMM statistical analysis, default=0.01',dest='transProb'),
 	make_option("--refbams",default=NULL,help="Text file containing the list of reference bam files for calling (full path) (optional)",dest='refbams'),
     make_option("--samples",default=NULL,help="Text file containing the list of sample bams to analyse",dest='samples'),

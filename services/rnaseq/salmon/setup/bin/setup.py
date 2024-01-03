@@ -19,50 +19,35 @@
 #
 ####################################
 
-###############
-# Python Func #
-###############
-
 import os
 import subprocess
 from datetime import datetime
 
-
 def systemcall(command):
-	'''
-	*passing command to the shell*
-	*return list containing stdout lines*
-	command - shell command (string)
-	'''
-	p = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
-	return p.stdout.read().decode('utf8').strip().split('\n')
+	""" Execute shell command and return stdout lines as a list """
+	process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+	return process.stdout.read().decode('utf8').strip().split('\n')
 
-def logsomefile(logfile, text, sep, items_list=None, items=None):
-	""" Function to log variable value or list values into a log file """
-	pathlog = os.path.dirname(logfile)
-	os.makedirs(pathlog, exist_ok = True)
+def log_file(logfile, text, sep, items_list=None, items=None):
+	""" Function to log a variable value or a list of values into a log file """
 	with open(logfile, 'a+') as f:
-		f.write(text + sep)
+		f.write(f"{text}{sep}")
 		if items_list:
-			for items in items_list:
-				f.write(str(items) + sep)
+			for item in items_list:
+				f.write(f"{str(item) if item != '' else 'None'}{sep}")
 		else:
-			f.write(str(items) + sep)
+			f.write(f"{str(items) if items != '' else 'None'}{sep}")
+
 
 def installdatabase(destination, source, archive_name, logfile, errfile):
 	""" Function to download and install an archive (zip or tar.gz) """
 	os.makedirs(destination, exist_ok = True)
-	systemcall("aria2c -c -s 16 -x 16 -k 1M -j 1 "+ source+" 1>> "+logfile+" 2>> "+errfile+" ")
+	systemcall(f"aria2c -c -s 16 -x 16 -k 1M -j 1 {source} 1>> {logfile} 2>> {errfile}")
 	if archive_name.endswith('.zip'):
-		systemcall("unzip -q "+archive_name+" -d " +destination+" 1>> "+logfile+" 2>> "+errfile+" ")
+		systemcall(f"unzip -q {archive_name} -d {destination} 1>> {logfile} 2>> {errfile}")
 	if archive_name.endswith('.tar.gz'):
-		systemcall("tar xzf "+archive_name+" -C "+destination+" 1>> "+logfile+" 2>> "+errfile+" ")
+		systemcall(f"tar xzf {archive_name} -C {destination} 1>> {logfile} 2>> {errfile}")
 
-# for wget
-# systemcall("wget "+ source+" 1>> "+logfile+" 2>> "+errfile+" ")
-
-# Variables initialisation
-# set datetime to add to output file name
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 
 ### INSTALL DATABASES ###
@@ -87,43 +72,37 @@ moduleName = "rnaseq"
 
 # Version must be the same for the gencode's db
 GENCODE_VERSION = "41"
-
 GENCODEREF_TARBALL = "GRCh38.primary_assembly.genome.fa.gz"
-GENCODEREF_SOURCE_EXTERNAL = "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"+GENCODEREF_VERSION+"/"+GENCODEREF_TARBALL
-GENCODEREF_PARAM_DATABASE_FOLDER_LINK = DATABASES+"/gencode/"+GENCODEREF_VERSION+"/"
+GENCODEREF_SOURCE_EXTERNAL = f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/GENCODEREF_TARBALL"
+GENCODEREF_PARAM_DATABASE_FOLDER_LINK = f"{DATABASES}gencode/{GENCODE_VERSION}/"
 
-logfile = GENCODEREF_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.log"
-errfile = GENCODEREF_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.err"
+logfile = f"{GENCODEREF_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.setup.log"
+errfile = f"{GENCODEREF_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.setup.err"
 
 # Check if a directory exist
 # os.path.isdir('folder') will return true if exist
 if os.path.isdir(GENCODEREF_PARAM_DATABASE_FOLDER_LINK) == False:
 	os.makedirs(GENCODEREF_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
-	logsomefile(logfile, 'Gencode version '+GENCODE_VERSION+' installation start:', "\n", items = date_time)
+	log_file(logfile, 'Gencode version '+GENCODE_VERSION+' installation start:', "\n", items = date_time)
 	installdatabase(GENCODEREF_PARAM_DATABASE_FOLDER_LINK, GENCODEREF_SOURCE_EXTERNAL, GENCODEREF_TARBALL, logfile, errfile)
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
-	logsomefile(logfile, 'Installation end:', "\n", items = date_time_end)
+	log_file(logfile, 'Installation end:', "\n", items = date_time_end)
 
+GENCODE_TARBALL = f"gencode.v{GENCODE_VERSION}.transcripts.fa.gz"
+GENCODE_SOURCE_EXTERNAL = f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/{GENCODE_TARBALL}"
+GENCODE_PARAM_DATABASE_FOLDER_LINK = f"{DATABASES}gencode/{GENCODE_VERSION}/"
 
-GENCODE_TARBALL = "gencode.v"+GENCODE_VERSION+".transcripts.fa.gz"
-GENCODE_SOURCE_EXTERNAL = "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"+GENCODE_VERSION+"/"+GENCODE_TARBALL
-GENCODE_PARAM_DATABASE_FOLDER_LINK = DATABASES+"/gencode/"+GENCODE_VERSION+"/"
-
-logfile = GENCODE_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.log"
-errfile = GENCODE_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.err"
+logfile = f"{GENCODE_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.setup.log"
+errfile = f"{GENCODE_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.setup.err"
 
 # Check if a directory exist
 # os.path.isdir('folder') will return true if exist
-if os.path.isdir(GENCODE_PARAM_DATABASE_FOLDER_LINK) == False:
+if not os.path.isdir(GENCODE_PARAM_DATABASE_FOLDER_LINK):
 	os.makedirs(GENCODE_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
-	logsomefile(logfile, 'Gencode version '+GENCODE_VERSION+' installation start:', "\n", items = date_time)
+	log_file(logfile, 'Gencode version '+GENCODE_VERSION+' installation start:', "\n", items = date_time)
 	installdatabase(GENCODE_PARAM_DATABASE_FOLDER_LINK, GENCODE_SOURCE_EXTERNAL, GENCODE_TARBALL, logfile, errfile)
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
-	logsomefile(logfile, 'Installation end:', "\n", items = date_time_end)
-
-
-REFGENOME = DATABASES+"/gencode/"+GENCODE_VERSION+"/"+GENCODEREF_TARBALL
-GENCODE = DATABASES+"/gencode/"+GENCODE_VERSION+"/"+GENCODE_TARBALL
+	log_file(logfile, 'Installation end:', "\n", items = date_time_end)
 
 # recipe for Salmon index to perform count extraction
 # GRch38 assembly and gencode.vxx.transcripts.fa.gz can be found on https://www.gencodegenes.org/human/
@@ -136,9 +115,13 @@ GENCODE = DATABASES+"/gencode/"+GENCODE_VERSION+"/"+GENCODE_TARBALL
 # salmon index -t gentrome.fa.gz -d decoys.txt -p 12 -i salmon_index --gencode
 # eventually use --keepDuplicates for isoform analysis
 
-systemcall("grep "^>" <(gunzip -c "+REFGENOME+") | cut -d " " -f 1 > decoys.txt")
+REFGENOME = f"{DATABASES}gencode/{GENCODE_VERSION}/{GENCODEREF_TARBALL}"
+GENCODE = f"{DATABASES}gencode/{GENCODE_VERSION}/{GENCODE_TARBALL}"
+
+#systemcall("grep "^>" <(gunzip -c "+REFGENOME+") | cut -d " " -f 1 > decoys.txt")
+systemcall(f"grep '^>' <(gunzip -c {REFGENOME}) | cut -d ' ' -f 1 > decoys.txt")
 systemcall("sed -i.bak -e 's/>//g' decoys.txt")
-systemcall("cat "+GENCODE+" "+REFGENOME+" > gentrome.fa.gz")
+systemcall(f"cat {GENCODE} {REFGENOME} > gentrome.fa.gz")
 systemcall("salmon index -t gentrome.fa.gz -d decoys.txt -p 12 -i salmon_index --gencode")
 
 
@@ -147,12 +130,12 @@ systemcall("salmon index -t gentrome.fa.gz -d decoys.txt -p 12 -i salmon_index -
 #######################
 
 if serviceName and moduleName:
-	logfile = "/STARK/config/"+moduleName+"/"+serviceName+"/listener/logs/" + serviceName + "." +date_time+".setup.log"
-	errfile = "/STARK/config/"+moduleName+"/"+serviceName+"/listener/logs/" + serviceName + "." +date_time+".setup.err"
-	logsomefile(logfile, 'Setup copying configuration files:', "\n", items = date_time)
-	systemcall("rsync -ar /app/config/ /STARK/config/"+moduleName+"/"+serviceName+"/listener 1>> "+logfile+" 2>> "+errfile+" ")
+	logfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.log"
+	errfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.err"
+	log_file(logfile, 'Setup copying configuration files:', "\n", items = date_time)
+	systemcall(f"rsync -ar /app/config/ /STARK/config/{moduleName}/{serviceName}/listener 1>> {logfile} 2>> {errfile}")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
-	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
+	log_file(logfile, 'Setup end:', "\n", items = date_time_end)
 
 # SETUPComplete cli services (condition for healthy cli)
 systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")

@@ -1,5 +1,5 @@
 ##########################################################################
-# SETUP Version:			2
+# SETUP Version:			2.0
 # Description:				Setup to configure module
 ##########################################################################
 
@@ -19,50 +19,35 @@
 #
 ####################################
 
-###############
-# Python Func #
-###############
-
 import os
 import subprocess
 from datetime import datetime
 
-
 def systemcall(command):
-	'''
-	*passing command to the shell*
-	*return list containing stdout lines*
-	command - shell command (string)
-	'''
-	p = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
-	return p.stdout.read().decode('utf8').strip().split('\n')
+	""" Execute shell command and return stdout lines as a list """
+	process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+	return process.stdout.read().decode('utf8').strip().split('\n')
 
-def logsomefile(logfile, text, sep, items_list=None, items=None):
-	""" Function to log variable value or list values into a log file """
-	pathlog = os.path.dirname(logfile)
-	os.makedirs(pathlog, exist_ok = True)
+def log_file(logfile, text, sep, items_list=None, items=None):
+	""" Function to log a variable value or a list of values into a log file """
 	with open(logfile, 'a+') as f:
-		f.write(text + sep)
+		f.write(f"{text}{sep}")
 		if items_list:
-			for items in items_list:
-				f.write(str(items) + sep)
+			for item in items_list:
+				f.write(f"{str(item) if item != '' else 'None'}{sep}")
 		else:
-			f.write(str(items) + sep)
+			f.write(f"{str(items) if items != '' else 'None'}{sep}")
+
 
 def installdatabase(destination, source, archive_name, logfile, errfile):
 	""" Function to download and install an archive (zip or tar.gz) """
 	os.makedirs(destination, exist_ok = True)
-	systemcall("aria2c -c -s 16 -x 16 -k 1M -j 1 "+ source+" 1>> "+logfile+" 2>> "+errfile+" ")
+	systemcall(f"aria2c -c -s 16 -x 16 -k 1M -j 1 {source} 1>> {logfile} 2>> {errfile}")
 	if archive_name.endswith('.zip'):
-		systemcall("unzip -q "+archive_name+" -d " +destination+" 1>> "+logfile+" 2>> "+errfile+" ")
+		systemcall(f"unzip -q {archive_name} -d {destination} 1>> {logfile} 2>> {errfile}")
 	if archive_name.endswith('.tar.gz'):
-		systemcall("tar xzf "+archive_name+" -C "+destination+" 1>> "+logfile+" 2>> "+errfile+" ")
+		systemcall(f"tar xzf {archive_name} -C {destination} 1>> {logfile} 2>> {errfile}")
 
-# for wget
-# systemcall("wget "+ source+" 1>> "+logfile+" 2>> "+errfile+" ")
-
-# Variables initialisation
-# set datetime to add to output file name
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 
 ### INSTALL DATABASES ###
@@ -84,19 +69,21 @@ moduleName = "structuralvariation"
 #######################
 
 if serviceName and moduleName:
-	logfile = "/STARK/config/"+moduleName+"/"+serviceName+"/listener/logs/" + serviceName + "." +date_time+".setup.log"
-	errfile = "/STARK/config/"+moduleName+"/"+serviceName+"/listener/logs/" + serviceName + "." +date_time+".setup.err"
-	logsomefile(logfile, 'Setup copying configuration files:', "\n", items = date_time)
-	systemcall("rsync -ar /app/config/ /STARK/config/"+moduleName+"/"+serviceName+"/listener 1>> "+logfile+" 2>> "+errfile+" ")
+	logfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.log"
+	errfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.err"
+	log_file(logfile, 'Setup copying configuration files:', "\n", items = date_time)
+	systemcall(f"rsync -ar /app/config/ /STARK/config/{moduleName}/{serviceName}/listener 1>> {logfile} 2>> {errfile}")
+	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
+	log_file(logfile, 'Setup end:', "\n", items = date_time_end)
 
 #######################
 # Copy reference files
 #######################
 
-	logsomefile(logfile, 'Setup copying reference ITDs files:', "\n", items = date_time)
-	systemcall("rsync -ar --mkpath /app/reference/ /STARK/databases/ITDs/ 1>> "+logfile+" 2>> "+errfile+" ")
+	log_file(logfile, 'Setup copying reference ITDs files:', "\n", items = date_time)
+	systemcall(f"rsync -ar --mkpath /app/reference/ /STARK/databases/ITDs/ 1>> {logfile} 2>> {errfile}")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
-	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
+	log_file(logfile, 'Setup end:', "\n", items = date_time_end)
 
 # SETUPComplete cli services (condition for healthy cli)
 systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
