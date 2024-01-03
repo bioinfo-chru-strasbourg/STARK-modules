@@ -35,7 +35,7 @@ import glob
 import pandas as pd
 import json
 import csv
-import shutil
+from shutil import copy2
 from datetime import datetime
 from itertools import product
 from collections import defaultdict

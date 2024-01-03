@@ -35,7 +35,7 @@ import glob
 import pandas as pd
 import json
 import csv
-import shutil
+from shutil import copy2
 from datetime import datetime
 from itertools import product
 from collections import defaultdict
@@ -471,6 +471,7 @@ rule help:
 	Use option --configfile another.yaml to replace and merge existing default config.yaml file variables
 	Use -p to display shell commands
 	Use --lt to display docstrings of rules
+	Use -n for a dry run
 	Input file = bam or cram files (if bai is needed, it will be generate)
 	Output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of vcf files by design/panel
 	"""
@@ -548,7 +549,7 @@ rule makeCNVcalls:
 		output=f"{tmpDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design_results",
 		analysisfailure=f"{tmpDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCalledFailed",
 		bamlist=f"{tmpDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
-		chromosome=expand({gender}, gender=gender_list),
+		chromosome="{gender}",
 		refbamlist=config['REF_BAM_LIST'],
 		decondir=config['DECON_PATH']
 	output:

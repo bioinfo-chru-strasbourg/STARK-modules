@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HTML Report</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <table>
+        <tr>
+            <th>Key</th>
+            <th>Value</th>
+        </tr>
+        {% for key, value in data.items() %}
+        <tr>
+            <td>{{ key }}</td>
+            <td>
+                {% if value is mapping %}
+                    <!-- Nested dictionary, iterate through its items -->
+                    <table>
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                        </tr>
+                        {% for nested_key, nested_value in value.items() %}
+                        <tr>
+                            <td>{{ nested_key }}</td>
+                            <td>{{ nested_value }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% else %}
+                    <!-- Non-nested value -->
+                    {{ value }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
