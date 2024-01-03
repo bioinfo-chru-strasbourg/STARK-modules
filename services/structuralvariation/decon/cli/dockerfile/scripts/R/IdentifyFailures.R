@@ -9,12 +9,12 @@
 ########## Note ########################################################################################
 # PROD v1 21/11/2023
 # Changelog
-#   - refactor code, remove install system, optparse script, update for ExomeDepth 1.16
+#   - refactor code, remove install system, optparse script, update ExomeDepth 1.16
 ########################################################################################################
 
-library(R.utils)
-library(optparse)
-library(ExomeDepth)
+suppressMessages(library(R.utils))
+suppressMessages(library(optparse))
+suppressMessages(library(ExomeDepth))
 
 print("BEGIN IdentifyFailures script")
 

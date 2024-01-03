@@ -269,6 +269,24 @@ else:
 # Find list.genes files 
 config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
 
+# Transform list_genes into a list if list_genes exist, else use genes_file if exist
+panel_list = []
+panel_list_trunc = []
+if config['LIST_GENES']:
+	with open(config['LIST_GENES']) as f:
+		panel_list = f.read().splitlines()
+elif config['GENES_FILE'] and not config['LIST_GENES']:
+	panel_list.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
+# cp files from panel_list to inputDir and rename them
+for panel in panel_list:
+	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{panel}.bed"# panel_list don't have the bed extension, need that for the copy
+	# cut sample. and .genes from file name so files will have the same name as the truncated name list
+	panel_trunc = panel.split(".", 1)[1].split(".genes",1)[0]
+	outputfile = f"{tmpDir}/{panel_trunc}"
+	copy2(inputfile, outputfile)
+	# Create a new list for expand, names are filenames without sample and .genes.bed ext
+	panel_list_trunc.append(panel_trunc)
+
 ### DECON bed ###
 # DECON need a 4 columns bed for the ReadInBams rule, if bed is not set correctly ReadInBams will crash
 # Chromosome Start End Gene but no header, bed format (tsv)
@@ -680,8 +698,8 @@ onsuccess:
 
 	# Clear existing output directories
 	for sample in sample_list:
-		shell(f"rm -f {outputdir}/{sample_name}/{service_name}/* || true")
-	
+		shell(f"rm -f {outputdir}/{sample}/{serviceName}/* || true")
+		
 	# Copy results to the main output directory
 	shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ {outputdir}")
 

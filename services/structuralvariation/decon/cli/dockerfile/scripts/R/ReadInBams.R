@@ -9,18 +9,18 @@
 ########## Note ########################################################################################
 # PROD v1 21/11/2023
 # Changelog
-#   - refactor code, remove install system, update for ExomeDepth 1.16
+#   - refactor code, remove install system, update ExomeDepth 1.16
 #   - parallelisation to speed up the process
 #   - detect bed file with a 5 column with exon numbers, remove custom exon options
 ########################################################################################################
 
 
-library(R.utils)
-library(optparse)
-library(ExomeDepth)
-library(doParallel)
-library(foreach)
-library(dplyr)
+suppressMessages(library(R.utils))
+suppressMessages(library(optparse))
+suppressMessages(library(ExomeDepth))
+suppressMessages(library(doParallel))
+suppressMessages(library(foreach))
+suppressMessages(library(dplyr))
 
 print("BEGIN ReadInBams script")
 
