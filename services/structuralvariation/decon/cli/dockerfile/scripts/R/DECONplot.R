@@ -9,7 +9,7 @@
 ########## Note ########################################################################################
 # PROD v1 21/11/2023
 # Changelog
-#   - separate plot script from makeCNVcall, refactor code, remove install system
+#   - separate plot script from makeCNVcall, refactor code, remove install systemn, update ExomeDepth 1.16
 #   - optparse script
 ########################################################################################################
 

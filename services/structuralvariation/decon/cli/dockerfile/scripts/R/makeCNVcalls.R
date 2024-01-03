@@ -9,7 +9,7 @@
 ########## Note ########################################################################################
 # PROD v1 21/11/2023
 # Changelog
-#   - refactor code, remove install system, update for ExomeDepth 1.16
+#   - refactor code, remove install system, update ExomeDepth 1.16
 #   - optparse script, add a option to use a list of ref bam files for comparaison
 #   - detect bed file with a 5 column with exon numbers, remove custom exon options
 #   - mode to remove chrX or Y for calling
