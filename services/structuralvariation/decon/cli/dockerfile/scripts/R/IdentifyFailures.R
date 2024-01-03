@@ -12,108 +12,92 @@
 #   - refactor code, remove install system, optparse script, update for ExomeDepth 1.16
 ########################################################################################################
 
+library(R.utils)
+library(optparse)
+library(ExomeDepth)
+
 print("BEGIN IdentifyFailures script")
 
-suppressMessages(library(R.utils))
-suppressMessages(library(optparse))
-suppressMessages(library(ExomeDepth))
-
-###### Parsing input options and setting defaults ########
-option_list<-list(
-    make_option("--rdata",help="Input summary RData file (required)",dest='data'),
-    make_option("--mincorr",help='Minimum correlation to consider, default=0.98',default=.98,dest='mincorr'),
-    make_option("--mincov",help='Minimum coverage to consider, default=100',default=100,dest='mincov'),
-    make_option("--tsv",default='./Metrics.tsv',help='Output metrics tsv file, default=./Metrics.tsv',dest='out')
+option_list <- list(
+    make_option("--rdata", help="Input summary RData file (required)", dest='data'),
+    make_option("--mincorr", help='Minimum correlation to consider, default=0.98', default=0.98, dest='mincorr'),
+    make_option("--mincov", help='Minimum coverage to consider, default=100', default=100, dest='mincov'),
+    make_option("--tsv", default='./Metrics.tsv', help='Output metrics tsv file, default=./Metrics.tsv', dest='out')
 )
-opt<-parse_args(OptionParser(option_list=option_list))
 
-count_data=opt$data
-if(count_data=="NULL"){count_data=NULL}
-if(is.null(count_data)){
-print("ERROR: no Rdata summary file provided -- Execution halted")
-quit()
+opt <- parse_args(OptionParser(option_list=option_list))
+
+count_data <- opt$data
+corr_thresh <- as.numeric(opt$mincorr)
+cov_thresh <- as.numeric(opt$mincov)
+output <- opt$out
+
+stop_if_missing <- function(val, message) {
+    if (is.null(val) || length(val) == 0) {
+        stop(message)
+    }
 }
 
-corr_thresh=as.numeric(opt$mincorr)
-if(length(corr_thresh)==0){corr_thresh=0.98}
-cov_thresh=as.numeric(opt$mincov)
-if(length(cov_thresh)==0){cov_thresh=100}
+stop_if_missing(count_data, "ERROR: no Rdata summary file provided -- Execution halted")
 
-output=opt$out
-if(!file.exists(dirname(output))){dir.create(dirname(output))}
-
-
-# R workspace with the coverage data, bedfile, GC content from ref genome saved in it.
 load(count_data)
-# converts counts, a ranged data object, to a data frame
-ExomeCount<-as(counts, 'data.frame')
-# remove any chr letters, and coerce to a string.
-ExomeCount$chromosome <- gsub(as.character(ExomeCount$chromosome),pattern = 'chr',replacement = '') 
+ExomeCount <- as(counts, 'data.frame')
+ExomeCount$chromosome <- gsub(as.character(ExomeCount$chromosome), pattern = 'chr', replacement = '')
+
 # assigns the sample names to each column
 colnames(ExomeCount)[1:length(sample.names)+5]=sample.names
 
-Sample<-vector()
-Exon<-vector()
-Details<-vector()
-Types<-vector()
-Gene<-vector()
+Sample <- vector()
+Exon <- vector()
+Details <- vector()
+Types <- vector()
+Gene <- vector()
 
-####### Make sure bed file is in chromosome order ################
 temp<-gsub('chr','',bed.file[,1])
 temp1<-order(as.numeric(temp))
 bed.file=bed.file[temp1,]
 
+ReadDepths <- ExomeCount[, sample.names]
+Corr <- cor(ReadDepths)
+MaxCorr <- apply(Corr, 1, function(x) max(x[x != 1]))
 
-# extracts just the read depths
-ReadDepths<-ExomeCount[,sample.names]
-
-# calculates correlation matrix
-Corr<-cor(ReadDepths)
-# finds the maximum correlation for each sample
-MaxCorr<-apply(Corr,1,function(x)max(x[x!=1]))
-
-# tests correlation for each sample; if below corr_thresh, adds to list of fails
-for(i in 1:length(MaxCorr)){
-	if(MaxCorr[i]<corr_thresh){
-			Sample<-c(Sample,sample.names[i])
-			Exon<-c(Exon,"All")
-			Types<-c(Types,"Whole sample")
-			Details<-c(Details,paste("Low correlation: ", MaxCorr[i],sep=""))
-			Gene<-c(Gene,"All")
-	}
+for (i in 1:length(MaxCorr)) {
+    if (MaxCorr[i] < corr_thresh) {
+        Sample <- c(Sample, sample.names[i])
+        Exon <- c(Exon, "All")
+        Types <- c(Types, "Whole sample")
+        Details <- c(Details, paste("Low correlation: ", MaxCorr[i], sep = ""))
+        Gene <- c(Gene, "All")
+    }
 }
 
-# calculates median coverage per sample
-SampleMedian<-apply(ReadDepths,2,median)
+SampleMedian <- apply(ReadDepths, 2, median)
 
-# tests median coverage for each sample; if below cov_thresh, adds to list of fails
-for(i in 1:length(SampleMedian)){
-	if(SampleMedian[i]<cov_thresh){
-		if(sample.names[i]%in%Sample){
-			k=which(Sample==sample.names[i])
-			Details[k] = paste(Details[k],", Low median read depth (FPKM): ", SampleMedian[i],sep="")
-		}else{
-			Sample<-c(Sample,sample.names[i])
-			Exon<-c(Exon,"All")
-			Types<-c(Types,"Whole sample")
-			Details<-c(Details,paste("Low median read depth (FPKM): ", SampleMedian[i],sep=""))
-			Gene<-c(Gene,"All")
-		}
-	}
+for (i in 1:length(SampleMedian)) {
+    if (SampleMedian[i] < cov_thresh) {
+        if (sample.names[i] %in% Sample) {
+            k <- which(Sample == sample.names[i])
+            Details[k] <- paste(Details[k], ", Low median read depth (FPKM): ", SampleMedian[i], sep = "")
+        } else {
+            Sample <- c(Sample, sample.names[i])
+            Exon <- c(Exon, "All")
+            Types <- c(Types, "Whole sample")
+            Details <- c(Details, paste("Low median read depth (FPKM): ", SampleMedian[i], sep = ""))
+            Gene <- c(Gene, "All")
+        }
+    }
 }
 
-# calculates median coverage per exon
-ExonMedian<-apply(ReadDepths,1,median)
+ExonMedian <- apply(ReadDepths, 1, median)
 
-# tests median coverage for each exon; if below cov_thresh, adds to list of fails
-for(i in 1:length(ExonMedian)){
-	if(ExonMedian[i]<cov_thresh){
-		Exon<-c(Exon,i)
-		Sample<-c(Sample,"All")
-		Types<-c(Types,"Whole exon")
-		Details<-c(Details,paste("Low median read depth (FPKM): ",ExonMedian[i],sep=""))
-		Gene<-c(Gene,paste(bed.file[i,4]))
-	}
+for (i in 1:length(ExonMedian)) {
+    if (ExonMedian[i] < cov_thresh) {
+        Exon <- c(Exon, i)
+        Sample <- c(Sample, "All")
+        Types <- c(Types, "Whole exon")
+        Details <- c(Details, paste("Low median read depth (FPKM): ", ExonMedian[i], sep = ""))
+        Gene <- c(Gene, paste(bed.file[i, 4]))
+    }
 }
 
 if("exon" %in% colnames(bed.file) & any(Exon!="All")){

@@ -23,10 +23,11 @@ import subprocess
 import sys
 import time
 
-from datetime import datetime
-sys.path.insert(1,"/app/bin/config")
-from launcher import launch
 from os.path import join as osj
+from datetime import datetime
+from launcher import launch
+
+sys.path.insert(1,"/app/bin/config")
 
 def createContainerFile(containersFile, run, containerName):
 	file = open(osj(containersFile,containerName+".log"), "w+")
@@ -125,30 +126,7 @@ def find_any_samplesheet(runDir, fromResDir = False):
 			return ss
 	return "NO_SAMPLESHEET_FOUND"
 
-def deprecated_checkTags(tag, sampleTagsList, analysisTagsList):
-	"""
-	Deprecated because:
-	- not removing "!" at the beginning of tags
-	- "in" instead of ==
-	- no separation of tags
-	"""
-	if tag.startswith("!"):
-		for t in sampleTagsList:
-			if not tag in t:
-				return True
-		for t in analysisTagsList:
-			if not tag in t:
-				return True
-		return False
-	else:
-		for t in sampleTagsList:
-			if tag in t:
-				return True
-		for t in analysisTagsList:
-			if tag in t:
-				return True
-		return False
-		
+	
 def checkTags(tag, sampleTagsList, analysisTagsList):
 	"""
 	>>> checkTags("!POOL", ['SEX#F!PLUGAPP#POOL!', 'SEX#F!', 'SEX#M!PLUGAPP#POOL!', 'SEX#M!', 'SEX#F!'], ['APP#DIAG.DI', 'APP#DIAG.DI', 'APP#DIAG.DI', 'APP#DIAG.DI', 'APP#DIAG.DI'])
@@ -212,6 +190,12 @@ def running(run, serviceName):
 		return False
 	return True
 
+def failed(run, serviceName):
+	if glob.glob(osj(run,serviceName+"Failed.txt")):
+		return False
+	return True
+
+
 def checkTriggers(jconfig, serviceName, run):
 	if len(jconfig.keys()) == 0:
 		return True
@@ -244,6 +228,8 @@ def checkTriggers(jconfig, serviceName, run):
 						listFile.append(not running(run, file[:-11]))
 					elif "Complete.txt" in file:
 						listFile.append(not complete(run, file[:-12]))
+					elif "Failed.txt" in file:
+						listFile.append(not failed(run, file[:-12]))
 					elif "STARKCopyComplete.txt" in file:
 						listFile.append(not complete(run, "STARK"))
 			if all(listNotFile + listFile):

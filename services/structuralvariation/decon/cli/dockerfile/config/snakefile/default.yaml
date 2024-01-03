@@ -59,9 +59,9 @@ VALIDATION_ONLY: False
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*Unfiltered.vcf.gz','*Unfiltered.vcf.gz.tbi','*Design.vcf.gz','Design.vcf.gz.tbi','*AnnotSV.Unfiltered.tsv','*AnnotSV.Design.tsv','*Design_results_all.tsv','*Metrics.tsv','*.bed','*list.txt','*.pdf','*/'}"
+INCLUDE_RSYNC: "{'*Design.vcf.gz','*Design.vcf.gz.tbi','*AnnotSV.Design.tsv','*Metrics.tsv','*.bed','*list.txt','*.pdf','*/'}"
 # Extensions files to copy after pipeline failure
-INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed'}"
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed','*/'}"
 
 ##### Search parameters of input for the search function #####
 RECURSIVE_SEARCH: False

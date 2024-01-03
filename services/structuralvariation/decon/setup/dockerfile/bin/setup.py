@@ -29,34 +29,29 @@ from datetime import datetime
 
 
 def systemcall(command):
-	'''
-	*passing command to the shell*
-	*return list containing stdout lines*
-	command - shell command (string)
-	'''
-	p = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
-	return p.stdout.read().decode('utf8').strip().split('\n')
+	""" Execute shell command and return stdout lines as a list """
+	process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+	return process.stdout.read().decode('utf8').strip().split('\n')
 
-def logsomefile(logfile, text, sep, items_list=None, items=None):
-	""" Function to log variable value or list values into a log file """
-	pathlog = os.path.dirname(logfile)
-	os.makedirs(pathlog, exist_ok = True)
+def log_file(logfile, text, sep, items_list=None, items=None):
+	""" Function to log a variable value or a list of values into a log file """
 	with open(logfile, 'a+') as f:
-		f.write(text + sep)
+		f.write(f"{text}{sep}")
 		if items_list:
-			for items in items_list:
-				f.write(str(items) + sep)
+			for item in items_list:
+				f.write(f"{str(item) if item != '' else 'None'}{sep}")
 		else:
-			f.write(str(items) + sep)
+			f.write(f"{str(items) if items != '' else 'None'}{sep}")
+
 
 def installdatabase(destination, source, archive_name, logfile, errfile):
 	""" Function to download and install an archive (zip or tar.gz) """
 	os.makedirs(destination, exist_ok = True)
-	systemcall("aria2c -c -s 16 -x 16 -k 1M -j 1 "+ source+" 1>> "+logfile+" 2>> "+errfile+" ")
+	systemcall(f"aria2c -c -s 16 -x 16 -k 1M -j 1 {source} 1>> {logfile} 2>> {errfile}")
 	if archive_name.endswith('.zip'):
-		systemcall("unzip -q "+archive_name+" -d " +destination+" 1>> "+logfile+" 2>> "+errfile+" ")
+		systemcall(f"unzip -q {archive_name} -d {destination} 1>> {logfile} 2>> {errfile}")
 	if archive_name.endswith('.tar.gz'):
-		systemcall("tar xzf "+archive_name+" -C "+destination+" 1>> "+logfile+" 2>> "+errfile+" ")
+		systemcall(f"tar xzf {archive_name} -C {destination} 1>> {logfile} 2>> {errfile}")
 
 # for wget
 # systemcall("wget "+ source+" 1>> "+logfile+" 2>> "+errfile+" ")
@@ -86,23 +81,20 @@ moduleName = "structuralvariation"
 # include GrCH37 & 38
 
 
-ANNOTSV_NAME = "AnnotSV"
 ANNOTSV_VERSION = "3.3.6"
-ANNOTSV_TARBALL = "Annotations_Human_"+ANNOTSV_VERSION+".tar.gz"
-ANNOTSV_SOURCE_EXTERNAL = "https://www.lbgi.fr/~geoffroy/Annotations/"+ANNOTSV_TARBALL
-ANNOTSV_PARAM_DATABASE_FOLDER_LINK = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/"
+ANNOTSV_TARBALL = f"Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
+ANNOTSV_SOURCE_EXTERNAL = f"https://www.lbgi.fr/~geoffroy/Annotations/{ANNOTSV_TARBALL}"
+ANNOTSV_PARAM_DATABASE_FOLDER_LINK = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/"
 
-logfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.log"
-errfile = ANNOTSV_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.err"
+logfile = f"{ANNOTSV_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.setup.log"
+errfile = f"{ANNOTSV_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.setup.err"
 
-# Check if a directory exist
-# os.path.isdir('folder') will return true if exist
-if os.path.isdir(ANNOTSV_PARAM_DATABASE_FOLDER_LINK) == False:
+if not os.path.isdir(ANNOTSV_PARAM_DATABASE_FOLDER_LINK):
 	os.makedirs(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
-	logsomefile(logfile, 'AnnotSV version '+ANNOTSV_VERSION+' installation start:', "\n", items = date_time)
+	log_file(logfile, 'AnnotSV version '+ANNOTSV_VERSION+' installation start:', "\n", items = date_time)
 	installdatabase(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, ANNOTSV_SOURCE_EXTERNAL, ANNOTSV_TARBALL, logfile, errfile)
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
-	logsomefile(logfile, 'Installation end:', "\n", items = date_time_end)
+	log_file(logfile, 'Installation end:', "\n", items = date_time_end)
 
 #####################
 # DATABASE EXOMISER #
@@ -120,15 +112,15 @@ if os.path.isdir(ANNOTSV_PARAM_DATABASE_FOLDER_LINK) == False:
 
 TOOL_NAME="hg19"
 TOOL_VERSION="2202"
-TOOL_TARBALL= TOOL_VERSION+"_"+TOOL_NAME+".tar.gz"
-TOOL_SOURCE_EXTERNAL="https://www.lbgi.fr/~geoffroy/Annotations/"+TOOL_TARBALL
-TOOL_PARAM_DATABASE_FOLDER_LINK= DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/Annotations_Exomiser/"+ TOOL_VERSION+"/"
+TOOL_TARBALL = f"{TOOL_VERSION}_{TOOL_NAME}.tar.gz"
+TOOL_SOURCE_EXTERNAL = f"https://www.lbgi.fr/~geoffroy/Annotations/{TOOL_TARBALL}"
+TOOL_PARAM_DATABASE_FOLDER_LINK = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Exomiser/{TOOL_VERSION}/"
 
-logfile = TOOL_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.log"
-errfile = TOOL_PARAM_DATABASE_FOLDER_LINK + serviceName + "." +date_time+".database.setup.err"
+logfile = f"{TOOL_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.setup.log"
+errfile = f"{TOOL_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.setup.err"
 
 if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
-	logsomefile(logfile, 'Exomiser version '+TOOL_VERSION+' installation start:', "\n", items = date_time)
+	log_file(logfile, 'Exomiser version '+TOOL_VERSION+' installation start:', "\n", items = date_time)
 	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile)
 
 # https://data.monarchinitiative.org/exomiser/data/2109_phenotype.zip
@@ -138,7 +130,7 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 	TOOL_SOURCE_EXTERNAL = "https://data.monarchinitiative.org/exomiser/data/"+TOOL_TARBALL
 	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile)
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
-	logsomefile(logfile, 'Installation end:', "\n", items = date_time_end)
+	log_file(logfile, 'Installation end:', "\n", items = date_time_end)
 
 ##########
 # COSMIC #
@@ -179,14 +171,14 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 # Install COSMIC SV database (file is CosmicCompleteCNA.tsv.gz placed in /STARK/config/structuralvariation/serviceName/setup/COSMIC/ directory)
 # /STARK/config/structuralvariation/serviceName/setup
 genomeBuild_version = "GRCh37"
-COSMIC_source = "/STARK/config/"+moduleName+"/"+serviceName+"/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
-COSMIC_install_path = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/Annotations_Human/FtIncludedInSV/COSMIC/"+genomeBuild_version
+COSMIC_source = f"/STARK/config/{moduleName}/{serviceName}/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
+COSMIC_install_path = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/COSMIC/{genomeBuild_version}"
 if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 	os.makedirs(COSMIC_install_path, exist_ok = True)
-	systemcall("mv "+COSMIC_source+" "+COSMIC_install_path+" ")
+	systemcall(f"mv {COSMIC_source} {COSMIC_install_path}")
 	# AnnotSV dummy vcf in /app/src/dummy.vcf to process COSMIC database (need rw databases access for that)
-	setup_config_path = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION
-	systemcall("AnnotSV -SVinputFile /app/dummy/dummy.vcf -outputFile "+setup_config_path+"/AnnotSV.dummyannotation.tsv -genomeBuild "+genomeBuild_version+" 1> "+setup_config_path+"/AnnotSV.dummyannotation.log")
+	setup_config_path = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}"
+	systemcall(f"AnnotSV -SVinputFile /app/dummy/dummy.vcf -outputFile {setup_config_path}/AnnotSV.dummyannotation.tsv -genomeBuild {genomeBuild_version} 1> {setup_config_path}/AnnotSV.dummyannotation.log")
 
 
 ##############
@@ -197,23 +189,23 @@ if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 # unzip -q GeneHancer_<version>_for_annotsv.zip -d ($ANNOTSV/share/AnnotSV)/Annotations_Human/FtIncludedInSV/RegulatoryElements/
 
 GENEHANCER_version = "v5.9.zip"
-GENEHANCER_source = "/STARK/config/"+moduleName+"/"+serviceName+"/setup/GENEHANCER/GeneHancer_hg19_"+ GENEHANCER_version
-GENEHANCER_install_path = DATABASES+"/AnnotSV/"+ANNOTSV_VERSION+"/Annotations_Human/FtIncludedInSV/RegulatoryElements/"
+GENEHANCER_source = f"/STARK/config/{moduleName}/{serviceName}/setup/GENEHANCER/GeneHancer_hg19_{GENEHANCER_version}"
+GENEHANCER_install_path = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/RegulatoryElements/"
 if not os.path.exists(GENEHANCER_install_path) and os.path.exists(GENEHANCER_source):
 	os.makedirs(GENEHANCER_install_path, exist_ok = True)
-	systemcall("unzip -q "+GENEHANCER_source+" -d "+GENEHANCER_install_path+" ")
+	systemcall(f"unzip -q {GENEHANCER_source} -d {GENEHANCER_install_path}")
 
 #######################
 # Copy config files (service.conf & service.json) and launcher.py from app/config to /config/module/servicename/listener/
 #######################
 
 if serviceName and moduleName:
-	logfile = "/STARK/config/"+moduleName+"/"+serviceName+"/listener/logs/" + serviceName + "." +date_time+".setup.log"
-	errfile = "/STARK/config/"+moduleName+"/"+serviceName+"/listener/logs/" + serviceName + "." +date_time+".setup.err"
-	logsomefile(logfile, 'Setup copying configuration files:', "\n", items = date_time)
-	systemcall("rsync -ar /app/config/ /STARK/config/"+moduleName+"/"+serviceName+"/listener 1>> "+logfile+" 2>> "+errfile+" ")
+	logfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.log"
+	errfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.err"
+	log_file(logfile, 'Setup copying configuration files:', "\n", items = date_time)
+	systemcall(f"rsync -ar /app/config/ /STARK/config/{moduleName}/{serviceName}/listener 1>> {logfile} 2>> {errfile}")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
-	logsomefile(logfile, 'Setup end:', "\n", items = date_time_end)
+	log_file(logfile, 'Setup end:', "\n", items = date_time_end)
 
 # SETUPComplete cli services (condition for healthy cli)
 systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
