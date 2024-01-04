@@ -132,21 +132,20 @@ def generate_html_report(result_dict, output_file='report.html'):
 serviceName = config['serviceName']
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 runName = os.path.basename(os.path.normpath(config['run']))
-inputDir = f"/app/res/{runName}/{date_time}/input"
-tmpDir = f"/app/res/{runName}/{date_time}/tmp"
-logfile = f"{tmpDir}/{serviceName}.{date_time}.parameters.log"
-outputdir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
+resultDir = f"/app/res/{runName}/{date_time}"
+logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
+outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
 
 try:
 	config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
 	config['APP_NAME'] = os.path.normpath(config['run']).split('/')[5]
 except IndexError: 
 	pass
-depotdir = f"{config['depository']}/{config['GROUP_NAME']}/{config['APP_NAME']}/{runName}"
+depotDir = f"{config['depository']}/{config['GROUP_NAME']}/{config['APP_NAME']}/{runName}"
 
-directories = [inputDir, tmpDir, outputdir]
+directories = [resultDir, outputDir]
 if config['DEPOT_COPY']:
-	directories.append(depotdir)
+	directories.append(depotDir)
 for directory in directories:
 	os.makedirs(directory, exist_ok=True)
 
@@ -182,7 +181,7 @@ config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, co
 # Find transcripts files (NM)
 config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
 # If transcript file exist, create the annotation file for AnnotSV
-annotation_file = f"{tmpDir}/{serviceName}.{date_time}.AnnotSV.txt"
+annotation_file = f"{resultDir}/{serviceName}.{date_time}.AnnotSV.txt"
 if os.path.exists(config['TRANSCRIPTS_FILE']) and os.path.getsize(config['TRANSCRIPTS_FILE']):
 	df = pd.read_csv(config['TRANSCRIPTS_FILE'], sep='\t', names=["NM", "Gene"])
 	with open(annotation_file, 'w+') as f:
@@ -199,12 +198,12 @@ if config['LIST_GENES']:
 		panel_list = f.read().splitlines()
 elif config['GENES_FILE'] and not config['LIST_GENES']:
 	panel_list.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
-# cp files from panel_list to inputDir and rename them
+# cp files from panel_list to resultDir and rename them
 for panel in panel_list:
 	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{panel}.bed"# panel_list don't have the bed extension, need that for the copy
 	# cut sample. and .genes from file name so files will have the same name as the truncated name list
 	panel_trunc = panel.split(".", 1)[1].split(".genes",1)[0]
-	outputfile = f"{tmpDir}/{panel_trunc}"
+	outputfile = f"{resultDir}/{panel_trunc}"
 	copy2(inputfile, outputfile)
 	# Create a new list for expand, names are filenames without sample and .genes.bed ext
 	panel_list_trunc.append(panel_trunc)
@@ -229,7 +228,7 @@ if config['DEBUG_MODE']:
 	try:
 		files_to_copy = (config['BED_FILE'], config['GENES_FILE'], config['TRANSCRIPTS_FILE'])
 		for file_path in files_to_copy:
-			copy2(file_path, inputDir)
+			copy2(file_path, resultDir)
 	except FileNotFoundError:
 		pass
 
@@ -242,7 +241,7 @@ rule all:
 	Rule will create an pdf for arriba result's visualization
 	"""
 	input:
-		expand(f"{tmpDir}/{{sample}}.{{aligner}}.arribareport.pdf",aligner=aligner_list,sample=sample_list)
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.arribareport.pdf",aligner=aligner_list,sample=sample_list)
 
 rule help:
 	"""
@@ -260,21 +259,21 @@ rule help:
 
 rule copy_tsv:
 	""" Copy input tsv files """
-	output:	temp(f"{inputDir}/{{sample}}.arriba.fusions.tsv")
+	output:	temp(f"{resultDir}/{{sample}}.arriba.fusions.tsv")
 	params:
 		process = config['PROCESS_CMD'],
 		download_link = lambda wildcards: runDict[wildcards.sample]['arriba.fusions.tsv']
 	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule copy_bam:
-	output: temp(f"{inputDir}/{{sample}}.{{aligner}}.bam")
+	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam']
 	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule copy_cram:
-	output: temp(f"{inputDir}/{{sample}}.{{aligner}}.cram")
+	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.cram")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
@@ -283,24 +282,24 @@ rule copy_cram:
 rule cramtobam:
 	""" Extract bam from a cram file with samtools, need a reference genome """
 	input: rules.copy_cram.output
-	output: temp(f"{inputDir}/{{sample}}.{{aligner}}.bam")
+	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
 	params: refgenome=config['REFGENEFA_PATH']
 	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
 
 rule indexing:
 	""" Indexing bam files with samtools """
-	input: f"{inputDir}/{{sample}}.{{aligner}}.bam"
-	output: temp(f"{inputDir}/{{sample}}.{{aligner}}.bai")
+	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
+	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bai")
 	threads: workflow.cores
 	shell: "samtools index -b -@ {threads} {input} {output}"
 
 # bam must be sorted by coordinate and indexed
 rule DrawR:
 	input:
-		bam = f"{inputDir}/{{sample}}.{{aligner}}.bam", 
-		arribafusiontsv = f"{inputDir}/{{sample}}.arriba.fusions.tsv",
-		bai = f"{inputDir}/{{sample}}.{{aligner}}.bai"
-	output: f"{inputDir}/{{sample}}.{{aligner}}.arribareport.pdf"
+		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam", 
+		arribafusiontsv = f"{resultDir}/{{sample}}.arriba.fusions.tsv",
+		bai = f"{resultDir}/{{sample}}.{{aligner}}.bai"
+	output: f"{resultDir}/{{sample}}.{{aligner}}.arribareport.pdf"
 	params:
 		refgtfgencode = config['REFGTFGENCODE_PATH'],
 		refprot = config['REFPROTDOMAIN_PATH'],
@@ -311,7 +310,7 @@ rule DrawR:
 		Rscript {arriba_scripts}/draw_fusions.R --annotation={params.refgtfgencode} --fusions={input.arribafusiontsv} --output={output} --alignments={input.bam} --cytobands={params.cytoband} --proteinDomains={params.refprot}
 		"""
 onstart:
-	shell(f"touch {os.path.join(outputdir, f'{serviceName}Running.txt')}")
+	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
 	with open(logfile, "a+") as f:
 		f.write("\n")
 		f.write("Global parameters of the analysis for debug only")
@@ -320,33 +319,33 @@ onstart:
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']
-	shell(f"touch {outputdir}/{serviceName}Running.txt")
-	shell(f"touch {outputdir}/{serviceName}Complete.txt")
+	shell(f"touch {outputDir}/{serviceName}Running.txt")
+	shell(f"touch {outputDir}/{serviceName}Complete.txt")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
 	# Clear existing output directories
 	for sample in sample_list:
-		shell(f"rm -f {outputdir}/{sample}/{serviceName}/* || true")
+		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 	
 	# Copy results to the main output directory
-	shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ {outputdir}")
+	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 
 	# Copy individual sample results to their respective directories
 	for sample in sample_list:
-		shell(f"cp {outputdir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputdir}/{sample}/{serviceName}/ || true")
+		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 
 	# Optionally, perform DEPOT_COPY
 	if config['DEPOT_COPY']:
-		shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ {depotdir}")
+		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
 		for sample in sample_list:
-			shell(f"cp {outputdir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotdir}/{sample}/{serviceName}/ || true")
+			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
 	generate_html_report(runDict, 'output_report.html')
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
-	shell(f"touch {config['OUTPUT_DIR']}/{serviceName}Failed.txt")
+	shell(f"touch {outputDir}/{serviceName}Failed.txt")
 	# shell(f"rm -f {config['OUTPUT_DIR']}/{serviceName}Running.txt")
-	shell("rsync -azvh --include={include_log} --exclude='*' {tmpDir}/ {outputdir}")
+	shell("rsync -azvh --include={include_log} --exclude='*' {resultDir}/ {outputDir}")
