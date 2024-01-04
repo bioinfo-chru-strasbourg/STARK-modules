@@ -1,40 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>HTML Report</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 10px;
+            background-color: #f2f2f2;
+        }
+
+        section {
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .nested-table {
+            border-collapse: collapse;
+            width: 80%;
+            margin-top: 10px;
+            margin-left: 20px;
+        }
+
+        .nested-th, .nested-td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        .nested-th {
+            background-color: #f2f2f2;
+        }
+    </style>
+    <title>Report</title>
 </head>
 <body>
-    <table>
-        <tr>
-            <th>Key</th>
-            <th>Value</th>
-        </tr>
-        {% for key, value in data.items() %}
-        <tr>
-            <td>{{ key }}</td>
-            <td>
-                {% if value is mapping %}
-                    <!-- Nested dictionary, iterate through its items -->
-                    <table>
-                        <tr>
-                            <th>Key</th>
-                            <th>Value</th>
-                        </tr>
-                        {% for nested_key, nested_value in value.items() %}
-                        <tr>
-                            <td>{{ nested_key }}</td>
-                            <td>{{ nested_value }}</td>
-                        </tr>
-                        {% endfor %}
-                    </table>
-                {% else %}
-                    <!-- Non-nested value -->
-                    {{ value }}
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+    <header>
+        <h1>{{ report_title }}</h1>
+    </header>
+
+    <section>
+        <h2>Data Overview</h2>
+        <table>
+            <tr>
+                <th>Attribute</th>
+                <th>Value</th>
+            </tr>
+            {% for key, value in data_overview.items() %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </section>
+
+    <section>
+        <h2>Nested Data</h2>
+        <table class="nested-table">
+            <tr>
+                <th>Category</th>
+                <th>Details</th>
+            </tr>
+            {% for category, details in nested_data.items() %}
+                <tr>
+                    <td>{{ category }}</td>
+                    <td>
+                        <table>
+                            <tr>
+                                <th>Subcategory</th>
+                                <th>Value</th>
+                            </tr>
+                            {% for subcategory, value in details.items() %}
+                                <tr>
+                                    <td>{{ subcategory }}</td>
+                                    <td>{{ value }}</td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </section>
 </body>
 </html>

@@ -129,10 +129,9 @@ def generate_html_report(result_dict, output_file='report.html'):
 serviceName = config['serviceName']
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 runName = os.path.basename(os.path.normpath(config['run']))
-inputDir = f"/app/res/{runName}/{date_time}/input"
-tmpDir = f"/app/res/{runName}/{date_time}/tmp"
-logfile = f"{tmpDir}/{serviceName}.{date_time}.parameters.log"
-outputdir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
+resultDir = f"/app/res/{runName}/{date_time}"
+logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
+outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
 
 try:
 	config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
@@ -140,11 +139,11 @@ try:
 except IndexError: 
 	pass
 
-depotdir = f"{config['depository']}/{config['GROUP_NAME']}/{config['APP_NAME']}/{runName}"
+depotDir = f"{config['depository']}/{config['GROUP_NAME']}/{config['APP_NAME']}/{runName}"
 
-directories = [inputDir, tmpDir, outputdir]
+directories = [resultDir, outputDir]
 if config['DEPOT_COPY']:
-	directories.append(depotdir)
+	directories.append(depotDir)
 for directory in directories:
 	os.makedirs(directory, exist_ok=True)
 
@@ -180,7 +179,7 @@ config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, co
 # Find transcripts files (NM)
 config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
 # If transcript file exist, create the annotation file for AnnotSV
-annotation_file = f"{tmpDir}/{serviceName}.{date_time}.AnnotSV.txt"
+annotation_file = f"{resultDir}/{serviceName}.{date_time}.AnnotSV.txt"
 if os.path.exists(config['TRANSCRIPTS_FILE']) and os.path.getsize(config['TRANSCRIPTS_FILE']):
 	df = pd.read_csv(config['TRANSCRIPTS_FILE'], sep='\t', names=["NM", "Gene"])
 	with open(annotation_file, 'w+') as f:
@@ -197,12 +196,12 @@ if config['LIST_GENES']:
 		panel_list = f.read().splitlines()
 elif config['GENES_FILE'] and not config['LIST_GENES']:
 	panel_list.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
-# cp files from panel_list to inputDir and rename them
+# cp files from panel_list to resultDir and rename them
 for panel in panel_list:
 	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{panel}.bed"# panel_list don't have the bed extension, need that for the copy
 	# cut sample. and .genes from file name so files will have the same name as the truncated name list
 	panel_trunc = panel.split(".", 1)[1].split(".genes",1)[0]
-	outputfile = f"{tmpDir}/{panel_trunc}"
+	outputfile = f"{resultDir}/{panel_trunc}"
 	copy2(inputfile, outputfile)
 	# Create a new list for expand, names are filenames without sample and .genes.bed ext
 	panel_list_trunc.append(panel_trunc)
@@ -227,7 +226,7 @@ if config['DEBUG_MODE']:
 	try:
 		files_to_copy = (config['BED_FILE'], config['GENES_FILE'], config['TRANSCRIPTS_FILE'])
 		for file_path in files_to_copy:
-			copy2(file_path, inputDir)
+			copy2(file_path, resultDir)
 	except FileNotFoundError:
 		pass
 
@@ -240,18 +239,18 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
 rule all:
 	input:
-		expand(f"{tmpDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz",aligner=aligner_list, sample=sample_list),
-		f"{tmpDir}/{serviceName}.{date_time}.all.vcf.gz"
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz",aligner=aligner_list, sample=sample_list),
+		f"{resultDir}/{serviceName}.{date_time}.all.vcf.gz"
 
 rule copy_bam:
-	output: temp(f"{inputDir}/{{sample}}.{{aligner}}.bam")
+	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam']
 	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule copy_cram:
-	output: temp(f"{inputDir}/{{sample}}.{{aligner}}.cram")
+	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.cram")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
@@ -260,14 +259,14 @@ rule copy_cram:
 rule cramtobam:
 	""" Extract bam from a cram file with samtools, need a reference genome """
 	input: rules.copy_cram.output
-	output: temp(f"{inputDir}/{{sample}}.{{aligner}}.bam")
+	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
 	params: refgenome=config['REFGENEFA_PATH']
 	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
 
 rule indexing:
 	""" Indexing bam files with samtools """
-	input: f"{inputDir}/{{sample}}.{{aligner}}.bam"
-	output: temp(f"{inputDir}/{{sample}}.{{aligner}}.bai")
+	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
+	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bai")
 	threads: workflow.cores
 	shell: "samtools index -b -@ {threads} {input} {output}"
 
@@ -277,12 +276,12 @@ rule flt3_itd_ext:
 	Flt3_itd_ext is a software that detects internal duplications in bam files
 	"""
 	input:
-		bam = f"{inputDir}/{{sample}}.{{aligner}}.bam",
+		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
 		bai = rules.indexing.output
-	output:	f"{tmpDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf"
+	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf"
 	params:
-		output = tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/",
-		outputfile = tmpDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/{sample}.{aligner}.vcf",
+		output = resultDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/",
+		outputfile = resultDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/{sample}.{aligner}.vcf",
 		assembly = config['ASSEMBLY'],
 		index = config['REF_ITD_PATH'],
 		ngstype = config['NGS_TYPE'],
@@ -296,37 +295,37 @@ rule flt3_itd_ext:
 rule correctvcf:
 	"""	Correction of vcf output, add genotype to be consistent with the vcf format specification """
 	input: rules.flt3_itd_ext.output
-	output: temp(f"{tmpDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixGT.vcf")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixGT.vcf")
 	shell: "cat {input} > {output}"
 
 rule bcftools_filter:
 	"""	Filter with bcftools """
 	input: rules.correctvcf.output
-	output: temp(f"{tmpDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.filter.vcf")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.filter.vcf")
 	params:	bcf_filter = config['BCFTOOLS_FILTER']
 	shell: "bcftools view {params.bcf_filter} {input} -o {output}"
 
 rule sortvcf:
 	"""	Bash script to sort a vcf """
 	input: rules.bcftools_filter.output
-	output:	temp(f"{tmpDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.sort.vcf")
+	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.sort.vcf")
 	params: dummypath = config['DUMMY_PATH']
 	shell: "grep \"^#\" {input} > {output} && grep -v \"^#\" {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}"		
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
 	input: rules.sortvcf.output
-	output: f"{tmpDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz"
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
 rule mergevcf:
 	"""	Copy or merge with bcftools several vcfs """
-	input: expand(f"{tmpDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz", sample=sample_list, aligner=aligner_list)
-	output: f"{tmpDir}/{serviceName}.{date_time}.all.vcf.gz"
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz", sample=sample_list, aligner=aligner_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.all.vcf.gz"
 	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
 
 onstart:
-	shell(f"touch {os.path.join(outputdir, f'{serviceName}Running.txt')}")
+	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
 	with open(logfile, "a+") as f:
 		f.write("\n")
 		f.write("Global parameters of the analysis for debug only")
@@ -335,33 +334,33 @@ onstart:
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']
-	shell(f"touch {outputdir}/{serviceName}Running.txt")
-	shell(f"touch {outputdir}/{serviceName}Complete.txt")
+	shell(f"touch {outputDir}/{serviceName}Running.txt")
+	shell(f"touch {outputDir}/{serviceName}Complete.txt")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
 	# Clear existing output directories
 	for sample in sample_list:
-		shell(f"rm -f {outputdir}/{sample}/{serviceName}/* || true")
+		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 	
 	# Copy results to the main output directory
-	shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ {outputdir}")
+	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 
 	# Copy individual sample results to their respective directories
 	for sample in sample_list:
-		shell(f"cp {outputdir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputdir}/{sample}/{serviceName}/ || true")
+		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 
 	# Optionally, perform DEPOT_COPY
 	if config['DEPOT_COPY']:
-		shell("rsync -azvh --include={include} --exclude='*' {tmpDir}/ {depotdir}")
+		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
 		for sample in sample_list:
-			shell(f"cp {outputdir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotdir}/{sample}/{serviceName}/ || true")
+			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
 	generate_html_report(runDict, 'output_report.html')
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
-	shell(f"touch {config['OUTPUT_DIR']}/{serviceName}Failed.txt")
+	shell(f"touch {outputDir}/{serviceName}Failed.txt")
 	# shell(f"rm -f {config['OUTPUT_DIR']}/{serviceName}Running.txt")
-	shell("rsync -azvh --include={include_log} --exclude='*' {tmpDir}/ {outputdir}")
+	shell("rsync -azvh --include={include_log} --exclude='*' {resultDir}/ {outputDir}")

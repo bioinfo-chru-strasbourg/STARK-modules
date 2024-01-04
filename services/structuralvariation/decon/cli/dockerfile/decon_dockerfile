@@ -2,7 +2,7 @@
 # Module :             Structural Variation
 # Submodule :          DECoN
 # Services :           cli
-# Version :            3.0.0
+# Version :            3.0
 # Description:         Dockerfile to build container image DECoN
 ##############################################################
 
