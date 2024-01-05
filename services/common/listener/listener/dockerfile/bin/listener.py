@@ -25,9 +25,10 @@ import time
 
 from os.path import join as osj
 from datetime import datetime
+sys.path.insert(1,"/app/bin/config")
 from launcher import launch
 
-sys.path.insert(1,"/app/bin/config")
+
 
 def createContainerFile(containersFile, run, containerName):
 	file = open(osj(containersFile,containerName+".log"), "w+")
@@ -303,9 +304,9 @@ def main(groupInputList, serviceName, jsonFile, days, delay, containersFile, con
 			starkCompleteList = getStarkCopyComplete(groupInput, days)
 			for starkComplete in starkCompleteList:
 				runDir = os.path.dirname(starkComplete)
-				p = subprocess.Popen("find "+runDir+"/* -maxdepth 1 -type d", stdout=subprocess.PIPE, shell=True)
+				p = subprocess.Popen("find "+runDir+"/* -maxdepth 1 -type d", stdout=subprocess.PIPE, universal_newlines=True, shell=True)
 				out = p.stdout.readlines()
-				if any([os.path.basename(path.rstrip()) == "STARK" for path in out]):
+				if any([os.path.basename(path.strip()) == "STARK" for path in out]):
 					run = getRunName(starkComplete)
 					if verifyTriggers(run, serviceName, jsonFile):
 						print("[INFO] Launching "+serviceName+" analysis for run "+run)
@@ -313,6 +314,7 @@ def main(groupInputList, serviceName, jsonFile, days, delay, containersFile, con
 				else:
 					print("[INFO] Run "+starkComplete+" ignored as no STARK directory was found")
 		time.sleep(60.0*delay)
+
 
 def myoptions():
 	'''
