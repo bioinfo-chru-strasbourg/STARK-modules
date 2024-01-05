@@ -1,0 +1,51 @@
+##############################################################
+# Module :             Structural Variation
+# Submodule :          DECoN
+# Services :           cli
+# Version :            3.0
+# Description:         Dockerfile to build container image DECoN
+##############################################################
+
+# PROD version 1 : 03/06/2022
+# Authoring : Thomas LAVAUX
+
+# PROD version 2 : 07/09/2023
+	# switch to Mamba installer & Ubuntu OS
+	# add aria2
+	# update AnnotSV 3.3.7 (vcf converter is included) and several dependencies, version of each package is specified ; add variant convert
+
+# Image based on Ubuntu minimal focal
+FROM condaforge/mambaforge
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install required system packages
+RUN apt-get update --fix-missing && \
+    apt-get install -y unzip vim rsync aria2
+
+# Install bioinformatics tools using mamba
+RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
+    annotsv~=3.3.7 samtools~=1.17.0 bcftools~=1.17.0 \
+    bedtools~=2.31.0 snakemake~=7.32.4 pandas~=2.0.3 \
+    vcf2tsvpy~=0.6.1 pyfasta~=0.5.2 fasta~=36.3.8e \
+    natsort~=7.1.1 pyfaidx~=0.7.2.1 r-exomedepth~=1.1.16 \
+    r-r.utils~=2.12.2 r-optparse~=1.7.3 r-reshape~=0.8.6 \
+    r-ggplot2~=3.4.3 r-doparallel~=1.0.17 r-foreach~=1.5.2 && \
+    mamba clean -afy
+
+# Clone and install variantconvert
+WORKDIR /usr/lib
+RUN git clone https://github.com/SamuelNicaise/variantconvert.git && \
+    cd variantconvert && git fetch && git checkout pypi && \
+    pip install -e . && pip cache purge && \
+    python /usr/lib/variantconvert/src/variantconvert/__main__.py init && \
+    python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/STARK/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
+
+# Copy AnnotSV exomiser config file
+COPY ./config/annotsv/application.properties /opt/conda/etc/AnnotSV/
+
+# Copy applications files (/app)
+COPY ./app /app
+COPY ./STARK.docker-compose.yml /app/config/module/
+
+WORKDIR "/app"
+ENTRYPOINT [ "/bin/bash", "-l", "-c" ]

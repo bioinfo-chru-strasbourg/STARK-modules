@@ -43,12 +43,10 @@ import doctest
 from datetime import datetime
 from os.path import join as osj
 
-# Variables
-# set datetime to add to container name
+
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 
 ### FUNCTIONS ###
-
 def createlog(containersFile, run, containerName):
 	""" Function to create a log file """
 	file = open(osj(containersFile,containerName+".log"), "w+")
@@ -67,48 +65,38 @@ def readconfig(configFile, serviceName, configkey):
 
 def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile, microserviceRepo):
 	""" Function to start a docker container with a specific command """
-	""" See help (-h) for details """
-	# Variables get from env
 	if not configFile:
 		configFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONF')
 	if not microserviceRepo:
 		microserviceRepo = os.getenv('MICROSERVICE_REPOSITORY')
 	if not serviceName:
 		serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_NAME')
-	# image name is the same as container name
-	# DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME = stark-module-structuralvariation-submodule-flt3itdext-service-cli
 	if not image:
 		image = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME')
 	if not montage:
-		# montage = os.getenv('MICROSERVICE_MONTAGE')
 		montage = ""
-	# Variables get from config file
 	if configFile:
 		launchCommand = readconfig(configFile, serviceName, 'launch')
 		image = readconfig(configFile, serviceName, 'image')
 	if run:
-		containerName = serviceName + "_" +date_time+"_"+os.path.basename(run)
+		containerName = f"{serviceName}_{date_time}_{os.path.basename(run)}"
 		group_name = run.split('/')[4]
 		project_name = run.split('/')[5]
-	# Config snakefile config file path
+	
 	yaml_path = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG')
 	if group_name and project_name:
-		yaml_config_file = yaml_path+"/"+group_name+"_"+project_name+".yaml"
+		yaml_config_file = f"{yaml_path}/{group_name}_{project_name}.yaml"
 		if not os.path.exists(yaml_config_file):
-			yaml_config_file = yaml_path+"/"+group_name+".yaml"
+			yaml_config_file = f"{yaml_path}/{group_name}.yaml"
 	else:
 		yaml_config_file = None
-	# Construct the docker command
-	# snakemake --configfile can't be empty ; if not, it will use the default yaml file in the docker container
-	# /bin/bash -c 'source activate variantconvert is mandatory to activate the conda environment, you have to run bash
+
 	if yaml_config_file and os.path.exists(yaml_config_file):
-	#	cmd = "docker run --rm --name="+containerName+" "+montage+" "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file+"'"
-		cmd = "docker compose -f STARK.docker-compose.yml run --rm --name="+containerName+" "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+" --configfile "+yaml_config_file+"'"
+		cmd = f"docker compose -f STARK.docker-compose.yml run --rm --name={containerName} {image} /bin/bash -c '{launchCommand} --config run={run} --configfile {yaml_config_file}'"
 	else:
-		cmd = "docker compose -f STARK.docker-compose.yml run --rm --name="+containerName+" "+image+" /bin/bash -c 'source activate variantconvert && "+launchCommand+" --config run="+run+"'"
-	# launch the cmd to the shell 
+		cmd = f"docker compose -f STARK.docker-compose.yml run --rm --name={containerName} {image} /bin/bash -c '{launchCommand} --config run={run}'"
 	subprocess.call(cmd, shell = True)
-	# Create a log file
+	
 	if not containersFile:
 		containersFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES')
 	if os.path.exists(containersFile):

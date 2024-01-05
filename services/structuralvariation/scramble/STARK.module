@@ -1,7 +1,7 @@
 {
   "submodules": {
     "scramble": {
-      "description" : "SCRAMBLE analysis for MEI",
+      "description" : "SCRAMBLE analysis for MEI & DEL",
       "services": {
         "cli": {
           "code": "cli",
