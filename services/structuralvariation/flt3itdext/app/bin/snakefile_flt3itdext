@@ -363,5 +363,5 @@ onsuccess:
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
 	shell(f"touch {outputDir}/{serviceName}Failed.txt")
-	# shell(f"rm -f {config['OUTPUT_DIR']}/{serviceName}Running.txt")
+	shell(f"rm -f {config['OUTPUT_DIR']}/{serviceName}Running.txt")
 	shell("rsync -azvh --include={include_log} --exclude='*' {resultDir}/ {outputDir}")

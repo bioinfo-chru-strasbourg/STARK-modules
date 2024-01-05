@@ -71,4 +71,3 @@ REFSALMONQUANTFASTQ_PATH: "/STARK/databases/salmon/GHCh38.Ensembl107.gencodev41.
 # SE ou PE Reads
 SALMON_FASTQ_TYPE: "PE"
 MISC_SALMON_OPTIONS: ""
-

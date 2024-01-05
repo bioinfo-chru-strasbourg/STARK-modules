@@ -1,31 +1,29 @@
 {
 	"services": {
-		"SALMON": {
+		"DRAWFUSIONS": {
 			"infos": {
-				"name": "SALMON",
-				"description": "SALMON analysis",
-				"triggers-description": "(STARKCopyComplete.txt AND NOT (SALMONRunning.txt AND SALMONComplete.txt AND SALMONFailed.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
+				"name": "DRAWFUSIONS",
+				"description": "DRAWFUSIONS analysis",
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (DRAWFUSIONSRunning.txt AND DRAWFUSIONSComplete.txt AND DRAWFUSIONSFailed.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
 			},
 			"triggers": {
 				"AND_1":{
 					"file":[
 						"STARKCopyComplete.txt",
-						"!SALMONRunning.txt",
-						"!SALMONComplete.txt",
-						"!SALMONFailed.txt"
+						"!DRAWFUSIONSRunning.txt",
+						"!DRAWFUSIONSComplete.txt",
+						"!FDRAWFUSIONSFailed.txt"
 					],
 					"OR_1":{
 						"tags":[
-							"SALMON"
+							"DRAWFUSIONS"
 						],
 						"AND_2":{
 							"group":[
-								"HUSHEMATO",
-								"DIAG",
-								"HUSTUMSOL"
+								"HUSHEMATO"
 							],
 							"project":[
-								"FASTQ_ONLY"
+								"XTHS"
 							]
 						}
 					},

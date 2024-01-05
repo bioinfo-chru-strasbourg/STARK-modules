@@ -1,101 +1,82 @@
-#########
-# STARK #
-#########
-# Usage: docker-compose up
-
+#########################
+# Docker compose Drawfusions #
+#########################
 version: '3'
 
 services:
 
-    stark-module-rnaseq-submodule-drawfusions-service-setup:
-        image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_IMAGE}
+    stark-module-structuralvariation-submodule-salmon-service-setup:
+        image: stark/stark-module-structuralvariation-submodule-salmon-service-common:1.0
         build:
-            context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_IMAGE_CONTEXT}
-            dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_IMAGE_CONTEXT_DOCKERFILE}
-        entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_ENTRYPOINT}
-        command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_COMMAND}
-        container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_NAME}
-        restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_CONTAINER_RESTART}
+            context: ./
+            dockerfile: salmon_dockerfile
+        entrypoint: "python3"
+        command: "/app/bin/setup.py"
+        container_name: stark-module-structuralvariation-submodule-salmon-service-setup
+        restart: "no"
         environment:
-            - SLEEP=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_PARAM_SLEEP}
+            - DOCKER_STARK_MODULE_SUBMODULE_NAME=salmon
+            - DOCKER_STARK_MODULE_NAME=structuralvariation
+            - DOCKER_STARK_INNER_FOLDER_DATABASES=/STARK/databases
+            - DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES=/STARK/services/structuralvariation/salmon/cli
         volumes:
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_SERVICES}:rw
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}:rw
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}:rw
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG}:rw
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:rw
+            - /home1/data/STARK/services/structuralvariation/salmon:/STARK/services/structuralvariation/salmon:rw
+            - /home1/data/STARK/config/structuralvariation/salmon:/STARK/config/structuralvariation/salmon:rw
+            - /home1/data/STARK/databases:/STARK/databases:rw
         networks:
-            - ${DOCKER_STARK_MAIN_NETWORK}
+            - stark_stark
 
-
-    stark-module-rnaseq-submodule-drawfusions-service-cli:
-        image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
+    stark-module-structuralvariation-submodule-salmon-service-cli:
+        image: stark/stark-module-structuralvariation-submodule-salmon-service-common:1.0
         build:
-            context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT}
-            dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT_DOCKERFILE}
-        container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME}
-        restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_RESTART}
-        entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_ENTRYPOINT}
-        command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_COMMAND}
-        environment:
-            - SLEEP=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_SLEEP}
+            context: ./
+            dockerfile: salmon_dockerfile
+        container_name: stark-module-structuralvariation-submodule-salmon-service-cli
+        restart: "no"
+        entrypoint: [ "/bin/bash", "-l", "-c" ]
+        command: "'while true; do sleep 60; done'"
         volumes:
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:rw
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_DEPOSITORY}:rw
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG}:ro
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}:rw
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
+            - /home1/data/STARK/output/repository:/STARK/output/repository:rw
+            - /home1/data/STARK/output/depository:/STARK/output/depository:rw
+            - /home1/data/STARK/services/structuralvariation/salmon/cli:/STARK/services/structuralvariation/salmon/cli:rw
+            - /home1/data/STARK/config/structuralvariation/salmon/cli:/STARK/config/structuralvariation/salmon/cli:ro
+            - /home1/data/STARK/databases:/STARK/databases:ro
         networks:
-            - ${DOCKER_STARK_MAIN_NETWORK}
+            - stark_stark
         healthcheck:
             test:
                 [
                     "CMD",
                     "test",
                     "-f",
-                    "${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt"
+                    "/STARK/services/structuralvariation/salmon/cli/SETUPComplete.txt"
                 ]
             timeout: 10s
             interval: 60s
             retries: 30
-
-    stark-module-rnaseq-submodule-drawfusions-service-listener:
-        image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE}
-        container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_NAME}
-        entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_ENTRYPOINT}
-        command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_COMMAND}
-        restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_RESTART}
+ 
+ 
+    stark-module-structuralvariation-submodule-salmon-service-listener:
+        image: stark/stark-module-common-submodule-listener-service-listener:2.0
+        container_name: stark-module-structuralvariation-submodule-salmon-service-listener
+        entrypoint: "python3"
+        command: "/app/bin/listener.py --input=/STARK/output/repository --json=/STARK/config/structuralvariation/salmon/listener/salmon.json --config=/STARK/config/structuralvariation/salmon/listener/salmon.conf --servicename=SALMON --containersfile=/STARK/services/structuralvariation/salmon/listener --nbDaysBack=30 --minDelay=1"
+        restart: always
         environment:
-            # - MICROSERVICE_MONTAGE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONTAINER_MOUNT}
-            # - MICROSERVICE_IMAGE # we use .conf file
-            # - MICROSERVICE_LAUNCH # we use .conf file
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_LAUNCH}
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_NAME}
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_JSON}
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONF}
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_DAEMON_RUN_EXISTENCE}
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_DAEMON_DELAY}
+            - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/STARK/config/structuralvariation/salmon
         volumes:
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:ro
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_DEPOSITORY}:ro
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_CONFIG}:ro
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG}:ro
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}:rw
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_CONFIG_LAUNCHER}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_CONFIG_LAUNCHER}:ro
-            - ${DOCKER_STARK_SOCK_MOUNT}
+            - /home1/data/STARK/output/repository:/STARK/output/repository:ro
+            - /home1/data/STARK/output/depository:/STARK/output/depository:ro
+            - /home1/data/STARK/services/structuralvariation/salmon:/STARK/services/structuralvariation/salmon:rw
+            - /home1/data/STARK/config/structuralvariation/salmon:/STARK/config/structuralvariation/salmon:ro
+            - /home1/data/STARK/config/structuralvariation/salmon/listener/launcher.py:/app/bin/config/launcher.py:ro
+            - /var/run/docker.sock:/var/run/docker.sock
         networks:
-            - ${DOCKER_STARK_MAIN_NETWORK}
+            - stark_stark
         depends_on:
-            stark-module-rnaseq-submodule-drawfusions-service-cli:
+            stark-module-structuralvariation-submodule-salmon-service-cli:
                 condition: service_healthy
 
-###########
-# NETWORK #
-###########
-
 networks:
-
     stark_stark:
         external: true
