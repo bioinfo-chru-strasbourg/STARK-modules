@@ -30,6 +30,7 @@ def systemcall(command):
 
 def log_file(logfile, text, sep, items_list=None, items=None):
 	""" Function to log a variable value or a list of values into a log file """
+	os.makedirs(os.path.dirname(logfile), exist_ok=True)
 	with open(logfile, 'a+') as f:
 		f.write(f"{text}{sep}")
 		if items_list:

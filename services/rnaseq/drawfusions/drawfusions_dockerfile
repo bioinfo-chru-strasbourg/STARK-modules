@@ -17,10 +17,11 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 RUN apt-get install -y unzip vim rsync
 
-# Copy applications files (/app)
-COPY ./ /app
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds samtools~=1.17.0 bcftools~=1.17.0 bedtools~=2.31.0 snakemake~=7.32.4 pandas~=2.0.3 vcf2tsvpy~=0.6.1 arriba~=2.4.0 && mamba clean -afy
-# End
+# Copy applications files (/app)
+COPY ./app /app
+COPY ./STARK.docker-compose.yml /app/config/module/
+
 WORKDIR "/app"
-ENTRYPOINT [ "/bin/bash" ]
+ENTRYPOINT [ "/bin/bash", "-l", "-c" ]

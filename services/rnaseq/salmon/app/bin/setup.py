@@ -57,12 +57,9 @@ date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 # DATABASE VARIABLES #
 ######################
 
-DATABASES = "/STARK/databases"
-serviceName = "salmon"
-moduleName = "rnaseq"
-
-#serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')
-#moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')
+DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') # DATABASES = "/STARK/databases"
+serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') # serviceName = "filt3r"
+moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') # moduleName = "structuralvariation"
 
 ###############
 # GENCODE DB  #
@@ -125,16 +122,16 @@ systemcall("sed -i.bak -e 's/>//g' decoys.txt")
 systemcall(f"cat {GENCODE} {REFGENOME} > gentrome.fa.gz")
 systemcall("salmon index -t gentrome.fa.gz -d decoys.txt -p 12 -i salmon_index --gencode")
 
-
 #######################
-# Copy config files (service.conf & service.json) and launcher.py from app/config to /config/module/servicename/listener/
+# Copy config files (service.conf & service.json) & launcher.py)
 #######################
 
 if serviceName and moduleName:
 	logfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.log"
 	errfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.err"
 	log_file(logfile, 'Setup copying configuration files:', "\n", items = date_time)
-	systemcall(f"rsync -ar /app/config/ /STARK/config/{moduleName}/{serviceName}/listener 1>> {logfile} 2>> {errfile}")
+	systemcall(f"cp -r /app/config/module/* /STARK/config/{moduleName}/{serviceName}/listener >> {logfile} 2>> {errfile}")
+	systemcall(f"cp -r /app/config/snakefile/* /STARK/config/{moduleName}/{serviceName}/cli >> {logfile} 2>> {errfile}")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	log_file(logfile, 'Setup end:', "\n", items = date_time_end)
 

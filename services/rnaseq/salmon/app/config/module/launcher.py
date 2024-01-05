@@ -16,8 +16,7 @@
 
 ################## Context ##################
 # type python launcher.py -h for help
-#
-# ex of command :python launcher.py -r run
+# ex of command: python launcher.py -r run
 ####################################
 
 # From listener.py
@@ -39,22 +38,10 @@ import subprocess
 import json
 import argparse
 import doctest
-
 from datetime import datetime
 from os.path import join as osj
 
-
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-
-### FUNCTIONS ###
-def createlog(containersFile, run, containerName):
-	""" Function to create a log file """
-	file = open(osj(containersFile,containerName+".log"), "w+")
-	file.write("RUN: "+os.path.basename(run)+"\n")
-	file.write("FOLDER: "+run+"\n")
-	file.write("EXEC_DATE: "+datetime.now().strftime("%d%m%Y-%H%M%S")+"\n")
-	file.write("ID: "+containerName+"\n")
-	file.close()
 
 def readconfig(configFile, serviceName, configkey):
 	""" Function to extract a specific key configuration variable from a json configuration file"""
@@ -63,18 +50,8 @@ def readconfig(configFile, serviceName, configkey):
 	outputconfig = json_config['services'][serviceName][configkey]
 	return outputconfig
 
-def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile, microserviceRepo):
+def launch(run, serviceName, containersFile=None, montage=None, image=None, launchCommand=None, configFile=None, microserviceRepo=None):
 	""" Function to start a docker container with a specific command """
-	if not configFile:
-		configFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONF')
-	if not microserviceRepo:
-		microserviceRepo = os.getenv('MICROSERVICE_REPOSITORY')
-	if not serviceName:
-		serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_NAME')
-	if not image:
-		image = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME')
-	if not montage:
-		montage = ""
 	if configFile:
 		launchCommand = readconfig(configFile, serviceName, 'launch')
 		image = readconfig(configFile, serviceName, 'image')
@@ -83,26 +60,23 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 		group_name = run.split('/')[4]
 		project_name = run.split('/')[5]
 	
-	yaml_path = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG')
 	if group_name and project_name:
+		yaml_path = f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/cli"
 		yaml_config_file = f"{yaml_path}/{group_name}_{project_name}.yaml"
 		if not os.path.exists(yaml_config_file):
 			yaml_config_file = f"{yaml_path}/{group_name}.yaml"
 	else:
 		yaml_config_file = None
 
+	COMPOSE_PATH = f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/listener/"
 	if yaml_config_file and os.path.exists(yaml_config_file):
-		cmd = f"docker compose -f STARK.docker-compose.yml run --rm --name={containerName} {image} /bin/bash -c '{launchCommand} --config run={run} --configfile {yaml_config_file}'"
+		cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} '{launchCommand} --config run={run} --configfile {yaml_config_file}'"
+		print(cmd)
 	else:
-		cmd = f"docker compose -f STARK.docker-compose.yml run --rm --name={containerName} {image} /bin/bash -c '{launchCommand} --config run={run}'"
+		cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} '{launchCommand} --config run={run}'"
+		print(cmd)
 	subprocess.call(cmd, shell = True)
 	
-	if not containersFile:
-		containersFile = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES')
-	if os.path.exists(containersFile):
-		createlog(containersFile, run, containerName)
-
-
 def myoptions():
 	'''
 	*arg parser*
