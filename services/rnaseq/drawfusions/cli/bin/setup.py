@@ -58,8 +58,10 @@ date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 # DATABASE VARIABLES #
 ######################
 DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') # DATABASES = "/STARK/databases"
-serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') # serviceName = "filt3r"
+serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') # serviceName = "decon"
 moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') # moduleName = "structuralvariation"
+services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
+config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
 
 
 #######################
@@ -67,13 +69,13 @@ moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') # moduleName = "structuralvar
 #######################
 
 if serviceName and moduleName:
-	logfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.log"
-	errfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.err"
+	logfile = f"{config}/listener/logs/{serviceName}.{date_time}.setup.log"
+	errfile = f"{config}/listener/logs/{serviceName}.{date_time}.setup.err"
 	log_file(logfile, 'Setup copying configuration files:', "\n", items = date_time)
-	systemcall(f"cp -r /app/config/module/* /STARK/config/{moduleName}/{serviceName}/listener >> {logfile} 2>> {errfile}")
-	systemcall(f"cp -r /app/config/snakefile/* /STARK/config/{moduleName}/{serviceName}/cli >> {logfile} 2>> {errfile}")
+	systemcall(f"cp -r /app/config/module/* {config}/listener >> {logfile} 2>> {errfile}")
+	systemcall(f"cp -r /app/config/snakefile/* {config}/cli >> {logfile} 2>> {errfile}")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	log_file(logfile, 'Setup end:', "\n", items = date_time_end)
 
 # SETUPComplete cli services (condition for healthy cli)
-systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
+systemcall(f"touch {services}/cli/SETUPComplete.txt")

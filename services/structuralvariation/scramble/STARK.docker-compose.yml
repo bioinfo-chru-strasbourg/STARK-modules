@@ -19,7 +19,8 @@ services:
             - DOCKER_STARK_MODULE_NAME=structuralvariation
             - DOCKER_STARK_INNER_FOLDER_DATABASES=/STARK/databases
             - DOCKER_STARK_INNER_FOLDER_DATABASES_REFGENOME=/STARK/databases/genomes/current/hg19.fa
-            - DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES=/STARK/services/structuralvariation/scramble/cli
+            - DOCKER_STARK_INNER_FOLDER_SERVICES=/STARK/services
+            - DOCKER_STARK_INNER_FOLDER_CONFIG=/STARK/config
         volumes:
             - /home1/data/STARK/services/structuralvariation/scramble:/STARK/services/structuralvariation/scramble:rw
             - /home1/data/STARK/config/structuralvariation/scramble:/STARK/config/structuralvariation/scramble:rw
