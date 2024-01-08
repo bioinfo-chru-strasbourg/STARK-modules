@@ -55,9 +55,12 @@ def installdatabase(destination, source, archive_name, logfile, errfile):
 ### INSTALL DATABASES ###
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 
+### INSTALL DATABASES ###
 DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') # DATABASES = "/STARK/databases"
-serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') # serviceName = "scramble"
+serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') # serviceName = "decon"
 moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') # moduleName = "structuralvariation"
+services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
+config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
 REFGENEFA = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES_REFGENOME') # REFGENEFA = /STARK/databases/genomes/current/hg19.fa
 
 ####################
@@ -158,7 +161,7 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 # Install COSMIC SV database (file is CosmicCompleteCNA.tsv.gz placed in /STARK/config/structuralvariation/serviceName/setup/COSMIC/ directory)
 # /STARK/config/structuralvariation/serviceName/setup
 genomeBuild_version = "GRCh37"
-COSMIC_source = f"/STARK/config/{moduleName}/{serviceName}/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
+COSMIC_source = f"{config}/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
 COSMIC_install_path = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/COSMIC/{genomeBuild_version}"
 if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 	os.makedirs(COSMIC_install_path, exist_ok = True)
@@ -176,7 +179,7 @@ if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 # unzip -q GeneHancer_<version>_for_annotsv.zip -d ($ANNOTSV/share/AnnotSV)/Annotations_Human/FtIncludedInSV/RegulatoryElements/
 
 GENEHANCER_version = "v5.9.zip"
-GENEHANCER_source = f"/STARK/config/{moduleName}/{serviceName}/setup/GENEHANCER/GeneHancer_hg19_{GENEHANCER_version}"
+GENEHANCER_source = f"{config}/setup/GENEHANCER/GeneHancer_hg19_{GENEHANCER_version}"
 GENEHANCER_install_path = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/RegulatoryElements/"
 if not os.path.exists(GENEHANCER_install_path) and os.path.exists(GENEHANCER_source):
 	os.makedirs(GENEHANCER_install_path, exist_ok = True)
@@ -194,13 +197,13 @@ if os.path.exists(REFGENEFA) and not os.path.exists(f"{(REFGENEFA)}.ndb"):
 #######################
 
 if serviceName and moduleName:
-	logfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.log"
-	errfile = f"/STARK/config/{moduleName}/{serviceName}/listener/logs/{serviceName}.{date_time}.setup.err"
+	logfile = f"{config}/listener/logs/{serviceName}.{date_time}.setup.log"
+	errfile = f"{config}/listener/logs/{serviceName}.{date_time}.setup.err"
 	log_file(logfile, 'Setup copying configuration files:', "\n", items = date_time)
-	systemcall(f"cp -r /app/config/module/* /STARK/config/{moduleName}/{serviceName}/listener >> {logfile} 2>> {errfile}")
-	systemcall(f"cp -r /app/config/snakefile/* /STARK/config/{moduleName}/{serviceName}/cli >> {logfile} 2>> {errfile}")
+	systemcall(f"cp -r /app/config/module/* {config}/listener >> {logfile} 2>> {errfile}")
+	systemcall(f"cp -r /app/config/snakefile/* {config}/cli >> {logfile} 2>> {errfile}")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	log_file(logfile, 'Setup end:', "\n", items = date_time_end)
 
 # SETUPComplete cli services (condition for healthy cli)
-systemcall("touch ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}/SETUPComplete.txt")
+systemcall(f"touch {services}/cli/SETUPComplete.txt")
