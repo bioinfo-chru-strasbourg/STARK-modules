@@ -683,7 +683,7 @@ onstart:
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']
-	shell(f"touch {outputDir}/{serviceName}Running.txt")
+	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
 	shell(f"touch {outputDir}/{serviceName}Complete.txt")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
