@@ -86,8 +86,6 @@ function usage {
 }
 
 
-
-
 ####################################################################################################################################
 # Getting parameters from the input
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -101,8 +99,6 @@ if [ $? -ne 0 ]; then
 	usage;
 	exit;
 fi;
-
-
 
 
 PARAM=$@
@@ -195,16 +191,9 @@ done
 
 ## PARAM
 ##########
-
-# Copy Command
-#COMMAND_COPY="rsync -auczqAXhi --no-links --no-perms --no-owner --no-group"
 COMMAND_COPY="rsync -az --update"
-
-
-# TMP
 TMP_FOLDER=/tmp/STARK/services.$RANDOM
 mkdir -p $TMP_FOLDER
-
 
 # DOCKER
 DOCKER_VERSION=$(docker --version)
@@ -314,14 +303,9 @@ fi;
 
 
 # Main STARK prefix
-
 MAIN_MODULE_PREFIX="STARK"
 
-
-
 ### FUNCTIONS
-
-
 # list_include_item "10 11 12" "2"
 function list_include_item {
   local list="$1"
@@ -334,8 +318,6 @@ function list_include_item {
   fi
   return $result
 }
-
-
 
 ### Find services
 MODULE_checked=""
@@ -366,12 +348,10 @@ for service_module in \
 	
 		# Services list
 		list_services=""
-		# done;
 		for services_full_path in $(ls $service_module/*/$MAIN_MODULE_PREFIX*.docker-compose.yml ); do
 			list_services=$list_services" "$(echo $services_full_path | sed 's#'$service_module'/##' | sed 's/.docker-compose.yml$//' )
 		done;
 
-		#for service_prefix in "STARK" $list_services; do
 		for service_prefix in $list_services; do
 
 

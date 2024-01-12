@@ -25,7 +25,8 @@ suppressMessages(library(ggplot2))
 ###### Parsing input options and setting defaults ########
 option_list<-list(
     make_option('--rdata',help='Input summary RData file (required)',dest='data'),
-    make_option('--out',default='./plots',help='Output directory, default=./plots',dest='pfolder')
+    make_option('--out',default='./plots',help='Output directory, default=./plots',dest='pfolder'),
+    make_option('--prefix',default='',help='Prefix for the files, default=None',dest='prefix')
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 
@@ -47,6 +48,17 @@ if (length(cnv.calls_ids)==0){
 
 plotFolder=opt$pfolder
 if(!file.exists(plotFolder)){dir.create(plotFolder)}
+
+prefixfile=opt$prefix
+# Get current date and time
+current_datetime <- Sys.time()
+# Format date and time as "YYYYMMDD-HHMMSS"
+formatted_datetime <- format(current_datetime, "%Y%m%d-%H%M%S")
+
+if(prefixfile=="NULL"){prefixfile=NULL}
+if(is.null(prefixfile)){
+    prefixfile <- formatted_datetime
+}
 
 #################### Plots ####################################
 message('Start generating plots')
@@ -198,10 +210,10 @@ temp = cnv.calls[cnv.calls$sample==Sample,]
     ######### Save plot in pdf format ###########
     cnv_genes_sample=cnv.calls_plot[cnv.calls_plot$sample==Sample,]$Gene
     if(sum(cnv_genes_sample==Gene)==1){
-        pdf(file=paste(plotFolder,"/",Sample,"_",Gene,".pdf",sep=""),useDingbats=FALSE)
+        pdf(file=paste(plotFolder,"/DECON.",prefixfile,".",Sample,".",Gene,".pdf",sep=""),useDingbats=FALSE)
     }else{
         cnv_genes_sample_index=which(cnv.calls_plot$sample==Sample & cnv.calls_plot$Gene==paste(Gene,collapse=", "))
-        pdf(file=paste(plotFolder,"/",Sample,"_",paste(Gene,collapse="_"),"_",which(cnv_genes_sample_index==call_index),".pdf",sep=""),useDingbats=F)
+        pdf(file=paste(plotFolder,"/DECON.",prefixfile,".",Sample,".",paste(Gene,collapse="_"),"_",which(cnv_genes_sample_index==call_index),".pdf",sep=""),useDingbats=F)
     }
 
     if(sum(cnv_genes_sample==Gene)>2){print(paste("WARNING: more than 2 calls in ",Gene,", could affect plotting",sep=""))}

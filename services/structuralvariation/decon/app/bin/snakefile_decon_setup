@@ -1,0 +1,57 @@
+
+################## Import libraries ##################
+import os
+import glob
+import json
+import csv
+from shutil import copy2
+from datetime import datetime
+
+################## Configuration file ##################
+configfile: "/app/config/snakefile/decon_default_setup.yaml"
+########################################################
+
+DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') # DATABASES = "/STARK/databases"
+serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') # serviceName = "decon"
+moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') # moduleName = "structuralvariation"
+services_folder = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
+config_folder = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
+
+date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+########################################################
+
+rule all:
+    input:
+        {services_folder}/cli/SETUPComplete.txt
+
+
+rule copy_config_files:
+    output:
+        touch("{services_folder}/cli/SETUPComplete.txt")
+    shell:
+        """
+        mkdir -p {config_folder}
+        cp -r /app/config/module/* {config_folder}/listener
+        cp -r /app/config/snakefile/* {config_folder}/cli
+        """
+
+
+rule install_annotsv_database:
+    output:
+        touch("{services_folder}/cli/SETUPComplete.txt")
+    params:
+        source=f"https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_{config['ANNOTSV_VERSION']}.tar.gz",
+        archive_name=f"Annotations_Human_{config['ANNOTSV_VERSION']}.tar.gz"
+    log:    
+        log=f"{DATABASES}/AnnotSV/{config['ANNOTSV_VERSION']}/{serviceName}.{date_time}.database.setup.log",
+        err=f"{DATABASES}/AnnotSV/{config['ANNOTSV_VERSION']}/{serviceName}.{date_time}.database.setup.err"
+    shell:
+        """
+        mkdir -p {DATABASES}
+        aria2c -c -s 16 -x 16 -k 1M -j 1 {params.source} 1>> {params.logfile} 2>> {params.errfile}
+        if [[ {params.archive_name} == *.zip ]]; then
+            unzip -q {params.archive_name} -d {DATABASES} 1>> {log.log} 2>> {log.err}
+        elif [[ {params.archive_name} == *.tar.gz ]]; then
+            tar xzf {params.archive_name} -C {DATABASES} 1>> {log.log} 2>> {log.err}
+        fi
+        """

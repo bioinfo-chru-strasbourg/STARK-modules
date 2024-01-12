@@ -78,16 +78,32 @@ def getSampleInfos(samplesheet_path, exclude_samples):
 	
 	return result_dict
 
-def populate_dictionary(dictionary, samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None):
-	for sample in samples_list:
-		for ext in extensions_list:
-			for file in files_list:
-				if pattern_exclude:
-					if os.path.basename(file).split(".")[0] == sample and os.path.basename(file).endswith(ext) and not pattern_exclude in file:
-						dictionary[sample][ext] = file
-				if pattern_include:	
-					if os.path.basename(file).split(".")[0] == sample and os.path.basename(file).endswith(ext) and pattern_include in file:
-						dictionary[sample][ext] = file
+def populate_dictionary(dictionary, samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None, split_index=0):
+    for sample in samples_list:
+        for ext in extensions_list:
+            for file in files_list:
+                file_parts = os.path.basename(file).split(".")
+                
+                if split_index >= len(file_parts):
+                    continue  # Skip if split_index is out of range
+                
+                file_base = file_parts[split_index]
+                
+                if file_base != sample or not os.path.basename(file).endswith(ext):
+                    continue
+
+                if pattern_exclude and pattern_exclude in file:
+                    continue
+
+                if pattern_include and pattern_include not in file:
+                    continue
+
+                dictionary.setdefault(sample, {})[ext] = file
+
+
+def filter_files(files_list, filter_in=None, filter_out=None):
+	return [file_name for file_name in files_list if (not filter_in or filter_in in file_name) and (not filter_out or filter_out not in file_name)]
+
 			
 def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ext):
 	""" Function to search in a dictionary for a non-empty file path by iterating through sample_list and ext_list with inclusion and exclusion filters """
@@ -131,7 +147,7 @@ def generate_html_report(result_dict, output_file='report.html'):
 	template = env.get_template('template.html')
 
 	# Render the template with the provided data
-	rendered_html = template.render(data=result_dict)
+	rendered_html = template.render(runDict=result_dict, runName=runName, serviceName=serviceName, sample_list=sample_list)
 
 	# Save the rendered HTML to the output file
 	with open(output_file, 'w') as f:
@@ -176,8 +192,11 @@ if config['FILTER_SAMPLE']:
 
 # For validation analyse bam will be sample.aligner.validation.bam, so we append .validation to all the aligner strings
 if config['VALIDATION_ONLY']:
+	filter_files(files_list, filter_in='validation')
 	append_aligner = '.validation'
 	aligner_list = [sub + append_aligner for sub in aligner_list]
+else:
+	filter_files(files_list, None ,filter_out='validation')
 
 runDict = defaultdict(dict)
 populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
@@ -383,7 +402,14 @@ onsuccess:
 		for sample in sample_list:
 			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
-	generate_html_report(runDict, 'output_report.html')
+	# Generate dictionary for results
+	result_files_list = searchfiles(os.path.normpath(config['run']), f"/*/{serviceName}/*", False)
+	resultDict = defaultdict(dict)
+	populate_dictionary(resultDict, sample_list, ['*.vcf.gz', '*.vcf.gz.tbi'], result_files_list, pattern_include=serviceName, split_index=2)	
+	print(dict(resultDict))
+	# Generate html report (draft in progress)
+	generate_html_report(resultDict, f"{outputDir}/{serviceName}_report.html")
+	copy2('/app/template/style.css', outputDir)
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
