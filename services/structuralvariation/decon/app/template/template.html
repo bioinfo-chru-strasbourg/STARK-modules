@@ -5,92 +5,37 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" href="style.css">
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            display: flex;
-        }
-
-        #left-menu {
-            width: 200px;
-            background-color: #f2f2f2;
-            padding: 20px;
-        }
-
-        #content {
-            flex: 1;
-            padding: 20px;
-        }
-
-        h1, h2 {
-            color: #333;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        tr:hover {
-            background-color: #f5f5f5;
-        }
-
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        li {
-            margin-bottom: 10px;
-        }
-
-        a {
-            text-decoration: none;
-            color: #333;
-        }
-
-        a:hover {
-            font-weight: bold;
-        }
-    </style>
-    <title>Run Details</title>
+    <title>Report</title>
 </head>
 <body>
     <div id="left-menu">
-        <h2>Run IDs</h2>
+        <h2>Samples list</h2>
         <ul>
             {% for run_id in runDict.keys() %}
                 <li><a href="#{{ run_id }}">{{ run_id }}</a></li>
             {% endfor %}
         </ul>
     </div>
-
     <div id="content">
+        <h2>Welcome to the fabulous report for {{ serviceName }}</h2>
+        <p>We analyse run {{ runName }}</p>
+        <p>Sample list: {% for item in sample_list %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+        <p>Here is the details for each samples</p><br>
         {% for run_id, details in runDict.items() %}
             <h1 id="{{ run_id }}">{{ run_id }}</h1>
             <table>
                 <tr>
-                    <th>File</th>
-                    <th>Path</th>
+                    <th>Files by extension</th>
+                    <th>Path or value</th>
                 </tr>
                 {% for file, path in details.items() %}
                     <tr>
                         <td>{{ file }}</td>
-                        <td>{{ path }}</td>
+                        <!-- Add an HTML relative link here -->
+                        <td><a href="{{ path }}" target="_blank">{{ path }}</a></td>
                     </tr>
                 {% endfor %}
-            </table>
+            </table><br>
         {% endfor %}
     </div>
 </body>
