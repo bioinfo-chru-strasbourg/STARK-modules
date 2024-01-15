@@ -79,12 +79,9 @@ def getSampleInfos(samplesheet_path, exclude_samples):
 	return result_dict
 
 def populate_dictionary(dictionary, samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None, split_index=0):
-	print(pattern_include)
-	print(pattern_exclude)
 	for sample in samples_list:
 		for ext in extensions_list:
 			for file in files_list:
-				print(file)
 				file_parts = os.path.basename(file).split(".")
 				
 				if split_index >= len(file_parts):
@@ -741,7 +738,7 @@ onsuccess:
 	# Generate dictionary for results
 	result_files_list = searchfiles(os.path.normpath(config['run']), f"/*/{serviceName}/*", False)
 	resultDict = defaultdict(dict)
-	populate_dictionary(resultDict, sample_list, ['*.vcf.gz', '*.vcf.gz.tbi'], result_files_list, pattern_include=serviceName, split_index=2)	
+	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], result_files_list, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
 	# Generate html report (draft in progress)
 	generate_html_report(resultDict, f"{outputDir}/{serviceName}_report.html")

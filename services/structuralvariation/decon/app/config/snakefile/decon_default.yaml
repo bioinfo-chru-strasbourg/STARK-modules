@@ -72,6 +72,9 @@ THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: FALSE
 
+# For result html report, list of extensions to report
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
+
 ############## Tools specific parameters ##############
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)

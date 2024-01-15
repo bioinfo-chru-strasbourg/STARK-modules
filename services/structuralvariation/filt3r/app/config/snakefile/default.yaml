@@ -62,6 +62,9 @@ THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: False
 
+# For result html report, list of extensions to report
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
+
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
 DUMMY_PATH: "/app/config/scripts/dummy"
