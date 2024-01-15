@@ -60,6 +60,9 @@ SEARCH_ARGUMENT: "*/*"
 ## DEBUG ##
 DEBUG_MODE: False
 
+# For result html report, list of extensions to report
+RESULT_EXT_LIST: ['.tsv']
+
 ################## Tools parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"

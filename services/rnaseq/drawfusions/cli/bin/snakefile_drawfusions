@@ -365,7 +365,7 @@ onsuccess:
 	# Generate dictionary for results
 	result_files_list = searchfiles(os.path.normpath(config['run']), f"/*/{serviceName}/*", False)
 	resultDict = defaultdict(dict)
-	populate_dictionary(resultDict, sample_list, ['*.vcf.gz', '*.vcf.gz.tbi'], result_files_list, pattern_include=serviceName, split_index=2)	
+	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], result_files_list, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
 	# Generate html report (draft in progress)
 	generate_html_report(resultDict, f"{outputDir}/{serviceName}_report.html")
