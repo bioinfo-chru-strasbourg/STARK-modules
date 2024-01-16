@@ -133,7 +133,7 @@ def generate_html_report(result_dict, output_file='report.html'):
 	template = env.get_template('template.html')
 
 	# Render the template with the provided data
-	rendered_html = template.render(runDict=result_dict, runName=runName, serviceName=serviceName, sample_list=sample_list)
+	rendered_html = template.render(runDict=result_dict, runName=runName, serviceName=serviceName, sample_list=sample_list, external_base_path=config['EXTERNAL_BASE_PATH'], internal_base_path=config['INTERNAL_BASE_PATH'])
 
 	# Save the rendered HTML to the output file
 	with open(output_file, 'w') as f:
@@ -259,7 +259,7 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	input:
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz",aligner=aligner_list, sample=sample_list),
-		f"{resultDir}/{serviceName}.{date_time}.all.vcf.gz"
+		f"{resultDir}/{serviceName}.{date_time}.allsamples.vcf.gz"
 
 rule copy_bam:
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
@@ -340,7 +340,7 @@ rule vcf2gz:
 rule mergevcf:
 	"""	Copy or merge with bcftools several vcfs """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz", sample=sample_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.all.vcf.gz"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.vcf.gz"
 	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
 
 onstart:

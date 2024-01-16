@@ -62,8 +62,11 @@ THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: False
 
-# For result html report, list of extensions to report
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
+# List of extensions to include in the report.html
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf']
+# Base paths for html link
+EXTERNAL_BASE_PATH: "L:/Archives/NGS/BAS/DOCKER_STARK_MAIN_FOLDER"
+INTERNAL_BASE_PATH: "/STARK"
 
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
