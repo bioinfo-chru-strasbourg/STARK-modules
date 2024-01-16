@@ -62,6 +62,9 @@ DEBUG_MODE: False
 
 # For result html report, list of extensions to report
 RESULT_EXT_LIST: ['.tsv']
+# Base paths for html link
+EXTERNAL_BASE_PATH: "L:/Archives/NGS/BAS/DOCKER_STARK_MAIN_FOLDER"
+INTERNAL_BASE_PATH: "/STARK"
 
 ################## Tools parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)

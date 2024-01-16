@@ -201,7 +201,7 @@ def generate_html_report(result_dict, output_file='report.html'):
 	template = env.get_template('template.html')
 
 	# Render the template with the provided data
-	rendered_html = template.render(runDict=result_dict, runName=runName, serviceName=serviceName, sample_list=sample_list)
+	rendered_html = template.render(runDict=result_dict, runName=runName, serviceName=serviceName, sample_list=sample_list, external_base_path=config['EXTERNAL_BASE_PATH'], internal_base_path=config['INTERNAL_BASE_PATH'])
 
 	# Save the rendered HTML to the output file
 	with open(output_file, 'w') as f:
@@ -477,9 +477,9 @@ rule all:
 	""" Output a design vcf.gz with the bams list and the bed provided """
 	input:
 		expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", aligner=aligner_list, sample=sample_list),
-		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.Metrics.tsv", aligner=aligner_list),
+		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv", aligner=aligner_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
-		f"{resultDir}/{serviceName}.{date_time}.all.AnnotSV.Design.tsv",
+		f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv",
 		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess", aligner=aligner_list, gender=gender_list)
 
 rule help:
@@ -553,7 +553,7 @@ rule IdentifyFailures:
 		mincov=config['mincov'],
 		analysisfailure=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.MetricsFailed",
 		decondir=config['DECON_PATH']
-	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.Metrics.tsv"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv"
 	log:
 		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.Metrics.log",
 		err=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.Metrics.err"
@@ -587,13 +587,13 @@ rule makeCNVcalls:
 rule merge_makeCNVcalls:
 	""" Merge all CNV call results """
 	input: expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design_results_all.tsv", gender=gender_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.Design.tsv"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.tsv"
 	shell: "cat {input} | sort -u | sort -r >> {output}"
 
 rule variantconvert:
 	""" Convert tsv to a vcf """
 	input: rules.merge_makeCNVcalls.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.Design.unsort.vcf")
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.unsort.vcf")
 	params:
 		scriptsconfig=config['SCRIPTS_CONFIG'],
 		dummypath=config['DUMMY_PATH']
@@ -604,7 +604,7 @@ rule variantconvert:
 rule sortvcf:
 	""" Sort vcf """
 	input: rules.variantconvert.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.Noannotation.vcf")
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf")
 	params: dummypath=config['DUMMY_PATH']
 	shell: "grep '^#' {input} > {output} && grep -v '^#' {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}"
 
@@ -612,7 +612,7 @@ rule sortvcf:
 rule vcf2gz:
 	""" Compress vcf with bgzip """
 	input: rules.sortvcf.output
-	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.Noannotation.vcf.gz"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf.gz"
 	params: dummypath=config['DUMMY_PATH']
 	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf.gz > {output} ; tabix {output}"
 
@@ -665,14 +665,14 @@ use rule vcf2gz as vcf2gz1 with:
 rule mergedesign:
 	""" Copy or merge multiple vcfs using bcftools """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.all.Design.vcf.gz"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz"
 	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
 
 rule convertvcf_alldesign:
 	""" vcf to tsv conversion """
 	input: rules.mergedesign.output
-	output: f"{resultDir}/{serviceName}.{date_time}.all.AnnotSV.Design.tsv"
-	log: log2=f"{resultDir}/{serviceName}.{date_time}.all.AnnotSV.Design.vcf2tsv_converter.log"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
+	log: log2=f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf2tsv_converter.log"
 	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}"
 
 rule plot:
@@ -740,7 +740,7 @@ onsuccess:
 	resultDict = defaultdict(dict)
 	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], result_files_list, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
-	# Generate html report (draft in progress)
+	# Generate html report (need to add the run results)
 	generate_html_report(resultDict, f"{outputDir}/{serviceName}_report.html")
 	copy2('/app/template/style.css', outputDir)
 

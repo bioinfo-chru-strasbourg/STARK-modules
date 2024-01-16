@@ -31,8 +31,9 @@
                 {% for file, path in details.items() %}
                     <tr>
                         <td>{{ file }}</td>
-                        <!-- Add an HTML relative link here -->
-                        <td><a href="{{ path }}" target="_blank">{{ path }}</a></td>
+                        <!-- Replace internal_base_path with external_base_path -->
+                        {% set modified_path = path|replace(internal_base_path, external_base_path) %}
+                        <td><a href="{{ modified_path }}" target="_blank">{{ modified_path }}</a></td>
                     </tr>
                 {% endfor %}
             </table><br>

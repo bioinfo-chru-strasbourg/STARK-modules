@@ -71,6 +71,9 @@ DEBUG_MODE: True
 
 # For result html report, list of extensions to report
 RESULT_EXT_LIST: ['.pdf']
+# Base paths for html link
+EXTERNAL_BASE_PATH: "L:/Archives/NGS/BAS/DOCKER_STARK_MAIN_FOLDER"
+INTERNAL_BASE_PATH: "/STARK"
 
 ############## Tools specific parameters ##############
 ### TOOLS PATH ###

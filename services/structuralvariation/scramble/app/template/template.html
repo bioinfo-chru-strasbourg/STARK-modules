@@ -5,33 +5,38 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" href="style.css">
-    <title>Run Details</title>
+    <title>Report</title>
 </head>
 <body>
     <div id="left-menu">
-        <h2>Run IDs</h2>
+        <h2>Samples list</h2>
         <ul>
             {% for run_id in runDict.keys() %}
                 <li><a href="#{{ run_id }}">{{ run_id }}</a></li>
             {% endfor %}
         </ul>
     </div>
-
     <div id="content">
+        <h2>Welcome to the fabulous report for {{ serviceName }}</h2>
+        <p>We analyse run {{ runName }}</p>
+        <p>Sample list: {% for item in sample_list %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+        <p>Here is the details for each samples</p><br>
         {% for run_id, details in runDict.items() %}
             <h1 id="{{ run_id }}">{{ run_id }}</h1>
             <table>
                 <tr>
-                    <th>File</th>
-                    <th>Path</th>
+                    <th>Files by extension</th>
+                    <th>Path or value</th>
                 </tr>
                 {% for file, path in details.items() %}
                     <tr>
                         <td>{{ file }}</td>
-                        <td>{{ path }}</td>
+                        <!-- Replace internal_base_path with external_base_path -->
+                        {% set modified_path = path|replace(internal_base_path, external_base_path) %}
+                        <td><a href="{{ modified_path }}" target="_blank">{{ modified_path }}</a></td>
                     </tr>
                 {% endfor %}
-            </table>
+            </table><br>
         {% endfor %}
     </div>
 </body>
