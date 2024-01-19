@@ -494,7 +494,7 @@ def barcode_DPNI(df, fetus):
             # control var
             if all(
                 elem in df.columns
-                for elem in [fam + "_GT", fam + "_AD", fam + "_DP", fam + "_FT"]
+                for elem in [fam + "_GT", fam + "_AD", fam + "_DP"]
             ):
                 # Variant call heterozygous
                 if (
@@ -530,7 +530,7 @@ def barcode_DPNI(df, fetus):
                     dico[fam].append("0")
             else:
                 print(
-                    "WARNING miss one metrics columns in "
+                    "ERROR miss one metrics columns in "
                     + " ".join([fam + "_GT", fam + "_AD", fam + "_DP", fam + "_FT"])
                 )
                 exit()
