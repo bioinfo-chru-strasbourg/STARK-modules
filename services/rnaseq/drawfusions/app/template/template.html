@@ -32,7 +32,7 @@
                     <tr>
                         <td>{{ file }}</td>
                         <!-- Replace internal_base_path with external_base_path -->
-                        {% set modified_path = path|replace(internal_base_path, external_base_path) %}
+                        {% set modified_path = "file:///" ~ path|replace(internal_base_path, external_base_path) %}
                         <td><a href="{{ modified_path }}" target="_blank">{{ modified_path }}</a></td>
                     </tr>
                 {% endfor %}
