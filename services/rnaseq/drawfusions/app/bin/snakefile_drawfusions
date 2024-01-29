@@ -363,7 +363,10 @@ onsuccess:
 			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
 	# Generate dictionary for results
-	result_files_list = searchfiles(os.path.normpath(config['run']), f"/*/{serviceName}/*", False)
+	result_files_list_sample = searchfiles(os.path.normpath(config['run']), f"/*/{serviceName}/*", False)
+	result_files_list_all = searchfiles(os.path.normpath(config['run']), f"/*", False)
+	result_files_list = result_files_list_all + result_files_list_sample
+	sample_list.insert(0,"allsamples")
 	resultDict = defaultdict(dict)
 	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], result_files_list, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
