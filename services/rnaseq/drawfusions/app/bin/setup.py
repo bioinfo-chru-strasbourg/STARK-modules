@@ -57,11 +57,16 @@ date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 ######################
 # DATABASE VARIABLES #
 ######################
-DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') # DATABASES = "/STARK/databases"
-serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') # serviceName = "decon"
-moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') # moduleName = "structuralvariation"
-services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
-config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
+#DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') 
+DATABASES = "/STARK/databases"
+#serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') 
+serviceName = "drawfusions"
+#moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') 
+moduleName = "structuralvariation"
+#services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
+#config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
+services = f"/STARK/services/{moduleName}/{serviceName}"
+config = f"/STARK/config/{moduleName}/{serviceName}"
 
 
 #######################

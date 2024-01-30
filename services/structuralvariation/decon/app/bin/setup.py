@@ -67,11 +67,16 @@ date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 # DATABASE VARIABLES #
 ######################
 
-DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') # DATABASES = "/STARK/databases"
-serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') # serviceName = "decon"
-moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') # moduleName = "structuralvariation"
-services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
-config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
+#DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') 
+DATABASES = "/STARK/databases"
+#serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') 
+serviceName = "decon"
+#moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') 
+moduleName = "structuralvariation"
+#services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
+#config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
+services = f"/STARK/services/{moduleName}/{serviceName}"
+config = f"/STARK/config/{moduleName}/{serviceName}"
 
 ####################
 # DATABASE ANNOTSV #
@@ -81,7 +86,7 @@ config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{service
 # include GrCH37 & 38
 
 
-ANNOTSV_VERSION = "3.3.6"
+ANNOTSV_VERSION = "3.1"
 ANNOTSV_TARBALL = f"Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
 ANNOTSV_SOURCE_EXTERNAL = f"https://www.lbgi.fr/~geoffroy/Annotations/{ANNOTSV_TARBALL}"
 ANNOTSV_PARAM_DATABASE_FOLDER_LINK = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/"
@@ -108,7 +113,9 @@ if not os.path.isdir(ANNOTSV_PARAM_DATABASE_FOLDER_LINK):
 
 ###############################################
 
-# https://www.lbgi.fr/~geoffroy/Annotations/2109_hg19.tar.gz
+# https://www.lbgi.fr/~geoffroy/Annotations/2202_hg19.tar.gz
+# https://data.monarchinitiative.org/exomiser/data/2309_hg19.zip
+# https://data.monarchinitiative.org/exomiser/data/2309_hg38.zip
 
 TOOL_NAME="hg19"
 TOOL_VERSION="2202"
@@ -123,7 +130,8 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 	log_file(logfile, 'Exomiser version '+TOOL_VERSION+' installation start:', "\n", items = date_time)
 	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile)
 
-# https://data.monarchinitiative.org/exomiser/data/2109_phenotype.zip
+# https://data.monarchinitiative.org/exomiser/data/2309_phenotype.zip
+
 
 	TOOL_NAME = "phenotype"
 	TOOL_TARBALL = TOOL_VERSION+"_"+TOOL_NAME+".zip"
