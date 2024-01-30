@@ -56,12 +56,21 @@ def installdatabase(destination, source, archive_name, logfile, errfile):
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 
 ### INSTALL DATABASES ###
-DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') # DATABASES = "/STARK/databases"
-serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') # serviceName = "decon"
-moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') # moduleName = "structuralvariation"
-services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
-config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
-REFGENEFA = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES_REFGENOME') # REFGENEFA = /STARK/databases/genomes/current/hg19.fa
+#DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') 
+DATABASES = "/STARK/databases"
+#serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') 
+serviceName = "scramble"
+#moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') 
+moduleName = "structuralvariation"
+#services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
+#config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
+services = f"/STARK/services/{moduleName}/{serviceName}"
+config = f"/STARK/config/{moduleName}/{serviceName}"
+
+#REFGENEFA = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES_REFGENOME')
+REFGENEFA = "/STARK/databases/genomes/current/hg19.fa"
+
+
 
 ####################
 # DATABASE ANNOTSV #
@@ -71,7 +80,7 @@ REFGENEFA = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES_REFGENOME') # REFGENE
 # include GrCH37 & 38
 
 
-ANNOTSV_VERSION = "3.3.6"
+ANNOTSV_VERSION = "3.1"
 ANNOTSV_TARBALL = f"Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
 ANNOTSV_SOURCE_EXTERNAL = f"https://www.lbgi.fr/~geoffroy/Annotations/{ANNOTSV_TARBALL}"
 ANNOTSV_PARAM_DATABASE_FOLDER_LINK = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/"

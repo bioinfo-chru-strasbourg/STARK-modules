@@ -1,4 +1,4 @@
+# WIP not working yet
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "DECON"
-
 ANNOTSV_VERSION: "3.3.6"

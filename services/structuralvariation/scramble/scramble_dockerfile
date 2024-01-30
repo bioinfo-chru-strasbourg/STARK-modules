@@ -25,7 +25,7 @@ RUN apt-get update --fix-missing
 RUN apt-get install -y unzip vim rsync aria2
 
 # Mamba install 
-RUN mamba install -y -c conda-forge -c bioconda -c biobuilds annotsv~=3.3.7 samtools~=1.17.0 bcftools~=1.17.0 bedtools~=2.31.0 snakemake~=7.32.4 pandas~=2.0.3 vcf2tsvpy~=0.6.1 natsort~=7.1.1 pyfaidx~=0.7.2.1 blast~=2.14.1 scramble~=1.0.2 && mamba clean -afy
+RUN mamba install -y -c conda-forge -c bioconda -c biobuilds annotsv~=3.3.8 samtools~=1.17.0 bcftools~=1.17.0 bedtools~=2.31.0 snakemake~=7.32.4 pandas~=2.0.3 vcf2tsvpy~=0.6.1 natsort~=7.1.1 pyfaidx~=0.7.2.1 blast~=2.14.1 scramble~=1.0.2 && mamba clean -afy
 
 # Variant convert
 WORKDIR /usr/lib
