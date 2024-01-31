@@ -35,7 +35,7 @@ import glob
 import pandas as pd
 import json
 import csv
-import pypdf
+from pypdf import PdfWriter
 from shutil import copy2
 from datetime import datetime
 from itertools import product
@@ -219,7 +219,7 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, exter
 	print(f"HTML report generated successfully: {output_file}")
 
 def merge_pdfs(filepaths, output_path):
-	pdf_merger = PyPDF2.PdfFileMerger()
+	pdf_merger = PdfWriter()
 
 	for filepath in filepaths:
 		with open(filepath, 'rb') as pdf_file:
