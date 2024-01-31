@@ -729,14 +729,10 @@ onsuccess:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
 	# Move pdfs into sample's directories
-	pdf_list = os.listdir(resultDir+"/pdfs")
+	pdf_list = os.listdir(f"{resultDir}/pdfs")
+	pdf_path_list = [f"{resultDir}/pdfs/{pdf}" for pdf in pdf_list]	
 	
-	pdf_path_list = []
 	output_pdf_list = []
-	for pdf in pdf_list:
-		full_path = resultDir + "/pdfs/" + pdf
-		pdf_path_list.append(full_path)
-
 	for sample in sample_list:
 		matching_pdfs = [pdf for pdf in pdf_path_list if sample in pdf]
 		
