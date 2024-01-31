@@ -742,7 +742,7 @@ onsuccess:
 		
 		if matching_pdfs:
 			output_pdf = f"{resultDir}/pdfs/{serviceName}.{date_time}.{sample}.pdf"
-			output_pdf_list.append(os.basename(output_pdf))
+			output_pdf_list.append(os.path.basename(output_pdf))
 			merge_pdfs(matching_pdfs, output_pdf)
 
 	pdf_list.extend(output_pdf_list)
