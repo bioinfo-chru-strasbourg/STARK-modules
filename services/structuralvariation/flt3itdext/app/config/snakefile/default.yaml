@@ -68,7 +68,7 @@ INTERNAL_BASE_PATH: "/STARK"
 
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
-DUMMY_PATH: "/app/config/scripts/dummy"
+DUMMY_PATH: "/app/scripts/dummy"
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Script path
 SCRIPT_PATH: "/app/scripts"
