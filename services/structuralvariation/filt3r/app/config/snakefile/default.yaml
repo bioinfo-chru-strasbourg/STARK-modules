@@ -70,7 +70,7 @@ INTERNAL_BASE_PATH: "/STARK"
 
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
-DUMMY_PATH: "/app/config/scripts/dummy"
+DUMMY_PATH: "/app/scripts/dummy"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/VAF>=0.01'"
 BCFTOOLS_FILTER: "-i 'INFO/VAF>=0.01'"

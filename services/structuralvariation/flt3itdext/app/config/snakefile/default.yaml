@@ -70,6 +70,8 @@ INTERNAL_BASE_PATH: "/STARK"
 # Folder to store dummy.vcf for ex
 DUMMY_PATH: "/app/config/scripts/dummy"
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+# Script path
+SCRIPT_PATH: "/app/scripts"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/RAF>=0.01'"
 BCFTOOLS_FILTER: "-i 'INFO/RAF>=0.01'"
