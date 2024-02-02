@@ -176,10 +176,6 @@ COSMIC_install_path = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/
 if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 	os.makedirs(COSMIC_install_path, exist_ok = True)
 	systemcall(f"mv {COSMIC_source} {COSMIC_install_path}")
-	# AnnotSV dummy vcf in /app/src/dummy.vcf to process COSMIC database (need rw databases access for that)
-	#setup_config_path = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}"
-	#systemcall(f"AnnotSV -SVinputFile /app/scripts/dummy/dummy.vcf -outputFile {setup_config_path}/AnnotSV.dummyannotation.tsv -genomeBuild {genomeBuild_version} 1> {setup_config_path}/AnnotSV.dummyannotation.log")
-
 
 ##############
 # GeneHancer #
@@ -210,7 +206,7 @@ if serviceName and moduleName:
 
 # AnnotSV dummy vcf to process several database (need rw databases access for that)
 setup_config_path = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}"
-systemcall(f"AnnotSV -SVinputFile /app/scripts/dummy/dummy.vcf -outputFile {setup_config_path}/AnnotSV.dummyannotation.tsv -genomeBuild {genomeBuild_version} 1> {setup_config_path}/AnnotSV.dummyannotation.log")
+systemcall(f"AnnotSV -SVinputFile /app/scripts/dummy/dummy.vcf -annotationsDir {DATABASES}/AnnotSV/{ANNOTSV_VERSION}/ -outputFile {setup_config_path}/AnnotSV.dummyannotation.tsv -genomeBuild {genomeBuild_version} 1> {setup_config_path}/AnnotSV.dummyannotation.log")
 
 # SETUPComplete cli services (condition for healthy cli)
 systemcall(f"touch {services}/cli/SETUPComplete.txt")
