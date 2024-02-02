@@ -42,7 +42,6 @@ services:
             - /home1/data/STARK/services/structuralvariation/decon/cli:/STARK/services/structuralvariation/decon/cli:rw
             - /home1/data/STARK/config/structuralvariation/decon/cli:/STARK/config/structuralvariation/decon/cli:ro
             - /home1/data/STARK/databases:/STARK/databases:ro
-            #- /home1/data/STARK/databases/OMIMannotations/current:/STARK/databases/AnnotSV/3.3.6/Annotations_Human/Gene-based/OMIM:ro
         networks:
             - stark_stark
         healthcheck:
