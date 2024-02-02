@@ -71,7 +71,9 @@ config = f"/STARK/config/{moduleName}/{serviceName}"
 #REFGENEFA = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES_REFGENOME')
 REFGENEFA = "/STARK/databases/genomes/current/hg19.fa"
 
-
+### START #####
+if os.path.exists(f"{services}/cli/SETUPComplete.txt"):
+	systemcall(f"rm {services}/cli/SETUPComplete.txt")
 
 ####################
 # DATABASE ANNOTSV #

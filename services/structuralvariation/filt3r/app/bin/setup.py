@@ -73,9 +73,9 @@ moduleName = "structuralvariation"
 services = f"/STARK/services/{moduleName}/{serviceName}"
 config = f"/STARK/config/{moduleName}/{serviceName}"
 
-#######################
-# Copy reference files
-#######################
+### START #####
+if os.path.exists(f"{services}/cli/SETUPComplete.txt"):
+	systemcall(f"rm {services}/cli/SETUPComplete.txt")
 
 #######################
 # Copy config files (service.conf & service.json) & launcher.py)
