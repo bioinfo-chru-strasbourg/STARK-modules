@@ -40,10 +40,14 @@ def log_file(logfile, text, sep, items_list=None, items=None):
 			f.write(f"{str(items) if items != '' else 'None'}{sep}")
 
 
-def installdatabase(destination, source, archive_name, logfile, errfile):
+def installdatabase(destination, source, archive_name, logfile, errfile, tool=None):
 	""" Function to download and install an archive (zip or tar.gz) """
 	os.makedirs(destination, exist_ok = True)
-	systemcall(f"aria2c -c -s 16 -x 16 -k 1M -j 1 {source} 1>> {logfile} 2>> {errfile}")
+	if tool == "aria2":
+		systemcall(f"aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1 {source} 1>> {logfile} 2>> {errfile}")
+	else:
+		systemcall(f"wget {source} 1>> {logfile} 2>> {errfile}")
+	
 	if archive_name.endswith('.zip'):
 		systemcall(f"unzip -q {archive_name} -d {destination} 1>> {logfile} 2>> {errfile}")
 	if archive_name.endswith('.tar.gz'):
@@ -90,7 +94,7 @@ errfile = f"{GENCODEREF_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.dat
 if os.path.isdir(GENCODEREF_PARAM_DATABASE_FOLDER_LINK) == False:
 	os.makedirs(GENCODEREF_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
 	log_file(logfile, 'Gencode version '+GENCODE_VERSION+' installation start:', "\n", items = date_time)
-	installdatabase(GENCODEREF_PARAM_DATABASE_FOLDER_LINK, GENCODEREF_SOURCE_EXTERNAL, GENCODEREF_TARBALL, logfile, errfile)
+	installdatabase(GENCODEREF_PARAM_DATABASE_FOLDER_LINK, GENCODEREF_SOURCE_EXTERNAL, GENCODEREF_TARBALL, logfile, errfile, tool="aria2")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	log_file(logfile, 'Installation end:', "\n", items = date_time_end)
 
@@ -106,7 +110,7 @@ errfile = f"{GENCODE_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.databa
 if not os.path.isdir(GENCODE_PARAM_DATABASE_FOLDER_LINK):
 	os.makedirs(GENCODE_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
 	log_file(logfile, 'Gencode version '+GENCODE_VERSION+' installation start:', "\n", items = date_time)
-	installdatabase(GENCODE_PARAM_DATABASE_FOLDER_LINK, GENCODE_SOURCE_EXTERNAL, GENCODE_TARBALL, logfile, errfile)
+	installdatabase(GENCODE_PARAM_DATABASE_FOLDER_LINK, GENCODE_SOURCE_EXTERNAL, GENCODE_TARBALL, logfile, errfile, tool="aria2")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	log_file(logfile, 'Installation end:', "\n", items = date_time_end)
 
