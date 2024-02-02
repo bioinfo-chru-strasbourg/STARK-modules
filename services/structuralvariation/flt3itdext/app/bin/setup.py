@@ -67,6 +67,10 @@ moduleName = "structuralvariation"
 services = f"/STARK/services/{moduleName}/{serviceName}"
 config = f"/STARK/config/{moduleName}/{serviceName}"
 
+### START #####
+if os.path.exists(f"{services}/cli/SETUPComplete.txt"):
+	systemcall(f"rm {services}/cli/SETUPComplete.txt")
+
 #######################
 # Copy reference files
 #######################
