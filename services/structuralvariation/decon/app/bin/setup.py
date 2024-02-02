@@ -45,17 +45,18 @@ def log_file(logfile, text, sep, items_list=None, items=None):
 			f.write(f"{str(items) if items != '' else 'None'}{sep}")
 
 
-def installdatabase(destination, source, archive_name, logfile, errfile):
+def installdatabase(destination, source, archive_name, logfile, errfile, tool=None):
 	""" Function to download and install an archive (zip or tar.gz) """
 	os.makedirs(destination, exist_ok = True)
-	systemcall(f"aria2c -c -s 16 -x 16 -k 1M -j 1 {source} 1>> {logfile} 2>> {errfile}")
+	if tool == "aria2":
+		systemcall(f"aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1 {source} 1>> {logfile} 2>> {errfile}")
+	else:
+		systemcall(f"wget {source} 1>> {logfile} 2>> {errfile}")
+	
 	if archive_name.endswith('.zip'):
 		systemcall(f"unzip -q {archive_name} -d {destination} 1>> {logfile} 2>> {errfile}")
 	if archive_name.endswith('.tar.gz'):
 		systemcall(f"tar xzf {archive_name} -C {destination} 1>> {logfile} 2>> {errfile}")
-
-# for wget
-# systemcall("wget "+ source+" 1>> "+logfile+" 2>> "+errfile+" ")
 
 # Variables initialisation
 # set datetime to add to output file name
@@ -82,11 +83,7 @@ config = f"/STARK/config/{moduleName}/{serviceName}"
 # DATABASE ANNOTSV #
 ####################
 
-# https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_3.1.tar.gz
-# include GrCH37 & 38
-
-
-ANNOTSV_VERSION = "3.1"
+ANNOTSV_VERSION = "3.3.6"
 ANNOTSV_TARBALL = f"Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
 ANNOTSV_SOURCE_EXTERNAL = f"https://www.lbgi.fr/~geoffroy/Annotations/{ANNOTSV_TARBALL}"
 ANNOTSV_PARAM_DATABASE_FOLDER_LINK = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/"
@@ -97,19 +94,13 @@ errfile = f"{ANNOTSV_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.databa
 if not os.path.isdir(ANNOTSV_PARAM_DATABASE_FOLDER_LINK):
 	os.makedirs(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, exist_ok = True)
 	log_file(logfile, 'AnnotSV version '+ANNOTSV_VERSION+' installation start:', "\n", items = date_time)
-	installdatabase(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, ANNOTSV_SOURCE_EXTERNAL, ANNOTSV_TARBALL, logfile, errfile)
+	installdatabase(ANNOTSV_PARAM_DATABASE_FOLDER_LINK, ANNOTSV_SOURCE_EXTERNAL, ANNOTSV_TARBALL, logfile, errfile, tool="aria2")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	log_file(logfile, 'Installation end:', "\n", items = date_time_end)
 
 #####################
 # DATABASE EXOMISER #
 #####################
-
-# Mount point for exomiser jar file
-# /share/AnotSV/jar/exomiser-rest-prioritiser-12.1.0.jar in /STARK/databases/AnnotSV/$TOOL_VERSION/jar/
-# with $TOOL_VERSION = AnnotSV $TOOL_VERSION (ie 3.1)
-
-# GrCH37 only
 
 ###############################################
 
@@ -118,9 +109,10 @@ if not os.path.isdir(ANNOTSV_PARAM_DATABASE_FOLDER_LINK):
 # https://data.monarchinitiative.org/exomiser/data/2309_hg38.zip
 
 TOOL_NAME="hg19"
-TOOL_VERSION="2202"
-TOOL_TARBALL = f"{TOOL_VERSION}_{TOOL_NAME}.tar.gz"
-TOOL_SOURCE_EXTERNAL = f"https://www.lbgi.fr/~geoffroy/Annotations/{TOOL_TARBALL}"
+TOOL_VERSION="2309"
+TOOL_TARBALL = f"{TOOL_VERSION}_{TOOL_NAME}.zip"
+TOOL_SOURCE_EXTERNAL = "https://data.monarchinitiative.org/exomiser/data/"+TOOL_TARBALL
+#TOOL_SOURCE_EXTERNAL = f"https://www.lbgi.fr/~geoffroy/Annotations/{TOOL_TARBALL}"
 TOOL_PARAM_DATABASE_FOLDER_LINK = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Exomiser/{TOOL_VERSION}/"
 
 logfile = f"{TOOL_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.setup.log"
@@ -128,7 +120,7 @@ errfile = f"{TOOL_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.
 
 if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 	log_file(logfile, 'Exomiser version '+TOOL_VERSION+' installation start:', "\n", items = date_time)
-	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile)
+	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile, tool="aria2")
 
 # https://data.monarchinitiative.org/exomiser/data/2309_phenotype.zip
 
@@ -136,7 +128,7 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 	TOOL_NAME = "phenotype"
 	TOOL_TARBALL = TOOL_VERSION+"_"+TOOL_NAME+".zip"
 	TOOL_SOURCE_EXTERNAL = "https://data.monarchinitiative.org/exomiser/data/"+TOOL_TARBALL
-	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile)
+	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile, tool="aria2")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	log_file(logfile, 'Installation end:', "\n", items = date_time_end)
 
@@ -185,8 +177,8 @@ if not os.path.exists(COSMIC_install_path) and os.path.exists(COSMIC_source):
 	os.makedirs(COSMIC_install_path, exist_ok = True)
 	systemcall(f"mv {COSMIC_source} {COSMIC_install_path}")
 	# AnnotSV dummy vcf in /app/src/dummy.vcf to process COSMIC database (need rw databases access for that)
-	setup_config_path = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}"
-	systemcall(f"AnnotSV -SVinputFile /app/scrpits/dummy/dummy.vcf -outputFile {setup_config_path}/AnnotSV.dummyannotation.tsv -genomeBuild {genomeBuild_version} 1> {setup_config_path}/AnnotSV.dummyannotation.log")
+	#setup_config_path = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}"
+	#systemcall(f"AnnotSV -SVinputFile /app/scripts/dummy/dummy.vcf -outputFile {setup_config_path}/AnnotSV.dummyannotation.tsv -genomeBuild {genomeBuild_version} 1> {setup_config_path}/AnnotSV.dummyannotation.log")
 
 
 ##############
@@ -215,6 +207,10 @@ if serviceName and moduleName:
 	systemcall(f"cp -r /app/config/snakefile/* {config}/cli >> {logfile} 2>> {errfile}")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	log_file(logfile, 'Setup end:', "\n", items = date_time_end)
+
+# AnnotSV dummy vcf to process several database (need rw databases access for that)
+setup_config_path = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}"
+systemcall(f"AnnotSV -SVinputFile /app/scripts/dummy/dummy.vcf -outputFile {setup_config_path}/AnnotSV.dummyannotation.tsv -genomeBuild {genomeBuild_version} 1> {setup_config_path}/AnnotSV.dummyannotation.log")
 
 # SETUPComplete cli services (condition for healthy cli)
 systemcall(f"touch {services}/cli/SETUPComplete.txt")

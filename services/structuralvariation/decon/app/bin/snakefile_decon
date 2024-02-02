@@ -666,7 +666,7 @@ rule AnnotSV:
 		overlap=config['overlap'],
 		mode=config['annotationMode'],
 		annotation=config['annotationdir']
-		# HPO -hpo HP:0001156,HP:0001363,HP:0011304"
+		# HPO -hpo HP:0001156,HP:0001363,HP:0011304
 	shell: 
 		"""
 		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || echo "#No data to annotate" > {output}

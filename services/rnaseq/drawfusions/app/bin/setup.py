@@ -40,10 +40,14 @@ def log_file(logfile, text, sep, items_list=None, items=None):
 			f.write(f"{str(items) if items != '' else 'None'}{sep}")
 
 
-def installdatabase(destination, source, archive_name, logfile, errfile):
+def installdatabase(destination, source, archive_name, logfile, errfile, tool=None):
 	""" Function to download and install an archive (zip or tar.gz) """
 	os.makedirs(destination, exist_ok = True)
-	systemcall(f"aria2c -c -s 16 -x 16 -k 1M -j 1 {source} 1>> {logfile} 2>> {errfile}")
+	if tool == "aria2":
+		systemcall(f"aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1 {source} 1>> {logfile} 2>> {errfile}")
+	else:
+		systemcall(f"wget {source} 1>> {logfile} 2>> {errfile}")
+	
 	if archive_name.endswith('.zip'):
 		systemcall(f"unzip -q {archive_name} -d {destination} 1>> {logfile} 2>> {errfile}")
 	if archive_name.endswith('.tar.gz'):
