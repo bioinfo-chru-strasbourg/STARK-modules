@@ -75,6 +75,10 @@ def distribute(run_informations):
             os.mkdir(osj(run_informations["run_depository"], sample, "VARANK", ""))
             log.info(f"Created VARANK folder for sample {sample} into run depository")
 
+        existing_tsv_files = glob.glob(osj(run_informations["run_repository"], sample, "VARANK", "*tsv"))
+        for existing_tsv_file in existing_tsv_files:
+            os.remove(existing_tsv_file)
+
         varank_folder_name = f"{os.path.basename(sample)}_{date}"
         tsv_files = glob.glob(
             osj(run_informations["run_processing_folder_tsv"], f"*{sample}*allVariants*.tsv")

@@ -11,4 +11,5 @@ __all__ = [
     "synchronizer",
     "archives_processing",
     "results_provider",
+    "HGMD-annotations"
 ]
