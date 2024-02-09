@@ -210,9 +210,9 @@ def parseargs() -> argparse.Namespace:
         default="info",
         help="Set verbosity level",
     )
-    parser.add_argument("--input", type=str, help="Input raw vcf", required=True)
+    parser.add_argument("-i", "--input", type=str, help="Input raw vcf", required=True)
     parser.add_argument(
-        "--output", type=str, help="Annotated vcf with HGMD", required=True
+        "-o", "--output", type=str, help="Annotated vcf with HGMD", required=True
     )
     parser.add_argument(
         "--hgmd", type=str, help="Path of HGMD vcf database", required=True
@@ -266,12 +266,21 @@ def bcftools_annotate(
     Returns:
     vcfout: a string representing the path to the output VCF file.
     """
+    if os.path.isfile(vcfout):
+        os.remove(vcfout)
+    if os.path.isfile(os.path.join(vcfout, ".tbi")):
+        os.remove(os.path.join(vcfout, ".tbi"))
+
     log.info("bcftools annotate to " + vcfout)
     if not vcfin.endswith(".gz"):
         log.info("Compress and index input")
         systemcall(bgzip + " --force " + vcfin, log)
         systemcall(tabix + " -p vcf " + vcfin + ".gz", log)
         vcfin = vcfin + ".gz"
+    else:
+        if not os.path.isfile(os.path.join(vcfin + ".tbi")):
+            systemcall(tabix + " -p vcf " + vcfin, log)     
+
     if not vcfout.endswith(".gz"):
         vcfout = vcfout + ".gz"
     systemcall(
@@ -326,6 +335,7 @@ def main():
         log.error("Fields values empty EXIT")
         sys.exit(1)
     log.info("Annotations " + ",".join(header_field))
+
     if header_field_missing:
         log.warning("Values missing " + ",".join(header_field_missing))
     bcftools_annotate(

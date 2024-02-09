@@ -3,7 +3,7 @@ FROM centos:7
 LABEL name="Mateusz RAUCH" email="<rauchmateusz@gmail.com>"
 
 ##########################################################################
-# Dockerfile Version:   2.0.1
+# Dockerfile Version:   2.1
 # Software:             VaRank
 # Software Version:     1.5.2
 # Software Website:     http://www.lbgi.fr/VaRank/
@@ -14,6 +14,7 @@ LABEL name="Mateusz RAUCH" email="<rauchmateusz@gmail.com>"
 RUN yum -y update
 RUN yum -y install epel-release
 RUN yum -y install wget
+RUN yum -y install htslib-tools
 # varank
 RUN yum -y install git
 RUN yum -y install glibc-2.17-326.el7_9.i686
@@ -31,6 +32,7 @@ RUN rm -f /tmp/Miniconda3-latest-Linux-x86_64.sh
 
 #work env
 RUN conda install -c intel tcl
+RUN conda install bioconda::bcftools
 RUN conda create -n common python=3.9.7 
 
 # Java

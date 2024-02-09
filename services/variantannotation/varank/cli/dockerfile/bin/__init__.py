@@ -10,6 +10,5 @@ __all__ = [
     "omim_downloader",
     "synchronizer",
     "archives_processing",
-    "results_provider",
-    "HGMD-annotations"
+    "results_provider"
 ]

@@ -30,7 +30,14 @@ def processing_folder_vcf_synchronizer(run_informations):
                 log.info(f"Overwriting {os.path.basename(pattern_vcf_file)} with vcf from \"{element}\" pattern")
         
     archives_vcf_files = glob.glob(osj(run_informations["run_processing_folder_vcf_run"], "*"))
+    hgmd_db = osj(os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_DATABASES"], "current", "hg19", "HGMD")
     for vcf_file in archives_vcf_files:
+        vcf_name = os.path.basename(vcf_file)
+        vcfout = osj(run_informations["run_processing_folder_vcf_run"], f"hgmd_{vcf_name}")
+        subprocess.run(["python3", "HGMD_annotations.py", "-i", vcf_file, "-o", vcfout, "-a", "hg19", "--hgmd", hgmd_db])
+        os.remove(vcf_file)
+        os.remove(vcf_file + ".tbi")
+        os.remove(vcfout + ".tbi")
         os.chmod(vcf_file, 0o777)
         
 

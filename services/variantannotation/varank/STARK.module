@@ -8,7 +8,7 @@
           "name": "VaRank cli",
           "type": "CLI",
           "description": "A VaRank CLI.",
-          "release": "2.0.2",
+          "release": "2.1",
           "available": true
         },
         "listener": {
