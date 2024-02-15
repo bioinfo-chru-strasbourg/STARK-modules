@@ -242,6 +242,8 @@ def cleaner(run_informations):
     if os.path.isdir(osj(run_informations["run_processing_folder"], "TSV")):
         shutil.rmtree(osj(run_informations["run_processing_folder"], "TSV"))
         os.mkdir(osj(run_informations["run_processing_folder"], "TSV"))
+    else:
+        os.mkdir(osj(run_informations["run_processing_folder"], "TSV"))
 
     for file in tsv_files:
         os.chmod(file, 0o777)
