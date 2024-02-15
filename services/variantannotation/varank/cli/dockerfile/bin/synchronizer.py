@@ -62,6 +62,15 @@ def processing_folder_vcf_synchronizer(run_informations):
         "hg19",
         "HGMD_Pro_2023.4_hg19.clean2.vcf.gz",
     )
+
+    for vcf_file in archives_vcf_files:
+        if os.path.basename(vcf_file).startswith("hgmd"):
+            os.remove(vcf_file)
+
+    archives_vcf_files = glob.glob(
+        osj(run_informations["run_processing_folder_vcf_run"], "*")
+    )
+
     for vcf_file in archives_vcf_files:
         vcf_name = os.path.basename(vcf_file)
         vcfout = osj(

@@ -15,7 +15,11 @@ RUN yum -y update
 RUN yum -y install epel-release
 RUN yum -y install wget
 RUN yum -y install htslib-tools
-
+RUN yum -y install make
+RUN yum -y install gcc
+RUN yum -y install zlib-devel
+RUN yum -y install bzip2-devel
+RUN yum -y install xz-devel
 # varank
 RUN yum -y install git
 RUN yum -y install glibc-2.17-326.el7_9.i686
@@ -32,7 +36,6 @@ RUN chmod -R 755 /usr/local/lib/miniconda3/
 RUN rm -f /tmp/Miniconda3-latest-Linux-x86_64.sh
 
 #work env
-RUN conda install bioconda::bcftools
 RUN conda install -c intel tcl
 RUN conda create -n common python=3.12
 
@@ -74,6 +77,15 @@ RUN sed -i -e 's/1.4.3/1.5.2/g' VaRank-config.tcl
 RUN sed -i -e '/global L_hpo/a set auto_path [linsert $::auto_path 0 /tools/varank/current/tcllib]' VaRank-main.tcl
 
 ENV VARANK=/tools/varank/current/
+
+#bcftools
+WORKDIR /tmp
+RUN wget https://github.com/samtools/bcftools/releases/download/1.19/bcftools-1.19.tar.bz2
+RUN tar -xvf bcftools-1.19.tar.bz2
+WORKDIR /tmp/bcftools-1.19
+RUN ./configure --prefix=/tools/
+RUN make
+RUN make install
 
 # Alamut-Batch
 RUN mkdir /tools/alamut_batch
