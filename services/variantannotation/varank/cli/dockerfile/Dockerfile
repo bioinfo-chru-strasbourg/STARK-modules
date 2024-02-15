@@ -15,13 +15,14 @@ RUN yum -y update
 RUN yum -y install epel-release
 RUN yum -y install wget
 RUN yum -y install htslib-tools
+
 # varank
 RUN yum -y install git
 RUN yum -y install glibc-2.17-326.el7_9.i686
 RUN yum clean all
 
 #conda
-RUN cd /tmp
+WORKDIR tmp
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/lib/miniconda3/
 RUN echo 'export PATH="$PATH:/usr/local/lib/miniconda3/bin"' > /etc/profile.d/miniconda.sh
@@ -31,9 +32,9 @@ RUN chmod -R 755 /usr/local/lib/miniconda3/
 RUN rm -f /tmp/Miniconda3-latest-Linux-x86_64.sh
 
 #work env
-RUN conda install -c intel tcl
 RUN conda install bioconda::bcftools
-RUN conda create -n common python=3.9.7 
+RUN conda install -c intel tcl
+RUN conda create -n common python=3.12
 
 # Java
 RUN yum -y install java-11-openjdk
@@ -102,7 +103,7 @@ RUN chmod -R 777 /tools/
 
 RUN echo "source activate common" >> ~/.bashrc
 RUN echo "alias ll='ls -lra'" >> ~/.bashrc
-RUN echo "alias varank='python3.9 /tools/varank/current/scripts/__main__.py'" >> ~/.bashrc
+RUN echo "alias varank='python3.12 /tools/varank/current/scripts/__main__.py'" >> ~/.bashrc
 
 
 WORKDIR /
