@@ -7,6 +7,7 @@ import synchronizer
 import archives_processing
 import non_redundant_generator
 import results_provider
+import subprocess
 
 
 def launch_run(args):

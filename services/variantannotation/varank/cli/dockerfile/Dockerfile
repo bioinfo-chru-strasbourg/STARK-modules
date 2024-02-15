@@ -3,7 +3,7 @@ FROM centos:7
 LABEL name="Mateusz RAUCH" email="<rauchmateusz@gmail.com>"
 
 ##########################################################################
-# Dockerfile Version:   2.0.1
+# Dockerfile Version:   2.1
 # Software:             VaRank
 # Software Version:     1.5.2
 # Software Website:     http://www.lbgi.fr/VaRank/
@@ -14,13 +14,19 @@ LABEL name="Mateusz RAUCH" email="<rauchmateusz@gmail.com>"
 RUN yum -y update
 RUN yum -y install epel-release
 RUN yum -y install wget
+RUN yum -y install htslib-tools
+RUN yum -y install make
+RUN yum -y install gcc
+RUN yum -y install zlib-devel
+RUN yum -y install bzip2-devel
+RUN yum -y install xz-devel
 # varank
 RUN yum -y install git
 RUN yum -y install glibc-2.17-326.el7_9.i686
 RUN yum clean all
 
 #conda
-RUN cd /tmp
+WORKDIR tmp
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/lib/miniconda3/
 RUN echo 'export PATH="$PATH:/usr/local/lib/miniconda3/bin"' > /etc/profile.d/miniconda.sh
@@ -31,7 +37,7 @@ RUN rm -f /tmp/Miniconda3-latest-Linux-x86_64.sh
 
 #work env
 RUN conda install -c intel tcl
-RUN conda create -n common python=3.9.7 
+RUN conda create -n common python=3.12
 
 # Java
 RUN yum -y install java-11-openjdk
@@ -72,6 +78,15 @@ RUN sed -i -e '/global L_hpo/a set auto_path [linsert $::auto_path 0 /tools/vara
 
 ENV VARANK=/tools/varank/current/
 
+#bcftools
+WORKDIR /tmp
+RUN wget https://github.com/samtools/bcftools/releases/download/1.19/bcftools-1.19.tar.bz2
+RUN tar -xvf bcftools-1.19.tar.bz2
+WORKDIR /tmp/bcftools-1.19
+RUN ./configure --prefix=/tools/
+RUN make
+RUN make install
+
 # Alamut-Batch
 RUN mkdir /tools/alamut_batch
 WORKDIR /tools/alamut_batch
@@ -100,7 +115,7 @@ RUN chmod -R 777 /tools/
 
 RUN echo "source activate common" >> ~/.bashrc
 RUN echo "alias ll='ls -lra'" >> ~/.bashrc
-RUN echo "alias varank='python3.9 /tools/varank/current/scripts/__main__.py'" >> ~/.bashrc
+RUN echo "alias varank='python3.12 /tools/varank/current/scripts/__main__.py'" >> ~/.bashrc
 
 
 WORKDIR /
