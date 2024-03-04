@@ -10,7 +10,6 @@
 # PROD version 1 : 17/03/2022
 # PROD version 2 : 17/10/2023 : changelog
 	# remove os.getenv
-	# update AnnotSV to 3.3.6
 	# switch to aria2
 
 ################## Context ##################

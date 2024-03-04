@@ -18,8 +18,8 @@
           "description": "listener service, create image and configure service.",
           "release": "2.0",
           "available": false
-		},
-		"setup": {
+		    },
+		    "setup": {
           "code": "setup",
           "name": "SETUP service",
           "type": "setup",

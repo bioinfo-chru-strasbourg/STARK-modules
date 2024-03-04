@@ -10,7 +10,7 @@
 # PROD version 1 : 17/03/2022
 # PROD version 2 : 17/10/2023 : changelog
 	# remove os.getenv
-	# update AnnotSV to 3.3.6
+	# update AnnotSV to 3.4
 	# switch to aria2
 
 ################## Context ##################
@@ -88,7 +88,7 @@ if os.path.exists(f"{services}/cli/SETUPComplete.txt"):
 # DATABASE ANNOTSV #
 ####################
 
-ANNOTSV_VERSION = "3.3.6"
+ANNOTSV_VERSION = "3.4"
 ANNOTSV_TARBALL = f"Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
 ANNOTSV_SOURCE_EXTERNAL = f"https://www.lbgi.fr/~geoffroy/Annotations/{ANNOTSV_TARBALL}"
 ANNOTSV_PARAM_DATABASE_FOLDER_LINK = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/"

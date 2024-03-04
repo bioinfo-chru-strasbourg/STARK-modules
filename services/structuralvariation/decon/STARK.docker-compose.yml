@@ -54,7 +54,7 @@ services:
                 ]
             timeout: 10s
             interval: 60s
-            retries: 30
+            retries: 60
 
     stark-module-structuralvariation-submodule-decon-service-listener:
         image: stark/stark-module-common-submodule-listener-service-listener:2.0

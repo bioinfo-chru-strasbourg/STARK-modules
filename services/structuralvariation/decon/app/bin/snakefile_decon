@@ -23,7 +23,7 @@
 	# keep "Running.txt" file if failed, avoiding multiple analysis launch by the listener
 
 # PROD version 3 : 19/09/2023 changelog
-	# AnnotSV version 3.3.6 (include the vcf converter)
+	# AnnotSV version 3.4 (include the vcf converter)
 	# more options to process DECON bed, k-merisation
 	# R scripts rewrite, to speed up ReadInBam, separate plotting, call CNV with a reference bam list (see changlog in the R scripts for details)
 	# re-arrange/simplify/compact code a lot, input files copying is within the rules, f-string, etc.
@@ -195,6 +195,16 @@ def kmerisation(kmerSize, bedFile, kmerBedFile):
 				writeKbed.write(f"{chr}\t{start}\t{end}\t{gene}\n")
 	
 	print('Kmerisation done')
+
+def replace_path(file_paths, old_substring, new_substring):
+    replaced_paths = []
+    for path in file_paths:
+        replaced_path = path.replace(old_substring, new_substring)
+        replaced_paths.append(replaced_path)
+		if replaced_path.startswith("/"):
+            replaced_path = replaced_path[1:]
+        replaced_paths.append(replaced_path)
+    return replaced_paths
 
 def generate_html_report(result_dict, run_name, service_name, sample_list, external_base_path, internal_base_path, output_file='report.html'):
 	# Set up Jinja2 environment
@@ -770,9 +780,12 @@ onsuccess:
 	result_files_list_sample = searchfiles(os.path.normpath(config['run']), f"/*/{serviceName}/*", False)
 	result_files_list_all = searchfiles(os.path.normpath(config['run']), f"/*", False)
 	result_files_list = result_files_list_all + result_files_list_sample
+	
+	replaced_paths = replace_path(result_files_list, config['run'], "")
+	
 	sample_list.insert(0,"allsamples")
 	resultDict = defaultdict(dict)
-	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], result_files_list, pattern_include=serviceName, split_index=2)	
+	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
 	# Generate html report (need to add the run results)
 	generate_html_report(resultDict, runName, serviceName, sample_list,  config['EXTERNAL_BASE_PATH'], config['INTERNAL_BASE_PATH'], f"{outputDir}/{serviceName}_report.html")
