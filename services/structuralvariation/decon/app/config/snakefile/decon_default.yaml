@@ -72,12 +72,10 @@ THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: FALSE
 
+# Path of the template (template is template.html)
+TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv']
-# Base paths for html link
-EXTERNAL_BASE_PATH: "file:///L:/Archives/NGS/BAS/DOCKER_STARK_MAIN_FOLDER"
-INTERNAL_BASE_PATH: "/STARK"
-
 
 ############## Tools specific parameters ##############
 ### TOOLS PATH ###

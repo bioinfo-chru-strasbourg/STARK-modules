@@ -69,11 +69,10 @@ THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: True
 
+# Path of the template (template is template.html)
+TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
 RESULT_EXT_LIST: ['.pdf']
-# Base paths for html link
-EXTERNAL_BASE_PATH: "file:///L:/Archives/NGS/BAS/DOCKER_STARK_MAIN_FOLDER"
-INTERNAL_BASE_PATH: "/STARK"
 
 ############## Tools specific parameters ##############
 ### TOOLS PATH ###

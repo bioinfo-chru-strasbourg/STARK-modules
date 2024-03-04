@@ -197,19 +197,11 @@ def kmerisation(kmerSize, bedFile, kmerBedFile):
 	print('Kmerisation done')
 
 def replace_path(file_paths, old_substring, new_substring):
-    replaced_paths = []
-    for path in file_paths:
-        replaced_path = path.replace(old_substring, new_substring)
-        replaced_paths.append(replaced_path)
-		if replaced_path.startswith("/"):
-            replaced_path = replaced_path[1:]
-        replaced_paths.append(replaced_path)
-    return replaced_paths
+	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
 def generate_html_report(result_dict, run_name, service_name, sample_list, external_base_path, internal_base_path, output_file='report.html'):
 	# Set up Jinja2 environment
-	template_dir = '/app/template'
-	env = Environment(loader=FileSystemLoader(template_dir))
+	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
 	template = env.get_template('template.html')
 
 	# Render the template with the provided data
@@ -780,9 +772,7 @@ onsuccess:
 	result_files_list_sample = searchfiles(os.path.normpath(config['run']), f"/*/{serviceName}/*", False)
 	result_files_list_all = searchfiles(os.path.normpath(config['run']), f"/*", False)
 	result_files_list = result_files_list_all + result_files_list_sample
-	
 	replaced_paths = replace_path(result_files_list, config['run'], "")
-	
 	sample_list.insert(0,"allsamples")
 	resultDict = defaultdict(dict)
 	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
