@@ -31,8 +31,6 @@
                 {% for file, path in details.items() %}
                     <tr>
                         <td>{{ file }}</td>
-                        <!-- Replace internal_base_path with external_base_path -->
-                        {% set modified_path = path|replace(internal_base_path, external_base_path) %}
                         <td><a href="{{ path }}" target="_blank">{{ path }}</a></td>
                     </tr>
                 {% endfor %}
