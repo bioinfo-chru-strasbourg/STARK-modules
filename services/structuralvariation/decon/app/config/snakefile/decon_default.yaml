@@ -78,6 +78,7 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv']
 EXTERNAL_BASE_PATH: "file:///L:/Archives/NGS/BAS/DOCKER_STARK_MAIN_FOLDER"
 INTERNAL_BASE_PATH: "/STARK"
 
+
 ############## Tools specific parameters ##############
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
@@ -133,4 +134,4 @@ hpo: # HPO terms list describing the phenotype of the individual being investiga
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: split # split, full or both (defaut both)
-annotationdir: "/STARK/databases/AnnotSV/3.3.6/" # path to the annotation database 
+annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database 

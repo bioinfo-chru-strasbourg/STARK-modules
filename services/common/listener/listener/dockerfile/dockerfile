@@ -10,7 +10,7 @@
 	# add docker compose
 
 FROM almalinux:8
-
+RUN rpm --import https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux
 #######
 # YUM #
 #######

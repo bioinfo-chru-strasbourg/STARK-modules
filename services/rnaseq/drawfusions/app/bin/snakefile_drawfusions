@@ -16,7 +16,7 @@
 # use -p to display shell commands
 # use --lt to display docstrings of rules
 
-# input file = bam files indexed and .arriba.fusions.tsv from arriba
+# input file = bam files indexed and .arriba.fusions.tsv from arriba or STAR Fusion
 # output file = arriba pdf report
 ################## Import libraries ##################
 

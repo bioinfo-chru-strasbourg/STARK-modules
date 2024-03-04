@@ -12,7 +12,7 @@
 						"STARKCopyComplete.txt",
 						"!DRAWFUSIONSRunning.txt",
 						"!DRAWFUSIONSComplete.txt",
-						"!FDRAWFUSIONSFailed.txt"
+						"!DRAWFUSIONSFailed.txt"
 					],
 					"OR_1":{
 						"tags":[
