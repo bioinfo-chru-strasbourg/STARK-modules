@@ -8,7 +8,7 @@ import archives_processing
 import non_redundant_generator
 import results_provider
 import subprocess
-
+import hgmd_processing
 
 def launch_run(args):
     run_repository = args.run
@@ -69,6 +69,7 @@ def launch_run(args):
 
     synchronizer.processing_folder_vcf_synchronizer(run_informations)
     archives_processing.initialisation(run_informations)
+    hgmd_processing.annotate(run_informations)
     checker.configfile(run_informations)
     archives_processing.configfile_manager(run_informations)
     archives_processing.varank_launcher(run_informations)
