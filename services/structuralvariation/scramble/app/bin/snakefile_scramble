@@ -34,7 +34,7 @@ from collections import defaultdict
 from jinja2 import Environment, FileSystemLoader
 
 ################## Configuration file ##################
-configfile: "/app/config/snakefile/default.yaml"
+configfile: "/app/config/snakefile/scramble_default.yaml"
 
 ####################### FUNCTIONS #####################
 def parse_samplesheet(samplesheet_path):
@@ -97,7 +97,7 @@ def populate_dictionary(dictionary, samples_list, extensions_list, files_list, p
 def filter_files(files_list, filter_in=None, filter_out=None):
 	return [file_name for file_name in files_list if (not filter_in or filter_in in file_name) and (not filter_out or filter_out not in file_name)]
 
-def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ext):
+def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ext=None):
 	""" Function to search in a dictionary for a non-empty file path by iterating through sample_list and ext_list with inclusion and exclusion filters """
 	search_result = ""
 	
@@ -105,7 +105,7 @@ def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ex
 		for ext in ext_list:
 			try:
 				items = dictionary.get(sample, {}).get(ext, [])
-				if include_ext in items and exclude_ext not in items:
+				if include_ext in items and (exclude_ext is None or exclude_ext not in items):
 					if os.path.exists(items) and os.path.getsize(items) != 0:
 						search_result = items
 			except KeyError:
@@ -155,27 +155,6 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 
     print(f"HTML report generated successfully: {output_file}")
 
-def extract_nested_HPOList_dict(file_path):
-    # Read the TSV file into a DataFrame
-    df = pd.read_csv(file_path, sep='\t')
-    
-    # Initialize the nested dictionary
-    nested_HPOList_dict = {}
-    
-    # Iterate over each row in the DataFrame
-    for index, row in df.iterrows():
-        sample_id = row['Individual ID']
-        hpo_terms = row['HPOList'] if isinstance(row['HPOList'], str) else ""
-        
-        # If the sample ID is not in the dictionary, add it
-        if sample_id not in nested_HPOList_dict:
-            nested_HPOList_dict[sample_id] = {}
-        
-        # Add HPOList to the nested dictionary
-        nested_HPOList_dict[sample_id]['HPOList'] = hpo_terms
-    
-    return nested_HPOList_dict
-
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -221,6 +200,21 @@ else:
 	
 runDict = defaultdict(dict)
 populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
+
+# Process .ped files if exist
+ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped', '.genes.bed')
+if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
+	df = pd.read_csv(ped_file, sep='\t')
+	# Iterate over rows and update runDict
+	for index, row in df.iterrows():
+		individual_id = row['Individual ID']
+		hpo_list = row['HPOList']
+		runDict[individual_id]['hpo'] = hpo_list
+else:
+    # Add 'hpo' key with None value for all individuals if ped_file does not exist
+    for individual_id in runDict:
+        runDict[individual_id]['hpo'] = None
+
 print(dict(runDict))
 
 # Find bed file (Design)
@@ -439,11 +433,10 @@ rule AnnotSV:
 		mode=config['annotationMode'],
 		dummypath = config['DUMMY_PATH'],
 		annotation=config['annotationdir'],
-		hpo=lambda wildcards: hpo_values[wildcards.sample]['hpo']
-		# -hpo {params.hpo}
+		hpo=lambda wildcards: runDict[wildcards.sample]['hpo']
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
 rule sortvcf:

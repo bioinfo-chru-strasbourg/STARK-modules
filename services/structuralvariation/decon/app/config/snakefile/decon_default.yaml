@@ -47,7 +47,7 @@ EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC',
 FILTER_SAMPLE: []
 
 # Files to index into the dictionary depending on extension (endwith)
-EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes", ".tag"]
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes", ".tag", ".ped"]
 # List of files extension to process
 PROCESS_FILE: ['.bam']
 # How to copy input files : ls or rsync
