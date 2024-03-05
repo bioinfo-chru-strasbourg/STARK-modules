@@ -32,7 +32,7 @@ from collections import defaultdict
 from jinja2 import Environment, FileSystemLoader
 
 ################## Configuration file ##################
-configfile: "/app/config/snakefile/default.yaml"
+configfile: "/app/config/snakefile/drawfusions_default.yaml"
 
 ####################### FUNCTIONS #####################
 def parse_samplesheet(samplesheet_path):
@@ -95,7 +95,7 @@ def filter_files(files_list, filter_in=None, filter_out=None):
 	return [file_name for file_name in files_list if (not filter_in or filter_in in file_name) and (not filter_out or filter_out not in file_name)]
 
 			
-def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ext):
+def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ext=None):
 	""" Function to search in a dictionary for a non-empty file path by iterating through sample_list and ext_list with inclusion and exclusion filters """
 	search_result = ""
 	
@@ -103,7 +103,7 @@ def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ex
 		for ext in ext_list:
 			try:
 				items = dictionary.get(sample, {}).get(ext, [])
-				if include_ext in items and exclude_ext not in items:
+				if include_ext in items and (exclude_ext is None or exclude_ext not in items):
 					if os.path.exists(items) and os.path.getsize(items) != 0:
 						search_result = items
 			except KeyError:

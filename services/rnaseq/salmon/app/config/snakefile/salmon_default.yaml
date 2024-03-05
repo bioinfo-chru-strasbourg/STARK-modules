@@ -1,0 +1,78 @@
+##########################################################################
+# Config Yaml Version:     1.0
+# Description:             Yaml file to run Snakefile Salmon count module
+##########################################################################
+# DEV version 1 : 05/03/2023
+# Authoring : Thomas LAVAUX
+
+################## Directories and variables ##################
+# Name of the module = {serviceName} from listener.py/launcher.py
+serviceName: "Salmon"
+
+# Default repository/depository path from listener.py/launcher.py
+repository: "/STARK/output/repository"
+depository: "/STARK/output/depository"
+# Copy to depot directory (archive)
+DEPOT_COPY: False
+# Output directory if not repository
+OUTPUT_DIR: ""
+# Default path to the input datas == {run} from listener.py/launcher.py
+run: ""
+
+# Group and App default name
+GROUP_NAME: "UNKNOWN"
+APP_NAME: "UNKNOWN"
+# Bed file
+BED_FILE: ""
+# Genes file
+GENES_FILE: ""
+# Transcripts file
+TRANSCRIPTS_FILE: ""
+# List genes
+LIST_GENES: ""
+
+# Files to index into the dictionary depending on extension (endwith)
+EXT_INDEX_LIST : [".R1.fastq.gz",".R2.fastq.gz"]
+# List of files extension to process
+PROCESS_FILE: [".R1.fastq.gz",".R2.fastq.gz"]
+# How to copy input files : ls or rsync 
+PROCESS_CMD: 'ls'
+
+# Only analyse validation.bam/cram files
+VALIDATION_ONLY: False
+# Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
+ALIGNER_NAME:
+
+# Samples list exclusion (not to be analysed) ; exclude if startwith, case insensitive
+EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
+# Sample filter : only analyse those samples
+FILTER_SAMPLE: []
+
+# Extension files to copy after pipeline success
+# using brace extension, remove space between extensions
+INCLUDE_RSYNC: "{'*.sf','*/'}"
+# Extensions files to copy after pipeline failure
+INCLUDE_LOG_RSYNC: "{'*Failed.txt','*.log','*.err'}"
+
+# Search parameters
+RECURSIVE_SEARCH: False
+SEARCH_ARGUMENT: "*/*"
+## DEBUG ##
+DEBUG_MODE: False
+
+# Path of the template (template is template.html)
+TEMPLATE_DIR: "/app/template"
+# For result html report, list of extensions to report
+RESULT_EXT_LIST: ['.tsv']
+
+################## Tools parameters ##################
+# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
+REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+################## Salmon ##################
+# Thread to use
+THREADS: "4"
+# For Salmon quantification fastq mode, path to the index file
+REFSALMONQUANTFASTQ_PATH: "/STARK/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
+# SE ou PE Reads
+SALMON_FASTQ_TYPE: "PE"
+MISC_SALMON_OPTIONS: ""
