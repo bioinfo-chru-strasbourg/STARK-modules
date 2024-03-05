@@ -130,7 +130,7 @@ def extractlistfromfiles(file_list, ext_list, sep, position):
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
-def generate_html_report(result_dict, run_name, service_name, sample_list, external_base_path, internal_base_path, output_file='report.html'):
+def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html'):
 	# Set up Jinja2 environment
 	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
 	template = env.get_template('template.html')
@@ -140,9 +140,7 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, exter
 		runDict=result_dict,
 		runName=run_name,
 		serviceName=service_name,
-		sample_list=sample_list,
-		external_base_path=external_base_path,
-		internal_base_path=internal_base_path
+		sample_list=sample_list
 	)
 
 	# Save the rendered HTML to the output file
@@ -435,7 +433,7 @@ onsuccess:
 	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
 	# Generate html report (need to add the run results)
-	generate_html_report(resultDict, runName, serviceName, sample_list,  config['EXTERNAL_BASE_PATH'], config['INTERNAL_BASE_PATH'], f"{outputDir}/{serviceName}_report.html")
+	generate_html_report(resultDict, runName, serviceName, sample_list, f"{outputDir}/{serviceName}_report.html")
 	copy2('/app/template/style.css', outputDir)
 
 onerror:

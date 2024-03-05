@@ -136,7 +136,7 @@ def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
 
-def generate_html_report(result_dict, run_name, service_name, sample_list, external_base_path, internal_base_path, output_file='report.html'):
+def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html'):
     # Set up Jinja2 environment
 	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
     template = env.get_template('template.html')
@@ -146,9 +146,7 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, exter
 		runDict=result_dict,
 		runName=run_name,
 		serviceName=service_name,
-		sample_list=sample_list,
-		external_base_path=external_base_path,
-		internal_base_path=internal_base_path
+		sample_list=sample_list
 	)
 
     # Save the rendered HTML to the output file
@@ -156,6 +154,27 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, exter
         f.write(rendered_html)
 
     print(f"HTML report generated successfully: {output_file}")
+
+def extract_nested_HPOList_dict(file_path):
+    # Read the TSV file into a DataFrame
+    df = pd.read_csv(file_path, sep='\t')
+    
+    # Initialize the nested dictionary
+    nested_HPOList_dict = {}
+    
+    # Iterate over each row in the DataFrame
+    for index, row in df.iterrows():
+        sample_id = row['Individual ID']
+        hpo_terms = row['HPOList'] if isinstance(row['HPOList'], str) else ""
+        
+        # If the sample ID is not in the dictionary, add it
+        if sample_id not in nested_HPOList_dict:
+            nested_HPOList_dict[sample_id] = {}
+        
+        # Add HPOList to the nested dictionary
+        nested_HPOList_dict[sample_id]['HPOList'] = hpo_terms
+    
+    return nested_HPOList_dict
 
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
@@ -419,8 +438,9 @@ rule AnnotSV:
 		overlap=config['overlap'],
 		mode=config['annotationMode'],
 		dummypath = config['DUMMY_PATH'],
-		annotation=config['annotationdir']
-		# HPO -hpo HP:0001156,HP:0001363,HP:0011304"
+		annotation=config['annotationdir'],
+		hpo=lambda wildcards: hpo_values[wildcards.sample]['hpo']
+		# -hpo {params.hpo}
 	shell: 
 		"""
 		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
@@ -525,7 +545,7 @@ onsuccess:
 	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
 	# Generate html report (need to add the run results)
-	generate_html_report(resultDict, runName, serviceName, sample_list,  config['EXTERNAL_BASE_PATH'], config['INTERNAL_BASE_PATH'], f"{outputDir}/{serviceName}_report.html")
+	generate_html_report(resultDict, runName, serviceName, sample_list, f"{outputDir}/{serviceName}_report.html")
 	copy2('/app/template/style.css', outputDir)
 
 onerror:
