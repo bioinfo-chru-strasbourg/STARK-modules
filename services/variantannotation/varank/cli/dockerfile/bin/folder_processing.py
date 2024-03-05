@@ -6,6 +6,7 @@ from os.path import join as osj
 import archives_processing
 import non_redundant_generator
 import glob
+import hgmd_processing
 
 
 def launch_folder(args):
@@ -75,6 +76,7 @@ def launch_folder(args):
         log.info(f"Starting folder analysis from {folder_path}")
 
     archives_processing.root_vcf_initialisation(run_informations)
+    hgmd_processing.annotate(run_informations)
     checker.configfile(run_informations)
     archives_processing.configfile_manager(run_informations)
     archives_processing.varank_launcher(run_informations)
