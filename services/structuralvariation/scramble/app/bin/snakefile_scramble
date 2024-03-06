@@ -201,22 +201,6 @@ else:
 runDict = defaultdict(dict)
 populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
 
-# Process .ped files if exist
-ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped', '.genes.bed')
-if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
-	df = pd.read_csv(ped_file, sep='\t')
-	# Iterate over rows and update runDict
-	for index, row in df.iterrows():
-		individual_id = row['Individual ID']
-		hpo_list = row['HPOList']
-		runDict[individual_id]['hpo'] = hpo_list
-else:
-    # Add 'hpo' key with None value for all individuals if ped_file does not exist
-    for individual_id in runDict:
-        runDict[individual_id]['hpo'] = None
-
-print(dict(runDict))
-
 # Find bed file (Design)
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
@@ -253,6 +237,20 @@ for panel in panel_list:
 	# Create a new list for expand, names are filenames without sample and .genes.bed ext
 	panel_list_trunc.append(panel_trunc)
 
+# Process .ped files 
+ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
+# Add 'hpo' key with None value for all individuals
+for individual_id in runDict:
+    runDict[individual_id]['hpo'] = None
+
+if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
+	df = pd.read_csv(ped_file, sep='\t')
+	# Iterate over rows and update runDict
+	for index, row in df.iterrows():
+		individual_id = row['Individual ID']
+		hpo_list = row['HPOList']
+		if individual_id in sample_list:
+			runDict[individual_id]['hpo'] = hpo_list
 
 log_items = [
 	('Start of the analysis:', date_time),
@@ -276,6 +274,8 @@ if config['DEBUG_MODE']:
 			copy2(file_path, resultDir)
 	except FileNotFoundError:
 		pass
+
+print(dict(runDict))
 
 ################################################## RULES ##################################################
 
