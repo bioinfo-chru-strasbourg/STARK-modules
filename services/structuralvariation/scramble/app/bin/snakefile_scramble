@@ -249,6 +249,9 @@ if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 	for index, row in df.iterrows():
 		individual_id = row['Individual ID']
 		hpo_list = row['HPOList']
+
+		hpo_list = hpo_list.replace(" ", "")
+
 		if individual_id in sample_list:
 			runDict[individual_id]['hpo'] = hpo_list
 
