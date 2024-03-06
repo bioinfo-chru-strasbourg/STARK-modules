@@ -274,22 +274,6 @@ else:
 runDict = defaultdict(dict)
 populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
 
-# Process .ped files if exist
-ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped', '.genes.bed')
-if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
-	df = pd.read_csv(ped_file, sep='\t')
-	# Iterate over rows and update runDict
-	for index, row in df.iterrows():
-		individual_id = row['Individual ID']
-		hpo_list = row['HPOList']
-		runDict[individual_id]['hpo'] = hpo_list
-else:
-    # Add 'hpo' key with None value for all individuals if ped_file does not exist
-    for individual_id in runDict:
-        runDict[individual_id]['hpo'] = None
-
-print(dict(runDict))
-
 # Set a filelist with all the files tag ; file format is sample.tag
 tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
 
@@ -471,6 +455,21 @@ for aligner in aligner_list:
 # Option to remove gender in the gender_list to force A, XX or XY analysis only ; the calling of Y for male subject is not done
 gender_list = [gender for gender in gender_list if not (config['REMOVE_M'] and gender == 'XY') and not (config['REMOVE_F'] and gender == 'XX') and not (config['REMOVE_A'] and gender == 'A')]
 
+# Process .ped files 
+ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
+# Add 'hpo' key with None value for all individuals
+for individual_id in runDict:
+    runDict[individual_id]['hpo'] = None
+
+if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
+	df = pd.read_csv(ped_file, sep='\t')
+	# Iterate over rows and update runDict
+	for index, row in df.iterrows():
+		individual_id = row['Individual ID']
+		hpo_list = row['HPOList']
+		if individual_id in sample_list:
+			runDict[individual_id]['hpo'] = hpo_list
+
 log_items = [
 	('Start of the analysis:', date_time),
 	('Analysing run:', runName),
@@ -498,6 +497,7 @@ if config['DEBUG_MODE']:
 	except FileNotFoundError:
 		pass
 
+print(dict(runDict))
 
 ################################################## RULES ##################################################
 
