@@ -112,7 +112,7 @@ TOOL_NAME="hg19"
 TOOL_VERSION="2309"
 TOOL_TARBALL = f"{TOOL_VERSION}_{TOOL_NAME}.zip"
 TOOL_SOURCE_EXTERNAL = f"https://www.lbgi.fr/~geoffroy/Annotations/{TOOL_TARBALL}"
-TOOL_PARAM_DATABASE_FOLDER_LINK = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Exomiser/{TOOL_VERSION}/"
+TOOL_PARAM_DATABASE_FOLDER_LINK = f"{DATABASES}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Exomiser/{TOOL_VERSION}"
 
 logfile = f"{TOOL_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.setup.log"
 errfile = f"{TOOL_PARAM_DATABASE_FOLDER_LINK}{serviceName}.{date_time}.database.setup.err"
@@ -127,6 +127,7 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 	TOOL_TARBALL = TOOL_VERSION+"_"+TOOL_NAME+".zip"
 	TOOL_SOURCE_EXTERNAL = "https://data.monarchinitiative.org/exomiser/data/"+TOOL_TARBALL
 	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile, tool="aria2")
+	systemcall(f"mkdir -p  {TOOL_PARAM_DATABASE_FOLDER_LINK}/jar && cp -r /app/config/annotsv/exomiser-rest-prioritiser-12.1.0.jar {TOOL_PARAM_DATABASE_FOLDER_LINK}/jar >> {logfile} 2>> {errfile}")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	log_file(logfile, 'Installation end:', "\n", items = date_time_end)
 
