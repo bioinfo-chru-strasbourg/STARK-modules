@@ -26,9 +26,9 @@ RUN apt-get install -y unzip vim rsync aria2 iproute2
 
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
-	annotsv~=3.4 samtools~=1.17.0 bcftools~=1.17.0 bedtools~=2.31.0 \
-	snakemake~=7.32.4 pandas~=2.0.3 vcf2tsvpy~=0.6.1 natsort~=7.1.1 \
-	pyfaidx~=0.7.2.1 blast~=2.14.1 scramble~=1.0.2 && mamba clean -afy
+	annotsv~=3.4 samtools~=1.19.2 bcftools~=1.19.0 bedtools~=2.31.1 \
+	snakemake~=7.32.4 pandas~=2.2.1 vcf2tsvpy~=0.6.1 natsort~=8.3.1 \
+	pyfaidx~=0.8.1.1 blast~=2.14.1 scramble~=1.0.2 && mamba clean -afy
 
 # Variant convert
 WORKDIR /usr/lib

@@ -16,7 +16,11 @@ RUN apt-get update --fix-missing
 RUN apt-get install -y perl rsync unzip vim
 
 # Mamba install 
-RUN mamba install -y -c conda-forge -c bioconda -c biobuilds samtools~=1.17.0 bcftools~=1.17.0 bedtools~=2.31.0 snakemake~=7.32.4 pandas~=2.0.3 sumaclust~=1.0.31 fgbio~=2.1.0 bwa~=0.7.17 picard~=3.1.0 bbmap~=39.01 && mamba clean -afy
+RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
+	samtools~=1.19.2 bcftools~=1.19.0 bedtools~=2.31.1 \
+	snakemake~=7.32.4 pandas~=2.2.1 \
+	sumaclust~=1.0.31 fgbio~=2.1.0 bwa~=0.7.17 picard~=3.1.0 bbmap~=39.01 \
+	&& mamba clean -afy
 
 # Copy applications files (/app)
 COPY ./app /app

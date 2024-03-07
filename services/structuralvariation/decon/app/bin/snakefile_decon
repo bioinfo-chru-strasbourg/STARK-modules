@@ -795,7 +795,7 @@ onsuccess:
 	resultDict = defaultdict(dict)
 	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
-	# Generate html report (need to add the run results)
+	# Generate html report
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{outputDir}/{serviceName}_report.html")
 	copy2('/app/template/style.css', outputDir)
 
