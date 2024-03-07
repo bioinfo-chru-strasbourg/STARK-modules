@@ -459,15 +459,17 @@ gender_list = [gender for gender in gender_list if not (config['REMOVE_M'] and g
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
 # Add 'hpo' key with None value for all individuals
 for individual_id in runDict:
-    runDict[individual_id]['hpo'] = None
+	runDict[individual_id]['hpo'] = None
 
 if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
-	df = pd.read_csv(ped_file, sep='\t')
+	df = pd.read_csv(ped_file, sep='\t', dtype=str)
 	# Iterate over rows and update runDict
 	for index, row in df.iterrows():
 		individual_id = row['Individual ID']
 		hpo_list = row['HPOList']
 		
+		if isinstance(hpo_list, float):
+			hpo_list = str(hpo_list)
 		hpo_list = hpo_list.replace(" ", "")
 		
 		if individual_id in sample_list:
