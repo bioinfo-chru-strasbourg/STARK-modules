@@ -1,0 +1,70 @@
+#Default configuration of canoes submodule
+genomePath: "/STARK/databases/genomes/current/hg19.fa"
+
+#If sample contains one of those, sample will be discarded from the analysis
+exclude_sample: ["POOL_", "BlcADN", "blanc", "BlcPCR", "blcPCR", "Z_NTC"]
+exclude_tag: ["POOL"]
+valid_sex: ["A", "F", "M"]
+#Repository Path, it represent STARK run folder, and specify that it need copy and formatting from outputPath raw results
+repositoryPath: ""
+#DepositoryPAath, if set analysis will be copied in deposiotyr/archive folder
+depositoryPath: ""
+#Absolute path of Samplesheet optionnal
+samplesheetPath: ""
+#Absolute path of run folder required
+runPath: ""
+#Type of analysis Autosomal minimum optionnal
+analysis: []
+#Path of a bed file if it is not in run folder
+bedPath: ""
+#Value bed in piece of int exemple 500
+splitbed: ""
+#Defautl output path
+outputPath: "/app/res"
+# Service
+service: ""
+#Copy plot, basically only for HUSDIAGGEN, it's enable when repository copy is activate
+copyplot: False
+
+###########################
+## Path scripts binaries ##
+###########################
+
+src: "/app/scripts"
+canoes: "/app/scripts/CANOES.v2.R"
+plotscript: "/app/scripts/plotCoverage.R"
+
+
+#Convert output SAM script tsv to VCF
+convertype: "vcf"
+#config SAM script
+annotsvconf: "/STARK/config/structuralvariation/canoes/cli/variantconvert/config_annotsv3.json"
+#Localisation of SAM script converter
+convertscript: "/tools/variantconvert/variantconvert/__main__.py convert"
+#config for SAM script
+bed2vcfjson: "/STARK/config/structuralvariation/canoes/cli/variantconvert/config_canoes_bed.json"
+
+################## AnnotSV params
+genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
+overlap: 100 # default 100
+annotationMode: full # split, full or both (defaut both)
+annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database
+
+#############################
+####   CANOES options   ####
+#############################
+
+#pval:
+#     average rate of occurrence of CNVs (real) default is 1e-08
+pval: "1e-08"
+#   dist:
+#     expected distance between targets in a CNV (integer) default is 70,000
+dist: "70000"
+#   tnum:
+#     expected number of targets in a CNV (integer) default is 6
+tnum: "6"
+#   numref
+#     maximum number of reference samples to use (integer) default is 30
+#     the weighted variance calculations will take a long time if too
+#     many reference samples are used
+numref: "30"

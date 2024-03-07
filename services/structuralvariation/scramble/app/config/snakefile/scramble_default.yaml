@@ -103,7 +103,6 @@ scramble_mode: "--eval-dels"
 REFMEI_PATH: "/opt/conda/share/scramble/resources/MEI_consensus_seqs.fa"
 
 ################## AnnotSV params
-hpo: # HPO terms list describing the phenotype of the individual being investigated Values: use comma, semicolon or space separated class values Default = "" (e.g.: "HP:0001156,HP:0001363,HP:0011304") = only for individual analysis
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: full # split, full or both (defaut both)
