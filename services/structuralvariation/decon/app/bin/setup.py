@@ -134,6 +134,7 @@ if os.path.isdir(TOOL_PARAM_DATABASE_FOLDER_LINK) == False:
 	TOOL_TARBALL = TOOL_VERSION+"_"+TOOL_NAME+".zip"
 	TOOL_SOURCE_EXTERNAL = "https://data.monarchinitiative.org/exomiser/data/"+TOOL_TARBALL
 	installdatabase(TOOL_PARAM_DATABASE_FOLDER_LINK, TOOL_SOURCE_EXTERNAL, TOOL_TARBALL, logfile, errfile, tool="aria2")
+	systemcall(f"mkdir -p  {TOOL_PARAM_DATABASE_FOLDER_LINK}/jar && cp -r /app/config/annotsv/exomiser-rest-prioritiser-12.1.0.jar {TOOL_PARAM_DATABASE_FOLDER_LINK}/jar >> {logfile} 2>> {errfile}")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	log_file(logfile, 'Installation end:', "\n", items = date_time_end)
 
