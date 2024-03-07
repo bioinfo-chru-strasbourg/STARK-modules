@@ -1058,8 +1058,7 @@ rule bedtovcf:
 
 rule AnnotSV:
 	'''
-	 AnnotSV need bedtools to work ie you have to specify the directory of bedtools binaries in -bedtools argument
-	 Annotation process by annotSV 3.1, generate a TSV file
+	 Annotation with AnnotSV from a vcf file
 	 '''
 	input:
 		output+"/CANOES/canoes.vcf"

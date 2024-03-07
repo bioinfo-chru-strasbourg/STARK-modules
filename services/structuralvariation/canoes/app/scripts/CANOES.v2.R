@@ -1,6 +1,33 @@
 # DEPENDENCIES
 #    nnls, Hmisc, mgcv, plyr
 
+library(optparse)
+
+# Function to parse arguments
+parse_args <- function() {
+  option_list <- list(
+    make_option(c("--gc-file"), type="character", default="gc.txt", 
+                help="File containing the GC values"),
+    make_option(c("--reads-file"), type="character", default="canoes.reads.txt", 
+                help="File containing the reads data"),
+    make_option(c("--p-value"), type="numeric", default=1e-08, 
+                help="P-value parameter for CNV calling"),
+    make_option(c("--Tnum"), type="integer", default=6, 
+                help="Tnum parameter for CNV calling"),
+    make_option(c("--D"), type="integer", default=70000, 
+                help="D parameter for CNV calling"),
+    make_option(c("--numrefs"), type="integer", default=30, 
+                help="Numrefs parameter for CNV calling"),
+    make_option(c("--homdel-mean"), type="numeric", default=0.2, 
+                help="Homdel-mean parameter for CNV calling")
+  )
+  
+  opt_parser <- OptionParser(option_list=option_list)
+  opt <- parse_args(opt_parser)
+  return(opt)
+}
+
+
 Test <- function(){
   # read in the data
   gc <- read.table("gc.txt")$V2
@@ -40,6 +67,9 @@ NUM.STATES=3
 DELETION=1
 NORMAL=2
 DUPLICATION=3
+
+options <- parse_args()
+Test(options$gc_file, options$reads_file, options$p_value, options$Tnum, options$D, options$numrefs, options$homdel_mean)
 
 # PlotCNV
 #     Plots count data for targets of interest
