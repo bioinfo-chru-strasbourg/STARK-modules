@@ -1,70 +1,79 @@
-#Default configuration of canoes submodule
+# Name of the module = {serviceName} from listener.py/launcher.py
+serviceName: "CANOES"
+# Default repository/depository path from listener.py/launcher.py
+repository: "/STARK/output/repository"
+depository: "/STARK/output/depository"
+# Output directory if not repository
+OUTPUT_DIR: ""
+# Copy to depository directory
+DEPOT_COPY: True
+
+# Group and App default name
+GROUP_NAME: "UNKNOWN"
+APP_NAME: "UNKNOWN"
+# Default path to the input datas == {run} from listener.py/launcher.py
+run: ""
+# Bed file
+BED_FILE: ""
+# Genes file
+GENES_FILE: ""
+# Transcripts file
+TRANSCRIPTS_FILE: ""
+# List genes
+LIST_GENES: ""
+
+# Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
+EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
+# Sample filter : only analyse those samples
+FILTER_SAMPLE: []
+
+# Files to index into the dictionary depending on extension (endwith)
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes", ".tag", ".ped"]
+# List of files extension to process
+PROCESS_FILE: ['.bam']
+# How to copy input files : ls or rsync
+PROCESS_CMD: 'ls'
+# Append an aligner name if no empty (from sample.bam to sample.alignername.bam)
+ALIGNER_NAME:
+# Only analyse sample.validation.aligner.bam/cram files
+VALIDATION_ONLY: False
+
+# Extension files to copy after pipeline success
+# using brace extension, remove space between extensions
+INCLUDE_RSYNC: "{'*.vcf.gz','*.vcf.gz.tbi','*.tsv','*.bed','*.txt',*.log,'*.err','*.pdf','*.html','*.css','*/'}"
+# Extensions files to copy after pipeline failure
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed','*/'}"
+
+##### Search parameters of input for the search function #####
+RECURSIVE_SEARCH: False
+SEARCH_ARGUMENT: "/*/STARK/*"
+
+# For samtools indexing
+THREADS: "4"
+## DEBUG ##
+DEBUG_MODE: FALSE
+
+# Path of the template (template is template.html)
+TEMPLATE_DIR: "/app/template"
+# List of extensions to include in the report.html
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv']
+
+# kmerisation of DECON bed (integer) (ex 250)
+KMER: ""
+
+################## Misc params ##################
 genomePath: "/STARK/databases/genomes/current/hg19.fa"
+scripts: "/app/scripts"
 
-#If sample contains one of those, sample will be discarded from the analysis
-exclude_sample: ["POOL_", "BlcADN", "blanc", "BlcPCR", "blcPCR", "Z_NTC"]
-exclude_tag: ["POOL"]
-valid_sex: ["A", "F", "M"]
-#Repository Path, it represent STARK run folder, and specify that it need copy and formatting from outputPath raw results
-repositoryPath: ""
-#DepositoryPAath, if set analysis will be copied in deposiotyr/archive folder
-depositoryPath: ""
-#Absolute path of Samplesheet optionnal
-samplesheetPath: ""
-#Absolute path of run folder required
-runPath: ""
-#Type of analysis Autosomal minimum optionnal
-analysis: []
-#Path of a bed file if it is not in run folder
-bedPath: ""
-#Value bed in piece of int exemple 500
-splitbed: ""
-#Defautl output path
-outputPath: "/app/res"
-# Service
-service: ""
-#Copy plot, basically only for HUSDIAGGEN, it's enable when repository copy is activate
-copyplot: False
-
-###########################
-## Path scripts binaries ##
-###########################
-
-src: "/app/scripts"
-canoes: "/app/scripts/CANOES.v2.R"
-plotscript: "/app/scripts/plotCoverage.R"
-
-
-#Convert output SAM script tsv to VCF
-convertype: "vcf"
-#config SAM script
-annotsvconf: "/STARK/config/structuralvariation/canoes/cli/variantconvert/config_annotsv3.json"
-#Localisation of SAM script converter
-convertscript: "/tools/variantconvert/variantconvert/__main__.py convert"
-#config for SAM script
-bed2vcfjson: "/STARK/config/structuralvariation/canoes/cli/variantconvert/config_canoes_bed.json"
-
-################## AnnotSV params
+################## AnnotSV params ##################
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: full # split, full or both (defaut both)
 annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database
 
-#############################
-####   CANOES options   ####
-#############################
-
-#pval:
-#     average rate of occurrence of CNVs (real) default is 1e-08
-pval: "1e-08"
-#   dist:
-#     expected distance between targets in a CNV (integer) default is 70,000
-dist: "70000"
-#   tnum:
-#     expected number of targets in a CNV (integer) default is 6
-tnum: "6"
-#   numref
-#     maximum number of reference samples to use (integer) default is 30
-#     the weighted variance calculations will take a long time if too
-#     many reference samples are used
-numref: "30"
+##################   CANOES params   ##################
+pval: "1e-08" # pval:average rate of occurrence of CNVs (real) default is 1e-08
+dist: "70000" # dist: expected distance between targets in a CNV (integer) default is 70,000
+tnum: "6" # tnum: expected number of targets in a CNV (integer) default is 6
+numref: "30" # numref : maximum number of reference samples to use (integer) default is 30
+# the weighted variance calculations will take a long time if too many reference samples are used

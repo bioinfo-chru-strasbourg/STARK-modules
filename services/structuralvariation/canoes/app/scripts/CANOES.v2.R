@@ -19,7 +19,13 @@ parse_args <- function() {
     make_option(c("--numrefs"), type="integer", default=30, 
                 help="Numrefs parameter for CNV calling"),
     make_option(c("--homdel-mean"), type="numeric", default=0.2, 
-                help="Homdel-mean parameter for CNV calling")
+                help="Homdel-mean parameter for CNV calling"),
+    make_option(c("--output-file"), type="character", default="output.csv", 
+                help="Output file name for xcnvs"),
+    make_option(c("--genotyping-output"), type="character", default="genotyping_S2_output.csv", 
+                help="Output file name for genotyping.S2"),
+    make_option(c("--pdf-output"), type="character", default="CNVplots.pdf", 
+                help="Output PDF file name for plots")
   )
   
   opt_parser <- OptionParser(option_list=option_list)
@@ -27,39 +33,42 @@ parse_args <- function() {
   return(opt)
 }
 
-
-Test <- function(){
-  # read in the data
-  gc <- read.table("gc.txt")$V2
-  canoes.reads <- read.table("canoes.reads.txt")
-  # rename the columns of canoes.reads
+# Test function
+Test <- function(gc_file, reads_file, p_value, Tnum, D, numrefs, homdel_mean, output_file, genotyping_output, pdf_output) {
+  gc <- read.table(gc_file)$V2
+  canoes.reads <- read.table(reads_file)
   sample.names <- paste("S", seq(1:26), sep="")
   names(canoes.reads) <- c("chromosome", "start", "end", sample.names)
-  # create a vector of consecutive target ids
   target <- seq(1, nrow(canoes.reads))
-  # combine the data into one data frame
   canoes.reads <- cbind(target, gc, canoes.reads)
-  # call CNVs in each sample
-  # create a vector to hold the results for each sample
+  
   xcnv.list <- vector('list', length(sample.names))
-  for (i in 1:length(sample.names)){
-    xcnv.list[[i]] <- CallCNVs(sample.names[i], canoes.reads) 
+  for (i in 1:length(sample.names)) {
+    xcnv.list[[i]] <- CallCNVs(sample.names[i], canoes.reads, p_value, Tnum, D, numrefs, FALSE, homdel_mean) 
   }
-  # combine the results into one data frame
+  
   xcnvs <- do.call('rbind', xcnv.list)
-  # inspect the first two CNV calls
-  print(head(xcnvs, 2))
-  # plot all the CNV calls to a pdf
-  pdf("CNVplots.pdf")
-  for (i in 1:nrow(xcnvs)){
-     PlotCNV(canoes.reads, xcnvs[i, "SAMPLE"], xcnvs[i, "TARGETS"])
+  
+  # Writing xcnvs to a CSV file
+  write.csv(xcnvs, file = output_file)
+  
+  pdf(pdf_output)
+  for (i in 1:nrow(xcnvs)) {
+    PlotCNV(canoes.reads, xcnvs[i, "SAMPLE"], xcnvs[i, "TARGETS"])
   }
   dev.off()
-  # genotype all the CNVs calls made above in sample S2
-  genotyping.S2 <- GenotypeCNVs(xcnvs, "S2", canoes.reads)
-  # inspect the genotype scores for the first two CNV calls
-  print(head(genotyping.S2, 2))
+  
+  genotyping.S2 <- GenotypeCNVs(xcnvs, "S2", canoes.reads, p_value, Tnum, D, numrefs)
+  
+  # Writing genotyping.S2 to a CSV file
+  write.csv(genotyping.S2, file = genotyping_output)
 }
+
+# Parse arguments
+options <- parse_args()
+
+# Call the Test function with parsed arguments
+Test(options$gc_file, options$reads_file, options$p_value, options$Tnum, options$D, options$numrefs, options$homdel_mean, options$output_file, options$genotyping_output, options$pdf_output)
 
 # Constants
 NUM.ABNORMAL.STATES=2
@@ -68,8 +77,6 @@ DELETION=1
 NORMAL=2
 DUPLICATION=3
 
-options <- parse_args()
-Test(options$gc_file, options$reads_file, options$p_value, options$Tnum, options$D, options$numrefs, options$homdel_mean)
 
 # PlotCNV
 #     Plots count data for targets of interest
