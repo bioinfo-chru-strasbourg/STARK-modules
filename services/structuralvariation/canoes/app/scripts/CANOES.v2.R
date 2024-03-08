@@ -1,6 +1,3 @@
-# DEPENDENCIES
-#    nnls, Hmisc, mgcv, plyr
-
 library(optparse)
 
 # Function to parse arguments
