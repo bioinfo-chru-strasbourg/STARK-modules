@@ -405,9 +405,11 @@ sample_count = len(sample_list)
 ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
 rule all:
-	""" Output a design vcf.gz with the bams list and the bed provided """
+	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", aligner=aligner_list, sample=sample_list)
+		# expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", aligner=aligner_list, sample=sample_list),
+		f"{resultDir}/GCpercent.{gender}.tsv",
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
 
 rule help:
 	"""
@@ -472,7 +474,7 @@ rule gender_gc_percent:
 	output:	temp(f"{resultDir}/GCpercent.{gender}.tsv")
 	shell:
 		"""
-			if [[ "{wildcards.gender}" == "A" ]]; then
+			if [[ {gender} == "A" ]]; then
 				grep -vE '^chrX|^chrY' {input} > {output};
 			else
 				cp {input} {output};
@@ -481,12 +483,14 @@ rule gender_gc_percent:
 
 rule bam_to_multicov:
 	""" From each sample bam file generate a coverage file """
-	input: lambda wildcards: runDict[wildcards.sample]['bam']
+	input: 
+		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
+		bai = f"{resultDir}/{{sample}}.{{aligner}}.bai"
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv"
 	params: scripts = config["scripts"],
 			bed = config['BED_FILE']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"
-	shell:" python3 {params.scripts}/pybedtools.py --bam {input} --bed {params.bed} -q 20 -o {output} 2> {log} "
+	shell:" python3 {params.scripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 2> {log} "
 
 rule merge_multicov_to_reads:
 	""" Merge and reformating coverage files """
@@ -640,12 +644,6 @@ onsuccess:
 	with open(logfile, "a+") as f:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
-	for sample in sample_list:
-		for pdf in pdf_list:
-			if sample in pdf:
-				shell(f"mv {resultDir}/pdfs/{pdf} {resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/")
-	shell(f"rm -rf {resultDir}/pdfs")
-
 	# Clear existing output directories
 	for sample in sample_list:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
