@@ -19,29 +19,29 @@ configfile: "/app/config/snakefile/canoes_default.yaml"
 ####################### FUNCTIONS ######################
 
 def createplotstats(coverage):
-    '''
-    Generate necessary stats to plot CANOES analysis bar and boxplot
-    Return a dictionary with stats
-    '''
-    dico = {'header': [], 'depth': []}
-    with open(coverage, 'r') as file:
-        for line in file:
-            if line.startswith('chrom'):
-                header_line = line.strip().split('\t')
-                dico['header'].append('Chr:Start-End')
-                dico['header'].extend(header_line[3:])
-            elif line.startswith('chrX') or line.startswith('chrY'):
-                continue
-            else:
-                line_elements = line.strip().split('\t')
-                metrics = []
-                for depth in map(int, line_elements[3:]):
-                    try:
-                        metrics.append(str(round(float(depth / (int(line_elements[2]) - int(line_elements[1]))), 4)).replace(',', '.'))
-                    except ZeroDivisionError:
-                        metrics.append('0')
-                dico['depth'].append(line_elements[0] + ':' + line_elements[1] + '-' + line_elements[2] + '\t' + '\t'.join(metrics))
-    return dico
+	'''
+	Generate necessary stats to plot CANOES analysis bar and boxplot
+	Return a dictionary with stats
+	'''
+	dico = {'header': [], 'depth': []}
+	with open(coverage, 'r') as file:
+		for line in file:
+			if line.startswith('chrom'):
+				header_line = line.strip().split('\t')
+				dico['header'].append('Chr:Start-End')
+				dico['header'].extend(header_line[3:])
+			elif line.startswith('chrX') or line.startswith('chrY'):
+				continue
+			else:
+				line_elements = line.strip().split('\t')
+				metrics = []
+				for depth in map(int, line_elements[3:]):
+					try:
+						metrics.append(str(round(float(depth / (int(line_elements[2]) - int(line_elements[1]))), 4)).replace(',', '.'))
+					except ZeroDivisionError:
+						metrics.append('0')
+				dico['depth'].append(line_elements[0] + ':' + line_elements[1] + '-' + line_elements[2] + '\t' + '\t'.join(metrics))
+	return dico
 
 def parse_samplesheet(samplesheet_path):
 	"""
@@ -407,16 +407,12 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams list and the bed provided """
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", aligner=aligner_list, sample=sample_list),
-		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv", aligner=aligner_list),
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
-		f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv",
-		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess", aligner=aligner_list, gender=gender_list)
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", aligner=aligner_list, sample=sample_list)
 
 rule help:
 	"""
-	General help for DECON
-	Launch snakemake -s snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory
+	General help for CANOES
+	Launch snakemake -s snakefile_canoes -c(numberofthreads) --config run=absolutepathoftherundirectory
 	To launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
 	Every variable defined in the yaml file can be change
 	Separate multiple variable with a space (ex  --config run=runname transProb=0.05 var1=0.05 var2=12)
@@ -458,11 +454,11 @@ rule indexing:
 
 rule gc_percent:
 	""" Compute GC percent """
-	input: config["genomePath"]
+	input: config["REFGENEFA_PATH"]
 	output: temp(f"{resultDir}/GCpercent_header.tsv")
 	params: config['BED_FILE']
 	log: f"{resultDir}/GCpercent.log"
-	shell: " gatk --java-options "-Xmx8G" AnnotateIntervals -L {params} -R {input} -imr OVERLAPPING_ONLY -O {output} 2> {log} "
+	shell: " gatk --java-options -Xmx8G AnnotateIntervals -L {params} -R {input} -imr OVERLAPPING_ONLY -O {output} 2> {log} "
 
 rule filter_gc_percent_file:
 	""" Filter out the GC file, removing the 27 first lines """
@@ -494,7 +490,7 @@ rule bam_to_multicov:
 
 rule merge_multicov_to_reads:
 	""" Merge and reformating coverage files """
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv" sample=samplelist)
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", sample=sample_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.coverage.tsv"
 	log: f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.coverage.log"
 	run:
@@ -536,10 +532,10 @@ rule plot_coverage:
 	""" Generate plot """
 	input: rules.coverage_gen.output
 	output: f"{resultDir}/{serviceName}/"
-	params: script = config['script']
-	shell: " Rscript {params.script}/plotCoverage.R --sample {sample} --input {input} --output {output}"
+	params: scripts = config['scripts']
+	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output}"
 
- rule gender_analysis_reads:
+rule gender_analysis_reads:
 	""" Coverage for sample """
 	input: rules.merge_multicov_to_reads.output
 	output:	f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.{gender}.coverage.tsv"
@@ -621,8 +617,8 @@ rule bedtovcf:
 	input: f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.bed"
 	output: f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.vcf"
 	log: f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.bedtovcf.log"
-	params:	scriptsconfig = config["scriptsconfig"]
-	shell: "variantconvert convert -i {input} -o {output} -c {params.scriptsconfig}/config_canoes_bed.json 2> {log} "
+	params:	scripts = config["scripts"]
+	shell: "variantconvert convert -i {input} -o {output} -c {params.scripts}/config_canoes_bed.json 2> {log} "
 
 # [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
 
