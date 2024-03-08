@@ -60,9 +60,14 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv']
 
 # kmerisation of DECON bed (integer) (ex 250)
 KMER: ""
-
+# Remove M or F or Autosome analysis
+# Default is autosome with all the patients ; chrX can be performed only for Male or Female patients, with a separate call by sex
+REMOVE_F: False
+REMOVE_M: False
+REMOVE_A: False
 ################## Misc params ##################
-genomePath: "/STARK/databases/genomes/current/hg19.fa"
+# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
+REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 scripts: "/app/scripts"
 
 ################## AnnotSV params ##################
