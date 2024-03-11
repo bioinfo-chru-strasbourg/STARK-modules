@@ -1,3 +1,17 @@
+##########################################################################
+# CANOES script         Version: 1
+# Description:          R script to call CNVs (CNVs with an Arbitrary Number Of Exome Samples)
+##########################################################################
+
+################## Context ##################
+# Original R script from http://www.columbia.edu/~ys2411/canoes/CANOES.R
+
+########## Note ########################################################################################
+# DEV v1 11/03/2024
+# Changelog
+#   - optparse script
+########################################################################################################
+
 library(optparse)
 
 # Function to parse arguments
