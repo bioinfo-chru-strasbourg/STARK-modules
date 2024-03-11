@@ -14,22 +14,104 @@ from os.path import join as osj
 
 ################## Configuration file ##################
 configfile: "/app/config/snakefile/canoes_default.yaml"
-
-
 ####################### FUNCTIONS ######################
+
+def generate_multicov_output(input_files, output_file):
+	# Initialize an empty DataFrame
+	df = pd.DataFrame()
+
+	# Define the header
+	header = ["chrom", "start", "end"]
+
+	# Loop through input files
+	for multicovfile in input_files:
+		sample_name = multicovfile.split("/")[-1].split(".")[0]
+		header.append(sample_name)
+
+		# Read data from file and append to DataFrame
+		with open(multicovfile, "r") as file:
+			for line in file:
+				fields = line.strip().split("\t")
+				index = "\t".join(fields[:3])
+				value = fields[-1]
+
+				# Check if index already exists in DataFrame
+				if index not in df.index:
+					df.loc[index] = [None] * len(header)
+				df.at[index, sample_name] = value
+
+	# Write DataFrame to output file
+	df.columns = header
+	df.to_csv(output_file, sep='\t', index=False)
+
+def extract_columns_per_sample(input_file, output_file):
+	# Read the input file into a pandas DataFrame
+	df = pd.read_csv(input_file, sep='\t')
+
+	# Write the data to the specified output file
+	for column in df.columns[1:]:  # Exclude the first column (chromosome segment)
+		df[[df.columns[0], column]].to_csv(output_file, sep='\t', index=False, header=False)
+
+def addOtherSamples(sexless_list, sexlist, infos, run, exclude_tag):
+	new_sample_list = []
+	project = os.path.dirname(run)
+	runID = os.path.basename(run)
+
+	if not os.path.exists(project):
+		return infos, sexlist, new_sample_list
+
+	searchrun = systemcall(f"find {project} -maxdepth 1 -mindepth 1 -type d -mtime -30 ! -name {runID}")
+	if not searchrun:
+		searchrun = systemcall(f"find {project} -maxdepth 1 -mindepth 1 -type d -mtime -60 ! -name {runID}")
+		if not searchrun:
+			for v in sexless_list:
+				sexlist.remove(v)
+			return infos, sexlist, new_sample_list
+		runlist = searchrun
+
+	else:
+		runlist = searchrun
+
+	for x in sexless_list:
+		infos_supp = {}
+
+		for runs in runlist:
+			if os.path.exists(os.path.join(runs, "STARKCopyComplete.txt")):
+				for sampleID in os.listdir(runs):
+					if os.path.isdir(os.path.join(runs, sampleID)):
+						tags = systemcall(f"find {os.path.join(runs, sampleID)} -maxdepth 2 -name {sampleID}.tag")[0]
+						if tags:
+							sex = ''
+							row = open(tags, 'r').readline().strip().split('!')
+							for tag in row:
+								if 'SEX' in tag and ('_' in tag or '#' in tag):
+									sex = tag.split('_')[-1] if '_' in tag else tag.split('#')[-1]
+								elif any(exclude in tag for exclude in exclude_tag):
+									sex = ''
+								break
+							if sex == x:
+								bam = systemcall(f"find {os.path.join(runs, sampleID)} -maxdepth 2 -name '*.bam' ! -name '*validation*'")[0]
+								if sex and bam and len(infos_supp) < 4:
+									infos_supp[sampleID] = {'sex': sex, 'bam': bam}
+								else:
+									infos.update(infos_supp)
+									return infos, sexlist, new_sample_list
+	for v in sexless_list:
+		sexlist.remove(v)
+	return infos, sexlist, new_sample_list
 
 def createplotstats(coverage):
 	'''
 	Generate necessary stats to plot CANOES analysis bar and boxplot
 	Return a dictionary with stats
 	'''
-	dico = {'header': [], 'depth': []}
+	dictionary = {'header': [], 'depth': []}
 	with open(coverage, 'r') as file:
 		for line in file:
 			if line.startswith('chrom'):
 				header_line = line.strip().split('\t')
-				dico['header'].append('Chr:Start-End')
-				dico['header'].extend(header_line[3:])
+				dictionary['header'].append('Chr:Start-End')
+				dictionary['header'].extend(header_line[3:])
 			elif line.startswith('chrX') or line.startswith('chrY'):
 				continue
 			else:
@@ -40,8 +122,8 @@ def createplotstats(coverage):
 						metrics.append(str(round(float(depth / (int(line_elements[2]) - int(line_elements[1]))), 4)).replace(',', '.'))
 					except ZeroDivisionError:
 						metrics.append('0')
-				dico['depth'].append(line_elements[0] + ':' + line_elements[1] + '-' + line_elements[2] + '\t' + '\t'.join(metrics))
-	return dico
+				dictionary['depth'].append(line_elements[0] + ':' + line_elements[1] + '-' + line_elements[2] + '\t' + '\t'.join(metrics))
+	return dictionary
 
 def parse_samplesheet(samplesheet_path):
 	"""
@@ -407,11 +489,13 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
-		f"{resultDir}/GCpercent.{gender}.tsv",
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", aligner=aligner_list, sample=sample_list),
+		expand(f"{resultDir}/GCpercent.{gender}.tsv", gender=gender_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list),
-		#expand(f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.coverage.stats.tsv", aligner=aligner_list),
-		#expand(f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.csv", aligner=aligner_list)
+		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.tsv", aligner=aligner_list, gender=gender_list),
+		f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.csv
+
 
 rule help:
 	"""
@@ -496,53 +580,19 @@ rule bam_to_multicov:
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"
 	shell:" python3 {params.scripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 1> {log} "
 
+
+rule merge_multicov:
+	""" Merge all sample files from multicov and add header """
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.multicoverage.tsv"
+	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.log"
+	run: generate_multicov_output(input_files=input, output_file=output[0])
+
+
 rule plot_coverage:
-	""" Generate plot """
-	input: rules.bam_to_multicov.output
-	output: 
-			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png",
-			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.png"
-	params: scripts = config['scripts']
-	log:
-		log=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.log",
-		err=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.err"
-	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output} 1> {log.log} 2> {log.err}"
-
-
-rule merge_multicov_to_reads:
-	""" Merge and reformating coverage files """
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", sample=sample_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.coverage.tsv"
-	log: f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.coverage.log"
-	run:
-		data = {}
-		header = ["chrom", "start", "end"]
-
-		for multicovfile in input:
-			sample_name = multicovfile.split("/")[-1].split(".")[0]
-			header.append(sample_name)
-			
-			with open(multicovfile, "r") as file:
-				for line in file:
-					fields = line.strip().split("\t")
-					index = "\t".join(fields[:3])
-					value = fields[-1]
-					
-					if index not in data:
-						data[index] = {}
-					data[index][sample_name] = value
-
-		with open(output[0], "w") as output_file:
-			output_file.write("\t".join(header) + "\n")
-			
-			for index, sample_data in data.items():
-				row_values = [index] + [sample_data.get(sample_name, "") for sample_name in header[3:]]
-				output_file.write("\t".join(row_values) + "\n")
-
-rule coverage_gen:
-	""" Generate plot stats coverage """
-	input:  rules.merge_multicov_to_reads.output
-	output:	f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.coverage.stats.tsv"
+	""" Generate stats coverage """
+	input:  rules.merge_multicov.output
+	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.stats.tsv"
 	run:
 		values = createplotstats(input[0])
 		with open(output[0], 'w+') as o:
@@ -551,10 +601,28 @@ rule coverage_gen:
 				o.write(val+'\n')
 		print("#[INFO] Ending parse "+input[0]+" write output in "+output[0])
 
+rule split_per_sample:
+	""" Split  stats per sample """
+	input:  rules.plot_coverage.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.coverage.stats.tsv"
+	run: extract_columns_per_sample(input[0], output[0])
+
+rule plot:
+	""" Generate plot per sample """
+	input: rules.split_per_sample.output
+	output: 
+			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png"
+			#f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.png"
+	params: scripts = config['scripts']
+	log:
+		log=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.log",
+		err=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.err"
+	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output} 1> {log.log} 2> {log.err} "
+
 rule gender_analysis_reads:
-	""" Coverage for sample """
-	input: rules.merge_multicov_to_reads.output
-	output:	f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.{gender}.coverage.tsv"
+	""" Split coverage datas per gender """
+	input: rules.merge_multicov.output
+	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.nofix.tsv"
 	run:
 		sample_gender = []
 		with open(output[0], "w") as f:
@@ -578,19 +646,23 @@ rule gender_analysis_reads:
 							continue
 					f.write("\t".join(line)+"\n")
 
-# sed -e "s/^chrX/chr23/" {input} | sed -e "s/^chrY/chr24/" > {output}
+
+rule fix_chrXY:
+	input: rules.gender_analysis_reads.output
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.tsv"
+	shell: """ sed -e "s/^chrX/chr23/" {input} | sed -e "s/^chrY/chr24/" > {output} """
 
 rule canoes_calling:
 	""" Canoes analysis per sample """
 	input:
-		read = f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.{gender}.coverage.tsv",
+		read = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.tsv",
 		gc = f"{resultDir}/GCpercent.{gender}.tsv"
 	output:
-		cnvcall = f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.csv",
-		genotyping  = f"{resultDir}/{serviceName}/{{aligner}}.Genotyping.{gender}.csv",
-		pdf =  f"{resultDir}/{serviceName}/{{aligner}}.Plot.{gender}.pdf"
+		cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.csv",
+		genotyping  = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.Genotyping.{gender}.csv",
+		pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.Genotyping.{gender}.pdf"
 	params: scripts = config["scripts"],
-	log: f"{resultDir}/{serviceName}/{{aligner}}.canoes.{gender}.log"
+	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.Genotyping.{gender}.log"
 	shell:
 		"""
 			Rscript {params.scripts}/CANOES.v2.R --gc-file {input.gc} --reads-file {input.read} --output-file {output.cnvcall} --genotyping-output {output.genotyping} --pdf-output {output.pdf}
@@ -601,8 +673,8 @@ rule canoes_calling:
 # Should be variantconvert tsv to vcf
 rule canoes_to_bed:
 	""" CNVcall tsv to bed conversion """
-	input: f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.csv"
-	output: f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.bed"
+	input: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.csv"
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.bed"
 	run:
 		with open(output[0], "w") as o:
 			o.write("\t".join([ "#Chrom", "Start", "End", "SV type", "Samples_ID" ])+"\n")
@@ -631,8 +703,8 @@ rule canoes_to_bed:
 rule bedtovcf:
 	""" Convert canoes bed to vcf """
 	input: rules.canoes_to_bed.output
-	output: f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.vcf"
-	log: f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.bedtovcf.log"
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.vcf"
+	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.bedtovcf.log"
 	params:	scripts = config["scripts"]
 	shell: "variantconvert convert -i {input} -o {output} -c {params.scripts}/config_canoes_bed.json 2> {log} "
 
@@ -640,8 +712,8 @@ rule bedtovcf:
 
 rule merge_gender:
 	""" Merge all CNV call results """
-	input: expand(f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.vcf", gender=gender_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf"
+	input: expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.vcf", gender=gender_list, aligner=aligner_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.unsorted.vcf"
 	shell: "cat {input} | sort -u | sort -r >> {output}"
 
 

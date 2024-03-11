@@ -21,8 +21,7 @@ library(optparse)
 option_list <- list(
   make_option(c("-s", "--sample"), type="character", help="Sample name"),
   make_option(c("-i", "--input"), type="character", help="Input file path"),
-  make_option(c("-o", "--output"), type="character", help="Output directory path"),
-  make_option(c("-p", "--plotscript"), type="character", help="Plot script file path")
+  make_option(c("-o", "--output"), type="character", help="Output directory path")
 )
 
 # Parse command line arguments
