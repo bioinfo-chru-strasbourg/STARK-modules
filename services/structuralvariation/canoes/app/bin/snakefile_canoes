@@ -408,7 +408,7 @@ rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
 		f"{resultDir}/GCpercent.{gender}.tsv",
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list),
 		#expand(f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.coverage.stats.tsv", aligner=aligner_list),
 		#expand(f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.csv", aligner=aligner_list)
@@ -500,12 +500,12 @@ rule plot_coverage:
 	""" Generate plot """
 	input: rules.bam_to_multicov.output
 	output: 
-			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png"
-			# f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}._boxplot.png"
+			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png",
+			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.png"
 	params: scripts = config['scripts']
 	log:
-		log=f"{resultDir}/{serviceName}/Plots/plotCoverage.log",
-		err=f"{resultDir}/{serviceName}/Plots/plotCoverage.err"
+		log=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.log",
+		err=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.err"
 	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output} 1> {log.log} 2> {log.err}"
 
 
@@ -516,26 +516,28 @@ rule merge_multicov_to_reads:
 	log: f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.coverage.log"
 	run:
 		data = {}
-		header = ["chrom","start","end"]
+		header = ["chrom", "start", "end"]
+
 		for multicovfile in input:
 			sample_name = multicovfile.split("/")[-1].split(".")[0]
 			header.append(sample_name)
-			with open(multicovfile,"r") as i:
-				for line in i:
-					field = line.strip().split("\t")
-					index = "\t".join(field[0:3])
-					value = field[-1]
+			
+			with open(multicovfile, "r") as file:
+				for line in file:
+					fields = line.strip().split("\t")
+					index = "\t".join(fields[:3])
+					value = fields[-1]
+					
 					if index not in data:
 						data[index] = {}
 					data[index][sample_name] = value
 
-		with open(output[0],"w") as o:
-			o.write("\t".join(header)+"\n")
-			for index in data:
-				sample_value = [index]
-				for sample_name in header[3:]:
-					sample_value.append(data[index][sample_name])
-				o.write("\t".join(sample_value)+"\n")
+		with open(output[0], "w") as output_file:
+			output_file.write("\t".join(header) + "\n")
+			
+			for index, sample_data in data.items():
+				row_values = [index] + [sample_data.get(sample_name, "") for sample_name in header[3:]]
+				output_file.write("\t".join(row_values) + "\n")
 
 rule coverage_gen:
 	""" Generate plot stats coverage """
@@ -628,7 +630,7 @@ rule canoes_to_bed:
 
 rule bedtovcf:
 	""" Convert canoes bed to vcf """
-	input: f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.bed"
+	input: rules.canoes_to_bed.output
 	output: f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.vcf"
 	log: f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.bedtovcf.log"
 	params:	scripts = config["scripts"]
