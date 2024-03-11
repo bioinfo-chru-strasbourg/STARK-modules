@@ -409,6 +409,7 @@ rule all:
 	input:
 		f"{resultDir}/GCpercent.{gender}.tsv",
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list),
 		#expand(f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.coverage.stats.tsv", aligner=aligner_list),
 		#expand(f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.csv", aligner=aligner_list)
 
@@ -495,6 +496,19 @@ rule bam_to_multicov:
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"
 	shell:" python3 {params.scripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 1> {log} "
 
+rule plot_coverage:
+	""" Generate plot """
+	input: rules.bam_to_multicov.output
+	output: 
+			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png"
+			# f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}._boxplot.png"
+	params: scripts = config['scripts']
+	log:
+		log=f"{resultDir}/{serviceName}/Plots/plotCoverage.log",
+		err=f"{resultDir}/{serviceName}/Plots/plotCoverage.err"
+	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output} 1> {log.log} 2> {log.err}"
+
+
 rule merge_multicov_to_reads:
 	""" Merge and reformating coverage files """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", sample=sample_list, aligner=aligner_list)
@@ -534,16 +548,6 @@ rule coverage_gen:
 			for val in values['depth']:
 				o.write(val+'\n')
 		print("#[INFO] Ending parse "+input[0]+" write output in "+output[0])
-
-rule plot_coverage:
-	""" Generate plot """
-	input: rules.coverage_gen.output
-	output: directory(f"{resultDir}/{serviceName}/Plots/")
-	params: scripts = config['scripts']
-	log:
-		log=f"{resultDir}/{serviceName}/Plots/plotCoverage.log",
-		err=f"{resultDir}/{serviceName}/Plots/plotCoverage.err"
-	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output} 1> {log.log} 2> {log.err}"
 
 rule gender_analysis_reads:
 	""" Coverage for sample """
