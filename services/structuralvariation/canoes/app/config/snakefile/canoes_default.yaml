@@ -53,6 +53,8 @@ THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: FALSE
 
+DUMMY_PATH: "/app/comfig/scripts/dummy"
+
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
@@ -69,6 +71,8 @@ REMOVE_A: False
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 scripts: "/app/scripts"
+
+JAVA_OPTION: "-Xmx8G"
 
 ################## AnnotSV params ##################
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
