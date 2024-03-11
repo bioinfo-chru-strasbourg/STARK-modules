@@ -16,6 +16,32 @@ from os.path import join as osj
 configfile: "/app/config/snakefile/canoes_default.yaml"
 ####################### FUNCTIONS ######################
 
+def process_samples(input_file, output_file, sample_list, wildcards, run_dict):
+    sample_gender = []
+    for sample in sample_list:
+        if wildcards.gender == "A":
+            sample_gender.append(sample)
+        else:
+            print("################")
+            print("#[INFO] Gender is ", wildcards.gender)
+            if run_dict[sample]["gender"] == wildcards.gender:
+                sample_gender.append(sample)
+    print("#[INFO] list gender ", sample_gender)
+
+    if wildcards.gender == "A":
+        fieldnames = ['chrom', 'start', 'end'] + sample_gender
+    else:
+        fieldnames = ['chrom', 'start', 'end'] + [sample for sample in sample_gender if run_dict[sample]["gender"] == wildcards.gender]
+
+    with open(output_file, "w") as f_out:
+        f_out.write("\t".join(fieldnames) + "\n")
+        df = pd.read_csv(input_file, delimiter='\t')
+        for _, row in df.iterrows():
+            if wildcards.gender == "A" and row['chrom'] in ['chrX', 'chrY']:
+                continue
+            line = [row[field] for field in fieldnames]
+            f_out.write("\t".join(map(str, line)) + "\n")
+
 def generate_multicov_output(input_files, output_file):
 	# Initialize an empty DataFrame
 	df = pd.DataFrame()
@@ -494,7 +520,7 @@ rule all:
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list),
 		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.tsv", aligner=aligner_list, gender=gender_list),
-		f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.csv
+		#f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.csv"
 
 
 rule help:
@@ -585,8 +611,8 @@ rule merge_multicov:
 	""" Merge all sample files from multicov and add header """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
 	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.multicoverage.tsv"
-	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.log"
-	run: generate_multicov_output(input_files=input, output_file=output[0])
+	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.multicoverage.log"
+	shell: " python3 {params.scripts}/merge_multicov.py {input} -o {output} "
 
 
 rule plot_coverage:
@@ -623,28 +649,7 @@ rule gender_analysis_reads:
 	""" Split coverage datas per gender """
 	input: rules.merge_multicov.output
 	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.nofix.tsv"
-	run:
-		sample_gender = []
-		with open(output[0], "w") as f:
-			for sample in sample_list:
-				if wildcards.gender == "A":
-					sample_gender.append(sample)
-				else:
-					print("################")
-					print("#[INFO] Gender is ", wildcards.gender)
-					if runDict[sample]["gender"] == wildcards.gender:
-						sample_sex.append(sample)
-			print("#[INFO] list gender ", sample_gender)
-			fieldnames = ['chrom','start','end'] + sample_gender
-			f.write("\t".join(fieldnames)+"\n")
-			with open(input[0], "r") as tsvfile:
-				reader = csv.DictReader(tsvfile, delimiter='\t')
-				for row in reader:
-					line = [ row[x] for x in fieldnames ]
-					if wildcards.gender == "A":
-						if line[0] == "chrX" or line[0] == "chrY":
-							continue
-					f.write("\t".join(line)+"\n")
+	run: process_samples(input[0], output[0], sample_list, gender_list, runDict)
 
 
 rule fix_chrXY:
@@ -653,13 +658,13 @@ rule fix_chrXY:
 	shell: """ sed -e "s/^chrX/chr23/" {input} | sed -e "s/^chrY/chr24/" > {output} """
 
 rule canoes_calling:
-	""" Canoes analysis per sample """
+	""" Canoes analysis """
 	input:
 		read = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.tsv",
 		gc = f"{resultDir}/GCpercent.{gender}.tsv"
 	output:
 		cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.csv",
-		genotyping  = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.Genotyping.{gender}.csv",
+		genotyping  = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.Genotyping.{gender}.unfix.csv",
 		pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.Genotyping.{gender}.pdf"
 	params: scripts = config["scripts"],
 	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.Genotyping.{gender}.log"
@@ -668,7 +673,13 @@ rule canoes_calling:
 			Rscript {params.scripts}/CANOES.v2.R --gc-file {input.gc} --reads-file {input.read} --output-file {output.cnvcall} --genotyping-output {output.genotyping} --pdf-output {output.pdf}
 		"""
 
-# cat {output.tmp} | sed 's/"//g' | sed 's/,/\t/g' | sed '1d' | sort -u > {output.results} || echo "no CNV found for gender: {wildcards.gender}" > {output.results};
+rule fix_canoes_calling:
+	""" Remove double quote, replace comma with tab, remove header and sort """
+	input: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.unfix.csv"
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.csv"
+	shell: """ cat {input} | sed 's/"//g' | sed 's/,/\t/g' | sed '1d' | sort -u > {output} """
+	
+# || echo "no CNV found for gender: {wildcards.gender}" > {output.results};
 
 # Should be variantconvert tsv to vcf
 rule canoes_to_bed:
@@ -707,6 +718,7 @@ rule bedtovcf:
 	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.bedtovcf.log"
 	params:	scripts = config["scripts"]
 	shell: "variantconvert convert -i {input} -o {output} -c {params.scripts}/config_canoes_bed.json 2> {log} "
+
 
 # [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
 
