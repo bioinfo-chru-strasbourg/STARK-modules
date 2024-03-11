@@ -407,9 +407,10 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
-		# expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", aligner=aligner_list, sample=sample_list),
 		f"{resultDir}/GCpercent.{gender}.tsv",
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
+		#expand(f"{resultDir}/{serviceName}/{{aligner}}.all.canoes.coverage.stats.tsv", aligner=aligner_list),
+		#expand(f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.csv", aligner=aligner_list)
 
 rule help:
 	"""
@@ -458,9 +459,11 @@ rule gc_percent:
 	""" Compute GC percent """
 	input: config["REFGENEFA_PATH"]
 	output: temp(f"{resultDir}/GCpercent_header.tsv")
-	params: config['BED_FILE']
+	params: 
+		bedfile = config['BED_FILE'],
+		java_option = config['JAVA_OPTION']
 	log: f"{resultDir}/GCpercent.log"
-	shell: " gatk --java-options -Xmx8G AnnotateIntervals -L {params} -R {input} -imr OVERLAPPING_ONLY -O {output} 2> {log} "
+	shell: " gatk --java-options {params.java_option} AnnotateIntervals -L {params.bedfile} -R {input} -imr OVERLAPPING_ONLY -O {output} 2> {log} "
 
 rule filter_gc_percent_file:
 	""" Filter out the GC file, removing the 27 first lines """
@@ -490,7 +493,7 @@ rule bam_to_multicov:
 	params: scripts = config["scripts"],
 			bed = config['BED_FILE']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"
-	shell:" python3 {params.scripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 2> {log} "
+	shell:" python3 {params.scripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 1> {log} "
 
 rule merge_multicov_to_reads:
 	""" Merge and reformating coverage files """
@@ -535,9 +538,12 @@ rule coverage_gen:
 rule plot_coverage:
 	""" Generate plot """
 	input: rules.coverage_gen.output
-	output: f"{resultDir}/{serviceName}/"
+	output: directory(f"{resultDir}/{serviceName}/Plots/")
 	params: scripts = config['scripts']
-	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output}"
+	log:
+		log=f"{resultDir}/{serviceName}/Plots/plotCoverage.log",
+		err=f"{resultDir}/{serviceName}/Plots/plotCoverage.err"
+	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output} 1> {log.log} 2> {log.err}"
 
 rule gender_analysis_reads:
 	""" Coverage for sample """
@@ -568,7 +574,6 @@ rule gender_analysis_reads:
 
 # sed -e "s/^chrX/chr23/" {input} | sed -e "s/^chrY/chr24/" > {output}
 
-
 rule canoes_calling:
 	""" Canoes analysis per sample """
 	input:
@@ -584,6 +589,7 @@ rule canoes_calling:
 		"""
 			Rscript {params.scripts}/CANOES.v2.R --gc-file {input.gc} --reads-file {input.read} --output-file {output.cnvcall} --genotyping-output {output.genotyping} --pdf-output {output.pdf}
 		"""
+
 # cat {output.tmp} | sed 's/"//g' | sed 's/,/\t/g' | sed '1d' | sort -u > {output.results} || echo "no CNV found for gender: {wildcards.gender}" > {output.results};
 
 # Should be variantconvert tsv to vcf
@@ -626,7 +632,84 @@ rule bedtovcf:
 
 # [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
 
-# AnnotSV
+rule merge_gender:
+	""" Merge all CNV call results """
+	input: expand(f"{resultDir}/{serviceName}/{{aligner}}.CNVCall.{gender}.vcf", gender=gender_list, aligner=aligner_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf"
+	shell: "cat {input} | sort -u | sort -r >> {output}"
+
+
+rule sortvcf:
+	""" Sort vcf """
+	input: rules.merge_gender.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf")
+	params: dummypath=config['DUMMY_PATH']
+	shell: "grep '^#' {input} > {output} && grep -v '^#' {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}"
+
+# bgzip -c to keep input file
+rule vcf2gz:
+	""" Compress vcf with bgzip """
+	input: rules.sortvcf.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf.gz"
+	params: dummypath=config['DUMMY_PATH']
+	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf.gz > {output} ; tabix {output}"
+
+
+rule splitvcf:
+	"""
+	Split vcf with bcftools
+	-s {sample}: comma-separated list of samples to include
+	-Oz: output vcf compressed
+	-c1: minimum allele count (INFO/AC) of sites to be printed
+	"""
+	input: rules.vcf2gz.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.Noannotation.vcf.gz"
+	params: dummypath=config['DUMMY_PATH']
+	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output} ; tabix {output}"
+
+
+rule AnnotSV:
+	"""
+	Annotate and rank Structural Variations from a vcf file
+	-annotationMode can be split by exons/introns or full by genes
+	-txtFile: path to a file containing a list of preferred genes transcripts for annotation
+	-genomeBuild must be specified if not hg19
+	"""
+	input: rules.splitvcf.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unsort.vcf"
+	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.log"
+	params:
+		output=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unsort",
+		genome=config['genomeBuild'],
+		overlap=config['overlap'],
+		mode=config['annotationMode'],
+		annotation=config['annotationdir'],
+		hpo=lambda wildcards: runDict[wildcards.sample]['hpo']
+	shell: 
+		"""
+		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || echo "#No data to annotate" > {output}
+		"""
+
+use rule sortvcf as sortvcf1 with:
+	input: rules.AnnotSV.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf"
+
+use rule vcf2gz as vcf2gz1 with:
+	input: rules.sortvcf1.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz"
+
+rule mergedesign:
+	""" Copy or merge multiple vcfs using bcftools """
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz"
+	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
+
+rule convertvcf_alldesign:
+	""" vcf to tsv conversion """
+	input: rules.mergedesign.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
+	log: log2=f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf2tsv_converter.log"
+	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
