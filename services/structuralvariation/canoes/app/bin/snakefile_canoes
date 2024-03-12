@@ -42,34 +42,6 @@ def process_samples(input_file, output_file, sample_list, wildcards, run_dict):
             line = [row[field] for field in fieldnames]
             f_out.write("\t".join(map(str, line)) + "\n")
 
-def generate_multicov_output(input_files, output_file):
-	# Initialize an empty DataFrame
-	df = pd.DataFrame()
-
-	# Define the header
-	header = ["chrom", "start", "end"]
-
-	# Loop through input files
-	for multicovfile in input_files:
-		sample_name = multicovfile.split("/")[-1].split(".")[0]
-		header.append(sample_name)
-
-		# Read data from file and append to DataFrame
-		with open(multicovfile, "r") as file:
-			for line in file:
-				fields = line.strip().split("\t")
-				index = "\t".join(fields[:3])
-				value = fields[-1]
-
-				# Check if index already exists in DataFrame
-				if index not in df.index:
-					df.loc[index] = [None] * len(header)
-				df.at[index, sample_name] = value
-
-	# Write DataFrame to output file
-	df.columns = header
-	df.to_csv(output_file, sep='\t', index=False)
-
 def extract_columns_per_sample(input_file, output_file):
 	# Read the input file into a pandas DataFrame
 	df = pd.read_csv(input_file, sep='\t')
@@ -515,12 +487,11 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", aligner=aligner_list, sample=sample_list),
+		#expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", aligner=aligner_list, sample=sample_list),
 		expand(f"{resultDir}/GCpercent.{gender}.tsv", gender=gender_list),
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list),
+		#expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list),
-		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.tsv", aligner=aligner_list, gender=gender_list),
-		#f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.csv"
+		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv", aligner=aligner_list, gender=gender_list)
 
 
 rule help:
@@ -608,18 +579,18 @@ rule bam_to_multicov:
 
 
 rule merge_multicov:
-	""" Merge all sample files from multicov and add header """
+	""" Merge all multicoverage files and add header """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.multicoverage.tsv"
-	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.multicoverage.log"
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.tsv"
+	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.log"
 	params: scripts = config["scripts"]
 	shell: " python3 {params.scripts}/merge_multicov.py {input} -o {output} "
 
 
-rule plot_coverage:
-	""" Generate stats coverage """
+rule plot_coverage_stats:
+	""" Generate coverage calculation """
 	input:  rules.merge_multicov.output
-	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.stats.tsv"
+	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.stats.tsv"
 	run:
 		values = createplotstats(input[0])
 		with open(output[0], 'w+') as o:
@@ -629,13 +600,13 @@ rule plot_coverage:
 		print("#[INFO] Ending parse "+input[0]+" write output in "+output[0])
 
 rule split_per_sample:
-	""" Split  stats per sample """
-	input:  rules.plot_coverage.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.coverage.stats.tsv"
+	""" Split multicoverage datas per sample """
+	input:  rules.plot_coverage_stats.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicoverage.stats.tsv"
 	run: extract_columns_per_sample(input[0], output[0])
 
-rule plot:
-	""" Generate plot per sample """
+rule plot_coverage:
+	""" Generate coverage plots per sample """
 	input: rules.split_per_sample.output
 	output: 
 			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png"
@@ -646,29 +617,29 @@ rule plot:
 		err=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.err"
 	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output} 1> {log.log} 2> {log.err} "
 
-rule gender_analysis_reads:
+rule split_per_gender:
 	""" Split coverage datas per gender """
 	input: rules.merge_multicov.output
-	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.nofix.tsv"
+	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.unfix.tsv"
 	run: process_samples(input[0], output[0], sample_list, gender_list, runDict)
 
 
 rule fix_chrXY:
-	input: rules.gender_analysis_reads.output
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.tsv"
+	input: rules.split_per_gender.output
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv"
 	shell: """ sed -e "s/^chrX/chr23/" {input} | sed -e "s/^chrY/chr24/" > {output} """
 
 rule canoes_calling:
 	""" Canoes analysis """
 	input:
-		read = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.{gender}.coverage.tsv",
+		read = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv",
 		gc = f"{resultDir}/GCpercent.{gender}.tsv"
 	output:
-		cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.csv",
-		genotyping  = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.Genotyping.{gender}.unfix.csv",
-		pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.Genotyping.{gender}.pdf"
-	params: scripts = config["scripts"],
-	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.Genotyping.{gender}.log"
+		cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.unfix.csv",
+		genotyping  = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.csv",
+		pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.pdf"
+	params: scripts = config["scripts"]
+	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CANOEScalling.log"
 	shell:
 		"""
 			Rscript {params.scripts}/CANOES.v2.R --gc-file {input.gc} --reads-file {input.read} --output-file {output.cnvcall} --genotyping-output {output.genotyping} --pdf-output {output.pdf}
@@ -676,8 +647,8 @@ rule canoes_calling:
 
 rule fix_canoes_calling:
 	""" Remove double quote, replace comma with tab, remove header and sort """
-	input: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.unfix.csv"
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.csv"
+	input: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.unfix.csv"
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv"
 	shell: """ cat {input} | sed 's/"//g' | sed 's/,/\t/g' | sed '1d' | sort -u > {output} """
 	
 # || echo "no CNV found for gender: {wildcards.gender}" > {output.results};
@@ -685,8 +656,8 @@ rule fix_canoes_calling:
 # Should be variantconvert tsv to vcf
 rule canoes_to_bed:
 	""" CNVcall tsv to bed conversion """
-	input: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.csv"
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.CNVCall.{gender}.bed"
+	input: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv"
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.bed"
 	run:
 		with open(output[0], "w") as o:
 			o.write("\t".join([ "#Chrom", "Start", "End", "SV type", "Samples_ID" ])+"\n")
@@ -726,14 +697,14 @@ rule bedtovcf:
 rule merge_gender:
 	""" Merge all CNV call results """
 	input: expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.vcf", gender=gender_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.unsorted.vcf"
+	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.unsorted.Design.vcf"
 	shell: "cat {input} | sort -u | sort -r >> {output}"
 
 
 rule sortvcf:
 	""" Sort vcf """
 	input: rules.merge_gender.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf")
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.Design.vcf")
 	params: dummypath=config['DUMMY_PATH']
 	shell: "grep '^#' {input} > {output} && grep -v '^#' {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}"
 
@@ -741,7 +712,7 @@ rule sortvcf:
 rule vcf2gz:
 	""" Compress vcf with bgzip """
 	input: rules.sortvcf.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf.gz"
+	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.Design.vcf.gz"
 	params: dummypath=config['DUMMY_PATH']
 	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf.gz > {output} ; tabix {output}"
 
