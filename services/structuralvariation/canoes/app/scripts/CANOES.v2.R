@@ -15,34 +15,36 @@
 library(optparse)
 
 # Function to parse arguments
-parse_args <- function() {
-  option_list <- list(
-    make_option(c("--gc-file"), type="character", default="gc.txt", 
-                help="File containing the GC values"),
-    make_option(c("--reads-file"), type="character", default="canoes.reads.txt", 
-                help="File containing the reads data"),
-    make_option(c("--p-value"), type="numeric", default=1e-08, 
-                help="P-value parameter for CNV calling"),
-    make_option(c("--Tnum"), type="integer", default=6, 
-                help="Tnum parameter for CNV calling"),
-    make_option(c("--D"), type="integer", default=70000, 
-                help="D parameter for CNV calling"),
-    make_option(c("--numrefs"), type="integer", default=30, 
-                help="Numrefs parameter for CNV calling"),
-    make_option(c("--homdel-mean"), type="numeric", default=0.2, 
-                help="Homdel-mean parameter for CNV calling"),
-    make_option(c("--output-file"), type="character", default="output.csv", 
-                help="Output file name for xcnvs"),
-    make_option(c("--genotyping-output"), type="character", default="genotyping_S2_output.csv", 
-                help="Output file name for genotyping.S2"),
-    make_option(c("--pdf-output"), type="character", default="CNVplots.pdf", 
-                help="Output PDF file name for plots")
-  )
-  
-  opt_parser <- OptionParser(option_list=option_list)
+parse_args <- function(opt_parser) {
   opt <- parse_args(opt_parser)
   return(opt)
 }
+
+option_list <- list(
+  make_option(c("--gc-file"), type="character", default="gc.txt", 
+              help="File containing the GC values"),
+  make_option(c("--reads-file"), type="character", default="canoes.reads.txt", 
+              help="File containing the reads data"),
+  make_option(c("--p-value"), type="numeric", default=1e-08, 
+              help="P-value parameter for CNV calling"),
+  make_option(c("--Tnum"), type="integer", default=6, 
+              help="Tnum parameter for CNV calling"),
+  make_option(c("--D"), type="integer", default=70000, 
+              help="D parameter for CNV calling"),
+  make_option(c("--numrefs"), type="integer", default=30, 
+              help="Numrefs parameter for CNV calling"),
+  make_option(c("--homdel-mean"), type="numeric", default=0.2, 
+              help="Homdel-mean parameter for CNV calling"),
+  make_option(c("--output-file"), type="character", default="output.csv", 
+              help="Output file name for xcnvs"),
+  make_option(c("--genotyping-output"), type="character", default="genotyping_S2_output.csv", 
+              help="Output file name for genotyping.S2"),
+  make_option(c("--pdf-output"), type="character", default="CNVplots.pdf", 
+              help="Output PDF file name for plots")
+)
+
+opt_parser <- OptionParser(option_list=option_list)
+opt <- parse_args(opt_parser)
 
 # Test function
 Test <- function(gc_file, reads_file, p_value, Tnum, D, numrefs, homdel_mean, output_file, genotyping_output, pdf_output) {

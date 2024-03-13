@@ -42,32 +42,6 @@ def fix_canoe_tsv(input_file, output_file):
                 o.write(f"{row['#Chrom']}\t{row['Start']}\t{row['End']}\t{row['SV type']}\t{row['Sample_ID']}\n")
 
 
-def process_samples(input_file, output_file, sample_list, wildcards, run_dict):
-    sample_gender = []
-    for sample in sample_list:
-        if wildcards.gender == "A":
-            sample_gender.append(sample)
-        else:
-            print("################")
-            print("#[INFO] Gender is ", wildcards.gender)
-            if run_dict[sample]["gender"] == wildcards.gender:
-                sample_gender.append(sample)
-    print("#[INFO] list gender ", sample_gender)
-
-    if wildcards.gender == "A":
-        fieldnames = ['chrom', 'start', 'end'] + sample_gender
-    else:
-        fieldnames = ['chrom', 'start', 'end'] + [sample for sample in sample_gender if run_dict[sample]["gender"] == wildcards.gender]
-
-    with open(output_file, "w") as f_out:
-        f_out.write("\t".join(fieldnames) + "\n")
-        df = pd.read_csv(input_file, delimiter='\t')
-        for _, row in df.iterrows():
-            if wildcards.gender == "A" and row['chrom'] in ['chrX', 'chrY']:
-                continue
-            line = [row[field] for field in fieldnames]
-            f_out.write("\t".join(map(str, line)) + "\n")
-
 def addOtherSamples(sexless_list, sexlist, infos, run, exclude_tag):
 	new_sample_list = []
 	project = os.path.dirname(run)
@@ -506,9 +480,9 @@ rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
 		expand(f"{resultDir}/GCpercent.{gender}.tsv", gender=gender_list),
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list)
-		#expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv", aligner=aligner_list, gender=gender_list)
-		# f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list),
+		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv", aligner=aligner_list, gender=gender_list),
+		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv", aligner=aligner_list, gender=gender_list)
 
 rule help:
 	"""
@@ -611,16 +585,16 @@ rule plot_coverage_stats:
 	shell: " python3 {params.scripts}/plot_coverage_stats.py {input} {output} "
 
 
-rule split_per_sample:
-	""" Split multicoverage datas per sample """
-	input:  rules.plot_coverage_stats.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicoverage.stats.tsv"
-	run: extract_columns_per_sample(input[0], output[0])
+#rule split_per_sample:
+#	""" Split multicoverage datas per sample """
+#	input:  rules.plot_coverage_stats.output
+#	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicoverage.stats.tsv"
+#	run: extract_columns_per_sample(input[0], output[0])
 
 
 rule plot_coverage:
 	""" Generate coverage plots per sample """
-	input: rules.split_per_sample.output
+	input: rules.plot_coverage_stats.output
 	output: 
 			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png"
 			#f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.png"
@@ -630,12 +604,12 @@ rule plot_coverage:
 		err=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.err"
 	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output} 1> {log.log} 2> {log.err} "
 
+
 rule split_per_gender:
 	""" Split coverage datas per gender """
 	input: rules.merge_multicov.output
 	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.unfix.tsv"
-	run: process_samples(input[0], output[0], sample_list, gender_list, runDict)
-
+	shell: """ if [ {gender} == "XX" || [ {gender} == "YY" ]; then cp {{input}} {{output}} ; else awk -F',' '$1 !~ /^chr[XY]/' {{input}} > {{output}} ; fi """
 
 rule fix_chrXY:
 	""" Replace chrX with chr23, chrY with chr24 for CANOES calling compability """

@@ -29,7 +29,7 @@ from collections import defaultdict
 from jinja2 import Environment, FileSystemLoader
 
 ################## Configuration file ##################
-configfile: "/app/config/snakefile/flt3itdext_default"
+configfile: "/app/config/snakefile/flt3itdext_default.yaml"
 
 ####################### FUNCTIONS #####################
 def parse_samplesheet(samplesheet_path):
