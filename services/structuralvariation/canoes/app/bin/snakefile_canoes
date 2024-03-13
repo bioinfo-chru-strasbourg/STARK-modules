@@ -609,7 +609,7 @@ rule split_per_gender:
 	""" Split coverage datas per gender """
 	input: rules.merge_multicov.output
 	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.unfix.tsv"
-	shell: """ if [ {gender} == "XX" || [ {gender} == "YY" ]; then cp {{input}} {{output}} ; else awk -F',' '$1 !~ /^chr[XY]/' {{input}} > {{output}} ; fi """
+	shell: """ if [ {gender} == "XX" ]|| [ {gender} == "YY" ]; then cp {input} {output} ; else awk -F',' '$1 !~ /^chr[XY]/' {input} > {output} ; fi """
 
 rule fix_chrXY:
 	""" Replace chrX with chr23, chrY with chr24 for CANOES calling compability """
@@ -623,9 +623,9 @@ rule canoes_calling:
 		read = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv",
 		gc = f"{resultDir}/GCpercent.{gender}.tsv"
 	output:
-		cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.unfix.csv",
-		genotyping  = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.csv",
-		pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.pdf"
+		cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.unfix.csv"
+		#genotyping  = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.csv",
+		#pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.pdf"
 	params: scripts = config["scripts"]
 	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CANOEScalling.log"
 	shell:
@@ -639,7 +639,6 @@ rule fix_canoes_calling:
 	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv"
 	shell: """ cat {input} | sed 's/"//g' | sed 's/,/\t/g' | sed '1d' | sort -u > {output} """
 	
-# || echo "no CNV found for gender: {wildcards.gender}" > {output.results};
 
 # Should be variantconvert tsv to vcf ?
 rule canoes_to_bed:
