@@ -67,7 +67,7 @@ PlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	theme(axis.text=element_text(size=7),axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
   
   	# save plot
-  	png(paste(OUTPUT, ".boxplot.png", sep=""), width=nrows, height=400)
+  	png(OUTPUT, width=nrows, height=400)
   	print(p)
   	dev.off()
 
@@ -88,7 +88,7 @@ PlotCoverage2 <- function(SAMPLE, INPUT, OUTPUT){
 		theme(axis.text=element_text(size=7) ,axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
   
 	# save plot
-  	png(paste(OUTPUT, ".barplot.png", sep=""), width=nrows, height=800)
+  	png(OUTPUT width=nrows, height=400)
   	print(p)
   	dev.off()
 }
