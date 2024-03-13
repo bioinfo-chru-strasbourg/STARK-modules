@@ -37,9 +37,9 @@ option_list <- list(
               help="Homdel-mean parameter for CNV calling"),
   make_option(c("--output-file"), type="character", default="output.csv", 
               help="Output file name for xcnvs"),
-  make_option(c("--genotyping-output"), type="character", default="genotyping_S2_output.csv", 
+  make_option(c("--genotyping-output"), type="character", default=NULL, 
               help="Output file name for genotyping.S2"),
-  make_option(c("--pdf-output"), type="character", default="CNVplots.pdf", 
+  make_option(c("--pdf-output"), type="character", default=NULL, 
               help="Output PDF file name for plots")
 )
 
