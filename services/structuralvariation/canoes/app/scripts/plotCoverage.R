@@ -64,7 +64,7 @@ PlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	geom_hline(yintercept=2, linetype="dashed", color = "red2") +
 	geom_hline(yintercept=-2, linetype="dashed", color = "red2") +
 	labs(title = "Boxplot coverage mean taget sample vs all(normalised)", subtitle = paste("[INFO] Target Sample: ", SAMPLE, "\n[INFO] Processed samples: ", sample_list, "\n[INFO] Warning: Without sexual chromosomes, Normalisation: For each sample and for each region the coverage mean is divide by the total coverage mean of the sample and multply by the total coverage mean of the target sample (values are divide by the median(Graph:median=0), in log2 )"), x="Genomic Region(chromosome:start-end)", y="Coverage(normalised)(log2)") +
-	theme(axis.text=element_text(size=7),axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6)) +
+	theme(axis.text=element_text(size=7),axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
   
   	# save plot
   	png(paste(OUTPUT, ".boxplot.png", sep=""), width=nrows, height=400)
@@ -85,10 +85,10 @@ PlotCoverage2 <- function(SAMPLE, INPUT, OUTPUT){
 	p <- ggplot() + 
 		geom_bar(data=my_data, stat="identity", fill="skyblue", aes(x=factor(Genomic_Region, levels=lab), y=Coverage_Mean_Sample)) +
 		labs(title = "Barplot coverage mean per base per region", subtitle = paste("[INFO] Target Sample: ", SAMPLE), x="Genomic Region(chromosome:start-end)", y="Coverage mean(bp)") +
-		theme(axis.text=element_text(size=7) ,axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6)) +
+		theme(axis.text=element_text(size=7) ,axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
   
 	# save plot
-  	png(paste(OUTPUT, ".barplot.png", sep=""), width=nrows, height=400)
+  	png(paste(OUTPUT, ".barplot.png", sep=""), width=nrows, height=800)
   	print(p)
   	dev.off()
 }

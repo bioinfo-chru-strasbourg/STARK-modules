@@ -16,6 +16,32 @@ from os.path import join as osj
 configfile: "/app/config/snakefile/canoes_default.yaml"
 ####################### FUNCTIONS ######################
 
+def extract_columns_per_sample(input_file, output_file):
+	# Read the input file into a pandas DataFrame
+	df = pd.read_csv(input_file, sep='\t')
+
+	# Write the data to the specified output file
+	for column in df.columns[1:]:  # Exclude the first column (chromosome segment)
+		df[[df.columns[0], column]].to_csv(output_file, sep='\t', index=False, header=False)
+
+def fix_canoe_tsv(input_file, output_file):
+    data = pd.read_csv(input_file, sep='\t', header=None)
+    data.columns = ["Sample_ID", "SV type", "Coordinates"]
+
+    # Modify chromosome values
+    data['#Chrom'] = data['Coordinates'].str.split(':').str[0].replace({'23': 'X', '24': 'Y'})
+    data[['Start', 'End']] = data['Coordinates'].str.split(':').str[1].str.split('-', expand=True)
+
+    # Write to output file
+    with open(output_file, "w") as o:
+        o.write("#Chrom\tStart\tEnd\tSV type\tSamples_ID\n")
+        for index, row in data.iterrows():
+            if row['Sample_ID'].startswith("no CNV found") or row['Sample_ID'].startswith("error in the analysis"):
+                o.write(row['Sample_ID'] + '\n')
+            else:
+                o.write(f"{row['#Chrom']}\t{row['Start']}\t{row['End']}\t{row['SV type']}\t{row['Sample_ID']}\n")
+
+
 def process_samples(input_file, output_file, sample_list, wildcards, run_dict):
     sample_gender = []
     for sample in sample_list:
@@ -41,14 +67,6 @@ def process_samples(input_file, output_file, sample_list, wildcards, run_dict):
                 continue
             line = [row[field] for field in fieldnames]
             f_out.write("\t".join(map(str, line)) + "\n")
-
-def extract_columns_per_sample(input_file, output_file):
-	# Read the input file into a pandas DataFrame
-	df = pd.read_csv(input_file, sep='\t')
-
-	# Write the data to the specified output file
-	for column in df.columns[1:]:  # Exclude the first column (chromosome segment)
-		df[[df.columns[0], column]].to_csv(output_file, sep='\t', index=False, header=False)
 
 def addOtherSamples(sexless_list, sexlist, infos, run, exclude_tag):
 	new_sample_list = []
@@ -179,7 +197,6 @@ def populate_dictionary(dictionary, samples_list, extensions_list, files_list, p
 					continue
 
 				dictionary.setdefault(sample, {})[ext] = file
-				#dictionary.setdefault(sample, defaultdict(list))[ext].append(file)
 
 
 def filter_files(files_list, filter_in=None, filter_out=None):
@@ -308,7 +325,8 @@ def merge_pdfs(files, output_path):
 ### END OF FUNCTIONS ###
 
 serviceName = config['serviceName']
-date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+#date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+date_time = "123456-7890"
 runName = os.path.basename(os.path.normpath(config['run']))
 resultDir = f"/app/res/{runName}/{date_time}"
 outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
@@ -487,12 +505,10 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
-		#expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", aligner=aligner_list, sample=sample_list),
 		expand(f"{resultDir}/GCpercent.{gender}.tsv", gender=gender_list),
-		#expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list),
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list),
-		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv", aligner=aligner_list, gender=gender_list)
-
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list)
+		#expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv", aligner=aligner_list, gender=gender_list)
+		# f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv
 
 rule help:
 	"""
@@ -591,19 +607,16 @@ rule plot_coverage_stats:
 	""" Generate coverage calculation """
 	input:  rules.merge_multicov.output
 	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.stats.tsv"
-	run:
-		values = createplotstats(input[0])
-		with open(output[0], 'w+') as o:
-			o.write('\t'.join(values['header'])+'\n')
-			for val in values['depth']:
-				o.write(val+'\n')
-		print("#[INFO] Ending parse "+input[0]+" write output in "+output[0])
+	params: scripts = config["scripts"]
+	shell: " python3 {params.scripts}/plot_coverage_stats.py {input} {output} "
+
 
 rule split_per_sample:
 	""" Split multicoverage datas per sample """
 	input:  rules.plot_coverage_stats.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicoverage.stats.tsv"
 	run: extract_columns_per_sample(input[0], output[0])
+
 
 rule plot_coverage:
 	""" Generate coverage plots per sample """
@@ -625,12 +638,13 @@ rule split_per_gender:
 
 
 rule fix_chrXY:
+	""" Replace chrX with chr23, chrY with chr24 for CANOES calling compability """
 	input: rules.split_per_gender.output
 	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv"
 	shell: """ sed -e "s/^chrX/chr23/" {input} | sed -e "s/^chrY/chr24/" > {output} """
 
 rule canoes_calling:
-	""" Canoes analysis """
+	""" CANOES analysis """
 	input:
 		read = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv",
 		gc = f"{resultDir}/GCpercent.{gender}.tsv"
@@ -646,56 +660,33 @@ rule canoes_calling:
 		"""
 
 rule fix_canoes_calling:
-	""" Remove double quote, replace comma with tab, remove header and sort """
-	input: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.unfix.csv"
+	""" CANOES CNVcall fix : remove double quote, replace comma with tab, remove header and sort """
+	input: rules.canoes_calling.output.cnvcall
 	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv"
 	shell: """ cat {input} | sed 's/"//g' | sed 's/,/\t/g' | sed '1d' | sort -u > {output} """
 	
 # || echo "no CNV found for gender: {wildcards.gender}" > {output.results};
 
-# Should be variantconvert tsv to vcf
+# Should be variantconvert tsv to vcf ?
 rule canoes_to_bed:
-	""" CNVcall tsv to bed conversion """
-	input: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv"
+	""" CANOES CNVcall tsv to bed conversion """
+	input: rules.fix_canoes_calling.output
 	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.bed"
-	run:
-		with open(output[0], "w") as o:
-			o.write("\t".join([ "#Chrom", "Start", "End", "SV type", "Samples_ID" ])+"\n")
-			with open(input[0], "r") as i:
-				for line in i:
-					if line.startswith("no CNV found"):
-						o.write(line)
-						break
-					elif line.startswith("error in the analysis"):
-						o.write(line)
-						break
-					else:
-						field = line.strip().split("\t")
-						chrom = field[2].split(":")[0]
-						if chrom == "23":
-							chrom = "X"
-						if chrom == "24":
-							chrom = "Y"
-						start = field[2].split(":")[1].split("-")[0]
-						end = field[2].split(":")[1].split("-")[1]
-						sample = field[0]
-						cnv = field[1]
-						o.write("\t".join([ chrom, start, end, cnv, sample ])+"\n")
-
+	run: fix_canoe_tsv(input[0], output[0])
 
 rule bedtovcf:
-	""" Convert canoes bed to vcf """
+	""" Convert CANOES bed to vcf """
 	input: rules.canoes_to_bed.output
 	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.vcf"
 	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.bedtovcf.log"
 	params:	scripts = config["scripts"]
 	shell: "variantconvert convert -i {input} -o {output} -c {params.scripts}/config_canoes_bed.json 2> {log} "
 
-
+# Another fix ?
 # [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
 
 rule merge_gender:
-	""" Merge all CNV call results """
+	""" Merge all CNV call vcf results """
 	input: expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.vcf", gender=gender_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.unsorted.Design.vcf"
 	shell: "cat {input} | sort -u | sort -r >> {output}"

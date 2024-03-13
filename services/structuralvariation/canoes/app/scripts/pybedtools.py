@@ -31,9 +31,8 @@ def multicov(bamfile, bedfile, mq):
 		for read in bam.fetch(str(regions[0]), regions[1], regions[2]):
 			if read.mapping_quality > mq:
 				reads_list.append(read)
-		bedfile.loc[j, 6] = len(reads_list)
-	
-	bedfile.iloc[:, -1] = bedfile.iloc[:, -1].astype(int)
+		bedfile.loc[j, 6] = str(len(reads_list))
+
 	return bedfile
 
 def main():
@@ -45,8 +44,9 @@ def main():
 
 	with Pool(args.threads) as pool:
 		result = pool.starmap(multicov, list_cov)
-	
+
 	df_final = pd.concat(result)
+	df_final.iloc[:, -1] = df_final.iloc[:, -1].apply(lambda x: str(x).split('.')[0])
 	df_final.to_csv(output, sep="\t", index=False, header=False)
 	print("#[INFO] Create unsorted multicov ")
 	if os.path.exists(output):
