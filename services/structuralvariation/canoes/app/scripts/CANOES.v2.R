@@ -10,47 +10,35 @@
 # DEV v1 11/03/2024
 # Changelog
 #   - optparse script
+#   - fix GC content in column 4, homdel variable not assigned
+#   - remove genotyping option not used
 ########################################################################################################
 
 library(optparse)
 
-# Function to parse arguments
-parse_args <- function(opt_parser) {
-  opt <- parse_args(opt_parser)
-  return(opt)
-}
-
 option_list <- list(
-  make_option(c("--gc-file"), type="character", default="gc.txt", 
-              help="File containing the GC values"),
-  make_option(c("--reads-file"), type="character", default="canoes.reads.txt", 
-              help="File containing the reads data"),
-  make_option(c("--p-value"), type="numeric", default=1e-08, 
-              help="P-value parameter for CNV calling"),
-  make_option(c("--Tnum"), type="integer", default=6, 
-              help="Tnum parameter for CNV calling"),
-  make_option(c("--D"), type="integer", default=70000, 
-              help="D parameter for CNV calling"),
-  make_option(c("--numrefs"), type="integer", default=30, 
-              help="Numrefs parameter for CNV calling"),
-  make_option(c("--homdel-mean"), type="numeric", default=0.2, 
-              help="Homdel-mean parameter for CNV calling"),
-  make_option(c("--output-file"), type="character", default="output.csv", 
-              help="Output file name for xcnvs"),
-  make_option(c("--genotyping-output"), type="character", default=NULL, 
-              help="Output file name for genotyping.S2"),
-  make_option(c("--pdf-output"), type="character", default=NULL, 
-              help="Output PDF file name for plots")
+  make_option("--gcfile", type="character", default="gc.tsv", dest='gc', help="File containing the GC values in column 4"),
+  make_option("--readsfile", type="character", default="canoes.reads.tsv", dest='reads', help="File containing the reads data"),
+  make_option("--pvalue", type="numeric", default=1e-08, dest='pvalue', help="P-value parameter for CNV calling"),
+  make_option("--Tnum", type="integer", default=6, dest='tnum', help="Tnum parameter for CNV calling"),
+  make_option("--D", type="integer", default=70000, dest='dvalue', help="D parameter for CNV calling"),
+  make_option("--numrefs", type="integer", default=30, dest='numrefs', help="Numrefs parameter for CNV calling"),
+  make_option("--homdel", type="numeric", default=0.2, dest='homdel', help="Homdel-mean parameter for CNV calling"),
+  make_option("--output", type="character", default="CNVCall.csv", dest='output', help="Output file name for xcnvs"),
+  #make_option("--genotyping", type="character", default=NULL, dest='genotyping', help="Output file name for genotyping"),
+  make_option("--pdf", type="character", default=NULL, dest='pdf', help="Output PDF file name for plots")
 )
 
 opt_parser <- OptionParser(option_list=option_list)
-opt <- parse_args(opt_parser)
+options <- parse_args(opt_parser)
 
 # Test function
-Test <- function(gc_file, reads_file, p_value, Tnum, D, numrefs, homdel_mean, output_file, genotyping_output, pdf_output) {
-  gc <- read.table(gc_file)$V2
-  canoes.reads <- read.table(reads_file)
-  sample.names <- paste("S", seq(1:26), sep="")
+Test <- function(gc_file, reads_file, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output) {
+  gc <- read.table(gc_file)$V4 # assuming the GC content is in column 4
+  names(gc) <- "gc" # column name is gc
+  canoes.reads <- read.table(reads_file,header=TRUE)
+  data <- read.table(reads_file,header=TRUE)
+  sample.names <- names(data)[4:length(names(data))]
   names(canoes.reads) <- c("chromosome", "start", "end", sample.names)
   target <- seq(1, nrow(canoes.reads))
   canoes.reads <- cbind(target, gc, canoes.reads)
@@ -61,8 +49,6 @@ Test <- function(gc_file, reads_file, p_value, Tnum, D, numrefs, homdel_mean, ou
   }
   
   xcnvs <- do.call('rbind', xcnv.list)
-  
-  # Writing xcnvs to a CSV file
   write.csv(xcnvs, file = output_file)
   
   pdf(pdf_output)
@@ -71,17 +57,11 @@ Test <- function(gc_file, reads_file, p_value, Tnum, D, numrefs, homdel_mean, ou
   }
   dev.off()
   
-  genotyping.S2 <- GenotypeCNVs(xcnvs, "S2", canoes.reads, p_value, Tnum, D, numrefs)
-  
+  #genotyping.S2 <- GenotypeCNVs(xcnvs, "S2", canoes.reads, p_value, Tnum, D, numrefs)
   # Writing genotyping.S2 to a CSV file
-  write.csv(genotyping.S2, file = genotyping_output)
+  #write.csv(genotyping.S2, file = genotyping_output)
 }
 
-# Parse arguments
-options <- parse_args()
-
-# Call the Test function with parsed arguments
-Test(options$gc_file, options$reads_file, options$p_value, options$Tnum, options$D, options$numrefs, options$homdel_mean, options$output_file, options$genotyping_output, options$pdf_output)
 
 # Constants
 NUM.ABNORMAL.STATES=2
@@ -194,23 +174,23 @@ PlotCNV <- function(counts, sample.name, targets, offset=1){
 #      TARGETS: target numbers of CNV in the form start..stop
 #      NUM_TARG: how many targets are in the CNV
 #      Q_SOME: a Phred-scaled quality score for the CNV
-CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs=F, homdel.mean=0.2){
+CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.mean){
   #sample.name, counts, p=1e-08, Tnum=6, D=70000, numrefs=30, get.dfs=F, homdel.mean=0.2
   if (!sample.name %in% names(counts)){stop("No column for sample ", sample.name, " in counts matrix")}
   if (length(setdiff(names(counts)[1:5], c("target", "chromosome", "start", "end", "gc"))) > 0){
     stop("First five columns of counts matrix must be target, chromosome, start, end, gc")
   }
-  if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0) {
+  #if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0) {
     # remove sex chromosomes
     #cat("Trying to remove sex chromosomes and 'chr' prefixes\n")
-    counts <- subset(counts, !chromosome %in% c("chrX", "chrY", "X", "Y"))
-    if (sum(grepl("chr", counts$chromosome))==length(counts$chromosome)){
-      counts$chromosome <- gsub("chr", "", counts$chromosome)
-    }
-    counts$chromosome <- as.numeric(counts$chromosome)
-    if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0) 
-      stop("chromosome must take value in range 1-22 (support for sex chromosomes to come)")
-  }
+    #counts <- subset(counts, !chromosome %in% c("chrX", "chrY", "X", "Y"))
+    #if (sum(grepl("chr", counts$chromosome))==length(counts$chromosome)){
+    #  counts$chromosome <- gsub("chr", "", counts$chromosome)
+    #}
+    #counts$chromosome <- as.numeric(counts$chromosome)
+    #if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0) 
+    #  stop("chromosome must take value in range 1-22 (support for sex chromosomes to come)")
+  #}
   library(plyr)
   counts <- arrange(counts, chromosome, start)
   if (p <= 0){
@@ -778,3 +758,6 @@ CalcCopyNumber <- function(data, cnvs, homdel.mean){
   }  
   return(cnvs)
 }
+
+# Call the Test function with parsed arguments
+Test(options$gc, options$reads, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$pdf)

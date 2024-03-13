@@ -480,9 +480,10 @@ rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
 		expand(f"{resultDir}/GCpercent.{gender}.tsv", gender=gender_list),
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list),
+		#expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list),
 		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv", aligner=aligner_list, gender=gender_list),
 		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv", aligner=aligner_list, gender=gender_list)
+		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.unsorted.Design.vcf", aligner=aligner_list)
 
 rule help:
 	"""
@@ -624,13 +625,14 @@ rule canoes_calling:
 		gc = f"{resultDir}/GCpercent.{gender}.tsv"
 	output:
 		cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.unfix.csv"
-		#genotyping  = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.csv",
 		#pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.pdf"
 	params: scripts = config["scripts"]
-	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CANOEScalling.log"
+	log: 
+		log = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CANOEScalling.log",
+		err = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CANOEScalling.err"
 	shell:
 		"""
-			Rscript {params.scripts}/CANOES.v2.R --gc-file {input.gc} --reads-file {input.read} --output-file {output.cnvcall} --genotyping-output {output.genotyping} --pdf-output {output.pdf}
+			Rscript {params.scripts}/CANOES.v2.R --gcfile {input.gc} --readsfile {input.read} --output {output.cnvcall} 1> {log.log} 2> {log.err}
 		"""
 
 rule fix_canoes_calling:
@@ -653,7 +655,7 @@ rule bedtovcf:
 	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.vcf"
 	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.bedtovcf.log"
 	params:	scripts = config["scripts"]
-	shell: "variantconvert convert -i {input} -o {output} -c {params.scripts}/config_canoes_bed.json 2> {log} "
+	shell: "variantconvert convert -i {input} -o {output} -c {params.scripts}/fileconversion/config_canoes_bed.json 2> {log} "
 
 # Another fix ?
 # [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
