@@ -15,6 +15,7 @@
 ########################################################################################################
 
 library(optparse)
+library(plyr)
 library(dplyr)
 
 option_list <- list(
@@ -43,7 +44,7 @@ multi_strsplit<-function(x,splits,y){
 }
 
 # Test function
-Test <- function(gc_file, reads_file, chromosome, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output) {
+Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output) {
   gc <- read.table(gc_file)$V4 # assuming the GC content is in column 4
   names(gc) <- "gc" # column name is gc
   canoes.reads_un <- read.table(reads_file,header=TRUE)
