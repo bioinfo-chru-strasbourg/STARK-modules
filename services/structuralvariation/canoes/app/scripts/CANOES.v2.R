@@ -20,7 +20,7 @@ library(dplyr)
 option_list <- list(
   make_option("--gcfile", type="character", default="gc.tsv", dest='gc', help="File containing the GC values in column 4"),
   make_option("--readsfile", type="character", default="canoes.reads.tsv", dest='reads', help="File containing the reads data"),
-  make_option("--chromosome",default="A",help='Perform calling for autosomes or chr XX or chr XY ', dest='chromosome'),
+  make_option("--chromosome",default="A",help='Perform calling for autosomes or chr XX or chr XY ', dest='modechrom'),
   make_option("--samples",default=NULL,help="Text file containing the list of sample bams to analyse",dest='samples'),
   make_option("--pvalue", type="numeric", default=1e-08, dest='pvalue', help="Average rate of occurrence of CNVs"),
   make_option("--tnum", type="integer", default=6, dest='tnum', help="Expected number of targets in a CNV"),
@@ -31,50 +31,53 @@ option_list <- list(
   make_option("--pdf", type="character", default=NULL, dest='pdf', help="Output PDF file name for plots")
 )
 
+
 opt_parser <- OptionParser(option_list=option_list)
 options <- parse_args(opt_parser)
+
+# function which recursively splits x by an element of 'splits' then extracts the y element of the split vector
+multi_strsplit<-function(x,splits,y){
+	X<-x
+	for(i in 1:length(splits)){X=strsplit(X,splits[i], fixed = TRUE)[[1]][y[i]]}
+	return(X)
+}
 
 # Test function
 Test <- function(gc_file, reads_file, chromosome, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output) {
   gc <- read.table(gc_file)$V4 # assuming the GC content is in column 4
   names(gc) <- "gc" # column name is gc
-  canoes.reads <- read.table(reads_file,header=TRUE)
+  canoes.reads_un <- read.table(reads_file,header=TRUE)
   data <- read.table(reads_file,header=TRUE)
   sample.names <- names(data)[4:length(names(data))]
-  names(canoes.reads) <- c("chromosome", "start", "end", sample.names)
-  target <- seq(1, nrow(canoes.reads))
-  canoes.reads <- cbind(target, gc, canoes.reads)
-
-print('We analyse before sample filtering')
-print(head(canoes.reads))
+  names(canoes.reads_un) <- c("chromosome", "start", "end", sample.names)
+  target <- seq(1, nrow(canoes.reads_un))
+  canoes.reads_un <- cbind(target, gc, canoes.reads_un)
 
 if(length(samples)>0){
     samplesbams<-apply(read.table(paste(samples)),1,toString)
     a<-length(strsplit(samplesbams[1],"/")[[1]])
     sample.names_toanalyse<-sapply(samplesbams,multi_strsplit,c("/","."),c(a,1))
     names(sample.names_toanalyse)<-NULL
+    sample.names_toanalyse <- unique(sample.names_toanalyse)
 }else{
     message('ERROR: No samples to analyse')
     quit()
 }
-
-canoes.reads <- canoes.reads[, sample.names_toanalyse]
-
-print('We analyse after sample filtering')
-print(head(canoes.reads))
+# We filter out samples depending on the list for XX/XY analysis
+canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end", sample.names_toanalyse)]
 
  # We filter out chrX/Y depending on the type of analysis (A = Autosome only, XX/XY, sexual chr only)
- if (chromosome=="A"){
-    canoes.reads<-subset(canoes.reads, chromosome!="X" & chromosome!="Y")
+ if (modechrom=="A"){
+    canoes.reads<-subset(canoes.reads, chromosome!="chrX" & chromosome!="chrY")
  }
  # we don't call chr Y
- if (chromosome=="XX" || modechrom=="XY"){
-    canoes.reads<-subset(canoes.reads, chromosome=="X")
+ if (modechrom=="XX" || modechrom=="XY"){
+    canoes.reads<-subset(canoes.reads, chromosome=="chrX")
  }
 
-  xcnv.list <- vector('list', length(sample.names))
-  for (i in 1:length(sample.names)) {
-    xcnv.list[[i]] <- CallCNVs(sample.names[i], canoes.reads, p_value, Tnum, D, numrefs, FALSE, homdel_mean) 
+  xcnv.list <- vector('list', length(sample.names_toanalyse))
+  for (i in 1:length(sample.names_toanalyse)) {
+    xcnv.list[[i]] <- CallCNVs(sample.names_toanalyse[i], canoes.reads, p_value, Tnum, D, numrefs, FALSE, homdel_mean) 
   }
   
   xcnvs <- do.call('rbind', xcnv.list)
@@ -796,4 +799,4 @@ CalcCopyNumber <- function(data, cnvs, homdel.mean){
 }
 
 # Call the Test function with parsed arguments
-Test(options$gc, options$reads, optionS$chromosome, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$pdf)
+Test(options$gc, options$reads, options$modechrom, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$pdf)
