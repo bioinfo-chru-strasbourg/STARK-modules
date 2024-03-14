@@ -406,9 +406,10 @@ if not config['BED_FILE']:
 # A = all ; XX = Female only ; XY = Male only
 # files_list_A contains the full path of all files (bam files for ex)
 # Warning the key dictionnary for sexe is A/M/F but the gender_list is A/XY/XX
-files_list_A = [runDict[sample]['.bam'] for sample in sample_list if sample in runDict and '.bam' in runDict[sample]]
-files_list_XX = [files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']
-files_list_XY = [files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']
+files_list_A = list(set([runDict[sample]['.bam'] for sample in sample_list if sample in runDict and '.bam' in runDict[sample]]))
+files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']))
+files_list_XY = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']))
+
 
 # Creating a txt list for the bam files per aligner per gender (A, M & F)
 for aligner in aligner_list:
@@ -546,14 +547,6 @@ rule gc_percent:
 			cat {output.gc_percent_header} | awk 'NR>27{{print $0}}' > {output.gc_percent}
 	 	"""
 
-
-# We can pipe the result in the previous rule
-#rule filter_gc_percent_file:
-#	""" Filter out the GC file, removing the 27 first lines """
-#	input:  rules.gc_percent.output
-#	output: f"{resultDir}/GCpercent.tsv"
-#	shell: " cat {input} | awk 'NR>27{{print $0}}' > {output} "
-
 rule bam_to_multicov:
 	""" From each sample bam file generate a coverage file filtered with the bed provided """
 	input: 
@@ -609,8 +602,8 @@ rule canoes_calling:
 			gc = rules.gc_percent.output.gc_percent
 	params:
 			scripts = config["scripts"],
-			chromosome= lambda wildcards: "{gender}",
-			bamlist= lambda wildcards: f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
+			chromosome= lambda wildcards: {gender},
+			bamlist= lambda wildcards: f"{resultDir}/{serviceName}.{date_time}.{gender}.list.txt",
 			pvalue = config["pval"],
 			distance = config["dist"],
 			tnumeric = config["tnum"],
