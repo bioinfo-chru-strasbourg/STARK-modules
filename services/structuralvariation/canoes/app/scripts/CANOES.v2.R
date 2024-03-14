@@ -83,10 +83,10 @@ canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end"
   
   xcnvs <- do.call('rbind', xcnv.list)
   xcnvs <- xcnvs %>%
-      mutate(Chrom = ifelse(Chrom == "23", "chrX", 
-                             ifelse(Chrom == "24", "chrY", Chrom)))
-  xcnvs$INTERVAL <- gsub("^23:", "chrX:", xcnvs$INTERVAL)
-  xcnvs$INTERVAL <- gsub("^24:", "chrX:", xcnvs$INTERVAL)
+      mutate(Chrom = ifelse(Chrom == "23", "X", 
+                             ifelse(Chrom == "24", "Y", Chrom)))
+  xcnvs$INTERVAL <- gsub("^23:", "X:", xcnvs$INTERVAL)
+  xcnvs$INTERVAL <- gsub("^24:", "Y:", xcnvs$INTERVAL)
 
   start_end <- strsplit(xcnvs$INTERVAL, "[:-]")
   start <- as.numeric(sapply(start_end, "[", 2))
@@ -95,6 +95,7 @@ canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end"
   xcnvs$Start <- start
   xcnvs$End <- end
   xcnvs_final <- xcnvs[, c("Chrom", "Start", "End", "CNV", "SAMPLE", "INTERVAL", "KB", "MID_BP", "TARGETS", "NUM_TARG", "MLCN", "Q_SOME")]
+  xcnvs_final$INTERVAL <- gsub("^(\\d+):", "chr\\1:", xcnvs_final$INTERVAL)
   write.table(xcnvs_final, file = output_file, sep = "\t", quote = FALSE)
   
   pdf(pdf_output)
