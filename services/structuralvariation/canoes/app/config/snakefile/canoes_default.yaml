@@ -87,5 +87,5 @@ annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database
 pval: "1e-08" # pval:average rate of occurrence of CNVs (real) default is 1e-08
 dist: "70000" # dist: expected distance between targets in a CNV (integer) default is 70,000
 tnum: "6" # tnum: expected number of targets in a CNV (integer) default is 6
-numref: "30" # numref : maximum number of reference samples to use (integer) default is 30
-# the weighted variance calculations will take a long time if too many reference samples are used
+numref: "30" # numref : maximum number of reference samples to use (integer) default is 30 ; the weighted variance calculations will take a long time if too many reference samples are used
+homdel: "0.2" # threeshold for homozigous deletion
