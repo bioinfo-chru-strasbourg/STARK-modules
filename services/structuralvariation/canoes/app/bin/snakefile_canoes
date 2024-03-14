@@ -533,12 +533,18 @@ rule gc_percent:
 		Output a tsv with 4 columns : chromosome start stop gc	
 	"""
 	input: config["REFGENEFA_PATH"]
-	output: f"{resultDir}/GCpercent.tsv"
+	output: 
+			gc_percent_header=temp(f"{resultDir}/GCpercent_header.tsv"),
+			gc_percent = f"{resultDir}/GCpercent.tsv"
 	params: 
 		bedfile = config['BED_FILE'],
 		java_option = config['JAVA_OPTION']
 	log: f"{resultDir}/GCpercent.log"
-	shell: " gatk --java-options {params.java_option} AnnotateIntervals -L {params.bedfile} -R {input} -imr OVERLAPPING_ONLY -O - 2> {log} | awk 'NR>27{{print $0}}' > {output}"
+	shell: 
+		"""
+			gatk --java-options {params.java_option} AnnotateIntervals -L {params.bedfile} -R {input} -imr OVERLAPPING_ONLY -O {output.gc_percent_header} 2> {log}
+			cat {output.gc_percent_header} | awk 'NR>27{{print $0}}' > {output.gc_percent}
+	 	"""
 
 
 # We can pipe the result in the previous rule
@@ -600,7 +606,7 @@ rule canoes_calling:
 	""" CANOES analysis """
 	input: 
 			read = rules.merge_multicov.output,
-			gc = rules.gc_percent.output
+			gc = rules.gc_percent.output.gc_percent
 	params:
 			scripts = config["scripts"],
 			chromosome= lambda wildcards: "{gender}",
