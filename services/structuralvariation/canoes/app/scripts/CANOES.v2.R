@@ -4,7 +4,7 @@
 ##########################################################################
 
 ################## Context ##################
-# Original R script from http://www.columbia.edu/~ys2411/canoes/CANOES.R
+# Original R script from https://github.com/ShenLab/CANOES
 
 ########## Note ########################################################################################
 # DEV v1 11/03/2024
@@ -94,7 +94,7 @@ canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end"
   # Add start and end positions as new columns
   xcnvs$Start <- start
   xcnvs$End <- end
-  xcnvs_final <- xcnvs[, c("Chrom", "Start", "End", "SV Type", "Sample_ID", "INTERVAL", "KB", "MID_BP", "TARGETS", "NUM_TARG", "MLCN", "Q_SOME")]
+  xcnvs_final <- xcnvs[, c("Chrom", "Start", "End", "CNV", "SAMPLE", "INTERVAL", "KB", "MID_BP", "TARGETS", "NUM_TARG", "MLCN", "Q_SOME")]
   write.table(xcnvs_final, file = output_file, sep = "\t", quote = FALSE)
   
   pdf(pdf_output)
@@ -775,7 +775,7 @@ PrintCNVs <- function(test.sample.name, viterbi.state,
   xcnv <- cbind(cnvs.df[, c("sample.name", "cnv.type", "cnv.interval", 
                       "cnv.kbs", "cnv.chromosome", "cnv.midbp", 
                       "cnv.targets", "num.targets")], 0)
-  colnames(xcnv) <- c("Sample_ID", "'SV type", "INTERVAL", "KB", "Chrom", "MID_BP", "TARGETS",
+  colnames(xcnv) <- c("SAMPLE", "CNV", "INTERVAL", "KB", "Chrom", "MID_BP", "TARGETS",
                       "NUM_TARG", "MLCN")
   xcnv$Q_SOME <- NA
   return(xcnv)

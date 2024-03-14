@@ -5,12 +5,7 @@
 		"output_format": "vcf",
 		"skip_rows": 0,
 		"comment": "",
-		"unique_variant_id": [
-			"Chrom",
-			"Start",
-			"End",
-			"SV type"
-		]
+		"unique_variant_id": ["Chrom", "Start", "End", "CNV"]
 	},
 	"GENOME": {
 		"assembly": "hg19",
@@ -48,33 +43,26 @@
 		"#CHROM": "Chrom",
 		"POS": "Start",
 		"ID": "",
-		"REF": [
-			"HELPER_FUNCTION",
-			"get_ref_from_canoes_bed",
-			"Chrom",
-			"Start"
-		],
-		"ALT": [
-			"HELPER_FUNCTION",
-			"get_alt_from_canoes_bed",
-			"SV type"
-		],
+		"REF": ["HELPER_FUNCTION", "get_ref_from_canoes_bed", "Chrom", "Start"],
+		"ALT": ["HELPER_FUNCTION", "get_alt_from_canoes_bed", "CNV"],
 		"QUAL": "",
 		"FILTER": "",
 		"INFO": {
-			"SVTYPE": "SV type",
-			"SVLEN": [
-				"HELPER_FUNCTION",
-				"get_svlen_from_decon",
-				"Start",
-				"End"
-			],
-			"END": "End"
+			"SVTYPE": "CNV",
+			"SVLEN": ["HELPER_FUNCTION", "get_svlen_from_decon", "Start", "End"],
+			"END": "End",
+			"INTERVAL": "INTERVAL",
+			"KB": "KB",
+			"MID_BP": "MID_BP",
+			"TARGETS": "TARGETS",
+			"NUM_TARG": "NUM_TARG",
+			"MLCN": "MLCN",
+			"Q_SOME" : "Q_SOME"
 		},
 		"FORMAT": {
 			"GT": ""
 		},
-		"SAMPLE": "Samples_ID"
+		"SAMPLE": "SAMPLE"
 	},
 	"COLUMNS_DESCRIPTION": {
 		"ALT": {
@@ -84,20 +72,59 @@
 		"INFO": {
 			"SVTYPE": {
 				"Type": "String",
+				"Number": "1",
 				"Description": "Type of structural variant"
 			},
 			"SVLEN": {
 				"Type": "Integer",
+				"Number": "1",
 				"Description": "Difference in length between REF and ALT positions"
 			},
 			"END": {
 				"Type": "Integer",
+				"Number": "1",
 				"Description": "Second breakpoint of the SV, for SVs given in a single record"
+			},
+			"INTERVALS": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "CNV coordinates in the form chr:start-stop"
+			},
+			"KB": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "Length of CNV in kilobases"
+			},
+			"MID_BP": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "Middle base pair of CNV"
+			},
+			"TARGETS": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "Target numbers of CNV in the form start..stop"
+			},
+			"NUM_TARG": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "how many targets are in the CNV"
+			},
+			"MLCN": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "Maximum likelihood copy number"
+			},
+			"Q_SOME": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "Phred-scaled quality score for the CNV"
 			}
 		},
 		"FORMAT": {
 			"GT": {
 				"Type": "String",
+				"Number": "1",
 				"Description": "Genotype"
 			}
 		}

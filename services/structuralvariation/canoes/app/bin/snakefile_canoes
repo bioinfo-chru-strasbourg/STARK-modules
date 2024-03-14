@@ -1,3 +1,21 @@
+##########################################################################
+# Snakemakefile Version:   2.0
+# Description:             Snakemake file to run CANOES module
+##########################################################################
+
+# PROD version 1 : 03/06/2022
+# Authoring : Jean Baptiste LAMOUCHE
+
+# https://github.com/ShenLab/CANOES
+
+# PROD version 2 : 14/03/2024 changelog
+# Authoring : Thomas LAVAUX
+	# AnnotSV version 3.4 (include the vcf converter) HPO ready with exomiser
+	# options to process bed, k-merisation
+	# convert R to R scripts and rewrite some code 
+	# re-arrange/simplify/compact code a lot, input files copying is within the rules, f-string, etc.
+	# add a draft for an html report using jinja2
+
 ################## Import libraries ##################
 import os
 import glob
@@ -9,7 +27,6 @@ from datetime import datetime
 from itertools import product
 from collections import defaultdict
 from jinja2 import Environment, FileSystemLoader
-
 from os.path import join as osj
 
 ################## Configuration file ##################
@@ -616,8 +633,8 @@ rule bedtovcf:
 	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf"
 	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
-	params:	scripts = config["scripts"]
-	shell: "variantconvert convert -i {input} -o {output} -c {params.scripts}/fileconversion/config_canoes_bed.json 2> {log} "
+	params:	scriptsconfig = config["scriptsconfig"]
+	shell: "variantconvert convert -i {input} -o {output} -c {params.scriptsconfig}/config_canoes_bed.json 2> {log} "
 
 rule sortvcf:
 	""" Sort vcf """
