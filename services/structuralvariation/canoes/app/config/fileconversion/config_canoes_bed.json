@@ -83,7 +83,7 @@
 				"Number": "1",
 				"Description": "Second breakpoint of the SV, for SVs given in a single record"
 			},
-			"INTERVALS": {
+			"INTERVAL": {
 				"Type": "Integer",
 				"Number": "1",
 				"Description": "CNV coordinates in the form chr:start-stop"

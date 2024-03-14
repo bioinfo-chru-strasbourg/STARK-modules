@@ -54,7 +54,7 @@ THREADS: "4"
 DEBUG_MODE: FALSE
 
 # Path of the dummy vcf
-DUMMY_PATH: "/app/comfig/scripts/dummy"
+DUMMY_PATH: "/app/scripts/dummy"
 # Path of the script folder
 scripts: "/app/scripts"
 scriptsconfig: "/app/config/fileconversion/"
