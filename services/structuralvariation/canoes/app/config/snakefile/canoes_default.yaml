@@ -57,6 +57,7 @@ DEBUG_MODE: FALSE
 DUMMY_PATH: "/app/comfig/scripts/dummy"
 # Path of the script folder
 scripts: "/app/scripts"
+scriptsconfig: "/app/config/fileconversion/"
 
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
