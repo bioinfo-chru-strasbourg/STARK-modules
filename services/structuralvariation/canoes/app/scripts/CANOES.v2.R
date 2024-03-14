@@ -15,17 +15,19 @@
 ########################################################################################################
 
 library(optparse)
+library(dplyr)
 
 option_list <- list(
   make_option("--gcfile", type="character", default="gc.tsv", dest='gc', help="File containing the GC values in column 4"),
   make_option("--readsfile", type="character", default="canoes.reads.tsv", dest='reads', help="File containing the reads data"),
-  make_option("--pvalue", type="numeric", default=1e-08, dest='pvalue', help="P-value parameter for CNV calling"),
-  make_option("--Tnum", type="integer", default=6, dest='tnum', help="Tnum parameter for CNV calling"),
-  make_option("--D", type="integer", default=70000, dest='dvalue', help="D parameter for CNV calling"),
-  make_option("--numrefs", type="integer", default=30, dest='numrefs', help="Numrefs parameter for CNV calling"),
-  make_option("--homdel", type="numeric", default=0.2, dest='homdel', help="Homdel-mean parameter for CNV calling"),
-  make_option("--output", type="character", default="CNVCall.csv", dest='output', help="Output file name for xcnvs"),
-  #make_option("--genotyping", type="character", default=NULL, dest='genotyping', help="Output file name for genotyping"),
+  make_option("--chromosome",default="A",help='Perform calling for autosomes or chr XX or chr XY ', dest='chromosome'),
+  make_option("--samples",default=NULL,help="Text file containing the list of sample bams to analyse",dest='samples'),
+  make_option("--pvalue", type="numeric", default=1e-08, dest='pvalue', help="Average rate of occurrence of CNVs"),
+  make_option("--tnum", type="integer", default=6, dest='tnum', help="Expected number of targets in a CNV"),
+  make_option("--distance", type="integer", default=70000, dest='dvalue', help="Expected distance between targets in a CNV"),
+  make_option("--numrefs", type="integer", default=30, dest='numrefs', help="Maximum number of reference samples to use"),
+  make_option("--homdel", type="numeric", default=0.2, dest='homdel', help="Threeshold for homozigous deletion"),
+  make_option("--output", type="character", default="CNVCall.csv", dest='output', help="Output file name"),
   make_option("--pdf", type="character", default=NULL, dest='pdf', help="Output PDF file name for plots")
 )
 
@@ -33,7 +35,7 @@ opt_parser <- OptionParser(option_list=option_list)
 options <- parse_args(opt_parser)
 
 # Test function
-Test <- function(gc_file, reads_file, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output) {
+Test <- function(gc_file, reads_file, chromosome, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output) {
   gc <- read.table(gc_file)$V4 # assuming the GC content is in column 4
   names(gc) <- "gc" # column name is gc
   canoes.reads <- read.table(reads_file,header=TRUE)
@@ -42,14 +44,42 @@ Test <- function(gc_file, reads_file, p_value, Tnum, D, numrefs, homdel_mean, ou
   names(canoes.reads) <- c("chromosome", "start", "end", sample.names)
   target <- seq(1, nrow(canoes.reads))
   canoes.reads <- cbind(target, gc, canoes.reads)
-  
+
+print('We analyse before sample filtering')
+print(head(canoes.reads))
+
+if(length(samples)>0){
+    samplesbams<-apply(read.table(paste(samples)),1,toString)
+    a<-length(strsplit(samplesbams[1],"/")[[1]])
+    sample.names_toanalyse<-sapply(samplesbams,multi_strsplit,c("/","."),c(a,1))
+    names(sample.names_toanalyse)<-NULL
+}else{
+    message('ERROR: No samples to analyse')
+    quit()
+}
+
+canoes.reads <- canoes.reads[, sample.names_toanalyse]
+
+print('We analyse after sample filtering')
+print(head(canoes.reads))
+
+ # We filter out chrX/Y depending on the type of analysis (A = Autosome only, XX/XY, sexual chr only)
+ if (chromosome=="A"){
+    canoes.reads<-subset(canoes.reads, chromosome!="X" & chromosome!="Y")
+ }
+ # we don't call chr Y
+ if (chromosome=="XX" || modechrom=="XY"){
+    canoes.reads<-subset(canoes.reads, chromosome=="X")
+ }
+
   xcnv.list <- vector('list', length(sample.names))
   for (i in 1:length(sample.names)) {
     xcnv.list[[i]] <- CallCNVs(sample.names[i], canoes.reads, p_value, Tnum, D, numrefs, FALSE, homdel_mean) 
   }
   
   xcnvs <- do.call('rbind', xcnv.list)
-  write.csv(xcnvs, file = output_file)
+  write.table(xcnvs, file = output_file, sep = "\t", quote = FALSE)
+  #write.csv(xcnvs, file = output_file)
   
   pdf(pdf_output)
   for (i in 1:nrow(xcnvs)) {
@@ -184,10 +214,15 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
     # remove sex chromosomes
     #cat("Trying to remove sex chromosomes and 'chr' prefixes\n")
     #counts <- subset(counts, !chromosome %in% c("chrX", "chrY", "X", "Y"))
-    #if (sum(grepl("chr", counts$chromosome))==length(counts$chromosome)){
-    #  counts$chromosome <- gsub("chr", "", counts$chromosome)
-    #}
-    #counts$chromosome <- as.numeric(counts$chromosome)
+    
+       
+    if (sum(grepl("chr", counts$chromosome))==length(counts$chromosome)){
+      counts <- counts %>%
+      mutate(chromosome = ifelse(chromosome == "chrX", "chr23", 
+                             ifelse(chromosome == "chrY", "chr24", chromosome)))
+      counts$chromosome <- gsub("chr", "", counts$chromosome)
+    }
+    counts$chromosome <- as.numeric(counts$chromosome)
     #if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0) 
     #  stop("chromosome must take value in range 1-22 (support for sex chromosomes to come)")
   #}
@@ -250,6 +285,7 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
                                 nonzero.rows=nonzero.rows)
 
   counts <- counts[nonzero.rows, ]
+
   # get the distances between consecutive probes
   distances <- GetDistances(counts)
   # estimate the read count variance at each probe
@@ -760,4 +796,4 @@ CalcCopyNumber <- function(data, cnvs, homdel.mean){
 }
 
 # Call the Test function with parsed arguments
-Test(options$gc, options$reads, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$pdf)
+Test(options$gc, options$reads, optionS$chromosome, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$pdf)

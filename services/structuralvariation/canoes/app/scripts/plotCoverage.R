@@ -19,7 +19,7 @@ library(optparse)
 
 # Define the option parser
 option_list <- list(
-  make_option(c("-s", "--sample"), type="character", help="Sample name"),
+  make_option(c("-s", "--samplefile"), type="character", help="Sample file"),
   make_option(c("-i", "--input"), type="character", help="Input file path"),
   make_option(c("-o", "--output"), type="character", help="Output directory path")
 )
@@ -27,6 +27,26 @@ option_list <- list(
 # Parse command line arguments
 opt_parser <- OptionParser(option_list=option_list)
 options <- parse_args(opt_parser)
+
+# function which recursively splits x by an element of 'splits' then extracts the y element of the split vector
+multi_strsplit<-function(x,splits,y){
+	X<-x
+	for(i in 1:length(splits)){X=strsplit(X,splits[i], fixed = TRUE)[[1]][y[i]]}
+	return(X)
+}
+
+sample_file<-apply(read.table(paste(samplefile)),1,toString)
+
+# get the sample names from the path of the files
+a<-length(strsplit(sample_file[1],"/")[[1]])
+sample.names<-sapply(sample_file,multi_strsplit,c("/","."),c(a,1))
+names(sample.names)<-NULL
+
+  for (i in 1:length(sample.names)) {
+    BoxPlotCoverage(sample.names[i], input, output)
+	BarPlotCoverage(sample.names[i], input, output)
+  }
+
 
 BoxPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	# Boxplot coverage data from coverage statistique
@@ -92,5 +112,5 @@ BarPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
   	dev.off()
 }
 # Execute the functions with command-line arguments
-BoxPlotCoverage(options$sample, options$input, options$output)
-BarPlotCoverage(options$sample, options$input, options$output)
+BoxPlotCoverage(options$samplefile, options$input, options$output)
+BarPlotCoverage(options$samplefile, options$input, options$output)

@@ -29,7 +29,7 @@ def fix_canoe_tsv(input_file, output_file):
     data.columns = ["Sample_ID", "SV type", "Coordinates"]
 
     # Modify chromosome values
-    data['#Chrom'] = data['Coordinates'].str.split(':').str[0].replace({'23': 'X', '24': 'Y'})
+    #data['#Chrom'] = data['Coordinates'].str.split(':').str[0].replace({'23': 'X', '24': 'Y'})
     data[['Start', 'End']] = data['Coordinates'].str.split(':').str[1].str.split('-', expand=True)
 
     # Write to output file
@@ -93,7 +93,7 @@ def addOtherSamples(sexless_list, sexlist, infos, run, exclude_tag):
 def createplotstats(coverage):
 	'''
 	Generate necessary stats to plot CANOES analysis bar and boxplot
-	Return a dictionary with stats
+	Return a dictionary with those stats
 	'''
 	dictionary = {'header': [], 'depth': []}
 	with open(coverage, 'r') as file:
@@ -479,11 +479,11 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
-		expand(f"{resultDir}/GCpercent.{gender}.tsv", gender=gender_list),
+		f"{resultDir}/GCpercent.tsv",
 		#expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list),
-		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv", aligner=aligner_list, gender=gender_list),
-		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv", aligner=aligner_list, gender=gender_list)
-		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.unsorted.Design.vcf", aligner=aligner_list)
+		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.tsv", aligner=aligner_list),
+		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
+		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv", aligner=aligner_list)
 
 rule help:
 	"""
@@ -529,36 +529,27 @@ rule indexing:
 	shell: "samtools index -b -@ {threads} {input} {output}"
 
 rule gc_percent:
-	""" Compute GC percent """
+	""" Compute GC percent from the reference genome and a bed file, removing header 
+		Output a tsv with 4 columns : chromosome start stop gc	
+	"""
 	input: config["REFGENEFA_PATH"]
-	output: temp(f"{resultDir}/GCpercent_header.tsv")
+	output: f"{resultDir}/GCpercent.tsv"
 	params: 
 		bedfile = config['BED_FILE'],
 		java_option = config['JAVA_OPTION']
 	log: f"{resultDir}/GCpercent.log"
-	shell: " gatk --java-options {params.java_option} AnnotateIntervals -L {params.bedfile} -R {input} -imr OVERLAPPING_ONLY -O {output} 2> {log} "
+	shell: " gatk --java-options {params.java_option} AnnotateIntervals -L {params.bedfile} -R {input} -imr OVERLAPPING_ONLY -O - 2> {log} | awk 'NR>27{{print $0}}' > {output}"
 
-rule filter_gc_percent_file:
-	""" Filter out the GC file, removing the 27 first lines """
-	input:  rules.gc_percent.output
-	output: temp(f"{resultDir}/GCpercent.tsv")
-	shell: " cat {input} | awk 'NR>27{{print $0}}' > {output} "
 
-rule gender_gc_percent:
-	""" Filter out chrX/Y results if analysis is for autosome only (A) """
-	input: rules.filter_gc_percent_file.output
-	output:	temp(f"{resultDir}/GCpercent.{gender}.tsv")
-	shell:
-		"""
-			if [[ {gender} == "A" ]]; then
-				grep -vE '^chrX|^chrY' {input} > {output};
-			else
-				cp {input} {output};
-			fi;
-		"""
+# We can pipe the result in the previous rule
+#rule filter_gc_percent_file:
+#	""" Filter out the GC file, removing the 27 first lines """
+#	input:  rules.gc_percent.output
+#	output: f"{resultDir}/GCpercent.tsv"
+#	shell: " cat {input} | awk 'NR>27{{print $0}}' > {output} "
 
 rule bam_to_multicov:
-	""" From each sample bam file generate a coverage file """
+	""" From each sample bam file generate a coverage file filtered with the bed provided """
 	input: 
 		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
 		bai = f"{resultDir}/{{sample}}.{{aligner}}.bai"
@@ -605,72 +596,59 @@ rule plot_coverage:
 		err=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.err"
 	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output} 1> {log.log} 2> {log.err} "
 
-
-rule split_per_gender:
-	""" Split coverage datas per gender """
-	input: rules.merge_multicov.output
-	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.unfix.tsv"
-	shell: """ if [ {gender} == "XX" ]|| [ {gender} == "YY" ]; then cp {input} {output} ; else awk -F',' '$1 !~ /^chr[XY]/' {input} > {output} ; fi """
-
-rule fix_chrXY:
-	""" Replace chrX with chr23, chrY with chr24 for CANOES calling compability """
-	input: rules.split_per_gender.output
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv"
-	shell: """ sed -e "s/^chrX/chr23/" {input} | sed -e "s/^chrY/chr24/" > {output} """
-
 rule canoes_calling:
 	""" CANOES analysis """
-	input:
-		read = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.multicoverage.tsv",
-		gc = f"{resultDir}/GCpercent.{gender}.tsv"
+	input: 
+			read = rules.merge_multicov.output,
+			gc = rules.gc_percent.output
+	params:
+			scripts = config["scripts"],
+			chromosome=lambda.wildcards: "{gender}",
+			bamlist=lambda.wildcards: f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
+			pvalue = config["pval"],
+			distance = config["dist"],
+			tnumeric = config["tnum"],
+			numreference = config["numref"],
+			hom = config["homdel"]
 	output:
-		cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.unfix.csv"
-		#pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.pdf"
-	params: scripts = config["scripts"]
+			cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv"
+			#pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.pdf"
 	log: 
 		log = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CANOEScalling.log",
 		err = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CANOEScalling.err"
 	shell:
 		"""
-			Rscript {params.scripts}/CANOES.v2.R --gcfile {input.gc} --readsfile {input.read} --output {output.cnvcall} 1> {log.log} 2> {log.err}
+			Rscript {params.scripts}/CANOES.v2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
+			--samples {params.bamlist} --homdel {params.hom} --numref {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
+			--pvalue {params.pvalue} --output {output.cnvcall} 1> {log.log} 2> {log.err}
 		"""
 
-rule fix_canoes_calling:
-	""" CANOES CNVcall fix : remove double quote, replace comma with tab, remove header and sort """
-	input: rules.canoes_calling.output.cnvcall
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv"
-	shell: """ cat {input} | sed 's/"//g' | sed 's/,/\t/g' | sed '1d' | sort -u > {output} """
-	
+rule merge_makeCNVcalls:
+	""" Merge all CNV call results """
+	input: expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv", gender=gender_list, aligner=aligner_list)
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
+	shell: "cat {input} | sort -u | sort -r >> {output}"
+
 
 # Should be variantconvert tsv to vcf ?
 rule canoes_to_bed:
 	""" CANOES CNVcall tsv to bed conversion """
-	input: rules.fix_canoes_calling.output
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.bed"
+	input: rules.merge_makeCNVcalls.output
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.bed"
 	run: fix_canoe_tsv(input[0], output[0])
 
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
 	input: rules.canoes_to_bed.output
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.vcf"
-	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.bedtovcf.log"
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf"
+	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
 	params:	scripts = config["scripts"]
 	shell: "variantconvert convert -i {input} -o {output} -c {params.scripts}/fileconversion/config_canoes_bed.json 2> {log} "
 
-# Another fix ?
-# [[ -s {output} ]] && sed -i '/^#/! s/^/chr/' {output} || echo "No data to annotate" > {output}
-
-rule merge_gender:
-	""" Merge all CNV call vcf results """
-	input: expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.vcf", gender=gender_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.unsorted.Design.vcf"
-	shell: "cat {input} | sort -u | sort -r >> {output}"
-
-
 rule sortvcf:
 	""" Sort vcf """
-	input: rules.merge_gender.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.Design.vcf")
+	input: rules.bedtovcf.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf")
 	params: dummypath=config['DUMMY_PATH']
 	shell: "grep '^#' {input} > {output} && grep -v '^#' {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}"
 
@@ -678,14 +656,14 @@ rule sortvcf:
 rule vcf2gz:
 	""" Compress vcf with bgzip """
 	input: rules.sortvcf.output
-	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.Design.vcf.gz"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	params: dummypath=config['DUMMY_PATH']
 	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf.gz > {output} ; tabix {output}"
 
 
 rule splitvcf:
 	"""
-	Split vcf with bcftools
+	Split vcf into each individual sample with bcftools
 	-s {sample}: comma-separated list of samples to include
 	-Oz: output vcf compressed
 	-c1: minimum allele count (INFO/AC) of sites to be printed
