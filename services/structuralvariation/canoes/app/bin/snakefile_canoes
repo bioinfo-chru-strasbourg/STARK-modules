@@ -24,23 +24,6 @@ def extract_columns_per_sample(input_file, output_file):
 	for column in df.columns[1:]:  # Exclude the first column (chromosome segment)
 		df[[df.columns[0], column]].to_csv(output_file, sep='\t', index=False, header=False)
 
-def fix_canoe_tsv(input_file, output_file):
-    data = pd.read_csv(input_file, sep='\t', header=None)
-    data.columns = ["Sample_ID", "SV type", "Coordinates"]
-
-    # Modify chromosome values
-    #data['#Chrom'] = data['Coordinates'].str.split(':').str[0].replace({'23': 'X', '24': 'Y'})
-    data[['Start', 'End']] = data['Coordinates'].str.split(':').str[1].str.split('-', expand=True)
-
-    # Write to output file
-    with open(output_file, "w") as o:
-        o.write("#Chrom\tStart\tEnd\tSV type\tSamples_ID\n")
-        for index, row in data.iterrows():
-            if row['Sample_ID'].startswith("no CNV found") or row['Sample_ID'].startswith("error in the analysis"):
-                o.write(row['Sample_ID'] + '\n')
-            else:
-                o.write(f"{row['#Chrom']}\t{row['Start']}\t{row['End']}\t{row['SV type']}\t{row['Sample_ID']}\n")
-
 
 def addOtherSamples(sexless_list, sexlist, infos, run, exclude_tag):
 	new_sample_list = []
@@ -481,10 +464,9 @@ rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
 		f"{resultDir}/GCpercent.tsv",
-		#expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", aligner=aligner_list, sample=sample_list),
-		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.tsv", aligner=aligner_list),
-		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
-		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv", aligner=aligner_list)
+		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
+		f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
 
 rule help:
 	"""
@@ -602,19 +584,19 @@ rule canoes_calling:
 			gc = rules.gc_percent.output.gc_percent
 	params:
 			scripts = config["scripts"],
-			chromosome= lambda wildcards: {gender},
-			bamlist= lambda wildcards: f"{resultDir}/{serviceName}.{date_time}.{gender}.list.txt",
+			chromosome= "{gender}",
+			bamlist= f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
 			pvalue = config["pval"],
 			distance = config["dist"],
 			tnumeric = config["tnum"],
 			numreference = config["numref"],
 			hom = config["homdel"]
 	output:
-			cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv"
+			cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv"
 			#pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.pdf"
 	log: 
-		log = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CANOEScalling.log",
-		err = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CANOEScalling.err"
+		log = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.log",
+		err = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.err"
 	shell:
 		"""
 			Rscript {params.scripts}/CANOES.v2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
@@ -624,21 +606,14 @@ rule canoes_calling:
 
 rule merge_makeCNVcalls:
 	""" Merge all CNV call results """
-	input: expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.CNVCall.tsv", gender=gender_list, aligner=aligner_list)
+	input: expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", gender=gender_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
 	shell: "cat {input} | sort -u | sort -r >> {output}"
 
 
-# Should be variantconvert tsv to vcf ?
-rule canoes_to_bed:
-	""" CANOES CNVcall tsv to bed conversion """
-	input: rules.merge_makeCNVcalls.output
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.bed"
-	run: fix_canoe_tsv(input[0], output[0])
-
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
-	input: rules.canoes_to_bed.output
+	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf"
 	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
 	params:	scripts = config["scripts"]

@@ -40,7 +40,7 @@ VALIDATION_ONLY: False
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*.vcf.gz','*.vcf.gz.tbi','*.tsv','*.bed','*.txt',*.log,'*.err','*.pdf','*.html','*.css','*/'}"
+INCLUDE_RSYNC: "{'*.vcf.gz','*.vcf.gz.tbi','*.tsv','*.bed','*.pdf','*.html','*.css','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed','*/'}"
 
@@ -61,7 +61,7 @@ scripts: "/app/scripts"
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv']
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv', '*.tsv']
 
 # kmerisation of DECON bed (integer) (ex 250)
 KMER: ""
