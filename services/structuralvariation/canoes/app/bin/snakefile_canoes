@@ -603,8 +603,8 @@ rule canoes_calling:
 			gc = rules.gc_percent.output
 	params:
 			scripts = config["scripts"],
-			chromosome=lambda.wildcards: "{gender}",
-			bamlist=lambda.wildcards: f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
+			chromosome= lambda wildcards: "{gender}",
+			bamlist= lambda wildcards: f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
 			pvalue = config["pval"],
 			distance = config["dist"],
 			tnumeric = config["tnum"],
