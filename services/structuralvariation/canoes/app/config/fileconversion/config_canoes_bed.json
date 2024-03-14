@@ -6,7 +6,7 @@
 		"skip_rows": 0,
 		"comment": "",
 		"unique_variant_id": [
-			"#Chrom",
+			"Chrom",
 			"Start",
 			"End",
 			"SV type"
@@ -45,13 +45,13 @@
 		]
 	},
 	"VCF_COLUMNS": {
-		"#CHROM": "#Chrom",
+		"#CHROM": "Chrom",
 		"POS": "Start",
 		"ID": "",
 		"REF": [
 			"HELPER_FUNCTION",
 			"get_ref_from_canoes_bed",
-			"#Chrom",
+			"Chrom",
 			"Start"
 		],
 		"ALT": [

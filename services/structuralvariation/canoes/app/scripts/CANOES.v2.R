@@ -82,8 +82,20 @@ canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end"
   }
   
   xcnvs <- do.call('rbind', xcnv.list)
-  write.table(xcnvs, file = output_file, sep = "\t", quote = FALSE)
-  #write.csv(xcnvs, file = output_file)
+  xcnvs <- xcnvs %>%
+      mutate(Chrom = ifelse(Chrom == "23", "chrX", 
+                             ifelse(Chrom == "24", "chrY", Chrom)))
+  xcnvs$INTERVAL <- gsub("^23:", "chrX:", xcnvs$INTERVAL)
+  xcnvs$INTERVAL <- gsub("^24:", "chrX:", xcnvs$INTERVAL)
+
+  start_end <- strsplit(xcnvs$INTERVAL, "[:-]")
+  start <- as.numeric(sapply(start_end, "[", 2))
+  end <- as.numeric(sapply(start_end, "[", 3))
+  # Add start and end positions as new columns
+  xcnvs$Start <- start
+  xcnvs$End <- end
+  xcnvs_final <- xcnvs[, c("Chrom", "Start", "End", "SV Type", "Sample_ID", "INTERVAL", "KB", "MID_BP", "TARGETS", "NUM_TARG", "MLCN", "Q_SOME")]
+  write.table(xcnvs_final, file = output_file, sep = "\t", quote = FALSE)
   
   pdf(pdf_output)
   for (i in 1:nrow(xcnvs)) {
@@ -763,7 +775,7 @@ PrintCNVs <- function(test.sample.name, viterbi.state,
   xcnv <- cbind(cnvs.df[, c("sample.name", "cnv.type", "cnv.interval", 
                       "cnv.kbs", "cnv.chromosome", "cnv.midbp", 
                       "cnv.targets", "num.targets")], 0)
-  colnames(xcnv) <- c("SAMPLE", "CNV", "INTERVAL", "KB", "CHR", "MID_BP", "TARGETS",
+  colnames(xcnv) <- c("Sample_ID", "'SV type", "INTERVAL", "KB", "Chrom", "MID_BP", "TARGETS",
                       "NUM_TARG", "MLCN")
   xcnv$Q_SOME <- NA
   return(xcnv)
