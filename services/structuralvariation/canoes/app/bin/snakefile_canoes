@@ -560,8 +560,8 @@ rule bam_to_multicov:
 rule merge_multicov:
 	""" Merge all multicoverage files and add header """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.tsv"
-	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.log"
+	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.tsv"
+	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.log"
 	params: scripts = config["scripts"]
 	shell: " python3 {params.scripts}/merge_multicov.py {input} -o {output} "
 
@@ -569,7 +569,7 @@ rule merge_multicov:
 rule plot_coverage_stats:
 	""" Generate coverage calculation """
 	input:  rules.merge_multicov.output
-	output:	f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.stats.tsv"
+	output:	f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.stats.tsv"
 	params: scripts = config["scripts"]
 	shell: " python3 {params.scripts}/plot_coverage_stats.py {input} {output} "
 
@@ -608,11 +608,11 @@ rule canoes_calling:
 			numreference = config["numref"],
 			hom = config["homdel"]
 	output:
-			cnvcall = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv"
+			cnvcall = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv"
 			#pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.pdf"
 	log: 
-		log = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.log",
-		err = f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.err"
+		log = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.log",
+		err = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.err"
 	shell:
 		"""
 			Rscript {params.scripts}/CANOES.v2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
@@ -622,16 +622,16 @@ rule canoes_calling:
 
 rule merge_makeCNVcalls:
 	""" Merge all CNV call results """
-	input: expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", gender=gender_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
+	input: expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", gender=gender_list, aligner=aligner_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
 	shell: "cat {input} | sort -u | sort -r >> {output}"
 
 
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
 	input: rules.merge_makeCNVcalls.output
-	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf"
-	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
 	params:	scriptsconfig = config["scriptsconfig"]
 	shell: "variantconvert convert -i {input} -o {output} -c {params.scriptsconfig}/config_canoes_bed.json 2> {log} "
 
@@ -683,7 +683,7 @@ rule AnnotSV:
 		hpo=lambda wildcards: runDict[wildcards.sample]['hpo']
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || echo "#No data to annotate" > {output}
+		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 		"""
 
 use rule sortvcf as sortvcf1 with:

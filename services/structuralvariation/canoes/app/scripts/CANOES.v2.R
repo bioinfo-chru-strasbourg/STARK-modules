@@ -85,8 +85,8 @@ canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end"
   xcnvs <- xcnvs %>%
       mutate(Chrom = ifelse(Chrom == "23", "X", 
                              ifelse(Chrom == "24", "Y", Chrom)))
-  xcnvs$INTERVAL <- gsub("^23:", "X:", xcnvs$INTERVAL)
-  xcnvs$INTERVAL <- gsub("^24:", "Y:", xcnvs$INTERVAL)
+  xcnvs$INTERVAL <- gsub("^23:", "chrX:", xcnvs$INTERVAL)
+  xcnvs$INTERVAL <- gsub("^24:", "chrY:", xcnvs$INTERVAL)
 
   start_end <- strsplit(xcnvs$INTERVAL, "[:-]")
   start <- as.numeric(sapply(start_end, "[", 2))
