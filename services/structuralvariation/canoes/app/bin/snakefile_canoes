@@ -480,7 +480,7 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
-		expand(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
+		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
 
