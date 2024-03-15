@@ -565,7 +565,7 @@ rule AnnotSV:
 		hpo=lambda wildcards: runDict[wildcards.sample]['hpo']
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
+		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 		"""
 
 use rule sortvcf as sortvcf1 with:
