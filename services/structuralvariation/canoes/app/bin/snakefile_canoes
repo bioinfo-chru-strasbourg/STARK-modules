@@ -1,12 +1,10 @@
 ##########################################################################
 # Snakemakefile Version:   2.0
-# Description:             Snakemake file to run CANOES module
+# Description:             Snakemake file to run CANOES module https://github.com/ShenLab/CANOES
 ##########################################################################
 
 # PROD version 1 : 03/06/2022
 # Authoring : Jean Baptiste LAMOUCHE
-
-# https://github.com/ShenLab/CANOES
 
 # PROD version 2 : 14/03/2024 changelog
 # Authoring : Thomas LAVAUX
@@ -32,88 +30,6 @@ from os.path import join as osj
 ################## Configuration file ##################
 configfile: "/app/config/snakefile/canoes_default.yaml"
 ####################### FUNCTIONS ######################
-
-def extract_columns_per_sample(input_file, output_file):
-	# Read the input file into a pandas DataFrame
-	df = pd.read_csv(input_file, sep='\t')
-
-	# Write the data to the specified output file
-	for column in df.columns[1:]:  # Exclude the first column (chromosome segment)
-		df[[df.columns[0], column]].to_csv(output_file, sep='\t', index=False, header=False)
-
-
-def addOtherSamples(sexless_list, sexlist, infos, run, exclude_tag):
-	new_sample_list = []
-	project = os.path.dirname(run)
-	runID = os.path.basename(run)
-
-	if not os.path.exists(project):
-		return infos, sexlist, new_sample_list
-
-	searchrun = systemcall(f"find {project} -maxdepth 1 -mindepth 1 -type d -mtime -30 ! -name {runID}")
-	if not searchrun:
-		searchrun = systemcall(f"find {project} -maxdepth 1 -mindepth 1 -type d -mtime -60 ! -name {runID}")
-		if not searchrun:
-			for v in sexless_list:
-				sexlist.remove(v)
-			return infos, sexlist, new_sample_list
-		runlist = searchrun
-
-	else:
-		runlist = searchrun
-
-	for x in sexless_list:
-		infos_supp = {}
-
-		for runs in runlist:
-			if os.path.exists(os.path.join(runs, "STARKCopyComplete.txt")):
-				for sampleID in os.listdir(runs):
-					if os.path.isdir(os.path.join(runs, sampleID)):
-						tags = systemcall(f"find {os.path.join(runs, sampleID)} -maxdepth 2 -name {sampleID}.tag")[0]
-						if tags:
-							sex = ''
-							row = open(tags, 'r').readline().strip().split('!')
-							for tag in row:
-								if 'SEX' in tag and ('_' in tag or '#' in tag):
-									sex = tag.split('_')[-1] if '_' in tag else tag.split('#')[-1]
-								elif any(exclude in tag for exclude in exclude_tag):
-									sex = ''
-								break
-							if sex == x:
-								bam = systemcall(f"find {os.path.join(runs, sampleID)} -maxdepth 2 -name '*.bam' ! -name '*validation*'")[0]
-								if sex and bam and len(infos_supp) < 4:
-									infos_supp[sampleID] = {'sex': sex, 'bam': bam}
-								else:
-									infos.update(infos_supp)
-									return infos, sexlist, new_sample_list
-	for v in sexless_list:
-		sexlist.remove(v)
-	return infos, sexlist, new_sample_list
-
-def createplotstats(coverage):
-	'''
-	Generate necessary stats to plot CANOES analysis bar and boxplot
-	Return a dictionary with those stats
-	'''
-	dictionary = {'header': [], 'depth': []}
-	with open(coverage, 'r') as file:
-		for line in file:
-			if line.startswith('chrom'):
-				header_line = line.strip().split('\t')
-				dictionary['header'].append('Chr:Start-End')
-				dictionary['header'].extend(header_line[3:])
-			elif line.startswith('chrX') or line.startswith('chrY'):
-				continue
-			else:
-				line_elements = line.strip().split('\t')
-				metrics = []
-				for depth in map(int, line_elements[3:]):
-					try:
-						metrics.append(str(round(float(depth / (int(line_elements[2]) - int(line_elements[1]))), 4)).replace(',', '.'))
-					except ZeroDivisionError:
-						metrics.append('0')
-				dictionary['depth'].append(line_elements[0] + ':' + line_elements[1] + '-' + line_elements[2] + '\t' + '\t'.join(metrics))
-	return dictionary
 
 def parse_samplesheet(samplesheet_path):
 	"""
@@ -211,30 +127,10 @@ def extractlistfromfiles(file_list, ext_list, sep, position):
 	""" Function for creating list from a file list, with a specific extension, a separator and the position of the string we want to extract """
 	return list(set(os.path.basename(files).split(sep)[position] for files in file_list if any(files.endswith(ext) for ext in ext_list)))
 
-def deconbedfromdesign(inputbed, outputbed, sepgenecolumn):
-	""" Function to extract a DECON bed 4 columns from another bed, assuming that the 4th column contains a gene name with a unique separator """
-	df = pd.read_csv(inputbed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-	df['Gene'] = df['Gene'].str.split(sepgenecolumn).str[0] # we extract the gene name == string before separator (ex TP73_chr1_3598878_3599018 sep is _chr to get TP73)
-	df.to_csv(outputbed, sep='\t', index=False, header=False)
-
 def create_list(txtlistoutput, file_list, ext_list, pattern):
 	""" Function to create a txt file from a list of files filtered by extension and pattern """
 	with open(txtlistoutput, 'a+') as f:
 		f.writelines(f"{files}\n" for files in file_list if any(files.endswith(ext) and pattern in files for ext in ext_list))
-
-def intersectbed(inputbed, refbed, outputbed):
-	""" Function to intersect a bed with a ref bed using bedtools """
-	shell(f"intersectBed -a {inputbed} -b {refbed} -loj > {outputbed}")
-
-def concatenatelist(inputlist, outputfile):
-	""" Function to concatenate lines tab separated in a file """
-	shell(f"xargs --delimiter='\\n' cat <{inputlist} >> {outputfile}")
-
-def keep_unknown(columnname, pattern, prefix):
-	""" Function to rename gene """
-	for i, gene in enumerate(df[columnname]):
-		if gene == pattern:
-			df.at[i, columnname] = f"{prefix}{i}"
 
 def extract_tag(tagfile, tag, tagsep, sep):
 	""" Function to extract a tag """
@@ -285,16 +181,6 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		f.write(rendered_html)
 
 	print(f"HTML report generated successfully: {output_file}")
-
-def merge_pdfs(files, output_path):
-	pdf_merger = PdfWriter()
-
-	for file in files:
-		with open(file, 'rb') as pdf_file:
-			pdf_merger.append(pdf_file)
-
-	with open(output_path, 'wb') as output_file:
-		pdf_merger.write(output_file)
 
 ### END OF FUNCTIONS ###
 
@@ -410,7 +296,6 @@ files_list_A = list(set([runDict[sample]['.bam'] for sample in sample_list if sa
 files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']))
 files_list_XY = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']))
 
-
 # Creating a txt list for the bam files per aligner per gender (A, M & F)
 for aligner in aligner_list:
 	for gender in gender_list:
@@ -480,6 +365,7 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", sample=sample_list, aligner=aligner_list),
 		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
@@ -542,7 +428,7 @@ rule gc_percent:
 	shell: 
 		"""
 			gatk --java-options {params.java_option} AnnotateIntervals -L {params.bedfile} -R {input} -imr OVERLAPPING_ONLY -O {output.gc_percent_header} 2> {log}
-			cat {output.gc_percent_header} | awk 'NR>27{{print $0}}' > {output.gc_percent}
+			grep -v '^@' {output.gc_percent_header} > {output.gc_percent}
 	 	"""
 
 rule bam_to_multicov:
@@ -574,24 +460,19 @@ rule plot_coverage_stats:
 	shell: " python3 {params.scripts}/plot_coverage_stats.py {input} {output} "
 
 
-#rule split_per_sample:
-#	""" Split multicoverage datas per sample """
-#	input:  rules.plot_coverage_stats.output
-#	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicoverage.stats.tsv"
-#	run: extract_columns_per_sample(input[0], output[0])
-
-
 rule plot_coverage:
 	""" Generate coverage plots per sample """
 	input: rules.plot_coverage_stats.output
 	output: 
-			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png"
-			#f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.png"
-	params: scripts = config['scripts']
+			barplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png",
+			boxplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.png"
+	params: 
+		scripts = config['scripts'],
+		samplefile = f"{resultDir}/{serviceName}.{date_time}.A.list.txt"
 	log:
 		log=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.log",
 		err=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.err"
-	shell: " Rscript {params.scripts}/plotCoverage.R --sample {sample} --input {input} --output {output} 1> {log.log} 2> {log.err} "
+	shell: " Rscript {params.scripts}/plotCoverage.R --sample {params.samplefile} --input {input} --output1 {output.barplot} --output2 {output.boxplot} 1> {log.log} 2> {log.err} "
 
 rule canoes_calling:
 	""" CANOES analysis """

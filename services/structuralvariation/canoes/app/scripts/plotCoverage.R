@@ -19,9 +19,10 @@ library(optparse)
 
 # Define the option parser
 option_list <- list(
-  make_option(c("-s", "--samplefile"), type="character", help="Sample file"),
-  make_option(c("-i", "--input"), type="character", help="Input file path"),
-  make_option(c("-o", "--output"), type="character", help="Output directory path")
+  make_option(c("-s", "--samplefile"), type="character", help="Samples name in a tsv file"),
+  make_option(c("-i", "--input"), type="character", help="Input coverage file"),
+  make_option(c("-o", "--output1"), type="character", help="Output png boxplot"),
+  make_option(c("-o", "--output"), type="character", help="Output png barplot")
 )
 
 # Parse command line arguments
@@ -42,10 +43,10 @@ a<-length(strsplit(sample_file[1],"/")[[1]])
 sample.names<-sapply(sample_file,multi_strsplit,c("/","."),c(a,1))
 names(sample.names)<-NULL
 
-  for (i in 1:length(sample.names)) {
-    BoxPlotCoverage(sample.names[i], input, output)
-	BarPlotCoverage(sample.names[i], input, output)
-  }
+for (i in 1:length(sample.names)) {
+    BoxPlotCoverage(sample.names[i], input, output1)
+	BarPlotCoverage(sample.names[i], input, output2)
+}
 
 
 BoxPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
@@ -112,5 +113,5 @@ BarPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
   	dev.off()
 }
 # Execute the functions with command-line arguments
-BoxPlotCoverage(options$samplefile, options$input, options$output)
-BarPlotCoverage(options$samplefile, options$input, options$output)
+BoxPlotCoverage(options$samplefile, options$input, options$output1)
+BarPlotCoverage(options$samplefile, options$input, options$output2)

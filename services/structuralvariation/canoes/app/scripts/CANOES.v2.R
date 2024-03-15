@@ -45,7 +45,12 @@ multi_strsplit<-function(x,splits,y){
 
 # Test function
 Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output) {
-  gc <- read.table(gc_file)$V4 # assuming the GC content is in column 4
+  datagc <- read.table(gc_file, header = FALSE)
+  if (colnames(data)[4] == "GC_CONTENT") {
+  gc <- datagc[[4]]
+  } else {
+  stop("The fourth column is not named GC_CONTENT")
+  }
   names(gc) <- "gc" # column name is gc
   canoes.reads_un <- read.table(reads_file,header=TRUE)
   data <- read.table(reads_file,header=TRUE)
