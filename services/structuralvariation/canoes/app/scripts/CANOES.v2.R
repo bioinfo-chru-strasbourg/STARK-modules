@@ -1,5 +1,5 @@
 ##########################################################################
-# CANOES script         Version: 1
+# CANOES Rscript         Version: 1
 # Description:          R script to call CNVs (CNVs with an Arbitrary Number Of Exome Samples)
 ##########################################################################
 
@@ -10,8 +10,9 @@
 # DEV v1 11/03/2024
 # Changelog
 #   - optparse script
-#   - fix GC content in column 4, homdel variable not assigned
-#   - remove genotyping option not used
+#   - fix GC content in column 4 with control, homdel variable not assigned
+#   - adapt script to chrX/Y
+#   - comment genotyping option not used
 ########################################################################################################
 
 library(optparse)
@@ -21,7 +22,7 @@ library(dplyr)
 option_list <- list(
   make_option("--gcfile", type="character", default="gc.tsv", dest='gc', help="File containing the GC values in column 4"),
   make_option("--readsfile", type="character", default="canoes.reads.tsv", dest='reads', help="File containing the reads data"),
-  make_option("--chromosome",default="A",help='Perform calling for autosomes or chr XX or chr XY ', dest='modechrom'),
+  make_option("--chromosome",default="A",help='Perform calling for autosomes (A) or chrX (XX) or chrY (XY) ', dest='modechrom'),
   make_option("--samples",default=NULL,help="Text file containing the list of sample bams to analyse",dest='samples'),
   make_option("--pvalue", type="numeric", default=1e-08, dest='pvalue', help="Average rate of occurrence of CNVs"),
   make_option("--tnum", type="integer", default=6, dest='tnum', help="Expected number of targets in a CNV"),
