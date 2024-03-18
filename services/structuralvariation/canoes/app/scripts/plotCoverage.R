@@ -19,34 +19,15 @@ library(optparse)
 
 # Define the option parser
 option_list <- list(
-  make_option(c("-s", "--samplefile"), type="character", help="Samples name in a tsv file"),
-  make_option(c("-i", "--input"), type="character", help="Input coverage file"),
-  make_option(c("-o", "--output1"), type="character", help="Output png boxplot"),
-  make_option(c("-o", "--output"), type="character", help="Output png barplot")
+  make_option(c("-s", "--samplefile"), type="character", help="Samples name in a tsv file", dest='samplefile'),
+  make_option(c("-i", "--input"), type="character", help="Input coverage file", dest='input'),
+  make_option(c("-o", "--output1"), type="character", help="Output png boxplot", dest='output1'),
+  make_option(c("-p", "--output2"), type="character", help="Output png barplot", dest='output2')
 )
 
 # Parse command line arguments
 opt_parser <- OptionParser(option_list=option_list)
 options <- parse_args(opt_parser)
-
-# function which recursively splits x by an element of 'splits' then extracts the y element of the split vector
-multi_strsplit<-function(x,splits,y){
-	X<-x
-	for(i in 1:length(splits)){X=strsplit(X,splits[i], fixed = TRUE)[[1]][y[i]]}
-	return(X)
-}
-
-sample_file<-apply(read.table(paste(samplefile)),1,toString)
-
-# get the sample names from the path of the files
-a<-length(strsplit(sample_file[1],"/")[[1]])
-sample.names<-sapply(sample_file,multi_strsplit,c("/","."),c(a,1))
-names(sample.names)<-NULL
-
-for (i in 1:length(sample.names)) {
-    BoxPlotCoverage(sample.names[i], input, output1)
-	BarPlotCoverage(sample.names[i], input, output2)
-}
 
 
 BoxPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
@@ -82,8 +63,8 @@ BoxPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	geom_vline(xintercept=covergeOut, linetype="solid", color = "red1", size=4) +
 	geom_hline(yintercept = c(1, -1, 2, -2), linetype = "dashed", color = "red2") +
 	labs(title = "Boxplot coverage mean taget sample vs all(normalised)", subtitle = paste("[INFO] Target Sample: ", SAMPLE, "\n[INFO] Processed samples: ", sample_list, "\n[INFO] Warning: Without sexual chromosomes, Normalisation: For each sample and for each region the coverage mean is divide by the total coverage mean of the sample and multply by the total coverage mean of the target sample (values are divide by the median(Graph:median=0), in log2 )"), x="Genomic Region(chromosome:start-end)", y="Coverage(normalised)(log2)") +
-	theme(axis.text=element_text(linewidth=0.5), axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(linewidth=0.5), plot.subtitle = element_text(linewidth=0.5))
-	#theme(axis.text=element_text(size=7),axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
+	#theme(axis.text=element_text(linewidth=0.5), axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(linewidth=0.5), plot.subtitle = element_text(linewidth=0.5))
+	theme(axis.text=element_text(size=7),axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
   
   	# save plot
   	png(OUTPUT, width=nrows, height=400)
@@ -104,14 +85,34 @@ BarPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	p <- ggplot() + 
 		geom_bar(data=my_data, stat="identity", fill="skyblue", aes(x=factor(Genomic_Region, levels=lab), y=Coverage_Mean_Sample)) +
 		labs(title = "Barplot coverage mean per base per region", subtitle = paste("[INFO] Target Sample: ", SAMPLE), x="Genomic Region(chromosome:start-end)", y="Coverage mean(bp)") +
-		theme(axis.text=element_text(linewidth=0.5) ,axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(linewidth=0.5), plot.subtitle = element_text(linewidth=0.5))
-		#theme(axis.text=element_text(size=7) ,axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
+		#theme(axis.text=element_text(linewidth=0.5) ,axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(linewidth=0.5), plot.subtitle = element_text(linewidth=0.5))
+		theme(axis.text=element_text(size=7) ,axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
   
 	# save plot
   	png(OUTPUT, width=nrows, height=400)
   	print(p)
   	dev.off()
 }
+
+# function which recursively splits x by an element of 'splits' then extracts the y element of the split vector
+multi_strsplit<-function(x,splits,y){
+	X<-x
+	for(i in 1:length(splits)){X=strsplit(X,splits[i], fixed = TRUE)[[1]][y[i]]}
+	return(X)
+}
+
+sample_file <- apply(read.csv(options$samplefile), 1, toString)
+
+# get the sample names from the path of the files
+a<-length(strsplit(sample_file[1],"/")[[1]])
+sample.names<-sapply(sample_file,multi_strsplit,c("/","."),c(a,1))
+names(sample.names)<-NULL
+
+for (i in 1:length(sample.names)) {
+    BoxPlotCoverage(sample.names[i], options$input, options$output1)
+	BarPlotCoverage(sample.names[i], options$input, options$output2)
+}
+
 # Execute the functions with command-line arguments
 BoxPlotCoverage(options$samplefile, options$input, options$output1)
 BarPlotCoverage(options$samplefile, options$input, options$output2)
