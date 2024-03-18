@@ -297,10 +297,11 @@ rule indexing:
 	threads: workflow.cores
 	shell: "samtools index -b -@ {threads} {input} {output}"
 
-# ouput file is sample.aligner_FLT3_ITD.vcf & sample.aligner_FLT3_ITD_summary.txt (same results as vcf but in txt format)
 rule flt3_itd_ext:
 	"""
 	Flt3_itd_ext is a software that detects internal duplications in bam files
+	Ouput file is sample.aligner_FLT3_ITD.vcf & sample.aligner_FLT3_ITD_summary.txt 
+	(same results as the vcf but in txt format)
 	"""
 	input:
 		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
@@ -319,32 +320,31 @@ rule flt3_itd_ext:
 		perl {params.scriptfolder}/FLT3_ITD_ext.pl -b {input.bam} -mr {params.mr} -g {params.assembly} --ngstype {params.ngstype} -i {params.index} -o {params.output}; mv {params.outputfile} {output}
 		"""
 
-#(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output}
 rule correctvcf:
 	"""	Correction of vcf output, add genotype to be consistent with the vcf format specification """
 	input: rules.flt3_itd_ext.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixGT.vcf")
-	shell: "cat {input} > {output}"
+	shell: """ (grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep -v "^#" {input} | awk '{{print $0"\tGT\t0/1"}}') > {output} """
 
 rule bcftools_filter:
 	"""	Filter with bcftools """
 	input: rules.correctvcf.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.filter.vcf")
 	params:	bcf_filter = config['BCFTOOLS_FILTER']
-	shell: "bcftools view {params.bcf_filter} {input} -o {output}"
+	shell: " bcftools view {params.bcf_filter} {input} -o {output} "
 
 rule sortvcf:
 	"""	Bash script to sort a vcf """
 	input: rules.bcftools_filter.output
 	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.sort.vcf")
 	params: dummypath = config['DUMMY_PATH']
-	shell: "grep \"^#\" {input} > {output} && grep -v \"^#\" {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}"		
+	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
 	input: rules.sortvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz"
-	shell: "bgzip -c {input} > {output} ; tabix {output}"
+	shell: " bgzip -c {input} > {output} ; tabix {output} "
 
 rule mergevcf:
 	"""	Copy or merge with bcftools several vcfs """

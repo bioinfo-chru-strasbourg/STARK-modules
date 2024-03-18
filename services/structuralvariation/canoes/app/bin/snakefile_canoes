@@ -226,8 +226,28 @@ if config['VALIDATION_ONLY']:
 else:
 	filter_files(files_list, None ,filter_out='validation')
 
+# Populate dictionnary
 runDict = defaultdict(dict)
 populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
+
+# add runs
+if config['addruns']:
+	files_list_addrun = []  
+	for runs in config['addruns']:
+		result = searchfiles(os.path.normpath(config['runs']), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
+		files_list_addrun.extend(result)
+	sample_list_temp = extractlistfromfiles(files_list_addrun, config['PROCESS_FILE'], '.', 0)
+	addrunDict = defaultdict(dict)
+	populate_dictionary(addrunDict, sample_list_tem, config['PROCESS_FILE'], files_list_addrun, None, 'validation')
+	
+	# Merge dictionnary
+	for key, value in addrunDict.items():
+		runDict[key].update(value)
+	
+	sample_list_addruns = sample_list + sample_list_temp
+
+	print(sample_list_addruns)
+	print(dict(addrunDict))
 
 # Set a filelist with all the files tag ; file format is sample.tag
 tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
@@ -366,6 +386,7 @@ rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
 		#expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", sample=sample_list, aligner=aligner_list),
+		#expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", sample=sample_list, aligner=aligner_list),
 		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
@@ -505,8 +526,9 @@ rule merge_makeCNVcalls:
 	""" Merge all CNV call results """
 	input: expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", gender=gender_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
-	shell: "cat {input} | sort -u | sort -r >> {output}"
+	shell: " cat {input} | sort -u | sort -r >> {output} "
 
+# "cat {input} | sort -u | sort -r >> {output}"
 
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
@@ -521,9 +543,8 @@ rule sortvcf:
 	input: rules.bedtovcf.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf")
 	params: dummypath=config['DUMMY_PATH']
-	shell: " grep '^#' {input} > {output} && grep -v '^#' {input} | sort -k1,1V -k2,2g >> {output} "
+	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
-# && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
 
 # bgzip -c to keep input file
 rule vcf2gz:
@@ -533,7 +554,6 @@ rule vcf2gz:
 	params: dummypath=config['DUMMY_PATH']
 	shell: " bgzip -c {input} > {output} ; tabix {output} "
 
-# && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf.gz > {output}
 
 rule splitvcf:
 	"""
@@ -551,9 +571,10 @@ rule splitvcf:
 rule AnnotSV:
 	"""
 	Annotate and rank Structural Variations from a vcf file
-	-annotationMode can be split by exons/introns or full by genes
-	-txtFile: path to a file containing a list of preferred genes transcripts for annotation
-	-genomeBuild must be specified if not hg19
+	Output a vcf file, if no annotation is done output an empty vcf
+	- annotationMode can be split by exons/introns or full by genes
+	- txtFile: path to a file containing a list of preferred genes transcripts for annotation
+	- genomeBuild must be specified if not hg19
 	"""
 	input: rules.splitvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unsort.vcf"
@@ -583,7 +604,7 @@ rule mergedesign:
 	""" Copy or merge multiple vcfs using bcftools """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz"
-	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
+	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}} ; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
 
 rule convertvcf_alldesign:
 	""" vcf to tsv conversion """

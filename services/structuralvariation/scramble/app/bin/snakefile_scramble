@@ -424,9 +424,10 @@ rule correctvcf:
 rule AnnotSV:
 	"""
 	Annotate and rank Structural Variations from a vcf file
-	-annotationMode can be split by exons/introns or full by genes
-	-txtFile: path to a file containing a list of preferred genes transcripts for annotation
-	-genomeBuild must be specified if not hg19
+	Output a vcf file, if no annotation is done output an empty vcf
+	- annotationMode can be split by exons/introns or full by genes
+	- txtFile: path to a file containing a list of preferred genes transcripts for annotation
+	- genomeBuild must be specified if not hg19
 	"""
 	input: rules.correctvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unsort.vcf"
@@ -449,43 +450,41 @@ rule sortvcf:
 	input: rules.AnnotSV.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unfiltered.vcf")
 	params: dummypath=config['DUMMY_PATH']
-	shell: "grep '^#' {input} > {output} && grep -v '^#' {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}"
-
-rule bcftools_filter:
-	"""	Filter with bcftools """
-	input: rules.sortvcf.output	
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf")
-	params: bcf_filter = config['BCFTOOLS_FILTER']
-	shell: "bcftools view {params.bcf_filter} {input} -o {output}"
+	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
-	input: rules.bcftools_filter.output
+	input: rules.sortvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
-rule cpvcffull:
+rule bcftools_filter:
+	"""	Filter with bcftools """
+	input: rules.vcf2gz.output	
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf")
+	params: bcf_filter = config['BCFTOOLS_FILTER']
+	shell: "bcftools view {params.bcf_filter} {input} -o {output} && tabix {output}" 
+
+rule cp_vcf_full:
 	"""	Copy or merge vcfs with bcftools """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
 	output: resultDir+"/"+serviceName+"."+date_time+".allsamples.AnnotSV.Full.vcf.gz"
 	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
 
-rule filtervcfdesign:
+rule filter_vcf_design:
 	"""	Filter vcf with a bed file """
 	input: rules.vcf2gz.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	params:	bed=config['BED_FILE']
 	shell:"bcftools view {input} -R {params.bed} -O z -o {output} && tabix {output}"
 
-rule cpvcfdesign:
-	"""	Copy or merge with bcftools several vcfs """
+use rule cp_vcf_full as cp_vcf_design with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output:	f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
-	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
 
 rule vcf2tsv:
 	""" vcf to tsv conversion """
-	input: rules.filtervcfdesign.output
+	input: rules.filter_vcf_design.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf2tsv_converter.log"
 	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output} 2> {log}"
