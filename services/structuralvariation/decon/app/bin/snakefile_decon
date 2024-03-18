@@ -638,15 +638,18 @@ rule variantconvert:
 		scriptsconfig=config['SCRIPTS_CONFIG'],
 		dummypath=config['DUMMY_PATH']
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.variantconvert.log"
-	shell: "variantconvert convert -i {input} -o {output} -c {params.scriptsconfig}/config_decon.json 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}"
+	shell: "variantconvert convert -i {input} -o {output} -c {params.scriptsconfig}/config_decon.json 2> {log} "
 
+# && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
 
 rule sortvcf:
 	""" Sort vcf """
 	input: rules.variantconvert.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf")
 	params: dummypath=config['DUMMY_PATH']
-	shell: "grep '^#' {input} > {output} && grep -v '^#' {input} | sort -k1,1V -k2,2g >> {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}"
+	shell: "grep '^#' {input} > {output} && grep -v '^#' {input} | sort -k1,1V -k2,2g >> {output} "
+
+# && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
 
 # bgzip -c to keep input file
 rule vcf2gz:
@@ -691,7 +694,7 @@ rule AnnotSV:
 		hpo=lambda wildcards: runDict[wildcards.sample]['hpo']
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
+		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
 use rule sortvcf as sortvcf1 with:
