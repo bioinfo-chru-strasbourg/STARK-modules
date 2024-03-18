@@ -84,7 +84,6 @@ BarPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	p <- ggplot() + 
 		geom_bar(data=my_data, stat="identity", fill="skyblue", aes(x=factor(Genomic_Region, levels=lab), y=Coverage_Mean_Sample)) +
 		labs(title = "Barplot coverage mean per base per region", subtitle = paste("[INFO] Target Sample: ", SAMPLE), x="Genomic Region(chromosome:start-end)", y="Coverage mean(bp)") +
-		#theme(axis.text=element_text(linewidth=0.5) ,axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(linewidth=0.5), plot.subtitle = element_text(linewidth=0.5))
 		theme(axis.text=element_text(size=7) ,axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
   
 	# save plot
