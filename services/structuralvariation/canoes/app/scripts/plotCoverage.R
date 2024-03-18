@@ -60,10 +60,9 @@ BoxPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	p <- ggplot() + 
 	geom_boxplot(data=y_data.long, aes(x=factor(Genomic_Region, levels=lab), y=value)) +
 	geom_point(data=my_data, aes(x=factor(Genomic_Region, levels=lab), y=Sample), shape=17, color="green") +
-	geom_vline(xintercept=covergeOut, linetype="solid", color = "red1", size=4) +
+	geom_vline(xintercept=covergeOut, linetype="solid", color = "red1", linewidth=4) +
 	geom_hline(yintercept = c(1, -1, 2, -2), linetype = "dashed", color = "red2") +
 	labs(title = "Boxplot coverage mean taget sample vs all(normalised)", subtitle = paste("[INFO] Target Sample: ", SAMPLE, "\n[INFO] Processed samples: ", sample_list, "\n[INFO] Warning: Without sexual chromosomes, Normalisation: For each sample and for each region the coverage mean is divide by the total coverage mean of the sample and multply by the total coverage mean of the target sample (values are divide by the median(Graph:median=0), in log2 )"), x="Genomic Region(chromosome:start-end)", y="Coverage(normalised)(log2)") +
-	#theme(axis.text=element_text(linewidth=0.5), axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(linewidth=0.5), plot.subtitle = element_text(linewidth=0.5))
 	theme(axis.text=element_text(size=7),axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
   
   	# save plot
