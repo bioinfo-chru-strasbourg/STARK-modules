@@ -647,7 +647,7 @@ rule sortvcf:
 	input: rules.variantconvert.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf")
 	params: dummypath=config['DUMMY_PATH']
-	shell: "grep '^#' {input} > {output} && grep -v '^#' {input} | sort -k1,1V -k2,2g >> {output} "
+	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
 # && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
 
@@ -677,9 +677,10 @@ rule splitvcf:
 rule AnnotSV:
 	"""
 	Annotate and rank Structural Variations from a vcf file
-	-annotationMode can be split by exons/introns or full by genes
-	-txtFile: path to a file containing a list of preferred genes transcripts for annotation
-	-genomeBuild must be specified if not hg19
+	Output a vcf file, if no annotation is done output an empty vcf
+	- annotationMode can be split by exons/introns or full by genes
+	- txtFile: path to a file containing a list of preferred genes transcripts for annotation
+	- genomeBuild must be specified if not hg19
 	"""
 	input: rules.splitvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unsort.vcf"

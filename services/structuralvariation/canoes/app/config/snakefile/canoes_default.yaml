@@ -22,6 +22,9 @@ TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
 
+#List to add run to the analysis
+addruns: []
+
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
 # Sample filter : only analyse those samples
