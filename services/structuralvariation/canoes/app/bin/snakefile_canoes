@@ -230,23 +230,26 @@ else:
 runDict = defaultdict(dict)
 populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
 
-# add runs
+# Add other runs/samples to improve sensibility
 if config['addruns']:
 	files_list_addrun = []  
 	for runs in config['addruns']:
 		result = searchfiles(os.path.normpath(config['runs']), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
 		files_list_addrun.extend(result)
-	sample_list_temp = extractlistfromfiles(files_list_addrun, config['PROCESS_FILE'], '.', 0)
+	sample_list_addruns = extractlistfromfiles(files_list_addrun, config['PROCESS_FILE'], '.', 0)
 	addrunDict = defaultdict(dict)
-	populate_dictionary(addrunDict, sample_list_tem, config['PROCESS_FILE'], files_list_addrun, None, 'validation')
+	populate_dictionary(addrunDict, sample_list_addruns, config['PROCESS_FILE'], files_list_addrun, None, 'validation')
 	
-	# Merge dictionnary
+	# Merge runDict dictionnary with the addrunDict
 	for key, value in addrunDict.items():
 		runDict[key].update(value)
 	
-	sample_list_addruns = sample_list + sample_list_temp
+	# We create a sample_list_tocopy to copy only originals sample's results 
+	sample_list_tocopy = sample_list
+	# Concatenate all samples for the analysis
+	sample_list = sample_list + sample_list_addruns
 
-	print(sample_list_addruns)
+	print(sample_list)
 	print(dict(addrunDict))
 
 # Set a filelist with all the files tag ; file format is sample.tag
@@ -386,7 +389,6 @@ rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
 		#expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png", sample=sample_list, aligner=aligner_list),
-		#expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", sample=sample_list, aligner=aligner_list),
 		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
@@ -528,7 +530,6 @@ rule merge_makeCNVcalls:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
 	shell: " cat {input} | sort -u | sort -r >> {output} "
 
-# "cat {input} | sort -u | sort -r >> {output}"
 
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
@@ -546,9 +547,10 @@ rule sortvcf:
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
 
-# bgzip -c to keep input file
 rule vcf2gz:
-	""" Compress vcf with bgzip """
+	""" Compress vcf with bgzip 
+		use -c to keep input file
+	"""
 	input: rules.sortvcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	params: dummypath=config['DUMMY_PATH']
@@ -574,14 +576,14 @@ rule AnnotSV:
 	Output a vcf file, if no annotation is done output an empty vcf
 	- annotationMode can be split by exons/introns or full by genes
 	- txtFile: path to a file containing a list of preferred genes transcripts for annotation
-	- genomeBuild must be specified if not hg19
+	- genomeBuild must be specified if not hg38
 	"""
 	input: rules.splitvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unsort.vcf"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.log"
 	params:
 		dummypath=config['DUMMY_PATH'],
-		output=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unsort",
+		outputfile=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unsort",
 		genome=config['genomeBuild'],
 		overlap=config['overlap'],
 		mode=config['annotationMode'],
@@ -589,12 +591,15 @@ rule AnnotSV:
 		hpo=lambda wildcards: runDict[wildcards.sample]['hpo']
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {params.output} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
-use rule sortvcf as sortvcf1 with:
+rule sortvcf2:
+	""" Sort vcf """
 	input: rules.AnnotSV.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf"
+	params: dummypath=config['DUMMY_PATH']
+	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 use rule vcf2gz as vcf2gz1 with:
 	input: rules.sortvcf1.output
@@ -611,7 +616,7 @@ rule convertvcf_alldesign:
 	input: rules.mergedesign.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
 	log: log2=f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf2tsv_converter.log"
-	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}"
+	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp | grep -v '^#' > {output}"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
@@ -630,20 +635,25 @@ onsuccess:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
 	# Clear existing output directories
-	for sample in sample_list:
+	for sample in sample_list_tocopy:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 
 	# Copy results to the main output directory
+	if sample_list_addruns:
+		samples_to_remove = " ".join(sample_list_addruns)
+		shell(f"bcftools view -Oz -o {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf --samples ^{samples_to_remove} {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf ")
+		shell(f"vcf2tsvpy --keep_rejected_calls --input_vcf {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf --out_tsv {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.tmp | grep -v '^#' > {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf ")
+
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 
 	# Copy individual sample results to their respective directories
-	for sample in sample_list:
+	for sample in sample_list_tocopy:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 
 	# Optionally, perform DEPOT_COPY
 	if config['DEPOT_COPY']:
 		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
-		for sample in sample_list:
+		for sample in sample_list_tocopy:
 			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
 	# Generate dictionary for results
@@ -651,12 +661,12 @@ onsuccess:
 	result_files_list_all = searchfiles(os.path.normpath(config['run']), f"/*", False)
 	result_files_list = result_files_list_all + result_files_list_sample
 	replaced_paths = replace_path(result_files_list, config['run'], "")
-	sample_list.insert(0,"allsamples")
+	sample_list_tocopy.insert(0,"allsamples")
 	resultDict = defaultdict(dict)
-	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
+	populate_dictionary(resultDict, sample_list_tocopy, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
 	# Generate html report
-	generate_html_report(resultDict, runName, serviceName, sample_list, f"{outputDir}/{serviceName}_report.html")
+	generate_html_report(resultDict, runName, serviceName, sample_list_tocopy, f"{outputDir}/{serviceName}_report.html")
 	copy2('/app/template/style.css', outputDir)
 
 onerror:
