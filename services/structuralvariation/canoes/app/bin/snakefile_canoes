@@ -491,8 +491,8 @@ rule plot_coverage:
 	""" Generate coverage plots per sample """
 	input: rules.plot_coverage_stats.output
 	output: 
-			barplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.png",
-			boxplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.png"
+			barplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}_{date_time}_{{sample}}_{{aligner}}_barplot_png",
+			boxplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}_{date_time}_{{sample}}_{{aligner}}_boxplot_png"
 	params: 
 		scripts = config['scripts'],
 		samplefile = f"{resultDir}/{serviceName}.{date_time}.A.list.txt"
@@ -620,7 +620,7 @@ rule convertvcf_alldesign:
 	input: rules.mergedesign.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
 	log: log2=f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf2tsv_converter.log"
-	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep '^#' > {output}"
+	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep -v '^#' > {output}"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")

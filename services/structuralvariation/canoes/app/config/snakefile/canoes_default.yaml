@@ -42,7 +42,7 @@ ALIGNER_NAME:
 VALIDATION_ONLY: False
 
 # Extension files to copy after pipeline success
-# using brace extension, remove space between extensions
+# if using brace extension then remove space between extensions
 INCLUDE_RSYNC: "{'*.vcf.gz','*.vcf.gz.tbi','*.tsv','*.png','*.html','*.css','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed','*/'}"
@@ -51,8 +51,6 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed','*/'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-# For samtools indexing
-THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: FALSE
 
@@ -60,6 +58,7 @@ DEBUG_MODE: FALSE
 DUMMY_PATH: "/app/scripts/dummy"
 # Path of the script folder
 scripts: "/app/scripts"
+# Path of the fileconversion json
 scriptsconfig: "/app/config/fileconversion/"
 
 # Path of the template (template is template.html)
@@ -67,7 +66,7 @@ TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv', '*.tsv']
 
-# kmerisation of DECON bed (integer) (ex 250)
+# kmerisation of CANOES bed (integer) (ex 250)
 KMER: ""
 # Remove M or F or Autosome analysis
 # Default is autosome with all the patients ; chrX can be performed only for Male or Female patients, with a separate call by gender
@@ -78,13 +77,13 @@ REMOVE_A: False
 ################## Misc params ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
-# Java mem option for gatk4
+# Java mem option for gatk4 GC extraction
 JAVA_OPTION: "-Xmx8G"
 
 ################## AnnotSV params ##################
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
-annotationMode: full # split, full or both (defaut both)
+annotationMode: both # split, full or both (defaut both)
 annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database
 
 ##################   CANOES params   ##################
