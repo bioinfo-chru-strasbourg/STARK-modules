@@ -250,6 +250,8 @@ if config['addruns']:
 
 	print(sample_list)
 	print(dict(addrunDict))
+else:
+	sample_list_addruns = []
 
 # We create a sample_list_tocopy to copy only originals sample's results 
 sample_list_tocopy = sample_list
@@ -488,11 +490,11 @@ rule plot_coverage_stats:
 
 
 rule plot_coverage:
-	""" Generate coverage plots per sample """
+	""" Generate coverage plots per sample in pdf """
 	input: rules.plot_coverage_stats.output
 	output: 
-			barplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}_{date_time}_{{sample}}_{{aligner}}_barplot_png",
-			boxplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}_{date_time}_{{sample}}_{{aligner}}_boxplot_png"
+			barplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.pdf",
+			boxplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.pdf"
 	params: 
 		scripts = config['scripts'],
 		samplefile = f"{resultDir}/{serviceName}.{date_time}.A.list.txt"
