@@ -28,7 +28,7 @@
 	# R scripts rewrite, to speed up ReadInBam, separate plotting, call CNV with a reference bam list (see changlog in the R scripts for details)
 	# re-arrange/simplify/compact code a lot, input files copying is within the rules, f-string, etc.
 	# add a draft for an html report using jinja2
-
+	# remove header from tsv converted
 ################## Import libraries ##################
 import os
 import glob
@@ -720,7 +720,7 @@ rule convertvcf_alldesign:
 	input: rules.mergedesign.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
 	log: log2=f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf2tsv_converter.log"
-	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp | grep -v '^#' > {output}"
+	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep '^#' > {output}"
 
 rule plot:
 	""" This step inputs the CNVcall.Rdata file to output the plot files in pdf format """
