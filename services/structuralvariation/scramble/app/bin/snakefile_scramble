@@ -20,7 +20,7 @@
 	# AnnotSV version 3.3.7 (include the vcf converter)
 	# Add the deletion mode
 	# refactor snakemake code a lot
-
+	# remove header from tsv converted
 ################## Import libraries ##################
 import os
 import glob
@@ -487,7 +487,7 @@ rule vcf2tsv:
 	input: rules.filter_vcf_design.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf2tsv_converter.log"
-	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp | grep -v '^#' > {output}"
+	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep '^#' > {output}"
 
 use rule vcf2tsv as vcf2tsv1 with:
 	input: rules.cpvcfdesign.output

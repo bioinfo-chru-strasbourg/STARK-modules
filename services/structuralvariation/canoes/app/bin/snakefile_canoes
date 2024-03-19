@@ -13,7 +13,8 @@
 	# convert R to R scripts and rewrite some code 
 	# re-arrange/simplify/compact code a lot, input files copying is within the rules, f-string, etc.
 	# add a draft for an html report using jinja2
-
+	# remove header from tsv converted
+	# addruns option
 ################## Import libraries ##################
 import os
 import glob
@@ -244,13 +245,14 @@ if config['addruns']:
 	for key, value in addrunDict.items():
 		runDict[key].update(value)
 	
-	# We create a sample_list_tocopy to copy only originals sample's results 
-	sample_list_tocopy = sample_list
 	# Concatenate all samples for the analysis
 	sample_list = sample_list + sample_list_addruns
 
 	print(sample_list)
 	print(dict(addrunDict))
+
+# We create a sample_list_tocopy to copy only originals sample's results 
+sample_list_tocopy = sample_list
 
 # Set a filelist with all the files tag ; file format is sample.tag
 tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
@@ -385,6 +387,8 @@ sample_count = len(sample_list)
 # Priority order
 ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
+
+# Note : png did not work yet, maybe size of the png is to high ? nrows ?
 rule all:
 	""" Output a design vcf.gz with the bams and the bed provided """
 	input:
@@ -616,7 +620,7 @@ rule convertvcf_alldesign:
 	input: rules.mergedesign.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
 	log: log2=f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf2tsv_converter.log"
-	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp | grep -v '^#' > {output}"
+	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep '^#' > {output}"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
@@ -639,6 +643,7 @@ onsuccess:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 
 	# Copy results to the main output directory
+	# TODO addruns need some testing
 	if sample_list_addruns:
 		samples_to_remove = " ".join(sample_list_addruns)
 		shell(f"bcftools view -Oz -o {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf --samples ^{samples_to_remove} {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf ")
