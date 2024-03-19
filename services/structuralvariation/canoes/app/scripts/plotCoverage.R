@@ -9,6 +9,7 @@
 # DEV v1 11/03/2024
 # Changelog
 #   - optparse script, bugfixes & update code
+#   - change png to pdf to avoid size limitation
 ########################################################################################################
 
 library(ggplot2)
@@ -21,8 +22,8 @@ library(optparse)
 option_list <- list(
   make_option(c("-s", "--samplefile"), type="character", help="Samples name in a tsv file", dest='samplefile'),
   make_option(c("-i", "--input"), type="character", help="Input coverage file", dest='input'),
-  make_option(c("-o", "--output1"), type="character", help="Output png boxplot", dest='output1'),
-  make_option(c("-p", "--output2"), type="character", help="Output png barplot", dest='output2')
+  make_option(c("-o", "--output1"), type="character", help="Output pdf boxplot", dest='output1'),
+  make_option(c("-p", "--output2"), type="character", help="Output pdf barplot", dest='output2')
 )
 
 # Parse command line arguments
@@ -66,12 +67,12 @@ BoxPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	theme(axis.text=element_text(size=7),axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
 	
   	# save plot
-  	# filenames should contain no spaces or special characters such as * . ” / \ [ ] : ; | = , < ? > & $ # ! ‘ { } ( ).
-	# setwd("YourPath") then save ?
-	png(OUTPUT, width=nrows, height=400)
-  	print(p)
-  	dev.off()
-
+	# for png() filenames should contain no spaces or special characters such as * . ” / \ [ ] : ; | = , < ? > & $ # ! ‘ { } ( ).
+	# hard-coded limit of ~32,767 pixels for the max width and height of a surface
+	# png(OUTPUT, width=nrows, height=400)
+  	# print(p)
+  	# dev.off()
+	ggsave(basename(OUTPUT), p, width = nrows, path = dirname(OUTPUT))
 }
 
 BarPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
@@ -89,9 +90,10 @@ BarPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 		theme(axis.text=element_text(size=7) ,axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
   
 	# save plot
-  	png(OUTPUT, width=nrows, height=400)
-  	print(p)
-  	dev.off()
+  	#png(OUTPUT, width=nrows, height=400)
+  	#print(p)
+  	#dev.off()
+	ggsave(basename(OUTPUT), p, width = nrows, path = dirname(OUTPUT))
 }
 
 # function which recursively splits x by an element of 'splits' then extracts the y element of the split vector
