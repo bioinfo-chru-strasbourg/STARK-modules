@@ -490,12 +490,12 @@ rule vcf2tsv:
 	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep -v '^#' > {output}"
 
 use rule vcf2tsv as vcf2tsv1 with:
-	input: rules.cpvcfdesign.output
+	input: rules.cp_vcf_design.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf2tsv_converter.log"
 
 use rule vcf2tsv as vcf2tsv2 with:
-	input: rules.cpvcffull.output
+	input: rules.cp_vcf_full.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.tsv"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.vcf2tsv_converter.log"
 
