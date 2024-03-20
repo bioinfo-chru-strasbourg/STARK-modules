@@ -56,8 +56,6 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-# Misc
-THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: False
 

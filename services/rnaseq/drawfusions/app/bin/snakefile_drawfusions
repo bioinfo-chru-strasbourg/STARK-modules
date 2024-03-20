@@ -200,6 +200,10 @@ runDict = defaultdict(dict)
 populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
 print(dict(runDict))
 
+# List of tools used to generate the fusions file
+# TODO check if *.arriba.fusions.tsv and/or *.starfusion.fusions.tsv exist 
+fusion_list = config['FUSION_TOOL']
+
 # Find bed file (Design)
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
@@ -217,24 +221,6 @@ if os.path.exists(config['TRANSCRIPTS_FILE']) and os.path.getsize(config['TRANSC
 else:
 	with open(annotation_file, 'w') as f:
 		f.write("No NM found")
-
-# Transform list_genes into a list if list_genes exist, else use genes_file if exist
-panel_list = []
-panel_list_trunc = []
-if config['LIST_GENES']:
-	with open(config['LIST_GENES']) as f:
-		panel_list = f.read().splitlines()
-elif config['GENES_FILE'] and not config['LIST_GENES']:
-	panel_list.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
-# cp files from panel_list to resultDir and rename them
-for panel in panel_list:
-	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{panel}.bed"# panel_list don't have the bed extension, need that for the copy
-	# cut sample. and .genes from file name so files will have the same name as the truncated name list
-	panel_trunc = panel.split(".", 1)[1].split(".genes",1)[0]
-	outputfile = f"{resultDir}/{panel_trunc}"
-	copy2(inputfile, outputfile)
-	# Create a new list for expand, names are filenames without sample and .genes.bed ext
-	panel_list_trunc.append(panel_trunc)
 
 
 log_items = [
@@ -269,7 +255,7 @@ rule all:
 	Rule will create an pdf for arriba result's visualization
 	"""
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.arribareport.pdf",aligner=aligner_list,sample=sample_list)
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.{{fusion}}.report.pdf",aligner=aligner_list,sample=sample_list,fusion=fusion_list)
 
 rule help:
 	"""
@@ -325,9 +311,9 @@ rule indexing:
 rule DrawR:
 	input:
 		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam", 
-		arribafusiontsv = f"{resultDir}/{{sample}}.arriba.fusions.tsv",
+		fusiontsv = f"{resultDir}/{{sample}}.{{fusion}}.fusions.tsv",
 		bai = f"{resultDir}/{{sample}}.{{aligner}}.bai"
-	output: f"{resultDir}/{{sample}}.{{aligner}}.arribareport.pdf"
+	output: f"{resultDir}/{{sample}}.{{aligner}}.{{fusion}}.report.pdf"
 	params:
 		refgtfgencode = config['REFGTFGENCODE_PATH'],
 		refprot = config['REFPROTDOMAIN_PATH'],
@@ -335,7 +321,7 @@ rule DrawR:
 		arriba_scripts = config['ARRIBA_SCRIPTS']
 	shell:
 		"""
-		Rscript {arriba_scripts}/draw_fusions.R --annotation={params.refgtfgencode} --fusions={input.arribafusiontsv} --output={output} --alignments={input.bam} --cytobands={params.cytoband} --proteinDomains={params.refprot}
+		Rscript {arriba_scripts}/draw_fusions.R --annotation={params.refgtfgencode} --fusions={input.fusiontsv} --output={output} --alignments={input.bam} --cytobands={params.cytoband} --proteinDomains={params.refprot}
 		"""
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")

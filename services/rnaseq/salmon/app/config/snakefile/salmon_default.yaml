@@ -57,6 +57,7 @@ INCLUDE_LOG_RSYNC: "{'*Failed.txt','*.log','*.err'}"
 # Search parameters
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "*/*"
+
 ## DEBUG ##
 DEBUG_MODE: False
 
@@ -69,8 +70,7 @@ RESULT_EXT_LIST: ['.tsv']
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 ################## Salmon ##################
-# Thread to use
-THREADS: "4"
+
 # For Salmon quantification fastq mode, path to the index file
 REFSALMONQUANTFASTQ_PATH: "/STARK/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
 # SE ou PE Reads
