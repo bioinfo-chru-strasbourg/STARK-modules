@@ -68,9 +68,6 @@ SEARCH_ARGUMENT: "/*/STARK/*"
 
 ## DEBUG ##
 DEBUG_MODE: False
-# MISC
-THREADS: "4"
-
 
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"

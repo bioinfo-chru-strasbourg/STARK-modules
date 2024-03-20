@@ -59,7 +59,7 @@ VALIDATION_ONLY: False
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*Design.vcf.gz','*Design.vcf.gz.tbi','*AnnotSV.Design.tsv','*allsamples.Design.tsv','*Metrics.tsv','*.bed','*list.txt','*.pdf','*.html','*.css','*/'}"
+INCLUDE_RSYNC: "{'*Design.vcf.gz','*Design.vcf.gz.tbi','*AnnotSV.Design.tsv','*allsamples.Design.tsv','*Metrics.tsv','*.bed','*.pdf','*.html','*.css','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed','*/'}"
 
@@ -67,8 +67,6 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed','*/'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-# For samtools indexing
-THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: FALSE
 

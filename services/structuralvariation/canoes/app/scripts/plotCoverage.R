@@ -49,7 +49,7 @@ BoxPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	lab <- mixedsort(rownames(coverageNormal))
 	is.na(coverageNormal) <- sapply(coverageNormal, is.infinite)
 	coverageNa <- coverageNormal[is.na(coverageNormal[,SAMPLE]) > 0,,drop=FALSE]
-	covergeOut <- which(rownames(coverageNormal[lab,])  %in% rownames(coverageNa))
+	coverageOut <- which(rownames(coverageNormal[lab,])  %in% rownames(coverageNa))
 
 	my_data <- data.frame(Genomic_Region=row.names(coverageNormal), Sample=coverageNormal[,SAMPLE])
 	my_data_box <- data.frame(Genomic_Region=row.names(coverageNormal), Sample=coverageNormal)
@@ -61,18 +61,17 @@ BoxPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 	p <- ggplot() + 
 	geom_boxplot(data=y_data.long, aes(x=factor(Genomic_Region, levels=lab), y=value)) +
 	geom_point(data=my_data, aes(x=factor(Genomic_Region, levels=lab), y=Sample), shape=17, color="green") +
-	geom_vline(xintercept=covergeOut, linetype="solid", color = "red1", linewidth=4) +
+	geom_vline(xintercept=coverageOut, linetype="solid", color = "red1", linewidth=4) +
 	geom_hline(yintercept = c(1, -1, 2, -2), linetype = "dashed", color = "red2") +
 	labs(title = "Boxplot coverage mean taget sample vs all(normalised)", subtitle = paste("[INFO] Target Sample: ", SAMPLE, "\n[INFO] Processed samples: ", sample_list, "\n[INFO] Warning: Without sexual chromosomes, Normalisation: For each sample and for each region the coverage mean is divide by the total coverage mean of the sample and multply by the total coverage mean of the target sample (values are divide by the median(Graph:median=0), in log2 )"), x="Genomic Region(chromosome:start-end)", y="Coverage(normalised)(log2)") +
 	theme(axis.text=element_text(size=7),axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1), plot.title = element_text(size=9), plot.subtitle = element_text(size=6))
 	
   	# save plot
-	# for png() filenames should contain no spaces or special characters such as * . ” / \ [ ] : ; | = , < ? > & $ # ! ‘ { } ( ).
-	# hard-coded limit of ~32,767 pixels for the max width and height of a surface
+	# png() hard-coded limit of ~32,767 pixels for the max width and height of a surface
 	# png(OUTPUT, width=nrows, height=400)
   	# print(p)
   	# dev.off()
-	ggsave(basename(OUTPUT), p, width = nrows, path = dirname(OUTPUT))
+	ggsave(basename(OUTPUT), p, width = nrows, limitsize = FALSE, path = dirname(OUTPUT))
 }
 
 BarPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
@@ -93,7 +92,7 @@ BarPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
   	#png(OUTPUT, width=nrows, height=400)
   	#print(p)
   	#dev.off()
-	ggsave(basename(OUTPUT), p, width = nrows, path = dirname(OUTPUT))
+	ggsave(basename(OUTPUT), p, width = nrows, limitsize = FALSE, path = dirname(OUTPUT))
 }
 
 # function which recursively splits x by an element of 'splits' then extracts the y element of the split vector

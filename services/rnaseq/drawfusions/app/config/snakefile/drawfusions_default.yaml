@@ -64,8 +64,6 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-# MISC
-THREADS: "4"
 ## DEBUG ##
 DEBUG_MODE: True
 
@@ -75,6 +73,8 @@ TEMPLATE_DIR: "/app/template"
 RESULT_EXT_LIST: ['.pdf']
 
 ############## Tools specific parameters ##############
+# List of tools used to generate fusion analysis
+FUSION_TOOL: ['arriba', 'starfusion']
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
