@@ -82,7 +82,7 @@ BCFTOOLS_FILTER: ""
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Path to Scramble R directory scripts
 SCRAMBLE_PATH: "/opt/conda/share/scramble/bin"
-DUMMY_PATH: "/app/config/scripts/dummy"
+DUMMY_PATH: "/app/scripts/dummy"
 ################## cluster_identifier params
 m: 10 # min soft clipped bases to be put in a cluster (default 10)
 s: 5 # min soft clipped reads to be a cluster (default 5)
