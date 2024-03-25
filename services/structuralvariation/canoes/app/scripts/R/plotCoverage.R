@@ -12,11 +12,11 @@
 #   - change png to pdf to avoid size limitation
 ########################################################################################################
 
-library(ggplot2)
-library(reshape2)
-library(dplyr)
-library(gtools)
-library(optparse)
+suppressMessages(library(ggplot2))
+suppressMessages(library(reshape)2)
+suppressMessages(library(dplyr))
+suppressMessages(library(gtools))
+suppressMessages(library(optparse))
 
 # Define the option parser
 option_list <- list(
