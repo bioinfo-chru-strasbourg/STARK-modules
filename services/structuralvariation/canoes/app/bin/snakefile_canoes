@@ -236,7 +236,7 @@ populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, 
 if config['addruns']:
 	files_list_addrun = []  
 	for runs in config['addruns']:
-		result = searchfiles(os.path.normpath(config['runs']), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
+		result = searchfiles(os.path.normpath(config['run']), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
 		files_list_addrun.extend(result)
 	sample_list_addruns = extractlistfromfiles(files_list_addrun, config['PROCESS_FILE'], '.', 0)
 	addrunDict = defaultdict(dict)
@@ -473,10 +473,10 @@ rule bam_to_multicov:
 		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
 		bai = f"{resultDir}/{{sample}}.{{aligner}}.bai"
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv"
-	params: scripts = config["scripts"],
+	params: pyscripts = config["pyscripts"],
 			bed = config['BED_FILE']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"
-	shell:" python3 {params.scripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 1> {log} "
+	shell:" python3 {params.pyscripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 1> {log} "
 
 
 rule merge_multicov:
@@ -484,17 +484,16 @@ rule merge_multicov:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.tsv"
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.log"
-	params: scripts = config["scripts"]
-	shell: " python3 {params.scripts}/merge_multicov.py {input} -o {output} "
+	params: pyscripts = config["pyscripts"]
+	shell: " python3 {params.pyscripts}/merge_multicov.py {input} -o {output} "
 
 
 rule plot_coverage_stats:
 	""" Generate coverage calculation """
 	input:  rules.merge_multicov.output
 	output:	f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.stats.tsv"
-	params: scripts = config["scripts"]
-	shell: " python3 {params.scripts}/plot_coverage_stats.py {input} {output} "
-
+	params: pyscripts = config["pyscripts"]
+	shell: " python3 {params.pyscripts}/plot_coverage_stats.py {input} {output} "
 
 rule plot_coverage:
 	""" Generate coverage plots per sample in pdf """
@@ -503,12 +502,12 @@ rule plot_coverage:
 			barplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.pdf",
 			boxplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.pdf"
 	params: 
-		scripts = config['scripts'],
+		Rscripts = config['Rscripts'],
 		samplefile = f"{resultDir}/{serviceName}.{date_time}.A.list.txt"
 	log:
 		log=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.log",
 		err=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.err"
-	shell: " Rscript {params.scripts}/plotCoverage.R --sample {params.samplefile} --input {input} --output1 {output.barplot} --output2 {output.boxplot} 1> {log.log} 2> {log.err} "
+	shell: " Rscript {params.Rscripts}/plotCoverage.R --sample {params.samplefile} --input {input} --output1 {output.barplot} --output2 {output.boxplot} 1> {log.log} 2> {log.err} "
 
 rule canoes_calling:
 	""" CANOES analysis """
@@ -516,7 +515,7 @@ rule canoes_calling:
 			read = rules.merge_multicov.output,
 			gc = rules.gc_percent.output.gc_percent
 	params:
-			scripts = config["scripts"],
+			Rscripts = config["Rscripts"],
 			chromosome= "{gender}",
 			bamlist= f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
 			pvalue = config["pval"],
@@ -532,7 +531,7 @@ rule canoes_calling:
 		err = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.err"
 	shell:
 		"""
-			Rscript {params.scripts}/CANOES.v2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
+			Rscript {params.Rscripts}/CANOES.v2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
 			--samples {params.bamlist} --homdel {params.hom} --numref {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
 			--pvalue {params.pvalue} --output {output.cnvcall} 1> {log.log} 2> {log.err}
 		"""
@@ -624,12 +623,21 @@ rule mergedesign:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz"
 	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}} ; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
 
-rule convertvcf_alldesign:
+rule convertvcf:
 	""" vcf to tsv conversion """
 	input: rules.mergedesign.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
-	log: log2=f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf2tsv_converter.log"
 	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep -v '^#' > {output}"
+
+use rule convertvcf as convertvcf_sample with:
+	input: rules.vcf2gz1.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.tsv"
+
+# add warnings in header of the tsv :
+# no gender found
+# minimum of samples required fir gender analysis
+
+
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
@@ -638,6 +646,7 @@ onstart:
 		f.write("Global parameters of the analysis for debug only")
 		json.dump(config, f, ensure_ascii=False, indent=2)
 		f.write("\n")
+
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']
@@ -675,12 +684,12 @@ onsuccess:
 	result_files_list_all = searchfiles(os.path.normpath(config['run']), f"/*", False)
 	result_files_list = result_files_list_all + result_files_list_sample
 	replaced_paths = replace_path(result_files_list, config['run'], "")
-	sample_list_tocopy.insert(0,"allsamples")
+	sample_list_to_copy.insert(0,"allsamples")
 	resultDict = defaultdict(dict)
-	populate_dictionary(resultDict, sample_list_tocopy, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
+	populate_dictionary(resultDict, sample_list_to_copy, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
 	# Generate html report
-	generate_html_report(resultDict, runName, serviceName, sample_list_tocopy, f"{outputDir}/{serviceName}_report.html")
+	generate_html_report(resultDict, runName, serviceName, sample_list_to_copy, f"{outputDir}/{serviceName}_report.html")
 	copy2('/app/template/style.css', outputDir)
 
 onerror:

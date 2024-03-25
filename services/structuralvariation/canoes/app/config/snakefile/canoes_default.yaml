@@ -56,15 +56,17 @@ DEBUG_MODE: FALSE
 
 # Path of the dummy vcf
 DUMMY_PATH: "/app/scripts/dummy"
-# Path of the script folder
-scripts: "/app/scripts"
+# R scripts
+Rscripts: "/app/scripts/R"
+# Python scripts
+pyscripts: "/app/scripts/python"
 # Path of the fileconversion json
 scriptsconfig: "/app/config/fileconversion/"
 
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv', '*.tsv']
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv', 'gender', 'HPO']
 
 # kmerisation of CANOES bed (integer) (ex 250)
 KMER: ""

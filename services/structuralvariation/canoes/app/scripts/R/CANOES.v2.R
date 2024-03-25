@@ -15,9 +15,9 @@
 #   - comment genotyping option not used
 ########################################################################################################
 
-library(optparse)
-library(plyr)
-library(dplyr)
+suppressMessages(library(optparse))
+suppressMessages(library(plyr))
+suppressMessages(library(dplyr))
 
 option_list <- list(
   make_option("--gcfile", type="character", default="gc.tsv", dest='gc', help="File containing the GC values in column 4"),
@@ -249,7 +249,7 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
     #if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0) 
     #  stop("chromosome must take value in range 1-22 (support for sex chromosomes to come)")
   #}
-  library(plyr)
+  suppressMessages(library(plyr))
   counts <- arrange(counts, chromosome, start)
   if (p <= 0){
     stop("parameter p must be positive")
@@ -286,7 +286,7 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
   # select reference samples and weightings using non-negative least squares
   b <- counts[, sample.name]
   A <- as.matrix(counts[, reference.samples])
-  library(nnls)
+  suppressMessages(library(nnls))
   all <- nnls(A, b)$x
   est <- matrix(0, nrow=50, ncol=length(reference.samples))
   set.seed(1)
@@ -296,7 +296,7 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
   }
   weights <- colMeans(est)
   sample.weights <- weights / sum(weights)
-  library(Hmisc)
+  suppressMessages(library(Hmisc))
   # calculate weighted mean of read count
   # this is used to calculate emission probabilities
   counts$mean <- apply(counts[, reference.samples], 
@@ -403,7 +403,7 @@ GenotypeCNVs <- function(xcnvs, sample.name, counts, p, Tnum,
     if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0) 
       stop("chromosome must take value in range 1-22 (support for sex chromosomes to come)")
   }
-  library(plyr)
+  suppressMessages(library(plyr))
   counts <- arrange(counts, chromosome, start)
   if (p <= 0){
     stop("parameter p must be positive")
@@ -488,12 +488,12 @@ GetDistances <- function(counts){
 }
 
 EstimateVariance <- function(counts, ref.sample.names, sample.weights){
-  library(Hmisc)
+  suppressMessages(library(Hmisc))
   counts$var <- apply(counts[, ref.sample.names], 1, wtd.var, sample.weights, normwt=T)
   set.seed(1)
   counts.subset <- counts[sample(nrow(counts), min(36000, nrow(counts))), ]
-  library(mgcv)
-  library(ggplot2)
+  suppressMessages(library(mgcv))
+  suppressMessages(library(ggplot2))
   
   # can't do gamma regression with negative 
   counts.subset$var[counts.subset$var==0] <- 0.1 
@@ -748,7 +748,7 @@ PrintCNVs <- function(test.sample.name, viterbi.state,
     cnv.targets <- which(viterbi.state$viterbi.state == state)
     if (!length(cnv.targets) == 0){
       groups <- consecutiveGroups(cnv.targets)
-      library(plyr)
+      suppressMessages(library(plyr))
       cnvs.temp.df <- ddply(data.frame(target=cnv.targets, group=groups), 
                             "group", SummarizeCNVs, nonzero.counts, test.sample.name, 
                             state)
