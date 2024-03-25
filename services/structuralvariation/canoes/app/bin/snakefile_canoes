@@ -235,8 +235,8 @@ populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, 
 # Add other runs/samples to improve sensibility
 if config['addruns']:
 	files_list_addrun = []  
-	for runs in config['addruns']:
-		result = searchfiles(os.path.normpath(config['run']), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
+	for run in config['addruns']:
+		result = searchfiles(os.path.normpath(run), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
 		files_list_addrun.extend(result)
 	sample_list_addruns = extractlistfromfiles(files_list_addrun, config['PROCESS_FILE'], '.', 0)
 	addrunDict = defaultdict(dict)
