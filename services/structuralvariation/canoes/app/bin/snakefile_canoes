@@ -255,7 +255,7 @@ else:
 	sample_list_addruns = []
 
 # We create a sample_list_tocopy to copy only originals sample's results 
-sample_list_tocopy = sample_list
+sample_list_to_copy = sample_list
 
 # Set a filelist with all the files tag ; file format is sample.tag
 tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
@@ -657,7 +657,7 @@ onsuccess:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
 	# Clear existing output directories
-	for sample in sample_list_tocopy:
+	for sample in sample_list_to_copy:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 
 	# Copy results to the main output directory
@@ -670,13 +670,13 @@ onsuccess:
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 
 	# Copy individual sample results to their respective directories
-	for sample in sample_list_tocopy:
+	for sample in sample_list_to_copy:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 
 	# Optionally, perform DEPOT_COPY
 	if config['DEPOT_COPY']:
 		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
-		for sample in sample_list_tocopy:
+		for sample in sample_list_to_copy:
 			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
 	# Generate dictionary for results
