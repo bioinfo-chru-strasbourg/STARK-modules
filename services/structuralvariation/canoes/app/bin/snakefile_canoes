@@ -620,7 +620,7 @@ use rule vcf2gz as vcf2gz1 with:
 rule mergedesign:
 	""" Copy or merge multiple vcfs using bcftools """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.Design.unfiltered.vcf.gz"
 	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}} ; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
 
 rule convertvcf:
@@ -660,12 +660,19 @@ onsuccess:
 	for sample in sample_list_to_copy:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 
-	# Copy results to the main output directory
-	# TODO addruns need some testing
+	# Copy results to the main output directory, removing additional samples from the results
 	if sample_list_addruns:
 		samples_to_remove = " ".join(sample_list_addruns)
-		shell(f"bcftools view -Oz -o {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf --samples ^{samples_to_remove} {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf ")
-		shell(f"vcf2tsvpy --keep_rejected_calls --input_vcf {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf --out_tsv {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.tmp | grep -v '^#' > {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf ")
+
+		# We extract the samples that are present in the sample_list_addruns & the vcf
+		shell(f"bcftools query -l {resultDir}/{serviceName}.{date_time}.allsamples.Design.unfiltered.vcf.gz > vcf_samples.txt")
+		with open('final_sample_list.txt', 'w') as file:
+			file.write('\n'.join(sample_list_addruns))
+		# Then we filter out the vcf
+		shell(f"bcftools view -S final_sample_list.txt -Oz -o {resultDir}/{serviceName}.{date_time}.allsamples.Design.filtered.vcf.gz {resultDir}/{serviceName}.{date_time}.allsamples.Design.unfiltered.vcf.gz")
+		shell(f"bcftools view -c 1 -Oz -o {resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz {resultDir}/{serviceName}.{date_time}.allsamples.Design.filtered.vcf.gz")
+		# And convert vcf to tsv
+		shell(f"vcf2tsvpy --keep_rejected_calls --input_vcf {resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz --out_tsv {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp | grep -v '^#' > {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv ")
 
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 
