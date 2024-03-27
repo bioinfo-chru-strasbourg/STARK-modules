@@ -255,7 +255,7 @@ else:
 	sample_list_addruns = []
 
 # We create a sample_list_tocopy to copy only originals sample's results 
-sample_list_to_copy = sample_list - sample_list_addruns
+sample_list_to_copy = [x for x in sample_list if x not in sample_list_addruns]
 
 # Set a filelist with all the files tag ; file format is sample.tag
 tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
@@ -700,7 +700,7 @@ onsuccess:
 		if sample in resultDict:
 			for key, value in results.items():
 				if key in config['RESULT_EXT_LIST']:
-					 if key not in resultDict[sample]:
+					if key not in resultDict[sample]:
 						resultDict[sample][key] = value
 	
 	print(dict(resultDict))
