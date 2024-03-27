@@ -17,9 +17,9 @@
         </ul>
     </div>
     <div id="content">
-        <h2>Welcome to the fabulous report for {{ serviceName }}</h2>
+        <h2>Welcome to the report for {{ serviceName }}</h2>
         <p>We analyse run {{ runName }}</p>
-        <p>Number of samples : {{ sample_list|length }}</p>
+        <p>Number of samples : {{ sample_list|length -1 }}</p>
         <p>Sample list: {% for item in sample_list %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
         <p>Here is the details for each samples</p><br>
         {% for run_id, details in runDict.items() %}
@@ -32,7 +32,13 @@
                 {% for file, path in details.items() %}
                     <tr>
                         <td>{{ file }}</td>
-                        <td><a href="{{ path }}" target="_blank">{{ path }}</a></td>
+                        <td>
+                        {% if file == "gender" or file == "HPO" %}
+                            {{ path }}
+                        {% else %}
+                        <a href="{{ path }}" target="_blank">{{ path }}</a>
+                        {% endif %}
+                        </td>
                     </tr>
                 {% endfor %}
             </table><br>
