@@ -255,7 +255,7 @@ else:
 	sample_list_addruns = []
 
 # We create a sample_list_tocopy to copy only originals sample's results 
-sample_list_to_copy = sample_list
+sample_list_to_copy = sample_list - sample_list_addruns
 
 # Set a filelist with all the files tag ; file format is sample.tag
 tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
@@ -661,8 +661,8 @@ onsuccess:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 
 	# Copy results to the main output directory, removing additional samples from the results
-	if sample_list_addruns:
-		samples_to_remove = " ".join(sample_list_addruns)
+	for sample in sample_list_addruns:
+		shell(f"rm -rf {resultDir}/{sample} || true")
 
 		# We extract the samples that are present in the sample_list_addruns & the vcf
 		shell(f"bcftools query -l {resultDir}/{serviceName}.{date_time}.allsamples.Design.unfiltered.vcf.gz > vcf_samples.txt")
@@ -694,10 +694,19 @@ onsuccess:
 	sample_list_to_copy.insert(0,"allsamples")
 	resultDict = defaultdict(dict)
 	populate_dictionary(resultDict, sample_list_to_copy, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
+	
+	# Update resultDict with values from runDict
+	for sample, results in runDict.items():
+		if sample in resultDict:
+			for key, value in results.items():
+				if key in config['RESULT_EXT_LIST']:
+					 if key not in resultDict[sample]:
+						resultDict[sample][key] = value
+	
 	print(dict(resultDict))
 	# Generate html report
 	generate_html_report(resultDict, runName, serviceName, sample_list_to_copy, f"{outputDir}/{serviceName}_report.html")
-	copy2('/app/template/style.css', outputDir)
+	copy2(config['TEMPLATE_DIR'] + '/style.css', outputDir)
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
