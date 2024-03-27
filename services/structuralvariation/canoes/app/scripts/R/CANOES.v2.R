@@ -13,6 +13,7 @@
 #   - fix GC content in column 4 with control, homdel variable not assigned
 #   - adapt script to chrX/Y
 #   - comment genotyping option not used
+#   - TODO reference samples should be a list of external samples in a list, with gender
 ########################################################################################################
 
 suppressMessages(library(optparse))
@@ -272,6 +273,8 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
                  round(x * mean.counts / mean(x)), mean.counts)
   # calculate covariance of read count across samples
   cov <- cor(counts[, sample.names], counts[, sample.names])
+  # for a future version, add an external reference.samples instead of using the samples from the list of samples as referene
+  # we need to construct a df with those reference.samples before
   reference.samples <- setdiff(sample.names, sample.name)
   covariances <- cov[sample.name, reference.samples]
   reference.samples <- names(sort(covariances, 
