@@ -516,7 +516,7 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams list and the bed provided """
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", aligner=aligner_list, sample=sample_list),
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai", aligner=aligner_list, sample=sample_list),
 		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv", aligner=aligner_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 		f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv",
@@ -559,17 +559,20 @@ rule cramtobam:
 	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
 
 rule indexing:
-	""" Indexing bam files with samtools """
+	""" Indexing bam files with samtools or ls """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
-	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bai")
+	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
+	params:
+		process=config['PROCESS_CMD'],
+		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
 	threads: workflow.cores
-	shell: "samtools index -b -@ {threads} {input} {output}"
+	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
 
 rule ReadInBams:
 	""" DECoN calculates FPKM for each exon in each samples BAM file, using a list of BAM files and a BED file """
 	input:
 		allbamlist=f"{resultDir}/{serviceName}.{date_time}.A.list.txt",
-		bai=expand(f"{resultDir}/{{sample}}.{{aligner}}.bai", sample=sample_list, aligner=aligner_list)
+		bai=expand(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai", sample=sample_list, aligner=aligner_list)
 	output:
 		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.ReadInBams.RData"
 	params:

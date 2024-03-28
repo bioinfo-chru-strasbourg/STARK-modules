@@ -241,7 +241,7 @@ if config['addruns']:
 		files_list_addrun.extend(result)
 	sample_list_addruns = extractlistfromfiles(files_list_addrun, config['PROCESS_FILE'], '.', 0)
 	addrunDict = defaultdict(dict)
-	populate_dictionary(addrunDict, sample_list_addruns, config['PROCESS_FILE'], files_list_addrun, None, 'validation')
+	populate_dictionary(addrunDict, sample_list_addruns, config['EXT_INDEX_LIST'], files_list_addrun, None, 'validation')
 	
 	# Merge runDict dictionnary with the addrunDict
 	for key, value in addrunDict.items():
@@ -444,11 +444,14 @@ rule cramtobam:
 	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
 
 rule indexing:
-	""" Indexing bam files with samtools """
+	""" Indexing bam files with samtools or ls """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
-	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bai")
+	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
+	params:
+		process=config['PROCESS_CMD'],
+		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
 	threads: workflow.cores
-	shell: "samtools index -b -@ {threads} {input} {output}"
+	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
 
 rule gc_percent:
 	""" Compute GC percent from the reference genome and a bed file, removing header 
@@ -472,7 +475,7 @@ rule bam_to_multicov:
 	""" From each sample bam file generate a coverage file filtered with the bed provided """
 	input: 
 		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
-		bai = f"{resultDir}/{{sample}}.{{aligner}}.bai"
+		bai = f"{resultDir}/{{sample}}.{{aligner}}.bam.bai"
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv"
 	params: pyscripts = config["pyscripts"],
 			bed = config['BED_FILE']
