@@ -35,9 +35,8 @@ LIST_GENES: ""
 EXT_INDEX_LIST : [".R1.fastq.gz",".R2.fastq.gz"]
 # List of files extension to process
 PROCESS_FILE: [".R1.fastq.gz",".R2.fastq.gz"]
-# How to copy input files : ls or rsync 
+# How to copy input files (bam, bai, cram) : ls or leave empty (it will rsync files or index for bai from bam)
 PROCESS_CMD: 'ls'
-
 # Only analyse validation.bam/cram files
 VALIDATION_ONLY: False
 # Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)

@@ -704,7 +704,7 @@ rule AnnotSV:
 rule correctvcf:
 	input: rules.AnnotSV.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design_fix.vcf"
-	shell: " sed -e 's/##INFO=<ID='\''SampleID'\''/##INFO=<ID=SampleID/' -e 's/ID=\([^,]*\)(\([^)]*\))/ID=\1_\2/' {input} > {output} "
+	shell: " sed -e 's/##INFO=<ID=\''SampleID'\'/##INFO=<ID=SampleID/' -e 's/ID=\([^,]*\)(\([^)]*\))/ID=\1_\2/' {input} > {output} "
 
 
 rule sortvcf1:
