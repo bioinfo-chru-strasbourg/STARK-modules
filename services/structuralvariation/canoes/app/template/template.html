@@ -19,8 +19,13 @@
     <div id="content">
         <h2>Welcome to the report for {{ serviceName }}</h2>
         <p>We analyse run {{ runName }}</p>
-        <p>Number of samples : {{ sample_list|length -1 }}</p>
+        <p>Number of samples in the run: {{ sample_list|length -1 }} (30 samples is recommended)</p>
         <p>Sample list: {% for item in sample_list %}{{ item|replace("allsamples", "") }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+        {% if sample_list_added is defined %}
+        <p>Number of samples added : {{ sample_list_added|length }}</p>
+        <p>Sample list added: {% for item in sample_list_added %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+        {% set combined_sample_list = sample_list + sample_list_added %}
+        <p> Total of samples used : {% for item in combined_sample_list %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}</p>        {% endif %}
         {% if gender_list|length == 1 and gender_list[0] == "A" %}
         <p style="color:red;font-weight:bold;">WARNING : analysis was performed only for autosomes</p>
         {% endif %}
