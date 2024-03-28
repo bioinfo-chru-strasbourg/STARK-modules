@@ -396,7 +396,7 @@ onsuccess:
 	print(dict(resultDict))
 	# Generate html report (need to add the run results)
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{outputDir}/{serviceName}_report.html")
-	copy2('/app/template/style.css', outputDir)
+	copy2(config['TEMPLATE_DIR'] + '/style.css', outputDir)
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
