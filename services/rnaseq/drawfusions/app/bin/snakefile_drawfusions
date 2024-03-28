@@ -301,18 +301,21 @@ rule cramtobam:
 	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
 
 rule indexing:
-	""" Indexing bam files with samtools """
+	""" Indexing bam files with samtools or ls """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
-	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bai")
+	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
+	params:
+		process=config['PROCESS_CMD'],
+		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
 	threads: workflow.cores
-	shell: "samtools index -b -@ {threads} {input} {output}"
+	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
 
 # bam must be sorted by coordinate and indexed
 rule DrawR:
 	input:
 		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam", 
 		fusiontsv = f"{resultDir}/{{sample}}.{{fusion}}.fusions.tsv",
-		bai = f"{resultDir}/{{sample}}.{{aligner}}.bai"
+		bai = f"{resultDir}/{{sample}}.{{aligner}}.bam.bai"
 	output: f"{resultDir}/{{sample}}.{{aligner}}.{{fusion}}.report.pdf"
 	params:
 		refgtfgencode = config['REFGTFGENCODE_PATH'],
