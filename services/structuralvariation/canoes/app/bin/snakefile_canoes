@@ -239,8 +239,10 @@ if config['addruns']:
 	for run in config['addruns']:
 		result = searchfiles(os.path.normpath(run), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
 		files_list_addrun.extend(result)
+	# We generate the sample list with the ext of the file in the PROCESS_FILE varialbe (bam/cram for ex)
 	sample_list_addruns = extractlistfromfiles(files_list_addrun, config['PROCESS_FILE'], '.', 0)
 	addrunDict = defaultdict(dict)
+	# We populate the dictionnary with the same EXT_INDEX_LIST variable as the original list, to get HPO and gender is avalaible
 	populate_dictionary(addrunDict, sample_list_addruns, config['EXT_INDEX_LIST'], files_list_addrun, None, 'validation')
 	
 	# Merge runDict dictionnary with the addrunDict
@@ -613,7 +615,7 @@ rule AnnotSV:
 rule correctvcf:
 	input: rules.AnnotSV.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design_fix.vcf"
-	shell: " sed -e 's/##INFO=<ID='\''SampleID'\''/##INFO=<ID=SampleID/' -e 's/ID=\([^,]*\)(\([^)]*\))/ID=\1_\2/' {input} > {output} "
+	shell: " sed -e 's/##INFO=<ID=\''SampleID'\'/##INFO=<ID=SampleID/' -e 's/ID=\([^,]*\)(\([^)]*\))/ID=\1_\2/' {input} > {output} "
 
 rule sortvcf1:
 	""" Sort vcf """

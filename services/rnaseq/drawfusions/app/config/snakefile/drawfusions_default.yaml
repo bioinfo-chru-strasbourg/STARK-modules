@@ -42,7 +42,7 @@ LIST_GENES: ""
 EXT_INDEX_LIST: [".transcripts",".genes.bed",".design.bed",".list.genes",".tag",".bam",".arriba.fusions.tsv"]
 # List of files extension to process
 PROCESS_FILE: ['.bam','.arriba.fusions.tsv']
-# How to copy input files : ls or rsync 
+# How to copy input files (bam, bai, cram) : ls or leave empty (it will rsync files or index for bai from bam)
 PROCESS_CMD: 'ls'
 # Only analyse bam/cram files named *.validation.bam or *.validation.cram
 VALIDATION_ONLY: False
