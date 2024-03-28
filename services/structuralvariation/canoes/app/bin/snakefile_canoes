@@ -677,7 +677,8 @@ onsuccess:
 	# Copy results to the main output directory, removing additional samples from the results
 	for sample in sample_list_addruns:
 		shell(f"rm -rf {resultDir}/{sample} || true")
-
+	
+	if sample_list_addruns:
 		# We extract the samples that are present in the sample_list_addruns & the vcf
 		shell(f"bcftools query -l {resultDir}/{serviceName}.{date_time}.allsamples.Design.unfiltered.vcf.gz > vcf_samples.txt")
 		with open('final_sample_list.txt', 'w') as file:
