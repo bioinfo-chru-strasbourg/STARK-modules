@@ -164,7 +164,7 @@ def kmerisation(kmerSize, bedFile, kmerBedFile):
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
-def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html'):
+def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html', sample_list_added=None):
 	# Set up Jinja2 environment
 	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
 	template = env.get_template('template.html')
@@ -174,7 +174,8 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		runDict=result_dict,
 		runName=run_name,
 		serviceName=service_name,
-		sample_list=sample_list
+		sample_list=sample_list,
+		sample_list_added=sample_list_added
 	)
 
 	# Save the rendered HTML to the output file
@@ -710,7 +711,7 @@ onsuccess:
 	
 	print(dict(resultDict))
 	# Generate html report
-	generate_html_report(resultDict, runName, serviceName, sample_list_to_copy, f"{outputDir}/{serviceName}_report.html")
+	generate_html_report(resultDict, runName, serviceName, sample_list_to_copy, f"{outputDir}/{serviceName}_report.html", sample_list_addruns)
 	copy2(config['TEMPLATE_DIR'] + '/style.css', outputDir)
 
 onerror:
