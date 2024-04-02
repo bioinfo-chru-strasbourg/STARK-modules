@@ -27,6 +27,7 @@
         {% set combined_sample_list = sample_list + sample_list_added %}
         <p>Total of samples used : {{ combined_sample_list|length -1 }}</p>
         <p>Complete list : {% for item in combined_sample_list %}{{ item|replace("allsamples", "") }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+        {% endif %}
         {% if gender_list|length == 1 and gender_list[0] == "A" %}
         <p style="color:red;font-weight:bold;">WARNING : analysis was performed only for autosomes</p>
         {% endif %}
