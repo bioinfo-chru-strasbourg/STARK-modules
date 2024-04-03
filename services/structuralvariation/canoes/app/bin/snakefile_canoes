@@ -617,7 +617,7 @@ rule correctvcf:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design_fix.vcf"
 	shell: 
 		""" 
-		sed -e '/^##INFO/s/[\/\\]/_/g' -e "s/##INFO=<ID='SampleID'/##INFO=<ID=SampleID/" {input} > {output}
+		sed -e 's/[(\)]/_/g' -e "s/##INFO=<ID='SampleID'/##INFO=<ID=SampleID/" {input} > {output}
 		"""
 
 rule sortvcf1:
