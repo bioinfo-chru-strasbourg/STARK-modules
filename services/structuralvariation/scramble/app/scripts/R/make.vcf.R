@@ -107,7 +107,7 @@ if (!meis) { # for DEL
 													fixed$end, 
 													REF_ANCHOR_BASE$alignments, 
 													DEL_LENGTH$alignments, 
-													RIGHT_CLUSTER$alignments², 
+													RIGHT_CLUSTER$alignments, 
 													RIGHT_CLUSTER_COUNTS$alignments, 
 													LEFT_CLUSTER$alignments, 
 													LEFT_CLUSTER_COUNTS$alignments, 
