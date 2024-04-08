@@ -12,8 +12,8 @@
 # Ubuntu based (minimal focal)
 FROM condaforge/mambaforge
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update --fix-missing
-RUN apt-get install -y perl rsync unzip vim
+RUN apt-get update --fix-missing && \
+	apt-get install -y perl rsync unzip vim
 
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \

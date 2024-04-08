@@ -72,7 +72,8 @@ make.vcf.header = function(fa, blastRef=None){
 
 ##############################
 write.scramble.vcf = function(winners, fa, meis=F){
- 
+print('Data Frame for the results :')
+winners
  # return empty fixed data when no variants found
 		if(nrow(winners) == 0){
 				fixed = data.frame('#CHROM' = character(),
