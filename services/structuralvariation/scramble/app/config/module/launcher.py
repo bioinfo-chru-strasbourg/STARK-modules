@@ -43,6 +43,20 @@ from os.path import join as osj
 
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 
+# Function to compare versions
+def version_gt(version1, version2):
+	return version1 > version2
+
+# Function to get Docker version
+def get_docker_version():
+	try:
+		docker_version_output = subprocess.check_output(["docker", "--version"]).decode().strip()
+		docker_version = docker_version_output.split()[2].split(',')[0]
+		return docker_version
+	except subprocess.CalledProcessError:
+		return None
+
+
 def readconfig(configFile, serviceName, configkey):
 	""" Function to extract a specific key configuration variable from a json configuration file"""
 	with open(configFile,'r') as f:
@@ -69,11 +83,24 @@ def launch(run, serviceName, containersFile=None, montage=None, image=None, laun
 		yaml_config_file = None
 
 	COMPOSE_PATH = f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/listener/"
+	
+	docker_version = get_docker_version()
+	if docker_version:
+		# Check if Docker version is greater than 20
+		if version_gt(docker_version, "20"):
+			DOCKER_COMMAND = 'docker-compose'
+		else:
+			DOCKER_COMMAND = 'docker compose'
+		
+		print(f"Using {DOCKER_COMMAND} for Docker commands.")
+	else:
+		print("Docker is not installed.")
+	
 	if yaml_config_file and os.path.exists(yaml_config_file):
-		cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} '{launchCommand} --config run={run} --configfile {yaml_config_file}'"
+		cmd = f"{DOCKER_COMMAND} -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} '{launchCommand} --config run={run} --configfile {yaml_config_file}'"
 		print(cmd)
 	else:
-		cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} '{launchCommand} --config run={run}'"
+		cmd = f"{DOCKER_COMMAND} -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} '{launchCommand} --config run={run}'"
 		print(cmd)
 	subprocess.call(cmd, shell = True)
 	
