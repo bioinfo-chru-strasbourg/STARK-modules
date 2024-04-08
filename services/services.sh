@@ -199,29 +199,17 @@ mkdir -p $TMP_FOLDER
 #DOCKER_VERSION=$(docker --version)
 #(($VERBOSE)) && echo "#[INFO] STARK Module Docker version '$DOCKER_VERSION'"
 
-# Function to compare versions
-function version_gt() {
-    test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1";
-}
-
-# Check if Docker is installed
-if command -v docker &>/dev/null; then
-    # Get Docker version
-    docker_version=$(docker --version | awk '{print $3}' | cut -d ',' -f1)
-    
-    # Check if Docker version is greater than 20
-    if version_gt "$docker_version" "20"; then
-        DOCKER_COMMAND='docker-compose'
-    else
-        DOCKER_COMMAND='docker compose'
-    fi
-    
-    echo "Using $DOCKER_COMMAND for Docker commands."
+# Get Docker version
+docker_version=$(docker --version | awk '{print $3}' | cut -d ',' -f1)
+echo "Docker version $docker_version"
+# Check if Docker version is greater than 20
+if [[ "$DOCKER_VERSION" > "20" ]]; then
+    DOCKER_COMMAND='docker-compose'
 else
-    echo "Docker is not installed."
+    DOCKER_COMMAND='docker compose'
 fi
 
-
+echo "Using $DOCKER_COMMAND for Docker commands."
 
 # ENV
 if [ -z "$ENV" ]; then
@@ -475,17 +463,17 @@ for service_module in \
 
 						# DEBUG
 						(($DEBUG)) && cat $TMP_FOLDER/.env $TMP_FOLDER/.env.err
-						(($DEBUG)) && echo "   $DOCKER_COMPOSE --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND"
-						(($DEBUG)) && $DOCKER_COMPOSE --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config
+						(($DEBUG)) && echo "   $DOCKER_COMMAND --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND"
+						(($DEBUG)) && $DOCKER_COMMAND --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config
 
 
 						# patch for --env-file unavailable
-						if (( $($DOCKER_COMPOSE --help | grep "\-\-env\-file" -c) )); then
+						if (( $($DOCKER_COMMAND --help | grep "\-\-env\-file" -c) )); then
 							
 							# Command
-							if $DOCKER_COMPOSE --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
+							if $DOCKER_COMMAND --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
 								> $TMP_FOLDER/docker-compose.err
-								if $DOCKER_COMPOSE --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.err; then
+								if $DOCKER_COMMAND --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.err; then
 									(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.err | grep "Found orphan containers" -v
 								else
 									echo "#[ERROR] docker-compose error";
@@ -503,9 +491,9 @@ for service_module in \
 							(($VERBOSE)) &&  echo "#[WARNING] STARK Module Docker version does not provide '--env-file' parameter. STARK module is patched to work, but please update your docker version."
 
 							# Command
-							if env $(cat $TMP_FOLDER/.env | grep "#" -v) $DOCKER_COMPOSE --file $service_module_yml -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
+							if env $(cat $TMP_FOLDER/.env | grep "#" -v) $DOCKER_COMMAND --file $service_module_yml -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
 								> $TMP_FOLDER/docker-compose.err
-								if env $(cat $TMP_FOLDER/.env | grep "#" -v) $DOCKER_COMPOSE --file $service_module_yml -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.out ; then
+								if env $(cat $TMP_FOLDER/.env | grep "#" -v) $DOCKER_COMMAND --file $service_module_yml -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.out ; then
 									(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.err | grep "Found orphan containers" -v
 								else
 									echo "#[ERROR] docker-compose error";
