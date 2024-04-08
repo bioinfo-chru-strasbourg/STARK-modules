@@ -21,8 +21,8 @@
 # Ubuntu based (minimal focal)
 FROM condaforge/mambaforge
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update --fix-missing
-RUN apt-get install -y unzip vim rsync aria2 iproute2
+RUN apt-get update --fix-missing && \
+	apt-get install -y unzip vim rsync aria2 iproute2
 
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
