@@ -77,13 +77,13 @@ winners
  # return empty fixed data when no variants found
 		if(nrow(winners) == 0){
 				fixed = data.frame('#CHROM' = character(),
-							 POS = character(),
-							 ID = character(),
-							 REF = character(),
-							 ALT = character(),
-							 QUAL = character(),
-							 FILTER = character(),
-							 INFO = character(),
+							 'POS' = character(),
+							 'ID' = character(),
+							 'REF' = character(),
+							 'ALT' = character(),
+							 'QUAL' = character(),
+							 'FILTER' = character(),
+							 'INFO' = character(),
 							 check.names = F)
 				return(fixed)
 		}
