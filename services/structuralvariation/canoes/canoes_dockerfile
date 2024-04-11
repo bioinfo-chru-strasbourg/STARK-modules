@@ -6,6 +6,11 @@
 # Description:          Dockerfile to build CANOES container image
 ##########################################################################
 
+# DEV version 3 : 07/09/2023
+	# switch to Mamba installer & Ubuntu OS
+	# add aria2
+	# update AnnotSV 3.4 (vcf converter is included) and several dependencies (iproute2 for exomiser), version of each package is specified
+
 # Ubuntu based (minimal focal)
 FROM condaforge/mambaforge
 LABEL maintainer="LAMOUCHE Jean-Baptiste <jbaptiste.lamouche@gmail.com>" \

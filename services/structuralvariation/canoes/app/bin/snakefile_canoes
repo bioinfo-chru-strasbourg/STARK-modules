@@ -537,7 +537,7 @@ rule canoes_calling:
 		err = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.err"
 	shell:
 		"""
-			Rscript {params.Rscripts}/CANOES.v2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
+			Rscript {params.Rscripts}/CANOES.v2.1.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
 			--samples {params.bamlist} --homdel {params.hom} --numref {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
 			--pvalue {params.pvalue} --output {output.cnvcall} 1> {log.log} 2> {log.err}
 		"""

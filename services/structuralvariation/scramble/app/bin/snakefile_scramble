@@ -325,6 +325,7 @@ rule copy_bam:
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam']
+	message: """ Copying {params.download_link} file """
 	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule copy_cram:
@@ -332,6 +333,7 @@ rule copy_cram:
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
+	message: """ Copying {params.download_link} file """
 	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule cramtobam:
@@ -349,6 +351,7 @@ rule indexing:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
 	threads: workflow.cores
+	message: """ Indexing {params.download_link} file """
 	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
 
 rule cluster_identifier:
@@ -369,6 +372,7 @@ rule cluster_identifier:
 		mini = config['m'],
 		soft = config['s'],
 		region = config['r']
+	message: """ Starting extraction of clusters for {input.bam} file """
 	shell: "cluster_identifier -m {params.mini} -s {params.soft} -r {params.region} {input.bam} > {output}"
 
 # Indels option : you will need a reference genome indexed with the following command for blast (indels mode) to work : makeblastdb -in refgene.fa -dbtype nucl
@@ -396,6 +400,7 @@ rule scramble:
 	log: 
 		log = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.ScrambleR.log", 
 		err = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.ScrambleR.err"
+	message: """ Starting calling of {input} file """
 	shell:
 		"""
 		Rscript --vanilla {params.scrambledir}/SCRAMble.R \
