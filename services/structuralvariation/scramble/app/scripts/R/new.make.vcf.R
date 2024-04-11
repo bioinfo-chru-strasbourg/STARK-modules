@@ -1,27 +1,30 @@
 ##############################
 # convert to VCF
 ##############################
+
+library(stringr)
+
 get_score = function(right_score, left_score){
-  if(is.na(right_score)){
-    return(left_score)
-  }else if(is.na(left_score)){
-    return(right_score)
-  }else{
-    return(mean(c(left_score, right_score)))
-  }
+	if(is.na(right_score)){
+		return(left_score)
+	}else if(is.na(left_score)){
+		return(right_score)
+	}else{
+		return(mean(c(left_score, right_score)))
+	}
 }
 ##############################
 get_refs = function(fa, chrom, start, end){
-  if (missing(fa) | missing(chrom) | missing(start) | missing(end)) return('N')
-  if (! chrom %in% names(fa)) return('N')
-  fa = fa[chrom]
-  seq = subseq(fa, start=start, end=end)
-  return(as.vector(seq))
+	if (missing(fa) | missing(chrom) | missing(start) | missing(end)) return('N')
+	if (! chrom %in% names(fa)) return('N')
+	fa = fa[chrom]
+	seq = subseq(fa, start=start, end=end)
+	return(as.vector(seq))
 }
 ##############################
 make.vcf.header = function(fa, blastRef=None){
-  if (missing(fa)) return(NULL)
-  contigs = names(fa)
+	if (missing(fa)) return(NULL)
+	contigs = names(fa)
 	header = c('##fileformat=VCFv4.3',
 						 paste('##reference=', blastRef, sep=''),
 						 paste('##contig=<ID=', contigs, '>', sep=""),
@@ -69,54 +72,76 @@ make.vcf.header = function(fa, blastRef=None){
 
 ##############################
 write.scramble.vcf = function(winners, fa, meis=F){
+print('Data Frame for the results :')
+winners
+ # return empty fixed data when no variants found
+		if(nrow(winners) == 0){
+				fixed = data.frame('#CHROM' = character(),
+							 'POS' = character(),
+							 'ID' = character(),
+							 'REF' = character(),
+							 'ALT' = character(),
+							 'QUAL' = character(),
+							 'FILTER' = character(),
+							 'INFO' = character(),
+							 check.names = F)
+				return(fixed)
+		}
+	#argument checks
+	if (is.null(winners)) return(NULL)
 
-    # return empty fixed data when no variants found
-    if(nrow(winners) == 0){
-        fixed = data.frame('#CHROM' = character(),
-               POS = character(),
-               ID = character(),
-               REF = character(),
-               ALT = character(),
-               QUAL = character(),
-               FILTER = character(),
-               INFO = character(),
-               check.names = F)
-        return(fixed)
-    }
+fixed = data.frame('#CHROM' = ifelse(!meis, winners$CONTIG, gsub("(.*):(\\d*)$", "\\1", winners$Insertion)),
+									 POS = ifelse(!meis, winners$DEL.START, as.integer(gsub("(.*):(\\d*)$", "\\2", winners$Insertion))),
+									 ID = ifelse(!meis, 'DEL', 'INS:ME'),
+									 QUAL = ifelse(!meis, sapply(1:nrow(winners), function(i) get_score(winners$SCORE.RIGHT.ALIGNMENT[i], winners$SCORE.LEFT.ALIGNMENT[i])), winners$Alignment_Score),
+									 FILTER = 'PASS',
+									 ALT = ifelse(!meis, '<DEL>' , paste('<INS:ME:', toupper(winners$MEI_Family), '>', sep='')),
+									 stringsAsFactors = FALSE, check.names = FALSE)
 
-  #argument checks
-  if (is.null(winners)) return(NULL)
+if (!meis) { # for DEL
+		fixed$REF = sapply(1:nrow(winners), function(i) get_refs(fa, winners$CONTIG[i], winners$DEL.START[i], winners$DEL.START[i] + 1))
+		fixed$svtype = 'DEL'
+		fixed$svlen = nchar(fixed$REF)
+		fixed$end = fixed$POS + fixed$svlen
+		fixed$INFO <- sprintf("SVTYPE=DEL;SVLEN=%d;END=%d;REF_ANCHOR_BASE=%s;DEL_LENGTH=%s;RIGHT_CLUSTER=%s;RIGHT_CLUSTER_COUNTS=%s;LEFT_CLUSTER=%s;LEFT_CLUSTER_COUNTS=%s;LEN_RIGHT_ALIGNMENT=%s;SCORE_RIGHT_ALIGNMENT=%s;PCT_COV_RIGHT_ALIGNMENT=%s;PCT_IDENTITY_RIGHT_ALIGNMENT=%s;LEN_LEFT_ALIGNMENT=%s;SCORE_LEFT_ALIGNMENT=%s;PCT_COV_LEFT_ALIGNMENT=%s;PCT_IDENTITY_LEFT_ALIGNMENT=%s;INS_SIZE=%d;RIGHT_CLIPPED_SEQ=%s;LEFT_CLIPPED_SEQ=%s",
+													fixed$svlen, 
+													fixed$end, 
+													winners$REF_ANCHOR_BASE, 
+													winners$DEL_LENGTH, 
+													winners$RIGHT_CLUSTER, 
+													winners$RIGHT_CLUSTER_COUNTS, 
+													winners$LEFT_CLUSTER, 
+													winners$LEFT_CLUSTER_COUNTS, 
+													winners$LEN_RIGHT_ALIGNMENT, 
+													winners$SCORE_RIGHT_ALIGNMENT, 
+													winners$PCT_COV_RIGHT_ALIGNMENT, 
+													winners$PCT_IDENTITY_RIGHT_ALIGNMENT, 
+													winners$LEN_LEFT_ALIGNMENT, 
+													winners$SCORE_LEFT_ALIGNMENT, 
+													winners$PCT_COV_LEFT_ALIGNMENT, 
+													winners$PCT_IDENTITY_LEFT_ALIGNMENT, 
+													winners$INS.SIZE, 
+													winners$RIGHT_CLIPPED_SEQ, 
+													winners$LEFT_CLIPPED_SEQ)
+} else { # for MEI
+		fixed$INFO <- sprintf("SVTYPE=INS:ME;MEINFO=%s,%d,%s;CLIPPED_READS_IN_CLUSTER=%s;ALIGNMENT_PERCENT_LENGHT=%s;ALIGNMENT_PERCENT_IDENTITY=%s;CLIPPED_SEQUENCE=%s;CLIPPED_SIDE=%s;Start_In_MEI=%s;Stop_In_MEI=%s;polyA_Position=%s;polyA_Seq=%s;polyA_SupportingReads=%s;TSD=%s;TSD_length=%s",
+													paste(fixed$name, fixed$POS, fixed$polarity, sep = ","), 
+													winners$counts, 
+													winners$percent_clipped_read_aligned, 
+													winners$percent_identity, 
+													toupper(winners$clipped.consensus), 
+													winners$clipped, 
+													winners$starts, 
+													winners$stops, 
+													winners$polyA_Position, 
+													winners$polyA_Seq, 
+													winners$polyA_SupportingReads, 
+													winners$TSD, 
+													winners$TSD_length)
+		fixed$REF = ifelse(meis, sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i])), "")
+}
 
-  if(!meis){
-    fixed = data.frame('#CHROM' = winners$CONTIG,
-                       POS = winners$DEL.START,
-                       ID = 'DEL',
-                       QUAL = sapply(1:nrow(winners), function(i) get_score(winners$SCORE.RIGHT.ALIGNMENT[i], winners$SCORE.LEFT.ALIGNMENT[i])),
-                       FILTER = 'PASS',
-                       REF = sapply(1:nrow(winners), function(i) get_refs(fa, winners$CONTIG[i], winners$DEL.START[i], winners$DEL.END[i] + 1)),
-                       svtype = 'DEL',
-                       stringsAsFactors = F, check.names = F)
-    
-    fixed$ALT = str_sub(fixed$REF, start=-1)
-    fixed$svlen = nchar(fixed$REF)
-    fixed$end = fixed$POS + fixed$svlen
-    fixed$INFO = paste('SVTYPE=', fixed$svtype, ';', 'SVLEN=', fixed$svlen, ';', 'END=', fixed$end, sep='')
-  } else {
-    fixed = data.frame('#CHROM' =  gsub("(.*):(\\d*)$", "\\1", winners$Insertion),
-                       POS = as.integer(gsub("(.*):(\\d*)$", "\\2", winners$Insertion)),
-                       ID = 'INS:ME',
-                       FILTER = 'PASS',
-                       ALT = paste('<INS:ME:', toupper(winners$MEI_Family), '>', sep=''),
-                       QUAL = winners$Alignment_Score,
-                       name = paste(winners$Insertion, toupper(winners$MEI_Family), winners$Insertion_Direction, sep="_"),
-                       polarity = ifelse(winners$Insertion_Direction == 'Plus', "+", "-"),
-                       stringsAsFactors = F, check.names = F)
-    fixed$start = fixed$POS
-    fixed$INFO = paste('MEINFO', paste(fixed$name, fixed$start, fixed$polarity, sep=','), 'COUNTS=', winners$Clipped_Reads_In_Cluster)
-    fixed$REF = sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i]))
-  }   
-
-  vcf.cols = c('#CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO')
-  return(fixed[,vcf.cols])
-
+	vcf.cols = c('#CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO')
+	return(fixed[,vcf.cols])
+	
 }
