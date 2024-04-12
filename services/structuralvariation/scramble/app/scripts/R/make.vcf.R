@@ -1,3 +1,5 @@
+library(stringr)
+
 ##############################
 # convert to VCF
 ##############################
@@ -97,11 +99,10 @@ write.scramble.vcf = function(winners, fa, meis=F){
                        svtype = 'DEL',
                        stringsAsFactors = F, check.names = F)
     
-    fixed$ALT = str_sub(fixed$REF, start=-1)
+    fixed$ALT = '<DEL>'
     fixed$svlen = nchar(fixed$REF)
     fixed$end = fixed$POS + fixed$svlen
-fixed$INFO = paste0('SVTYPE=', fixed$svtype, ';', 'SVLEN=', fixed$svlen, ';', 'END=', fixed$end, ';', 'DEL_LENGHT=',      winners$DEL_LENGTH, ';', 'REF_ANCHOR_BASE=', winners$REF_ANCHOR_BASE, ';', 'RIGHT_CLUSTER=', winners$RIGHT_CLUSTER, ';', 'RIGHT_CLUSTER_COUNTS=', winners$RIGHT_CLUSTER_COUNTS, ';', 'LEFT_CLUSTER=', winners$LEFT_CLUSTER, ';', 'LEFT_CLUSTER_COUNTS=', winners$LEFT_CLUSTER_COUNTS, ';', 'LEN_RIGHT_ALIGNMENT=', winners$LEN_RIGHT_ALIGNMENT, ';', 'SCORE_RIGHT_ALIGNMENT=', winners$SCORE_RIGHT_ALIGNMENT, ';', 'PCT_COV_RIGHT_ALIGNMENT=', winners$PCT_COV_RIGHT_ALIGNMENT, ';', 'PCT_IDENTITY_RIGHT_ALIGNMENT=', winners$PCT_IDENTITY_RIGHT_ALIGNMENT, ';', 'LEN_LEFT_ALIGNMENT=', winners$LEN_LEFT_ALIGNMENT, ';', 'SCORE_LEFT_ALIGNMENT=', winners$SCORE_LEFT_ALIGNMENT, ';', 'PCT_COV_LEFT_ALIGNMENT=', winners$PCT_COV_LEFT_ALIGNMENT, ';', 'PCT_IDENTITY_LEFT_ALIGNMENT=', winners$PCT_IDENTITY_LEFT_ALIGNMENT, ';', 'INS_SIZE=', winners$INS.SIZE, ';', 'RIGHT_CLIPPED_SEQ=', winners$RIGHT_CLIPPED_SEQ, ';', 'LEFT_CLIPPED_SEQ=', winners$LEFT_CLIPPED_SEQ)
-
+fixed$INFO = paste0('SVTYPE=', fixed$svtype, ';', 'SVLEN=', fixed$svlen, ';', 'END=', fixed$end, ';', 'DEL_LENGHT=',      winners$DEL.LENGTH, ';', 'REF_ANCHOR_BASE=', winners$REF.ANCHOR.BASE, ';', 'RIGHT_CLUSTER=', winners$RIGHT.CLUSTER, ';', 'RIGHT_CLUSTER_COUNTS=', winners$RIGHT.CLUSTER.COUNTS, ';', 'LEFT_CLUSTER=', winners$LEFT.CLUSTER, ';', 'LEFT_CLUSTER_COUNTS=', winners$LEFT.CLUSTER.COUNTS, ';', 'LEN_RIGHT_ALIGNMENT=', winners$LEN.RIGHT.ALIGNMENT, ';', 'SCORE_RIGHT_ALIGNMENT=', winners$SCORE.RIGHT.ALIGNMENT, ';', 'PCT_COV_RIGHT_ALIGNMENT=', winners$PCT.COV.RIGHT.ALIGNMENT, ';', 'PCT_IDENTITY_RIGHT_ALIGNMENT=', winners$PCT.IDENTITY.RIGHT.ALIGNMENT, ';', 'LEN_LEFT_ALIGNMENT=', winners$LEN.LEFT.ALIGNMENT, ';', 'SCORE_LEFT_ALIGNMENT=', winners$SCORE.LEFT.ALIGNMENT, ';', 'PCT_COV_LEFT_ALIGNMENT=', winners$PCT.COV.LEFT.ALIGNMENT, ';', 'PCT_IDENTITY_LEFT_ALIGNMENT=', winners$PCT.IDENTITY.LEFT.ALIGNMENT, ';', 'INS_SIZE=', winners$INS.SIZE, ';', 'RIGHT_CLIPPED_SEQ=', winners$RIGHT.CLIPPED.SEQ, ';', 'LEFT_CLIPPED_SEQ=', winners$LEFT.CLIPPED.SEQ)
   } else {
     fixed = data.frame('#CHROM' =  gsub("(.*):(\\d*)$", "\\1", winners$Insertion),
                        POS = as.integer(gsub("(.*):(\\d*)$", "\\2", winners$Insertion)),
