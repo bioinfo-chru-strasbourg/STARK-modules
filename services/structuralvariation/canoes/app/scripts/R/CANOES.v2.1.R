@@ -1,5 +1,5 @@
 ##########################################################################
-# CANOES Rscript         Version: 1
+# CANOES Rscript         Version: 2.1
 # Description:          R script to call CNVs (CNVs with an Arbitrary Number Of Exome Samples)
 ##########################################################################
 
