@@ -95,7 +95,7 @@ write.scramble.vcf = function(winners, fa, meis=F){
                        ID = 'DEL',
                        QUAL = sapply(1:nrow(winners), function(i) get_score(winners$SCORE.RIGHT.ALIGNMENT[i], winners$SCORE.LEFT.ALIGNMENT[i])),
                        FILTER = 'PASS',
-                       REF = sapply(1:nrow(winners), function(i) get_refs(fa, winners$CONTIG[i], winners$DEL.START[i], winners$DEL.END[i] + 1)),
+                       REF = sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i])),
                        svtype = 'DEL',
                        stringsAsFactors = F, check.names = F)
     
