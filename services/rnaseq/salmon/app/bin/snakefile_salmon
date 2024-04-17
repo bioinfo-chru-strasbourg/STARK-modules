@@ -254,11 +254,11 @@ if config['DEBUG_MODE']:
 
 ################################################## RULES ##################################################
 
-ruleorder: copy_bam > samtools_fastq > copy_fastq > cramtobam
+ruleorder: copy_fastq > cramtobam > copy_bam > samtools_fastq 
 
 rule all:
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.salmon.quant/",sample=sample_list,aligner=aligner_list)
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.salmon.quant",sample=sample_list,aligner=aligner_list)
 
 if config['SALMON_FASTQ_TYPE'] == "SE":
 	R_list = ['R1']
@@ -317,7 +317,7 @@ rule cramtobam:
 	""" Extract bam from a cram file with samtools, need a reference genome """
 	input: rules.copy_cram.output
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
-	params: refgenome=config['REFGENEFA_PATH']
+	params: refgenome=config['REFGENOMEFA_PATH']
 	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
 
 rule indexing:
@@ -341,10 +341,10 @@ rule samtools_fastq:
 
 rule salmon:
 	input:
-		fastqR1=temp(f"{resultDir}/{{sample}}.{{aligner}}.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.{{aligner}}.R2.fastq.gz")
+		fastqR1=f"{resultDir}/{{sample}}.{{aligner}}.R1.fastq.gz",
+		fastqR2=f"{resultDir}/{{sample}}.{{aligner}}.R2.fastq.gz"
 	output:
-		directory(f"{resultDir}/{{sample}}.{{aligner}}.salmon.quant/")
+		f"{resultDir}/{{sample}}.{{aligner}}.salmon.quant"
 	params:
 		threads = workflow.cores,
 		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
