@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="style.css">
+    <title>Report</title>
+</head>
+<body>
+    <div id="left-menu">
+        <h2>Samples list</h2>
+        <ul>
+            {% for run_id in runDict.keys() %}
+                <li><a href="#{{ run_id }}">{{ run_id }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div id="content">
+        <h2>Welcome to the report for {{ serviceName }}</h2>
+        <p>We analyse run {{ runName }}</p>
+        <p>Number of samples : {{ sample_list|length -1 }}</p>
+        <p>Sample list: {% for item in sample_list %}{{ item|replace("allsamples", "") }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+        <p>Here is the details for each samples</p><br>
+        {% for run_id, details in runDict.items() %}
+            <h1 id="{{ run_id }}">{{ run_id }}</h1>
+            <table>
+                <tr>
+                    <th>Files by extension</th>
+                    <th>Path or value</th>
+                </tr>
+                {% for file, path in details.items() %}
+                    <tr>
+                        <td>{{ file }}</td>
+                        <td>
+                        {% if file == "gender" or file == "HPO" %}
+                            {{ path }}
+                        {% else %}
+                        <a href="{{ path }}" target="_blank">{{ path }}</a>
+                        {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table><br>
+        {% endfor %}
+    </div>
+</body>
+</html>

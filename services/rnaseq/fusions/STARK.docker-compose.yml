@@ -1,0 +1,83 @@
+#########################
+# Docker compose fusions #
+#########################
+version: '3'
+
+services:
+
+    stark-module-rnaseq-submodule-fusions-service-setup:
+        image: stark/stark-module-rnaseq-submodule-fusions-service-common:1.0
+        build:
+            context: ./
+            dockerfile: fusions_dockerfile
+        entrypoint: "python3"
+        command: "/app/bin/setup.py"
+        container_name: stark-module-rnaseq-submodule-fusions-service-setup
+        restart: "no"
+        environment:
+            - DOCKER_STARK_MODULE_SUBMODULE_NAME=fusions
+            - DOCKER_STARK_MODULE_NAME=rnaseq
+            - DOCKER_STARK_INNER_FOLDER_DATABASES=/STARK/databases
+            - DOCKER_STARK_INNER_FOLDER_SERVICES=/STARK/services
+            - DOCKER_STARK_INNER_FOLDER_CONFIG=/STARK/config
+        volumes:
+            - /home1/data/STARK/services/rnaseq/fusions:/STARK/services/rnaseq/fusions:rw
+            - /home1/data/STARK/config/rnaseq/fusions:/STARK/config/rnaseq/fusions:rw
+            - /home1/data/STARK/databases:/STARK/databases:rw
+        networks:
+            - stark_stark
+
+    stark-module-rnaseq-submodule-fusions-service-cli:
+        image: stark/stark-module-rnaseq-submodule-fusions-service-common:1.0
+        build:
+            context: ./
+            dockerfile: fusions
+        container_name: stark-module-rnaseq-submodule-fusions-service-cli
+        restart: "no"
+        entrypoint: [ "/bin/bash", "-l", "-c" ]
+        command: "'while true; do sleep 60; done'"
+        volumes:
+            - /home1/data/STARK/output/repository:/STARK/output/repository:rw
+            - /home1/data/STARK/output/depository:/STARK/output/depository:rw
+            - /home1/data/STARK/services/rnaseq/fusions/cli:/STARK/services/rnaseq/fusions/cli:rw
+            - /home1/data/STARK/config/rnaseq/fusions/cli:/STARK/config/rnaseq/fusions/cli:ro
+            - /home1/data/STARK/databases:/STARK/databases:ro
+        networks:
+            - stark_stark
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "test",
+                    "-f",
+                    "/STARK/services/rnaseq/fusions/cli/SETUPComplete.txt"
+                ]
+            timeout: 10s
+            interval: 60s
+            retries: 30
+ 
+ 
+    stark-module-rnaseq-submodule-fusions-service-listener:
+        image: stark/stark-module-common-submodule-listener-service-listener:2.0
+        container_name: stark-module-rnaseq-submodule-fusions-service-listener
+        entrypoint: "python3"
+        command: "/app/bin/listener.py --input=/STARK/output/repository --json=/STARK/config/rnaseq/fusions/listener/fusions.json --config=/STARK/config/rnaseq/fusions/listener/fusions.conf --servicename=FUSIONS --containersfile=/STARK/services/rnaseq/fusions/listener --nbDaysBack=30 --minDelay=1"
+        restart: always
+        environment:
+            - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/STARK/config/rnaseq/fusions
+        volumes:
+            - /home1/data/STARK/output/repository:/STARK/output/repository:ro
+            - /home1/data/STARK/output/depository:/STARK/output/depository:ro
+            - /home1/data/STARK/services/rnaseq/fusions:/STARK/services/rnaseq/fusions:rw
+            - /home1/data/STARK/config/rnaseq/fusions:/STARK/config/rnaseq/fusions:ro
+            - /home1/data/STARK/config/rnaseq/fusions/listener/launcher.py:/app/bin/config/launcher.py:ro
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+            - stark_stark
+        depends_on:
+            stark-module-rnaseq-submodule-fusions-service-cli:
+                condition: service_healthy
+
+networks:
+    stark_stark:
+        external: true
