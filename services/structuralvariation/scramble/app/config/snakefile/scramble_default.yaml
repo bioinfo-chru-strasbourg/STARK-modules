@@ -93,8 +93,8 @@ nCluster: 5 # min cluster size to analyze (default 5)
 mei-score: 50 # min MEI alignment score to call (default 50)
 poly-a-frac: 0.75 # fraction of clipped length for calling polyA tail in MEIs (default 0.75)
 poly-a-dist: 100 # how far from MEI to look for polyA tail (default 100)
-# choose to evaluate meis or deletions (not both)
-# --eval-meis / --eval-dels
+# choose to evaluate meis or deletions or both
+# --eval-meis / --eval-dels / --eval-meis --eval-dels
 scramble_mode: "--eval-meis"
 # Default path to an FASTA file with MEI Ref sequences
 REFMEI_PATH: "/opt/conda/share/scramble/resources/MEI_consensus_seqs.fa"

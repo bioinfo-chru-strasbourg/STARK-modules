@@ -13,8 +13,8 @@ FROM condaforge/mambaforge
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Update and install some tools
-RUN apt-get update --fix-missing
-RUN apt-get install -y unzip vim rsync
+RUN apt-get update --fix-missing && \
+	apt-get install -y unzip vim rsync
 
 # Mamba install
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
@@ -22,6 +22,7 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
 	snakemake~=7.32.4 pandas~=2.2.1 vcf2tsvpy~=0.6.1 \
 	salmon~=1.10.2 \
 	&& mamba clean -afy
+
 
 # Copy applications files (/app)
 COPY ./app /app
