@@ -79,26 +79,26 @@ def getSampleInfos(samplesheet_path, exclude_samples):
 	return result_dict
 
 def populate_dictionary(dictionary, samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None, split_index=0):
-    for sample in samples_list:
-        for ext in extensions_list:
-            for file in files_list:
-                file_parts = os.path.basename(file).split(".")
-                
-                if split_index >= len(file_parts):
-                    continue  # Skip if split_index is out of range
-                
-                file_base = file_parts[split_index]
-                
-                if file_base != sample or not os.path.basename(file).endswith(ext):
-                    continue
+	for sample in samples_list:
+		for ext in extensions_list:
+			for file in files_list:
+				file_parts = os.path.basename(file).split(".")
+				
+				if split_index >= len(file_parts):
+					continue  # Skip if split_index is out of range
+				
+				file_base = file_parts[split_index]
+				
+				if file_base != sample or not os.path.basename(file).endswith(ext):
+					continue
 
-                if pattern_exclude and pattern_exclude in file:
-                    continue
+				if pattern_exclude and pattern_exclude in file:
+					continue
 
-                if pattern_include and pattern_include not in file:
-                    continue
+				if pattern_include and pattern_include not in file:
+					continue
 
-                dictionary.setdefault(sample, {})[ext] = file
+				dictionary.setdefault(sample, {})[ext] = file
 
 
 def filter_files(files_list, filter_in=None, filter_out=None):
@@ -144,11 +144,11 @@ def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
 def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html'):
-    # Set up Jinja2 environment
+	# Set up Jinja2 environment
 	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
-    template = env.get_template('template.html')
+	template = env.get_template('template.html')
 
-    # Render the template with the provided data
+	# Render the template with the provided data
 	rendered_html = template.render(
 		runDict=result_dict,
 		runName=run_name,
@@ -156,11 +156,11 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		sample_list=sample_list
 	)
 
-    # Save the rendered HTML to the output file
-    with open(output_file, 'w') as f:
-        f.write(rendered_html)
+	# Save the rendered HTML to the output file
+	with open(output_file, 'w') as f:
+		f.write(rendered_html)
 
-    print(f"HTML report generated successfully: {output_file}")
+	print(f"HTML report generated successfully: {output_file}")
 
 
 ### END OF FUNCTIONS ###
