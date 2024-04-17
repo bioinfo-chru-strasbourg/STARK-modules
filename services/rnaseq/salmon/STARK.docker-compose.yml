@@ -5,42 +5,42 @@ version: '3'
 
 services:
 
-    stark-module-structuralvariation-submodule-salmon-service-setup:
-        image: stark/stark-module-structuralvariation-submodule-salmon-service-common:1.0
+    stark-module-rnaseq-submodule-salmon-service-setup:
+        image: stark/stark-module-rnaseq-submodule-salmon-service-common:1.0
         build:
             context: ./
             dockerfile: salmon_dockerfile
         entrypoint: "python3"
         command: "/app/bin/setup.py"
-        container_name: stark-module-structuralvariation-submodule-salmon-service-setup
+        container_name: stark-module-rnaseq-submodule-salmon-service-setup
         restart: "no"
         environment:
             - DOCKER_STARK_MODULE_SUBMODULE_NAME=salmon
-            - DOCKER_STARK_MODULE_NAME=structuralvariation
+            - DOCKER_STARK_MODULE_NAME=rnaseq
             - DOCKER_STARK_INNER_FOLDER_DATABASES=/STARK/databases
             - DOCKER_STARK_INNER_FOLDER_SERVICES=/STARK/services
             - DOCKER_STARK_INNER_FOLDER_CONFIG=/STARK/config
         volumes:
-            - /home1/data/STARK/services/structuralvariation/salmon:/STARK/services/structuralvariation/salmon:rw
-            - /home1/data/STARK/config/structuralvariation/salmon:/STARK/config/structuralvariation/salmon:rw
+            - /home1/data/STARK/services/rnaseq/salmon:/STARK/services/rnaseq/salmon:rw
+            - /home1/data/STARK/config/rnaseq/salmon:/STARK/config/rnaseq/salmon:rw
             - /home1/data/STARK/databases:/STARK/databases:rw
         networks:
             - stark_stark
 
-    stark-module-structuralvariation-submodule-salmon-service-cli:
-        image: stark/stark-module-structuralvariation-submodule-salmon-service-common:1.0
+    stark-module-rnaseq-submodule-salmon-service-cli:
+        image: stark/stark-module-rnaseq-submodule-salmon-service-common:1.0
         build:
             context: ./
             dockerfile: salmon_dockerfile
-        container_name: stark-module-structuralvariation-submodule-salmon-service-cli
+        container_name: stark-module-rnaseq-submodule-salmon-service-cli
         restart: "no"
         entrypoint: [ "/bin/bash", "-l", "-c" ]
         command: "'while true; do sleep 60; done'"
         volumes:
             - /home1/data/STARK/output/repository:/STARK/output/repository:rw
             - /home1/data/STARK/output/depository:/STARK/output/depository:rw
-            - /home1/data/STARK/services/structuralvariation/salmon/cli:/STARK/services/structuralvariation/salmon/cli:rw
-            - /home1/data/STARK/config/structuralvariation/salmon/cli:/STARK/config/structuralvariation/salmon/cli:ro
+            - /home1/data/STARK/services/rnaseq/salmon/cli:/STARK/services/rnaseq/salmon/cli:rw
+            - /home1/data/STARK/config/rnaseq/salmon/cli:/STARK/config/rnaseq/salmon/cli:ro
             - /home1/data/STARK/databases:/STARK/databases:ro
         networks:
             - stark_stark
@@ -50,32 +50,32 @@ services:
                     "CMD",
                     "test",
                     "-f",
-                    "/STARK/services/structuralvariation/salmon/cli/SETUPComplete.txt"
+                    "/STARK/services/rnaseq/salmon/cli/SETUPComplete.txt"
                 ]
             timeout: 10s
             interval: 60s
             retries: 30
  
  
-    stark-module-structuralvariation-submodule-salmon-service-listener:
+    stark-module-rnaseq-submodule-salmon-service-listener:
         image: stark/stark-module-common-submodule-listener-service-listener:2.0
-        container_name: stark-module-structuralvariation-submodule-salmon-service-listener
+        container_name: stark-module-rnaseq-submodule-salmon-service-listener
         entrypoint: "python3"
-        command: "/app/bin/listener.py --input=/STARK/output/repository --json=/STARK/config/structuralvariation/salmon/listener/salmon.json --config=/STARK/config/structuralvariation/salmon/listener/salmon.conf --servicename=SALMON --containersfile=/STARK/services/structuralvariation/salmon/listener --nbDaysBack=30 --minDelay=1"
+        command: "/app/bin/listener.py --input=/STARK/output/repository --json=/STARK/config/rnaseq/salmon/listener/salmon.json --config=/STARK/config/rnaseq/salmon/listener/salmon.conf --servicename=SALMON --containersfile=/STARK/services/rnaseq/salmon/listener --nbDaysBack=30 --minDelay=1"
         restart: always
         environment:
-            - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/STARK/config/structuralvariation/salmon
+            - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/STARK/config/rnaseq/salmon
         volumes:
             - /home1/data/STARK/output/repository:/STARK/output/repository:ro
             - /home1/data/STARK/output/depository:/STARK/output/depository:ro
-            - /home1/data/STARK/services/structuralvariation/salmon:/STARK/services/structuralvariation/salmon:rw
-            - /home1/data/STARK/config/structuralvariation/salmon:/STARK/config/structuralvariation/salmon:ro
-            - /home1/data/STARK/config/structuralvariation/salmon/listener/launcher.py:/app/bin/config/launcher.py:ro
+            - /home1/data/STARK/services/rnaseq/salmon:/STARK/services/rnaseq/salmon:rw
+            - /home1/data/STARK/config/rnaseq/salmon:/STARK/config/rnaseq/salmon:ro
+            - /home1/data/STARK/config/rnaseq/salmon/listener/launcher.py:/app/bin/config/launcher.py:ro
             - /var/run/docker.sock:/var/run/docker.sock
         networks:
             - stark_stark
         depends_on:
-            stark-module-structuralvariation-submodule-salmon-service-cli:
+            stark-module-rnaseq-submodule-salmon-service-cli:
                 condition: service_healthy
 
 networks:
