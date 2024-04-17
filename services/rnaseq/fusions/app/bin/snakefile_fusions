@@ -248,8 +248,6 @@ if config['DEBUG_MODE']:
 
 ################################################## RULES ##################################################
 
-ruleorder: copy_fastq > cramtobam > copy_bam > samtools_fastq 
-
 rule all:
 	"""
 	Rule will create tsv for arriba and/or starfusion
@@ -291,46 +289,6 @@ rule copy_fastq:
 		fi
 		"""
 
-rule copy_bam:
-	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
-	params:
-		process=config['PROCESS_CMD'],
-		download_link=lambda wildcards: runDict[wildcards.sample]['.bam']
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
-
-rule copy_cram:
-	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.cram")
-	params:
-		process=config['PROCESS_CMD'],
-		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
-
-rule cramtobam:
-	""" Extract bam from a cram file with samtools, need a reference genome """
-	input: rules.copy_cram.output
-	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
-	params: refgenome=config['REFGENOMEFA_PATH']
-	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
-
-rule indexing:
-	""" Indexing bam files with samtools or ls """
-	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
-	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
-	params:
-		process=config['PROCESS_CMD'],
-		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
-	threads: workflow.cores
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
-
-rule samtools_fastq:
-	""" Extract fastq from a bam file """
-	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
-	output:
-		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
-	shell: "samtools fastq -1 {output.fastqR1} -2 {output.fastqR2} {input}"
-
-
 # indexing genome for STAR with the command :
 # STAR --runThreadN 8 --runMode genomeGenerate --genomeDir /STARK/databases/STAR/ --genomeFastaFiles /STARK/databases/STAR/hg19.fa --sjdbGTFfile /STARK/databases/gtf/current/gencode.v19.annotation.gtf_withproteinids --sjdbOverhang 99 --outFileNamePrefix /STARK/databases/STAR/log/ --genomeChrBinNbits 15
 
@@ -353,11 +311,11 @@ rule STAR:
 	params:
 		genomepath_indexed=config['GENOME_PATH_INDEXED'],
 		RG="ID:1 PL:ILLUMINA PU:PU LB:001 SM:{sample}",
-		stardir=f"{resultDir}/{{sample}}"",
+		stardir=f"{resultDir}/{{sample}}",
 		juncfile=config['JUNCTION_FILE']
 	shell:
 		"""
-		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {output.bam} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --quantTranscriptomeBan Singleend --outTmpDir {params.stardir}  ; mv {output.bam}Aligned.sortedByCoord.out.bam {output.bam}
+		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {output.bam} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.stardir}  ; mv {output.bam}Aligned.sortedByCoord.out.bam {output.bam}
 		"""
 
 # For STAR_Fusion (--outSAMstrandField intronMotif ?)

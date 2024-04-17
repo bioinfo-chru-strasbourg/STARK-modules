@@ -326,7 +326,7 @@ rule indexing:
 
 rule samtools_fastq:
 	""" Extract fastq from a bam file """
-	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
+	input: f"{resultDir}/{{sample}}.bam"
 	output:
 		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
 		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
