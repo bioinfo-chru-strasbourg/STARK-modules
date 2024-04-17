@@ -74,8 +74,8 @@ RESULT_EXT_LIST: ['.tsv']
 
 
 ############## Tools specific parameters ##############
-# List of tools used to generate fusion analysis
-FUSION_TOOL: ['arriba', 'starfusion']
+# List of tools used to generate fusion analysis ['arriba', 'starfusion'] ; only arriba work for the moment
+FUSION_TOOL: ['arriba']
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
