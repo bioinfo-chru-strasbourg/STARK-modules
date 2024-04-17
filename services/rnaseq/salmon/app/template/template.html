@@ -20,7 +20,7 @@
         <h2>Welcome to the report for {{ serviceName }}</h2>
         <p>We analyse run {{ runName }}</p>
         <p>Number of samples : {{ sample_list|length -1 }}</p>
-        <p>Sample list: {% for item in sample_list %}{{ item|replace("allsamples", "") }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+        <p>Sample list: {% for item in sample_list %}{{ item|replace("allsamples,", "") }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
         <p>Here is the details for each samples</p><br>
         {% for run_id, details in runDict.items() %}
             <h1 id="{{ run_id }}">{{ run_id }}</h1>
