@@ -1,10 +1,13 @@
 ##########################################################################
 # Snakemakefile Version:   1.0
-# Description:             Snakemake file to run Salmon module
+# Description:             Snakemake file to run fusions module
 ##########################################################################
 
+# DEV version 1.0 : 23/11/2022
+# Authoring : Thomas LAVAUX
+
 ################## Context ##################
-# launch snakemake -s  snakefile_count -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
+# launch snakemake -s  snakefile_drawfusions -c(numberofthreads) --config run=absolutepathoftherundirectory without / at the end of the path
 # to launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
 # every variable defined in the yaml file can be change
 # separate multiple variable with a space (ex  --config run=runname var1=0.05 var2=12)
@@ -13,22 +16,9 @@
 # use -p to display shell commands
 # use --lt to display docstrings of rules
 
-# input file = fastq files
-# output file = salmon count files (quant.sf)
+# input file = bam files indexed and .arriba.fusions.tsv from arriba or STAR Fusion
+# output file = arriba pdf report
 ################## Import libraries ##################
-
-########## Note ########################################################################################
-# recipe for Salmon index to perform count extraction
-# GRch38 assembly and gencode.vxx.transcripts.fa.gz can be found on https://www.gencodegenes.org/human/
-# release can be change (actually v41 is used, relase is 07.2022)
-# for GRch38 primary assembly v42 : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
-# for gencode transcripts : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
-# grep "^>" <(gunzip -c GRCh38.primary_assembly.genome.fa.gz) | cut -d " " -f 1 > decoys.txt
-# sed -i.bak -e 's/>//g' decoys.txt
-# cat gencode.v41.transcripts.fa.gz GRCh38.primary_assembly.genome.fa.gz > gentrome.fa.gz
-# salmon index -t gentrome.fa.gz -d decoys.txt -p 12 -i salmon_index --gencode
-# eventually use --keepDuplicates for isoform analysis
-########################################################################################################
 
 import os
 import glob
@@ -42,7 +32,7 @@ from collections import defaultdict
 from jinja2 import Environment, FileSystemLoader
 
 ################## Configuration file ##################
-configfile: "/app/config/snakefile/salmon_default.yaml"
+configfile: "/app/config/snakefile/fusions_default.yaml"
 
 ####################### FUNCTIONS #####################
 def parse_samplesheet(samplesheet_path):
@@ -153,7 +143,9 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		runDict=result_dict,
 		runName=run_name,
 		serviceName=service_name,
-		sample_list=sample_list
+		sample_list=sample_list,
+		external_base_path=external_base_path,
+		internal_base_path=internal_base_path
 	)
 
 	# Save the rendered HTML to the output file
@@ -161,8 +153,6 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		f.write(rendered_html)
 
 	print(f"HTML report generated successfully: {output_file}")
-
-
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -209,6 +199,10 @@ else:
 runDict = defaultdict(dict)
 populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
 print(dict(runDict))
+
+# List of tools used to generate the fusions file
+# TODO check if *.arriba.fusions.tsv and/or *.starfusion.fusions.tsv exist 
+fusion_list = config['FUSION_TOOL']
 
 # Find bed file (Design)
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
@@ -257,28 +251,26 @@ if config['DEBUG_MODE']:
 ruleorder: copy_fastq > cramtobam > copy_bam > samtools_fastq 
 
 rule all:
+	"""
+	Rule will create tsv for arriba and/or starfusion
+	"""
 	input:
-		expand(f"{resultDir}/{{sample}}.salmon.quant",sample=sample_list)
-
-if config['SALMON_FASTQ_TYPE'] == "SE":
-	R_list = ['R1']
-
-if config['SALMON_FASTQ_TYPE'] == "PE":
-	R_list = ['R1','R2']
+		expand(f"{resultDir}/{{sample}}.{{fusion}}.tsv",sample=sample_list,fusion=fusion_list)
 
 rule help:
 	"""
-	General help for salmon module
-	Launch snakemake -s  snakefile_salmon -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory (default is data) without / at the end of the path
+	General help for drawfusions module
+	Launch snakemake -s  snakefile_fusions -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory (default is data) without / at the end of the path
 	To launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
 	Every variable defined in the yaml file can be change
 	Separate multiple variable with a space (ex  --config DATA_DIR=runname transProb=0.05 var1=0.05 var2=12)
 	Also use option --configfile another.yaml to replace and merge existing config.yaml file variables
 	Use -p to display shell commands
 	Use --lt to display docstrings of rules
-	Input file = fastq SE ou PE
-	Output file = quant.sf files
+	Input file = bam files (if bai is needed, it will be generate), tsv output fusion list from arriba
+	Output file = pdf report with arriba graphs
 	"""
+
 
 rule copy_fastq:
 	""" Copy input files """
@@ -339,27 +331,78 @@ rule samtools_fastq:
 	shell: "samtools fastq -1 {output.fastqR1} -2 {output.fastqR2} {input}"
 
 
-rule salmon:
+# indexing genome for STAR with the command :
+# STAR --runThreadN 8 --runMode genomeGenerate --genomeDir /STARK/databases/STAR/ --genomeFastaFiles /STARK/databases/STAR/hg19.fa --sjdbGTFfile /STARK/databases/gtf/current/gencode.v19.annotation.gtf_withproteinids --sjdbOverhang 99 --outFileNamePrefix /STARK/databases/STAR/log/ --genomeChrBinNbits 15
+
+# STAR produces multiple output files. All files have standard name, however, you can change the file
+# prefixes using --outFileNamePrefix /path/to/output/dir/prefix. By default, this parameter is
+# ./, i.e. all output files are written in the current directory
+# name.bam + Aligned.toTranscriptome.out.bam or Aligned.sortedByCoord.out.bam
+# --limitBAMsortRAM 32000000000 is minimum
+# --chimOutType Junctions (STAR Fusion)or --chimOutType WithinBAM (arriba)
+# output will be Sample.Chimeric.out.junction
+# --genomeLoad LoadAndRemove or --genomeLoad NoSharedMemory if 2 pass
+rule STAR:
 	input:
-		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz",
-		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz"
+		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz", 
+		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz",
 	output:
-		directory(f"{resultDir}/{{sample}}.salmon.quant")
+		bam=f"{resultDir}/{{sample}}.bam",
+		junc=f"{resultDir}/{{sample}}.bamChimeric.out.junction"
+	threads: workflow.cores
 	params:
-		threads = workflow.cores,
-		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
-		fastq_type = config['SALMON_FASTQ_TYPE'],
-		misc_options = config['MISC_SALMON_OPTIONS']
+		genomepath_indexed=config['GENOME_PATH_INDEXED'],
+		RG="ID:1 PL:ILLUMINA PU:PU LB:001 SM:{sample}",
+		stardir=f"{resultDir}/{{sample}}"",
+		juncfile=config['JUNCTION_FILE']
 	shell:
 		"""
-		if [ "{params.fastq_type}" = 'PE' ];
-		then
-		salmon quant -p {params.threads} -i {params.fastquantref} -l A -1 {input.fastqR1} -2 {input.fastqR2} {params.misc_options} -o {output}
-		fi
-		if [ "{params.fastq_type}" = 'SE' ];
-		then
-		salmon quant -p {params.threads} -i {params.fastquantref} -l A -r {input.fastqR1} {params.misc_options} -o {output}
-		fi
+		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {output.bam} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --quantTranscriptomeBan Singleend --outTmpDir {params.stardir}  ; mv {output.bam}Aligned.sortedByCoord.out.bam {output.bam}
+		"""
+
+# For STAR_Fusion (--outSAMstrandField intronMotif ?)
+# STAR  --chimSegmentMin 12  --chimJunctionOverhangMin 12 --chimOutJunctionFormat 1 --alignSJDBoverhangMin 10 --alignMatesGapMax 100000 --alignIntronMax 100000 --chimMultimapScoreRange 3 --chimScoreJunctionNonGTAG -4 --chimMultimapNmax 20 --chimNonchimScoreDropMin 10 --peOverlapNbasesMin 12 --peOverlapMMp 0.1 
+# Note, if you use this -J Chimeric.out.junction file, it is essential that the new '--chimOutJunctionFormat 1' parameter was used, since this integrates alignment statistics at the end of the junction file, which are used for estimating the FFPM fusion ~expression estimates.
+rule STARFusion:
+	input: rules.STAR.output.junc
+	output: f"{resultDir}/{{sample}}/{{fusion}}.tsv"
+	params:
+		libgencode=config['CTAT_LIB_GENCODE'],
+		fusiondir=f"{resultDir}/{{sample}}"
+	shell:
+		"""
+		STAR-Fusion --genome_lib_dir {params.libgencode} -J {input.junc} --output_dir {params.fusiondir}
+		"""
+
+
+# input is STAR bam Aligned.sortedByCoord.out.bam
+# different files can be used for filtering and tagging, but the provided one can be used for both
+# -f will disable filters / -f known_fusions to reduce sensibility / -f isoforms to reduce false positive
+# -S MIN_SUPPORTING_READS : The filter min_support discards all fusions with fewer than this many supporting reads (split reads and discordant mates combined). Default: 2
+# -z MIN_ITD_ALLELE_FRACTION : Required fraction of supporting reads to report an internal tandem duplication. Default: 0.07
+# -Z MIN_ITD_SUPPORTING_READS : Required absolute number of supporting reads to report an internal tandem duplication. Default: 10
+# -O {output.tsvdisc}  Output file with fusions that were discarded due to filtering ; tsvdisc = tmpdir + "/{sample}.fusion.discarded.tsv"
+# -k File containing known/recurrent fusions
+# -t Tab-separated file containing fusions to annotate with tags in the 'tags' column
+# Note :  When STAR was run with the parameter --chimOutType SeparateSAMold, the main output file lacks chimeric alignments. Instead, STAR writes them to a separate output file named Chimeric.out.sam. 
+# In this case, the file needs to be passed to Arriba via the parameter -c in addition to the main output file Aligned.out.bam.
+
+rule Arriba:
+	input:
+		bam=f"{resultDir}/{{sample}}.bam",
+		junc=f"{resultDir}/{{sample}}.bamChimeric.out.junction"
+	output:
+		f"{resultDir}/{{sample}}.{{fusion}}.tsv"
+	params:
+		refgenome = config['REFGENOMEFA_PATH'],
+		refgtfgencode = config['REFGTFGENCODE_PATH'],
+		refprot = config['REFPROTDOMAIN_PATH'],
+		blacklist = config['BLACKLIST_PATH'],
+		reffusion = config['REFFUSION_PATH'],
+		fusion = config ['REFFUSION_PATH']
+	shell:
+		"""
+		arriba -x {input.bam} -c {input.junc} -o {output} -a {params.refgenome} -g {params.refgtfgencode} -b {params.blacklist} -k {params.reffusion} -t {params.fusion} -p {params.refprot} -f isoforms
 		"""
 
 onstart:
