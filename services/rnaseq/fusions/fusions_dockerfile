@@ -20,8 +20,8 @@ RUN apt-get update  --fix-missing && \
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
 	samtools~=1.19.2 bcftools~=1.19.0 bedtools~=2.31.1  \
-	snakemake~=7.32.4 pandas~=2.2.1 vcf2tsvpy~=0.6.1 \
-	arriba~=2.4.0 star-fusion~=1.13.0 && mamba clean -afy
+	snakemake~=7.32.4 pandas~=2.2.1 \ 
+	arriba~=2.4.0 star~=2.7.10a && mamba clean -afy
 
 # Copy applications files (/app)
 COPY ./app /app

@@ -252,19 +252,20 @@ if config['DEBUG_MODE']:
 	except FileNotFoundError:
 		pass
 
-################################################## RULES ##################################################
-
-ruleorder: copy_fastq > cramtobam > copy_bam > samtools_fastq 
-
-rule all:
-	input:
-		expand(f"{resultDir}/{{sample}}.salmon.quant",sample=sample_list)
-
+################################################## PE/SE ##################################################
 if config['SALMON_FASTQ_TYPE'] == "SE":
 	R_list = ['R1']
 
 if config['SALMON_FASTQ_TYPE'] == "PE":
 	R_list = ['R1','R2']
+
+################################################## RULES ##################################################
+ruleorder: copy_fastq > cramtobam > copy_bam > samtools_fastq 
+
+rule all:
+	input:
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.salmon.quant/quant.sf",sample=sample_list, aligner=aligner_list)
+
 
 rule help:
 	"""
@@ -283,8 +284,8 @@ rule help:
 rule copy_fastq:
 	""" Copy input files """
 	output:
-		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
+		fastqR1=temp(f"{resultDir}/{{sample}}.{{aligner}}.R1.fastq.gz"),
+		fastqR2=temp(f"{resultDir}/{{sample}}.{{aligner}}.R2.fastq.gz")
 	params:
 		process = config['PROCESS_CMD'],
 		download_link1 = lambda wildcards: runDict[wildcards.sample]['.R1.fastq.gz'],
@@ -334,31 +335,32 @@ rule samtools_fastq:
 	""" Extract fastq from a bam file """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
 	output:
-		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
+		fastqR1=temp(f"{resultDir}/{{sample}}.{{aligner}}.R1.fastq.gz"),
+		fastqR2=temp(f"{resultDir}/{{sample}}.{{aligner}}.R2.fastq.gz")
 	shell: "samtools fastq -1 {output.fastqR1} -2 {output.fastqR2} {input}"
 
 
 rule salmon:
 	input:
-		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz",
-		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz"
+		fastqR1=f"{resultDir}/{{sample}}.{{aligner}}.R1.fastq.gz",
+		fastqR2=f"{resultDir}/{{sample}}.{{aligner}}.R2.fastq.gz"
 	output:
-		directory(f"{resultDir}/{{sample}}.salmon.quant")
+		f"{resultDir}/{{sample}}.{{aligner}}.salmon.quant/quant.sf"
 	params:
 		threads = workflow.cores,
 		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
 		fastq_type = config['SALMON_FASTQ_TYPE'],
-		misc_options = config['MISC_SALMON_OPTIONS']
+		misc_options = config['MISC_SALMON_OPTIONS'],
+		salmondir= f"{resultDir}/{{sample}}.{{aligner}}.salmon.quant/"
 	shell:
 		"""
 		if [ "{params.fastq_type}" = 'PE' ];
 		then
-		salmon quant -p {params.threads} -i {params.fastquantref} -l A -1 {input.fastqR1} -2 {input.fastqR2} {params.misc_options} -o {output}
+		salmon quant -p {params.threads} -i {params.fastquantref} -l A -1 {input.fastqR1} -2 {input.fastqR2} {params.misc_options} -o {params.salmondir}
 		fi
 		if [ "{params.fastq_type}" = 'SE' ];
 		then
-		salmon quant -p {params.threads} -i {params.fastquantref} -l A -r {input.fastqR1} {params.misc_options} -o {output}
+		salmon quant -p {params.threads} -i {params.fastquantref} -l A -r {input.fastqR1} {params.misc_options} -o {params.salmondir}
 		fi
 		"""
 
