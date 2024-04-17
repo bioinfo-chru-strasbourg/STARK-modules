@@ -252,19 +252,12 @@ if config['DEBUG_MODE']:
 	except FileNotFoundError:
 		pass
 
-################################################## PE/SE ##################################################
-if config['SALMON_FASTQ_TYPE'] == "SE":
-	R_list = ['R1']
-
-if config['SALMON_FASTQ_TYPE'] == "PE":
-	R_list = ['R1','R2']
-
 ################################################## RULES ##################################################
 ruleorder: copy_fastq > cramtobam > copy_bam > samtools_fastq 
 
 rule all:
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.salmon.quant/quant.sf",sample=sample_list, aligner=aligner_list)
+		expand(f"{resultDir}/{{sample}}.salmon.quant/quant.sf",sample=sample_list)
 
 
 rule help:
@@ -284,8 +277,8 @@ rule help:
 rule copy_fastq:
 	""" Copy input files """
 	output:
-		fastqR1=temp(f"{resultDir}/{{sample}}.{{aligner}}.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.{{aligner}}.R2.fastq.gz")
+		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
+		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
 	params:
 		process = config['PROCESS_CMD'],
 		download_link1 = lambda wildcards: runDict[wildcards.sample]['.R1.fastq.gz'],
@@ -301,14 +294,14 @@ rule copy_fastq:
 		"""
 
 rule copy_bam:
-	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
+	output: temp(f"{resultDir}/{{sample}}.bam")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam']
 	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule copy_cram:
-	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.cram")
+	output: temp(f"{resultDir}/{{sample}}..cram")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
@@ -317,14 +310,14 @@ rule copy_cram:
 rule cramtobam:
 	""" Extract bam from a cram file with samtools, need a reference genome """
 	input: rules.copy_cram.output
-	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
+	output: temp(f"{resultDir}/{{sample}}.bam")
 	params: refgenome=config['REFGENOMEFA_PATH']
 	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
 
 rule indexing:
 	""" Indexing bam files with samtools or ls """
-	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
-	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
+	input: f"{resultDir}/{{sample}}.bam"
+	output: temp(f"{resultDir}/{{sample}}.bam.bai")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
@@ -335,23 +328,23 @@ rule samtools_fastq:
 	""" Extract fastq from a bam file """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
 	output:
-		fastqR1=temp(f"{resultDir}/{{sample}}.{{aligner}}.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.{{aligner}}.R2.fastq.gz")
+		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
+		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
 	shell: "samtools fastq -1 {output.fastqR1} -2 {output.fastqR2} {input}"
 
 
 rule salmon:
 	input:
-		fastqR1=f"{resultDir}/{{sample}}.{{aligner}}.R1.fastq.gz",
-		fastqR2=f"{resultDir}/{{sample}}.{{aligner}}.R2.fastq.gz"
+		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz",
+		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz"
 	output:
-		f"{resultDir}/{{sample}}.{{aligner}}.salmon.quant/quant.sf"
+		f"{resultDir}/{{sample}}.salmon.quant/quant.sf"
 	params:
 		threads = workflow.cores,
 		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
 		fastq_type = config['SALMON_FASTQ_TYPE'],
 		misc_options = config['MISC_SALMON_OPTIONS'],
-		salmondir= f"{resultDir}/{{sample}}.{{aligner}}.salmon.quant/"
+		salmondir= f"{resultDir}/{{sample}}.salmon.quant/"
 	shell:
 		"""
 		if [ "{params.fastq_type}" = 'PE' ];
