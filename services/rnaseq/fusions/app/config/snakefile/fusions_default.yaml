@@ -79,6 +79,7 @@ FUSION_TOOL: ['arriba']
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+GENOME_PATH_INDEXED: "/STARK/databases/genomes/current/ref_genome.fa.star.idx"
 # GTF file (Gencode)
 REFGTFGENCODE_PATH: "/STARK/databases/gtf/current/gencode.v19.annotation.gtf_withproteinids"
 # Arriba specifics databases
