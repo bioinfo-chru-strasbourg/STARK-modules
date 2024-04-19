@@ -31,7 +31,7 @@ services:
         image: stark/stark-module-rnaseq-submodule-drawfusions-service-common:1.0
         build:
             context: ./
-            dockerfile: drawfusions
+            dockerfile: drawfusions_dockerfile
         container_name: stark-module-rnaseq-submodule-drawfusions-service-cli
         restart: "no"
         entrypoint: [ "/bin/bash", "-l", "-c" ]

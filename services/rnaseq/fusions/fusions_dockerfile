@@ -14,14 +14,19 @@ FROM condaforge/mambaforge
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Update and install some tools
-RUN apt-get update  --fix-missing && \
+RUN apt-get update --fix-missing && \
 	apt-get install -y unzip vim rsync
 
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
 	samtools~=1.19.2 bcftools~=1.19.0 bedtools~=2.31.1  \
 	snakemake~=7.32.4 pandas~=2.2.1 \ 
-	arriba~=2.4.0 star~=2.7.10a && mamba clean -afy
+	arriba~=2.4.0 star~=2.7.11a && mamba clean -afy
+
+# star-fusion 1.13.0 uses STAR aligner 2.7.11a
+# To activate the environnement use mamba activate starfusion
+# To deactivate use mamba deactivate
+RUN mamba create -n starfusion -y -c conda-forge -c bioconda -c biobuilds star-fusion~=1.13.0
 
 # Copy applications files (/app)
 COPY ./app /app
