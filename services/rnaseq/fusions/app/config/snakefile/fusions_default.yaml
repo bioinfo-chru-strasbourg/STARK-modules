@@ -56,7 +56,7 @@ FILTER_SAMPLE: []
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*.tsv','*/'}"
+INCLUDE_RSYNC: "{'*.tsv', '*.bam', '*.sam', '*.junc','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
@@ -64,32 +64,30 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-## DEBUG ##
-DEBUG_MODE: True
-
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
-RESULT_EXT_LIST: ['.tsv']
+RESULT_EXT_LIST: ['.tsv', '.bam', '.junc', '.sam']
 
+## DEBUG ##
+DEBUG_MODE: True
 
 ############## Tools specific parameters ##############
 # List of tools used to generate fusion analysis ['arriba', 'starfusion'] ; only arriba work for the moment
-FUSION_TOOL: ['arriba']
+FUSION_TOOL: ['arriba', 'starfusion']
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
-GENOME_PATH_INDEXED: "/STARK/databases/genomes/current/ref_genome.fa.star.idx"
 # GTF file (Gencode)
-REFGTFGENCODE_PATH: "/STARK/databases/gtf/current/gencode.v19.annotation.gtf_withproteinids"
-# Arriba specifics databases
-ARRIBA_SCRIPTS: "/opt/conda/share/arriba/scripts"
-REFPROTDOMAIN_PATH: "/opt/conda/share/arriba/database/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
-REFCYTOBAND_PATH: "/opt/conda/share/arriba/database/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
-BLACKLIST_PATH: "/opt/conda/share/arriba/database/blacklist_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
-REFFUSION_PATH: "/opt/conda/share/arriba/database/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
-
+REFGTFGENCODE_PATH: "/STARK/databases/gencode/current/gencode.v19.annotation.gtf_withproteinids"
 ########## STAR ##########
-# STAR will output a junction file
-JUNCTION_FILE: "Junctions"
+# STAR option to junction file
+JUNCTION_FILE: "Junctions WithinBAM"
+GENOME_PATH_INDEXED: "/STARK/databases/CTAT_LIB/current/hg19/ref_genome.fa.star.idx"
+########## ARRIBA ##########
+REFPROTDOMAIN_PATH: "/STARK/databases/arriba/current/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
+REFCYTOBAND_PATH: "/STARK/databases/arriba/current/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
+BLACKLIST_PATH: "/STARK/databases/arriba/current/blacklist_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
+REFFUSION_PATH: "/STARK/databases/arriba/current/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
+########## STAR FUSION ##########
 CTAT_LIB_GENCODE: "/STARK/databases/CTAT_LIB/current/hg19"

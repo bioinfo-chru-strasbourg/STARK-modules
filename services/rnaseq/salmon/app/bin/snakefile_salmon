@@ -301,7 +301,7 @@ rule copy_bam:
 	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule copy_cram:
-	output: temp(f"{resultDir}/{{sample}}..cram")
+	output: temp(f"{resultDir}/{{sample}}.cram")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
