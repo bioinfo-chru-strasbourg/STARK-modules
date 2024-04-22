@@ -433,10 +433,10 @@ rule AnnotSV:
 	- genomeBuild must be specified if not hg38
 	"""
 	input: rules.correctvcf.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unsort.vcf"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.tsv"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.log"
 	params:
-		outputfile=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unsort",
+		outputfile=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full",
 		genome=config['genomeBuild'],
 		overlap=config['overlap'],
 		mode=config['annotationMode'],
@@ -450,7 +450,7 @@ rule AnnotSV:
 
 rule variantconvert:
 	input: rules.AnnotSV.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unfix.vcf"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unfix.vcf"
 	params: "/app/config/fileconversion/annotsv3_from_vcf.json"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.varianconvert.log"
 	shell:
@@ -460,7 +460,7 @@ rule variantconvert:
 
 rule correctvcfbis:
 	input: rules.AnnotSV.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design_fix.vcf"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_fix.vcf"
 	shell:
 		""" 
 		sed -e '/^##INFO/s/[(\)]/_/g' -e '/^##INFO/s/\//_/g' -e "s/##INFO=<ID='SampleID'/##INFO=<ID=SampleID/" {input} > {output}
@@ -475,13 +475,13 @@ rule sortvcf:
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
 	input: rules.sortvcf.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unfiltered.vcf.gz"
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
 rule bcftools_filter:
 	"""	Filter with bcftools """
 	input: rules.vcf2gz.output	
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz")
 	params: bcf_filter = config['BCFTOOLS_FILTER']
 	shell: "bcftools view {params.bcf_filter} {input} -o {output} && tabix {output}" 
 
