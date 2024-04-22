@@ -458,7 +458,6 @@ rule variantconvert:
 		variantconvert convert -i input -o output -c {params} 2 > {log}
 		"""
 
-
 rule correctvcfbis:
 	input: rules.AnnotSV.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design_fix.vcf"
