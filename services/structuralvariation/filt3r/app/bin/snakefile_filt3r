@@ -85,14 +85,12 @@ def populate_dictionary(dictionary, samples_list, extensions_list, files_list, p
 				if pattern_include and pattern_include not in file:
 					continue
 
-				#dictionary.setdefault(sample, {})[ext] = file
-				dictionary.setdefault(sample, defaultdict(list))[ext].append(file)
+				dictionary.setdefault(sample, {})[ext] = file
 
 
 def filter_files(files_list, filter_in=None, filter_out=None):
 	return [file_name for file_name in files_list if (not filter_in or filter_in in file_name) and (not filter_out or filter_out not in file_name)]
 
-			
 def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ext=None):
 	""" Function to search in a dictionary for a non-empty file path by iterating through sample_list and ext_list with inclusion and exclusion filters """
 	search_result = ""
@@ -142,7 +140,6 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		serviceName=service_name,
 		sample_list=sample_list
 	)
-
 	# Save the rendered HTML to the output file
 	with open(output_file, 'w') as f:
 		f.write(rendered_html)

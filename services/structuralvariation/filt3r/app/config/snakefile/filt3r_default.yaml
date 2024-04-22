@@ -61,7 +61,7 @@ SEARCH_ARGUMENT: "/*/STARK/*"
 DEBUG_MODE: False
 
 # List of extensions to include in the report.html
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf']
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
 
@@ -74,8 +74,8 @@ BCFTOOLS_FILTER: "-i 'INFO/VAF>=0.01'"
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 ################## filt3r ##################
-# Path of the filt3t executable
-FILTER_PATH: "/app/bin"
+# Path of the filt3t executable ("/filt3r" if build with gitlab, "/app/bin" for the precompiled one)
+FILTER_PATH: "/filt3r"
 # Maximal length of the indels to ignore (default 0)
 SHORT_INDELS: "2" 
 # Kmer size (default 12)

@@ -82,7 +82,7 @@ REFGTFGENCODE_PATH: "/STARK/databases/gencode/current/gencode.v19.annotation.gtf
 ########## STAR ##########
 # STAR option to junction file
 JUNCTION_FILE: "Junctions WithinBAM"
-GENOME_PATH_INDEXED: "/STARK/databases/CTAT_LIB/current/hg19/ref_genome.fa.star.idx"
+GENOME_PATH_INDEXED: "/STARK/databases/CTAT_LIB/current/ref_genome.fa.star.idx"
 ########## ARRIBA ##########
 REFPROTDOMAIN_PATH: "/STARK/databases/arriba/current/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
 REFCYTOBAND_PATH: "/STARK/databases/arriba/current/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"

@@ -62,7 +62,7 @@ DEBUG_MODE: False
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf']
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex

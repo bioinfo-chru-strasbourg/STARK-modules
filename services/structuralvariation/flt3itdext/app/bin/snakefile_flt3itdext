@@ -141,7 +141,6 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		serviceName=service_name,
 		sample_list=sample_list
 	)
-
 	# Save the rendered HTML to the output file
 	with open(output_file, 'w') as f:
 		f.write(rendered_html)
