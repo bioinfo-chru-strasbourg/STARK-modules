@@ -22,16 +22,16 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
 	snakemake~=7.32.4 pandas~=2.2.1 \ 
 	arriba~=2.4.0 star~=2.7.11a && mamba clean -afy
 
-# star-fusion 1.13.0 uses STAR aligner 2.7.11a
-# To activate the environnement use mamba activate starfusion
-# To deactivate use mamba deactivate
-RUN mamba create -n starfusion -y -c conda-forge -c bioconda -c biobuilds star-fusion~=1.13.0
-
+WORKDIR /usr/lib
 RUN git clone https://github.com/SamuelNicaise/variantconvert.git && cd variantconvert && pip install -e . && pip cache purge
 RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py init
 # Default genome is hg19
 RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/STARK/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
 
+# star-fusion 1.13.0 uses STAR aligner 2.7.11a
+# To activate the environnement use mamba activate starfusion
+# To deactivate use mamba deactivate
+RUN mamba create -n starfusion -y -c conda-forge -c bioconda -c biobuilds star-fusion~=1.13.0
 
 # Copy applications files (/app)
 COPY ./app /app
