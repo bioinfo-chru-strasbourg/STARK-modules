@@ -616,9 +616,10 @@ rule variantconvert:
 	input: rules.AnnotSV.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unfix.vcf"
 	params: "/app/config/fileconversion/annotsv3_from_vcf.json"
+	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.varianconvert.log"
 	shell:
 		"""
-		variantconvert convert -i input -o output -c {params}
+		variantconvert convert -i input -o output -c {params} 2 > {log}
 		"""
 
 rule correctvcf:
