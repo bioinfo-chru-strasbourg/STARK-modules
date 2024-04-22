@@ -609,11 +609,20 @@ rule AnnotSV:
 		hpo=lambda wildcards: runDict[wildcards.sample]['hpo']
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} -vcf 1 > {log} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		"""
+
+rule variantconvert:
+	input: rules.AnnotSV.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unfix.vcf"
+	params: "/app/config/fileconversion/annotsv3_from_vcf.json"
+	shell:
+		"""
+		variantconvert convert -i input -o output -c {params}
 		"""
 
 rule correctvcf:
-	input: rules.AnnotSV.output
+	input: rules.variantconvert.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design_fix.vcf"
 	shell: 
 		""" 

@@ -5,8 +5,7 @@
 # Version :            1.0
 # Description:         Dockerfile to build container image fusions
 ##############################################################
-
-# PROD version 1 : 20/09/2023
+# DEV version 1 : 22/04/2024
 # Authoring : Thomas LAVAUX
 
 # Ubuntu based (minimal focal)
@@ -27,6 +26,12 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
 # To activate the environnement use mamba activate starfusion
 # To deactivate use mamba deactivate
 RUN mamba create -n starfusion -y -c conda-forge -c bioconda -c biobuilds star-fusion~=1.13.0
+
+RUN git clone https://github.com/SamuelNicaise/variantconvert.git && cd variantconvert && pip install -e . && pip cache purge
+RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py init
+# Default genome is hg19
+RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/STARK/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
+
 
 # Copy applications files (/app)
 COPY ./app /app
