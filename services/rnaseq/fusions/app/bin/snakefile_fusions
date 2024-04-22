@@ -200,10 +200,6 @@ runDict = defaultdict(dict)
 populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
 print(dict(runDict))
 
-# List of tools used to generate the fusions file
-# TODO check if *.arriba.fusions.tsv and/or *.starfusion.fusions.tsv exist 
-fusion_list = config['FUSION_TOOL']
-
 # Find bed file (Design)
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
@@ -250,10 +246,11 @@ if config['DEBUG_MODE']:
 
 rule all:
 	"""
-	Rule will create tsv for arriba and/or starfusion
+	Rule will create a vcf for arriba and starfusion
 	"""
 	input:
-		expand(f"{resultDir}/{{sample}}.{{fusion}}.tsv",sample=sample_list,fusion=fusion_list)
+		expand(f"{resultDir}/{{sample}}/{{sample}}.starfusion.vcf",sample=sample_list),
+		expand(f"{resultDir}/{{sample}}/{{sample}}.arriba.vcf",sample=sample_list)
 
 rule help:
 	"""
@@ -305,7 +302,8 @@ rule STAR:
 		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz", 
 		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz",
 	output:
-		f"{resultDir}/{{sample}}.bam"
+		bam = f"{resultDir}/{{sample}}.bam",
+		junction = f"{resultDir}/{{sample}}.bamChimeric.out.junction"
 	threads: workflow.cores
 	params:
 		genomepath_indexed=config['GENOME_PATH_INDEXED'],
@@ -314,20 +312,20 @@ rule STAR:
 		juncfile=config['JUNCTION_FILE']
 	shell:
 		"""
-		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {output.bam} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts  --quantTranscriptomeBan Singleend --outTmpDir {params.stardir}  ; mv {output.bam}Aligned.sortedByCoord.out.bam {output.bam}
+		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {output.bam} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.stardir}  ; mv {output.bam}Aligned.sortedByCoord.out.bam {output.bam}
 		"""
+# --quantTranscriptomeBan Singleend depreciated
 
 # For STAR_Fusion (--outSAMstrandField intronMotif ?)
 # STAR  --chimSegmentMin 12  --chimJunctionOverhangMin 12 --chimOutJunctionFormat 1 --alignSJDBoverhangMin 10 --alignMatesGapMax 100000 --alignIntronMax 100000 --chimMultimapScoreRange 3 --chimScoreJunctionNonGTAG -4 --chimMultimapNmax 20 --chimNonchimScoreDropMin 10 --peOverlapNbasesMin 12 --peOverlapMMp 0.1 
 # Note, if you use this -J Chimeric.out.junction file, it is essential that the new '--chimOutJunctionFormat 1' parameter was used, since this integrates alignment statistics at the end of the junction file, which are used for estimating the FFPM fusion ~expression estimates.
 rule STARFusion:
-	input: rules.STAR.output
-	output: f"{resultDir}/{{sample}}/{{fusion}}.tsv"
+	input: rules.STAR.output.junction
+	output: f"{resultDir}/{{sample}}/{{sample}}.starfusion.tsv"
 	params:
 		libgencode=config['CTAT_LIB_GENCODE'],
 		fusiondir=f"{resultDir}/{{sample}}"
-	conda:
-        "starfusion"
+	conda: "starfusion"
 	shell:
 		"""
 		STAR-Fusion --genome_lib_dir {params.libgencode} -J {input} --output_dir {params.fusiondir}
@@ -349,7 +347,7 @@ rule Arriba:
 	input:
 		f"{resultDir}/{{sample}}.bam"
 	output:
-		f"{resultDir}/{{sample}}.{{fusion}}.tsv"
+		f"{resultDir}/{{sample}}/{{sample}}.arriba.tsv"
 	params:
 		refgenome = config['REFGENOMEFA_PATH'],
 		refgtfgencode = config['REFGTFGENCODE_PATH'],
@@ -361,6 +359,20 @@ rule Arriba:
 		"""
 		arriba -x {input} -o {output} -a {params.refgenome} -g {params.refgtfgencode} -b {params.blacklist} -k {params.reffusion} -t {params.fusion} -p {params.refprot} -f isoforms
 		"""
+
+rule variantconvert:
+	input: rules.Arriba.output
+	output: f"{resultDir}/{{sample}}/{{sample}}.arriba.vcf"
+	params: "/app/config/fileconversion/arriba.json"
+	shell:
+		"""
+		variantconvert convert -i input -o output -c {params}
+		"""
+
+use rule variantconvert as variantconvert_starfusion with:
+	input: rules.STARFusion.output
+	output: f"{resultDir}/{{sample}}/{{sample}}.starfusion.vcf"
+	params: "/app/config/fileconversion/starfusion.json"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")

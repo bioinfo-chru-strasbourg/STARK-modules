@@ -32,7 +32,7 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
 
 # Variant convert
 WORKDIR /usr/lib
-RUN git clone https://github.com/SamuelNicaise/variantconvert.git && cd variantconvert && git fetch && git checkout pypi && pip install -e . && pip cache purge
+RUN git clone https://github.com/SamuelNicaise/variantconvert.git && cd variantconvert && pip install -e . && pip cache purge
 RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py init
 # Default genome is hg19
 RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/STARK/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json

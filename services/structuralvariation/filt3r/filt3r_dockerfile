@@ -18,8 +18,8 @@ RUN echo "$TZ" > /etc/timezone
 RUN apt-get update --fix-missing && \
 	apt-get install -y tzdata git unzip vim time cmake g++ zlib1g-dev rsync
 # Install FILT3R https://gitlab.univ-lille.fr/filt3r/filt3r/-/archive/fix-vcf-format/filt3r-fix-vcf-format.zip
-#RUN git clone https://gitlab.univ-lille.fr/filt3r/filt3r.git 
-#RUN cd filt3r && make gatb && make
+RUN git clone https://gitlab.univ-lille.fr/filt3r/filt3r.git 
+RUN cd filt3r && make gatb && make
 
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
