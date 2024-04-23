@@ -619,7 +619,7 @@ rule variantconvert:
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.varianconvert.log"
 	shell:
 		"""
-		variantconvert convert -i input -o output -c {params} 2 > {log}
+		variantconvert convert -i {input} -o {output} -c {params} 2> {log}
 		"""
 
 rule correctvcf:
