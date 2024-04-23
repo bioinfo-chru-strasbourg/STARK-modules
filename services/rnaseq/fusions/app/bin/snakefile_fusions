@@ -316,21 +316,6 @@ rule STAR:
 		"""
 # --quantTranscriptomeBan Singleend depreciated
 
-# For STAR_Fusion (--outSAMstrandField intronMotif ?)
-# STAR  --chimSegmentMin 12  --chimJunctionOverhangMin 12 --chimOutJunctionFormat 1 --alignSJDBoverhangMin 10 --alignMatesGapMax 100000 --alignIntronMax 100000 --chimMultimapScoreRange 3 --chimScoreJunctionNonGTAG -4 --chimMultimapNmax 20 --chimNonchimScoreDropMin 10 --peOverlapNbasesMin 12 --peOverlapMMp 0.1 
-# Note, if you use this -J Chimeric.out.junction file, it is essential that the new '--chimOutJunctionFormat 1' parameter was used, since this integrates alignment statistics at the end of the junction file, which are used for estimating the FFPM fusion ~expression estimates.
-rule STARFusion:
-	input: rules.STAR.output.junction
-	output: f"{resultDir}/{{sample}}/{{sample}}.starfusion.tsv"
-	params:
-		libgencode=config['CTAT_LIB_GENCODE'],
-		fusiondir=f"{resultDir}/{{sample}}"
-	conda: "starfusion"
-	shell:
-		"""
-		STAR-Fusion --genome_lib_dir {params.libgencode} -J {input} --output_dir {params.fusiondir}
-		"""
-
 # input is STAR bam Aligned.sortedByCoord.out.bam
 # different files can be used for filtering and tagging, but the provided one can be used for both
 # -f will disable filters / -f known_fusions to reduce sensibility / -f isoforms to reduce false positive
@@ -342,7 +327,6 @@ rule STARFusion:
 # -t Tab-separated file containing fusions to annotate with tags in the 'tags' column
 # Note :  When STAR was run with the parameter --chimOutType SeparateSAMold, the main output file lacks chimeric alignments. Instead, STAR writes them to a separate output file named Chimeric.out.sam. 
 # In this case, the file needs to be passed to Arriba via the parameter -c in addition to the main output file Aligned.out.bam.
-
 rule Arriba:
 	input:
 		f"{resultDir}/{{sample}}.bam"
@@ -369,8 +353,31 @@ rule variantconvert:
 		variantconvert convert -i input -o output -c {params}
 		"""
 
-use rule variantconvert as variantconvert_starfusion with:
+# For STAR_Fusion (--outSAMstrandField intronMotif ?)
+# STAR  --chimSegmentMin 12  --chimJunctionOverhangMin 12 --chimOutJunctionFormat 1 --alignSJDBoverhangMin 10 --alignMatesGapMax 100000 --alignIntronMax 100000 --chimMultimapScoreRange 3 --chimScoreJunctionNonGTAG -4 --chimMultimapNmax 20 --chimNonchimScoreDropMin 10 --peOverlapNbasesMin 12 --peOverlapMMp 0.1 
+# Note, if you use this -J Chimeric.out.junction file, it is essential that the new '--chimOutJunctionFormat 1' parameter was used, since this integrates alignment statistics at the end of the junction file, which are used for estimating the FFPM fusion ~expression estimates.
+rule STARFusion:
+	input: rules.STAR.output.junction
+	output: f"{resultDir}/{{sample}}/star-fusion.fusion_predictions.tsv"
+	params:
+		libgencode=config['CTAT_LIB_GENCODE'],
+		fusiondir=f"{resultDir}/{{sample}}"
+	conda: "starfusion"
+	shell:
+		"""
+		STAR-Fusion --genome_lib_dir {params.libgencode} -J {input} --output_dir {params.fusiondir}
+		"""
+
+rule rename:
 	input: rules.STARFusion.output
+	output: f"{resultDir}/{{sample}}/{{sample}}.starfusion.tsv"
+	shell:
+		"""
+		mv {input} {output}
+		"""
+
+use rule variantconvert as variantconvert_starfusion with:
+	input: rules.rename.output
 	output: f"{resultDir}/{{sample}}/{{sample}}.starfusion.vcf"
 	params: "/app/config/fileconversion/starfusion.json"
 

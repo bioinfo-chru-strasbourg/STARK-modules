@@ -14,7 +14,7 @@
 	},
 	"GENOME": {
 		"assembly": "hg19",
-		"path": "/STARK/databases/CTAT_LIB/current/hg19/ref_genome.fa",
+		"path": "/STARK/databases/CTAT_LIB/current/ref_genome.fa",
 		"vcf_header": [
 			"##contig=<ID=chr1,length=249250621,assembly=hg19>",
 			"##contig=<ID=chr2,length=243199373,assembly=hg19>",
@@ -41,7 +41,7 @@
 			"##contig=<ID=chrM,length=16569,assembly=hg19>",
 			"##contig=<ID=chrX,length=155270560,assembly=hg19>",
 			"##contig=<ID=chrY,length=59373566,assembly=hg19>",
-			"##reference=file://STARK/databases/CTAT_LIB/current/hg19/ref_genome.fa"
+			"##reference=file://STARK/databases/CTAT_LIB/current/ref_genome.fa"
 		]
 	},
 	"VCF_COLUMNS": {
