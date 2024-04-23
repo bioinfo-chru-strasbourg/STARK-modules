@@ -350,7 +350,7 @@ rule variantconvert:
 	params: "/app/config/fileconversion/arriba.json"
 	shell:
 		"""
-		variantconvert convert -i input -o output -c {params}
+		variantconvert convert -i {input} -o {output} -c {params}
 		"""
 
 # For STAR_Fusion (--outSAMstrandField intronMotif ?)
