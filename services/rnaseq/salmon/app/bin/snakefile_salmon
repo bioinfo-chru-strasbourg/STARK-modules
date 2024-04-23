@@ -257,7 +257,7 @@ ruleorder: copy_fastq > cramtobam > copy_bam > samtools_fastq
 
 rule all:
 	input:
-		expand(f"{resultDir}/{{sample}}.salmon.quant/quant.sf",sample=sample_list)
+		expand(f"{resultDir}/{{sample}}.salmon.quant/{{sample}}.quant.sf",sample=sample_list)
 
 
 rule help:
@@ -356,6 +356,15 @@ rule salmon:
 		salmon quant -p {params.threads} -i {params.fastquantref} -l A -r {input.fastqR1} {params.misc_options} -o {params.salmondir}
 		fi
 		"""
+
+rule rename:
+	input: rule.salmon.output
+	ouput: f"{resultDir}/{{sample}}.salmon.quant/{{sample}}.quant.sf"
+	shell:
+		"""
+		mv {input} {output}
+		"""
+
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
