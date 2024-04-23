@@ -63,7 +63,7 @@ DEBUG_MODE: False
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
-RESULT_EXT_LIST: ['.tsv']
+RESULT_EXT_LIST: ['.sf']
 
 ################## Tools parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
