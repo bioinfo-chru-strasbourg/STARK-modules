@@ -21,14 +21,14 @@
         <p>We analyse run {{ runName }}</p>
         <p>Number of samples : {{ sample_list|length -1 }}</p>
         <p>Sample list: 
-            {% set first_item = true %}
-            {% for item in sample_list %}
-              {% if not first_item %},{% endif %}
-              {% set first_item = false %}
-              {{ item|replace("allsamples", "") }}
-            {% endfor %}
-            </p>
-            <p>Here is the details for each samples</p><br>
+        {% set first_item = true %}
+        {% for item in sample_list %}
+        {% if not first_item %},{% endif %}
+        {% set first_item = false %}
+        {{ item|replace("allsamples", "") }}
+        {% endfor %}
+        </p> 
+        <p>Here is the details for each samples</p><br>
         {% for run_id, details in runDict.items() %}
             <h1 id="{{ run_id }}">{{ run_id }}</h1>
             <table>
