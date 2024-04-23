@@ -89,4 +89,4 @@ REFCYTOBAND_PATH: "/STARK/databases/arriba/current/cytobands_hg19_hs37d5_GRCh37_
 BLACKLIST_PATH: "/STARK/databases/arriba/current/blacklist_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
 REFFUSION_PATH: "/STARK/databases/arriba/current/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
 ########## STAR FUSION ##########
-CTAT_LIB_GENCODE: "/STARK/databases/CTAT_LIB/current/hg19"
+CTAT_LIB_GENCODE: "/STARK/databases/CTAT_LIB/current/"

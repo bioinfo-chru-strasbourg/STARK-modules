@@ -459,7 +459,7 @@ rule variantconvert:
 		"""
 
 rule correctvcfbis:
-	input: rules.AnnotSV.output
+	input: rules.variantconvert.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_fix.vcf"
 	shell:
 		""" 

@@ -712,7 +712,7 @@ rule variantconvert_annotsv:
 		"""
 
 rule correctvcf:
-	input: rules.variantconvert.output
+	input: rules.variantconvert_annotsv.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.vcf"
 	shell:
 		""" 
