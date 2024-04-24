@@ -133,7 +133,7 @@ def extractlistfromfiles(file_list, ext_list, sep, position):
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
-def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html'):
+def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html', sample_list_added=None):
 	# Set up Jinja2 environment
 	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
 	template = env.get_template('template.html')
@@ -144,8 +144,7 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		runName=run_name,
 		serviceName=service_name,
 		sample_list=sample_list,
-		external_base_path=external_base_path,
-		internal_base_path=internal_base_path
+		sample_list_added=sample_list_added
 	)
 
 	# Save the rendered HTML to the output file
@@ -153,6 +152,8 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		f.write(rendered_html)
 
 	print(f"HTML report generated successfully: {output_file}")
+
+
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -243,14 +244,16 @@ if config['DEBUG_MODE']:
 		pass
 
 ################################################## RULES ##################################################
+# check the number of sample for copy or merge vcf rule
+sample_count = len(sample_list) 
 
 rule all:
 	"""
 	Rule will create a vcf for arriba and starfusion
 	"""
 	input:
-		expand(f"{resultDir}/{{sample}}/{{sample}}.starfusion.vcf",sample=sample_list),
-		expand(f"{resultDir}/{{sample}}/{{sample}}.arriba.vcf",sample=sample_list)
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.vcf.gz",sample=sample_list),
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf.gz",sample=sample_list)
 
 rule help:
 	"""
@@ -297,12 +300,13 @@ rule copy_fastq:
 # --chimOutType Junctions (STAR Fusion)or --chimOutType WithinBAM (arriba)
 # output will be Sample.Chimeric.out.junction
 # --genomeLoad LoadAndRemove or --genomeLoad NoSharedMemory if 2 pass
+# --quantTranscriptomeBan Singleend seems depreciated
 rule STAR:
 	input:
 		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz", 
 		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz",
 	output:
-		bam = f"{resultDir}/{{sample}}.bam",
+		bam = f"{resultDir}/{{sample}}.STAR.bam",
 		junction = f"{resultDir}/{{sample}}.bamChimeric.out.junction"
 	threads: workflow.cores
 	params:
@@ -314,7 +318,7 @@ rule STAR:
 		"""
 		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {output.bam} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.stardir}  ; mv {output.bam}Aligned.sortedByCoord.out.bam {output.bam}
 		"""
-# --quantTranscriptomeBan Singleend depreciated
+
 
 # input is STAR bam Aligned.sortedByCoord.out.bam
 # different files can be used for filtering and tagging, but the provided one can be used for both
@@ -329,9 +333,9 @@ rule STAR:
 # In this case, the file needs to be passed to Arriba via the parameter -c in addition to the main output file Aligned.out.bam.
 rule Arriba:
 	input:
-		f"{resultDir}/{{sample}}.bam"
+		f"{resultDir}/{{sample}}.STAR.bam"
 	output:
-		f"{resultDir}/{{sample}}/{{sample}}.arriba.tsv"
+		f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.tsv"
 	params:
 		refgenome = config['REFGENOMEFA_PATH'],
 		refgtfgencode = config['REFGTFGENCODE_PATH'],
@@ -346,7 +350,7 @@ rule Arriba:
 
 rule variantconvert:
 	input: rules.Arriba.output
-	output: f"{resultDir}/{{sample}}/{{sample}}.arriba.vcf"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf"
 	params: "/app/config/fileconversion/arriba.json"
 	shell:
 		"""
@@ -358,7 +362,7 @@ rule variantconvert:
 # Note, if you use this -J Chimeric.out.junction file, it is essential that the new '--chimOutJunctionFormat 1' parameter was used, since this integrates alignment statistics at the end of the junction file, which are used for estimating the FFPM fusion ~expression estimates.
 rule STARFusion:
 	input: rules.STAR.output.junction
-	output: f"{resultDir}/{{sample}}/star-fusion.fusion_predictions.tsv"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/star-fusion.fusion_predictions.tsv"
 	params:
 		libgencode=config['CTAT_LIB_GENCODE'],
 		fusiondir=f"{resultDir}/{{sample}}"
@@ -370,7 +374,7 @@ rule STARFusion:
 
 rule rename:
 	input: rules.STARFusion.output
-	output: f"{resultDir}/{{sample}}/{{sample}}.starfusion.tsv"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.tsv"
 	shell:
 		"""
 		mv {input} {output}
@@ -378,8 +382,40 @@ rule rename:
 
 use rule variantconvert as variantconvert_starfusion with:
 	input: rules.rename.output
-	output: f"{resultDir}/{{sample}}/{{sample}}.starfusion.vcf"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.vcf"
 	params: "/app/config/fileconversion/starfusion.json"
+
+rule vcf2gz:
+	"""	Compress vcf with bgzip	"""
+	input: rules.variantconvert.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf.gz"
+	shell: "bgzip -c {input} > {output} ; tabix {output}"
+
+use rule vcf2gz as vcf2gz_starfusion with:
+	input: rules.variantconvert_starfusion.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.vcf.gz"
+
+rule mergevcf:
+	"""	Copy or merge vcfs with bcftools """
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf.gz", sample=sample_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.arriba.vcf.gz"
+	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
+
+use rule mergevcf as mergevcf_starfusion with:
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.vcf.gz", sample=sample_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.vcf.gz"
+
+rule vcf2tsv:
+	""" vcf to tsv conversion """
+	input: rules.mergevcf.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.arriba.tsv"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.arriba.vcf2tsv_converter.log"
+	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep -v '^#' > {output}"
+
+use rule vcf2tsv as vcf2tsv_starfusion with:
+	input: rules.mergevcf_starfusion.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.tsv"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.vcf2tsv_converter.log"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")

@@ -133,7 +133,7 @@ def extractlistfromfiles(file_list, ext_list, sep, position):
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
-def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html'):
+def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html', sample_list_added=None):
 	# Set up Jinja2 environment
 	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
 	template = env.get_template('template.html')
@@ -144,13 +144,14 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		runName=run_name,
 		serviceName=service_name,
 		sample_list=sample_list,
-		external_base_path=external_base_path,
-		internal_base_path=internal_base_path
+		sample_list_added=sample_list_added
 	)
 
 	# Save the rendered HTML to the output file
 	with open(output_file, 'w') as f:
 		f.write(rendered_html)
+
+	print(f"HTML report generated successfully: {output_file}")
 
 	print(f"HTML report generated successfully: {output_file}")
 ### END OF FUNCTIONS ###
@@ -255,7 +256,7 @@ rule all:
 	Rule will create an pdf for arriba result's visualization
 	"""
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.{{fusion}}.report.pdf",aligner=aligner_list,sample=sample_list,fusion=fusion_list)
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.{{fusion}}.pdf",aligner=aligner_list,sample=sample_list,fusion=fusion_list)
 
 rule help:
 	"""
@@ -314,9 +315,9 @@ rule indexing:
 rule DrawR:
 	input:
 		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam", 
-		fusiontsv = f"{resultDir}/{{sample}}.{{fusion}}.fusions.tsv",
+		fusiontsv = f"{resultDir}/{{sample}}.{{fusion}}.tsv",
 		bai = f"{resultDir}/{{sample}}.{{aligner}}.bam.bai"
-	output: f"{resultDir}/{{sample}}.{{aligner}}.{{fusion}}.report.pdf"
+	output: f"{resultDir}/{{sample}}.{{aligner}}.{{fusion}}.pdf"
 	params:
 		refgtfgencode = config['REFGTFGENCODE_PATH'],
 		refprot = config['REFPROTDOMAIN_PATH'],
