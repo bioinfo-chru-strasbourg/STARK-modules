@@ -424,6 +424,14 @@ rule correctvcf:
 		(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
 		"""
 
+# We filter out before annotation
+rule bcftools_filter:
+	"""	Filter with bcftools """
+	input: rules.scramble.output	
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf")
+	params: bcf_filter = config['BCFTOOLS_FILTER']
+	shell: "bcftools view {params.bcf_filter} {input} -o {output} && tabix {output}" 
+
 rule AnnotSV:
 	"""
 	Annotate and rank Structural Variations from a vcf file
@@ -432,7 +440,7 @@ rule AnnotSV:
 	- txtFile: path to a file containing a list of preferred genes transcripts for annotation
 	- genomeBuild must be specified if not hg38
 	"""
-	input: rules.correctvcf.output
+	input: rules.bcftools_filter.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.tsv"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.log"
 	params:
@@ -479,13 +487,6 @@ rule vcf2gz:
 	input: rules.sortvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unfiltered.vcf.gz"
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
-
-rule bcftools_filter:
-	"""	Filter with bcftools """
-	input: rules.vcf2gz.output	
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz")
-	params: bcf_filter = config['BCFTOOLS_FILTER']
-	shell: "bcftools view {params.bcf_filter} {input} -o {output} && tabix {output}" 
 
 rule cp_vcf_full:
 	"""	Copy or merge vcfs with bcftools """
