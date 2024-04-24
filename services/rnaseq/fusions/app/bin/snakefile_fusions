@@ -313,10 +313,11 @@ rule STAR:
 		genomepath_indexed=config['GENOME_PATH_INDEXED'],
 		RG="ID:1 PL:ILLUMINA PU:PU LB:001 SM:{sample}",
 		stardir=f"{resultDir}/{{sample}}",
-		juncfile=config['JUNCTION_FILE']
+		juncfile=config['JUNCTION_FILE'],
+		prefix=f"{resultDir}/{{sample}}."
 	shell:
 		"""
-		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {output.bam} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.stardir}  ; mv {output.bam}Aligned.sortedByCoord.out.bam {output.bam}
+		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {params.prefix} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.stardir}  ; mv {params.prefix}Aligned.sortedByCoord.out.bam {output.bam}
 		"""
 
 
