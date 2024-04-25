@@ -297,7 +297,7 @@ rule copy_fastq:
 # ./, i.e. all output files are written in the current directory
 # name.bam + Aligned.toTranscriptome.out.bam or Aligned.sortedByCoord.out.bam
 # --limitBAMsortRAM 32000000000 is minimum
-# --chimOutType Junctions (STAR Fusion)or --chimOutType WithinBAM (arriba)
+# --chimOutType Junctions (STAR Fusion) or --chimOutType WithinBAM (arriba)
 # output will be Sample.Chimeric.out.junction
 # --genomeLoad LoadAndRemove or --genomeLoad NoSharedMemory if 2 pass
 # --quantTranscriptomeBan Singleend seems depreciated
@@ -306,18 +306,27 @@ rule STAR:
 		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz", 
 		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz",
 	output:
-		bam = f"{resultDir}/{{sample}}.STAR.bam",
-		junction = f"{resultDir}/{{sample}}.bamChimeric.out.junction"
+		bam = f"{resultDir}/{{sample}}.Aligned.sortedByCoord.out.bam",
+		junction = f"{resultDir}/{{sample}}.bamChimeric.out.junction", 
+		success = f"{resultDir}/{{sample}}.success"
 	threads: workflow.cores
 	params:
 		genomepath_indexed=config['GENOME_PATH_INDEXED'],
 		RG="ID:1 PL:ILLUMINA PU:PU LB:001 SM:{sample}",
-		stardir=f"{resultDir}/{{sample}}",
+		stardir=f"{resultDir}/{{sample}}/",
 		juncfile=config['JUNCTION_FILE'],
 		prefix=f"{resultDir}/{{sample}}."
 	shell:
 		"""
-		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {params.prefix} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.stardir}  ; mv {params.prefix}Aligned.sortedByCoord.out.bam {output.bam}
+		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {params.prefix} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.stardir} && touch {output.success}
+		"""
+
+rule rename:
+	input: rules.STAR.output.bam
+	output: f"{resultDir}/{{sample}}.STAR.bam"
+	shell:
+		"""
+		mv {input} {ouput}
 		"""
 
 
@@ -373,7 +382,7 @@ rule STARFusion:
 		STAR-Fusion --genome_lib_dir {params.libgencode} -J {input} --output_dir {params.fusiondir}
 		"""
 
-rule rename:
+rule rename_tsv:
 	input: rules.STARFusion.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.tsv"
 	shell:
@@ -382,7 +391,7 @@ rule rename:
 		"""
 
 use rule variantconvert as variantconvert_starfusion with:
-	input: rules.rename.output
+	input: rules.rename_tsv.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.vcf"
 	params: "/app/config/fileconversion/starfusion.json"
 
