@@ -306,9 +306,8 @@ rule STAR:
 		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz", 
 		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz",
 	output:
-		bam = f"{resultDir}/{{sample}}.Aligned.sortedByCoord.out.bam",
-		junction = f"{resultDir}/{{sample}}.bamChimeric.out.junction", 
-		success = f"{resultDir}/{{sample}}.success"
+		bam = f"{resultDir}/{{sample}}.STAR.bam",
+		junction = f"{resultDir}/{{sample}}.bamChimeric.out.junction"
 	threads: workflow.cores
 	params:
 		genomepath_indexed=config['GENOME_PATH_INDEXED'],
@@ -318,17 +317,8 @@ rule STAR:
 		prefix=f"{resultDir}/{{sample}}."
 	shell:
 		"""
-		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {params.prefix} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.stardir} && touch {output.success}
+		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {params.prefix} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.stardir} && mv {params.prefix}Aligned.sortedByCoord.out.bam {output.bam}
 		"""
-
-rule rename:
-	input: rules.STAR.output.bam
-	output: f"{resultDir}/{{sample}}.STAR.bam"
-	shell:
-		"""
-		mv {input} {ouput}
-		"""
-
 
 # input is STAR bam Aligned.sortedByCoord.out.bam
 # different files can be used for filtering and tagging, but the provided one can be used for both
