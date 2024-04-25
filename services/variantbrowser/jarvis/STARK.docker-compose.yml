@@ -5,13 +5,10 @@
 
 version: '3'
 
-
-
 # SERVICES
 ##########
 
 services:
-
 
     # JARVIS VISION
     stark-module-variantbrowser-submodule-jarvis-service-vision:
@@ -21,8 +18,6 @@ services:
             dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_VISION_IMAGE_CONTEXT_DOCKERFILE}
         container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_VISION_CONTAINER_NAME}
         restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_VISION_CONTAINER_RESTART}
-        env_file:
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_VISION_CONTAINER_ENV_FILE}
         ports:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_VISION_PARAM_PORT_PUBLISHED}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_VISION_PARAM_PORT_TARGET}
         volumes:
@@ -31,10 +26,6 @@ services:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_VISION_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_VISION_INNER_FOLDER_SERVICES}:rw
         networks:
             - stark_stark
-
-
-
-
 
 # NETWORK
 ###########

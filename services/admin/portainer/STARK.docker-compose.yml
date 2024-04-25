@@ -5,13 +5,10 @@
 
 version: '3'
 
-
-
 # SERVICES
 ##########
 
 services:
-
 
     # PORTAINER
     stark-module-admin-submodule-portainer-service-portainer:
@@ -19,25 +16,21 @@ services:
         command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_CONTAINER_COMMAND}
         container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_CONTAINER_NAME}
         restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_CONTAINER_RESTART}
-        env_file:
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_CONTAINER_ENV_FILE}
         ports:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_PARAM_PORT_PUBLISHED}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_PARAM_PORT_TARGET}
         volumes:
             # Main configuration
             - ${DOCKER_STARK_SOCK_MOUNT}:ro
-            #- ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_INNER_FOLDER_CONFIG}:ro
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_PORTAINER_PARAM_FOLDER_DATA}:rw
             - /etc/localtime:/etc/localtime:ro
             - /etc/timezone:/etc/timezone:ro
-        labels: # for traefik, delete this if not needed
+        labels:
+            # for traefik, delete this if not needed
             traefik.enable: true
             traefik.http.routers.portainer-http.entrypoints: web
             traefik.http.routers.portainer.rule: Host(`portainer.czs.local`)
         networks:
             - stark_stark
-
-
 
 # NETWORK
 ###########
