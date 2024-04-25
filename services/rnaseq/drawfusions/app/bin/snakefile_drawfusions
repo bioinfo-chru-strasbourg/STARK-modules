@@ -327,6 +327,7 @@ rule DrawR:
 		"""
 		Rscript {arriba_scripts}/draw_fusions.R --annotation={params.refgtfgencode} --fusions={input.fusiontsv} --output={output} --alignments={input.bam} --cytobands={params.cytoband} --proteinDomains={params.refprot}
 		"""
+
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
 	with open(logfile, "a+") as f:
