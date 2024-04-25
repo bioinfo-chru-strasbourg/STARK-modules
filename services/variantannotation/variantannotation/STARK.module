@@ -1,0 +1,26 @@
+{
+  "submodules": {
+    "variantannotation": {
+      "description": "Only variantannotation annotation tool",
+      "services": {
+        "cli": {
+          "code": "cli",
+          "name": "variantannotation cli",
+          "type": "CLI",
+          "description": "A variantannotation CLI.",
+          "release": "2.1",
+          "available": true
+        },
+        "listener": {
+          "code": "listener",
+          "name": "variantannotation listener",
+          "type": "listener",
+          "description": "A variantannotation listener service is started as a daemon, listening for new STARK analyzed run (new folder in output/repository) and well configured (STARKComplete.txt without VaRankRunning.txt or VaRankComplete.txt), and check triggers to launch or not analysis.",
+          "release": "1.1",
+          "available": true
+        } 
+      }
+    }
+  }
+}
+
