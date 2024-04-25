@@ -415,7 +415,7 @@ rule scramble:
 rule correctvcf:
 	"""	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification """
 	input: rules.scramble.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.corr.vcf")
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.corr.vcf"
 	params:
 		mode = config['scramble_mode'],
 		dummypath = config['DUMMY_PATH']
@@ -428,7 +428,7 @@ rule correctvcf:
 rule bcftools_filter:
 	"""	Filter with bcftools """
 	input: rules.scramble.output	
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf")
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf"
 	params: bcf_filter = config['BCFTOOLS_FILTER']
 	shell: "bcftools view {params.bcf_filter} {input} -o {output}" 
 
@@ -475,6 +475,7 @@ rule correctvcfbis:
 		""" 
 		sed -e '/^##INFO/s/[(\)]/_/g' -e '/^##INFO/s/\//_/g' -e "s/##INFO=<ID='SampleID'/##INFO=<ID=SampleID/" {input} > {output}
 		"""
+
 rule sortvcf:
 	""" Sort vcf """
 	input: rules.correctvcfbis.output
