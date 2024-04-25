@@ -32,6 +32,7 @@ make.vcf.header = function(fa, blastRef=None){
 						 '##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">',
 						 '##INFO=<ID=END,Number=.,Type=Integer,Description="End position for structural variants">',
 						 '##INFO=<ID=MEINFO,Number=4,Type=String,Description="Mobile element info of the form NAME,START,END,POLARITY">',
+             '##INFO=<ID=COUNTS,Number=.,Type=Integer,Description="Number of supporting reads for the MEI">',
 						 '##INFO=<ID=CLIPPED_READS_IN_CLUSTER,Number=.,Type=Integer,Description="Number of supporting reads in cluster">',
 						 '##INFO=<ID=ALIGNMENT_PERCENT_LENGHT,Number=.,Type=Integer,Description="Percent of clipped read consensus sequence involved in alignment to MEI reference sequence">',
 						 '##INFO=<ID=ALIGNMENT_PERCENT_IDENTITY,Number=.,Type=Integer,Description="Percent identify of alignment of clipped read consensus sequence with MEI reference sequence">',
@@ -45,7 +46,7 @@ make.vcf.header = function(fa, blastRef=None){
 						 '##INFO=<ID=TSD,Number=.,Type=Integer,Description="Target site duplication sequence if polyA clipped read cluster found">',
 						 '##INFO=<ID=TSD_length,Number=.,Type=Integer,Description="Length of target site duplication if polyA clipped read cluster found">',
 						 '##INFO=<ID=REF_ANCHOR_BASE,Number=.,Type=Integer,Description="Reference based at deletion start">',
-						 '##INFO=<ID=DEL_LENGTH,Number=.,Type=Integer,Description="Deletion length">',
+						 '##INFO=<ID=DEL_LENGHT,Number=.,Type=Integer,Description="Deletion length">',
 						 '##INFO=<ID=RIGHT_CLUSTER,Number=.,Type=Integer,Description="Name of right cluster">',
 						 '##INFO=<ID=RIGHT_CLUSTER_COUNTS,Number=.,Type=Integer,Description="Number of supporting reads in right cluster">',
 						 '##INFO=<ID=LEFT_CLUSTER,Number=.,Type=Integer,Description="Name of left cluster">',
@@ -113,7 +114,7 @@ write.scramble.vcf = function(winners, fa, meis=F){
                        polarity = ifelse(winners$Insertion_Direction == 'Plus', "+", "-"),
                        stringsAsFactors = F, check.names = F)
     fixed$start = fixed$POS
-    fixed$INFO = paste0('MEINFO=', paste(fixed$name, fixed$start, fixed$polarity, sep=','), ';', 'COUNTS=', winners$Clipped_Reads_In_Cluster, ';','ALIGNMENT_PERCENT_LENGHT=' , winners$Alignment_Percent_Length ,';',  'ALIGNMENT_SCORE=', winners$Alignment_Score, ';', 'ALIGNMENT_PERCENT_IDENTITY=', winners$Alignment_Percent_Identity, ';','CLIPPED_SEQUENCE=', winners$Clipped_Sequence, ';', 'CLIPPED_SIDE=', winners$Clipped_Side, ';', 'Start_In_MEI=', winners$Start_In_MEI, ';',  'Stop_In_MEI=', winners$Stop_In_MEI, ';', 'polyA_Position=',  winners$polyA_Position, ';', 'polyA_Seq=', winners$polyA_Seq, ';', 'polyA_SupportingReads=', winners$polyA_SupportingReads, ';', 'TSD=', winners$TSD, ';' , 'TSD_length=', winners$TSD_length)
+    fixed$INFO = paste0('MEINFO=', paste(fixed$name, fixed$start, fixed$polarity, sep=','), ';', 'COUNTS=', winners$Clipped_Reads_In_Cluster, ';','ALIGNMENT_PERCENT_LENGHT=' , winners$Alignment_Percent_Length , ';', 'ALIGNMENT_PERCENT_IDENTITY=', winners$Alignment_Percent_Identity, ';','CLIPPED_SEQUENCE=', winners$Clipped_Sequence, ';', 'CLIPPED_SIDE=', winners$Clipped_Side, ';', 'Start_In_MEI=', winners$Start_In_MEI, ';',  'Stop_In_MEI=', winners$Stop_In_MEI, ';', 'polyA_Position=',  winners$polyA_Position, ';', 'polyA_Seq=', winners$polyA_Seq, ';', 'polyA_SupportingReads=', winners$polyA_SupportingReads, ';', 'TSD=', winners$TSD, ';' , 'TSD_length=', winners$TSD_length)
     fixed$REF = sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i]))
   }   
 

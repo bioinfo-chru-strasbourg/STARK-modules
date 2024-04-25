@@ -430,7 +430,7 @@ rule bcftools_filter:
 	input: rules.scramble.output	
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf")
 	params: bcf_filter = config['BCFTOOLS_FILTER']
-	shell: "bcftools view {params.bcf_filter} {input} -o {output} && tabix {output}" 
+	shell: "bcftools view {params.bcf_filter} {input} -o {output}" 
 
 rule AnnotSV:
 	"""
@@ -485,7 +485,7 @@ rule sortvcf:
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
 	input: rules.sortvcf.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Fullcf.gz"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
 rule cp_vcf_full:

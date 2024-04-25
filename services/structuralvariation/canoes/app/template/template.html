@@ -27,6 +27,7 @@
                 {% set first_item = false %}
                 {% if "allsamples" not in item %}
                     {{ item }}
+                    {% if not loop.last %}, {% endif %}
                 {% endif %}
             {% endfor %}
             </p>
@@ -41,6 +42,7 @@
                 {% set first_item = false %}
                 {% if "allsamples" not in item %}
                     {{ item }}
+                    {% if not loop.last %}, {% endif %}
                 {% endif %}
             {% endfor %}
             </p>         
@@ -48,9 +50,15 @@
         <p style="color:red;font-weight:bold;">WARNING : analysis was performed only for autosomes</p>
         {% endif %}
         {% if gender_list|length == 2 or gender_list|length == 3 %}
-        <p style="color:red;font-weight:bold;">Analysis was performed for sexual chromosomes</p>
+        <p style="color:red;font-weight:bold;">Analysis was performed for sexual chromosomes without errors</p>
         {% endif %}
-        <p>Here is the details for each samples</p><br>
+        {% if gender_list|length == 2 and gender_list[1] == "XY" %}
+        <p style="color:red;font-weight:bold;">Male patients list</p>
+        {% endif %}
+        {% if gender_list|length == 3 and gender_list[2] == "XX" %}
+        <p style="color:red;font-weight:bold;">Female patients list</p>
+        {% endif %}
+        <p>Here is the details for each samples in the run</p><br>
         {% for run_id, details in runDict.items() %}
             <h1 id="{{ run_id }}">{{ run_id }}</h1>
             <table>
