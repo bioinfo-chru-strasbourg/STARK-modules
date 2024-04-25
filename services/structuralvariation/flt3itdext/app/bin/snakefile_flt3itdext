@@ -326,7 +326,6 @@ rule correctvcf:
 	"""	Correction of vcf output, add genotype to be consistent with the vcf format specification """
 	input: rules.flt3_itd_ext.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixGT.vcf")
-	#shell: """ (grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep -v "^#" {input} | awk '{{print $0"\tGT\t0/1"}}') > {output} """
 	shell: """ (grep "^##" {input} && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0}}' && grep -v "^#" {input} | awk '{{print $0"\tGT\t0/1"}}') > {output} """
 
 

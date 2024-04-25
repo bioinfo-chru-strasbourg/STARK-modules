@@ -12,9 +12,10 @@
 	# options to process bed, k-merisation
 	# convert R to R scripts and rewrite some code 
 	# re-arrange/simplify/compact code a lot, input files copying is within the rules, f-string, etc.
-	# add a draft for an html report using jinja2
+	# add an html report using jinja2
 	# remove header from tsv converted
 	# addruns option
+
 ################## Import libraries ##################
 import os
 import glob
@@ -164,7 +165,7 @@ def kmerisation(kmerSize, bedFile, kmerBedFile):
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
-def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html', sample_list_added=None):
+def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html', sample_list_added=None, gender_list=None):
 	# Set up Jinja2 environment
 	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
 	template = env.get_template('template.html')
@@ -175,7 +176,8 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		runName=run_name,
 		serviceName=service_name,
 		sample_list=sample_list,
-		sample_list_added=sample_list_added
+		sample_list_added=sample_list_added,
+		gender_list=gender_list
 	)
 
 	# Save the rendered HTML to the output file
@@ -530,7 +532,8 @@ rule canoes_calling:
 			numreference = config["numref"],
 			hom = config["homdel"]
 	output:
-			cnvcall = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv"
+			cnvcall = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv",
+			success = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.success"
 			#pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.pdf"
 	log: 
 		log = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.log",
@@ -539,7 +542,7 @@ rule canoes_calling:
 		"""
 			Rscript {params.Rscripts}/CANOES.v2.1.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
 			--samples {params.bamlist} --homdel {params.hom} --numref {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
-			--pvalue {params.pvalue} --output {output.cnvcall} 1> {log.log} 2> {log.err}
+			--pvalue {params.pvalue} --output {output.cnvcall} 1> {log.log} 2> {log.err} && touch {output.success}
 		"""
 
 rule merge_makeCNVcalls:
@@ -660,10 +663,6 @@ use rule convertvcf as convertvcf_sample with:
 	input: rules.vcf2gz1.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
 
-# add warnings in header of the tsv :
-# no gender found
-# minimum of samples required for analysis
-
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
@@ -732,7 +731,7 @@ onsuccess:
 	
 	print(dict(resultDict))
 	# Generate html report
-	generate_html_report(resultDict, runName, serviceName, sample_list_to_copy, f"{outputDir}/{serviceName}_report.html", sample_list_addruns)
+	generate_html_report(resultDict, runName, serviceName, sample_list_to_copy, f"{outputDir}/{serviceName}_report.html", sample_list_addruns, gender_list)
 	copy2(config['TEMPLATE_DIR'] + '/style.css', outputDir)
 
 onerror:

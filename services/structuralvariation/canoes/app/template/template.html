@@ -20,21 +20,35 @@
         <h2>Welcome to the report for {{ serviceName }}</h2>
         <p>We analyse run {{ runName }}</p>
         <p>Number of samples in the run: {{ sample_list|length -1 }} (30 samples is recommended)</p>
-        <p>Sample list: {% set first_item = true %} {% for item in sample_list %} {% if not first_item %},{% endif %} {% set first_item = false %} {{ item|replace("allsamples", "") }} {% endfor %} </p>
+        <p>Sample list:
+            {% set first_item = true %}
+            {% for item in sample_list %}
+                {% if not first_item %},{% endif %}
+                {% set first_item = false %}
+                {% if "allsamples" not in item %}
+                    {{ item }}
+                {% endif %}
+            {% endfor %}
+            </p>
         <p>{% if sample_list_added is defined %} Number of samples added : {{ sample_list_added|length }} {% endif %}</p>
         <p>Sample list added: {% for item in sample_list_added %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
         {% set combined_sample_list = sample_list + sample_list_added %}
         <p>Total of samples used : {{ combined_sample_list|length -1 }}</p>
         <p>Complete list :
-        {% set first_item = true %}
-        {% for item in sample_list %}
-        {% if not first_item %},{% endif %}
-        {% set first_item = false %}
-        {{ item|replace("allsamples", "") }}
-        {% endfor %}
-        </p>
+            {% set first_item = true %}
+            {% for item in sample_list %}
+                {% if not first_item %},{% endif %}
+                {% set first_item = false %}
+                {% if "allsamples" not in item %}
+                    {{ item }}
+                {% endif %}
+            {% endfor %}
+            </p>         
         {% if gender_list|length == 1 and gender_list[0] == "A" %}
         <p style="color:red;font-weight:bold;">WARNING : analysis was performed only for autosomes</p>
+        {% endif %}
+        {% if gender_list|length == 2 or gender_list|length == 3 %}
+        <p style="color:red;font-weight:bold;">Analysis was performed for sexual chromosomes</p>
         {% endif %}
         <p>Here is the details for each samples</p><br>
         {% for run_id, details in runDict.items() %}
