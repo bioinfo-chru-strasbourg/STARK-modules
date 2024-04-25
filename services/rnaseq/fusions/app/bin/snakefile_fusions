@@ -307,7 +307,7 @@ rule STAR:
 		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz",
 	output:
 		bam = f"{resultDir}/{{sample}}.STAR.bam",
-		junction = f"{resultDir}/{{sample}}.bamChimeric.out.junction"
+		junction = f"{resultDir}/{{sample}}.Chimeric.out.junction"
 	threads: workflow.cores
 	params:
 		genomepath_indexed=config['GENOME_PATH_INDEXED'],
@@ -332,10 +332,8 @@ rule STAR:
 # Note :  When STAR was run with the parameter --chimOutType SeparateSAMold, the main output file lacks chimeric alignments. Instead, STAR writes them to a separate output file named Chimeric.out.sam. 
 # In this case, the file needs to be passed to Arriba via the parameter -c in addition to the main output file Aligned.out.bam.
 rule Arriba:
-	input:
-		f"{resultDir}/{{sample}}.STAR.bam"
-	output:
-		f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.tsv"
+	input: rules.STAR.output.bam
+	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.tsv"
 	params:
 		refgenome = config['REFGENOMEFA_PATH'],
 		refgtfgencode = config['REFGTFGENCODE_PATH'],
