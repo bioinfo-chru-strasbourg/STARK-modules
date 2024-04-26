@@ -81,11 +81,9 @@ def populate_dictionary(dictionary, samples_list, extensions_list, files_list, p
 					continue
 
 				if pattern_exclude and pattern_exclude in file:
-					print('pattern_exclude')
 					continue
 
 				if pattern_include and pattern_include not in file:
-					print('pattern_include')
 					continue
 
 				dictionary.setdefault(sample, {})[ext] = file
@@ -165,7 +163,7 @@ def kmerisation(kmerSize, bedFile, kmerBedFile):
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
-def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html', sample_list_added=None, gender_list=None):
+def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html', sample_list_added=None, gender_list=None, list_XX=None, list_XY=None, none_gender_samples=None):
 	# Set up Jinja2 environment
 	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
 	template = env.get_template('template.html')
@@ -177,7 +175,10 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 		serviceName=service_name,
 		sample_list=sample_list,
 		sample_list_added=sample_list_added,
-		gender_list=gender_list
+		gender_list=gender_list,
+		list_XX=list_XX,
+		list_XY=list_XY,
+		none_gender_samples=none_gender_samples
 	)
 
 	# Save the rendered HTML to the output file
@@ -337,6 +338,7 @@ for aligner in aligner_list:
 
 # Option to remove gender in the gender_list to force A, XX or XY analysis only ; the calling of Y for male subject is not done
 gender_list = [gender for gender in gender_list if not (config['REMOVE_M'] and gender == 'XY') and not (config['REMOVE_F'] and gender == 'XX') and not (config['REMOVE_A'] and gender == 'A')]
+gender_list.sort()
 
 # Process .ped files 
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
@@ -720,7 +722,7 @@ onsuccess:
 	sample_list_to_copy.insert(0,"allsamples")
 	resultDict = defaultdict(dict)
 	populate_dictionary(resultDict, sample_list_to_copy, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
-	
+
 	# Update resultDict with values from runDict
 	for sample, results in runDict.items():
 		if sample in resultDict:
@@ -728,10 +730,15 @@ onsuccess:
 				if key in config['RESULT_EXT_LIST']:
 					if key not in resultDict[sample]:
 						resultDict[sample][key] = value
-	
 	print(dict(resultDict))
+
+	list_XX = [os.path.basename(file).split('.')[0] for file in files_list_XX]
+    list_XY = [os.path.basename(file).split('.')[0] for file in files_list_XY]
+
+	none_gender_samples = [sample for sample, data in runDict.items() if data.get('gender') == 'None']
+	print(none_gender_samples)
 	# Generate html report
-	generate_html_report(resultDict, runName, serviceName, sample_list_to_copy, f"{outputDir}/{serviceName}_report.html", sample_list_addruns, gender_list)
+	generate_html_report(resultDict, runName, serviceName, sample_list_to_copy, f"{outputDir}/{serviceName}_report.html", sample_list_addruns, gender_list, list_XX, list_XY, none_gender_samples)
 	copy2(config['TEMPLATE_DIR'] + '/style.css', outputDir)
 
 onerror:

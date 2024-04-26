@@ -52,11 +52,17 @@
         {% if gender_list|length == 2 or gender_list|length == 3 %}
         <p style="color:red;font-weight:bold;">Analysis was performed for sexual chromosomes without errors</p>
         {% endif %}
-        {% if gender_list|length == 2 and gender_list[1] == "XY" %}
+        {% if (gender_list|length == 2 or gender_list|length == 3) and (gender_list[1] == "XY" or gender_list[2] == "XY") %}
         <p style="color:red;font-weight:bold;">Male patients list</p>
+        {% for item in list_XY %}  {{ item }} {% if not loop.last %} , {% endif %} {% endfor %}
         {% endif %}
-        {% if gender_list|length == 3 and gender_list[2] == "XX" %}
+        {% if (gender_list|length == 2 or gender_list|length == 3) (and gender_list[1] == "XX" or gender_list[2] == "XX") %}
         <p style="color:red;font-weight:bold;">Female patients list</p>
+        {% for item in list_XX %}  {{ item }} {% if not loop.last %} , {% endif %} {% endfor %}
+        {% endif %}
+        {% if none_gender_samples %}
+        <p style="color:red;font-weight:bold;">WARNING : some samples did not have a gender specified :</p>
+        {% for sample in none_gender_samples %} {{ sample }} {% if not loop.last %} , {% endif %} {% endfor %}
         {% endif %}
         <p>Here is the details for each samples in the run</p><br>
         {% for run_id, details in runDict.items() %}
