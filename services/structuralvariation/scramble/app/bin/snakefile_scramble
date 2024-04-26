@@ -427,7 +427,7 @@ rule correctvcf:
 # We filter out before annotation
 rule bcftools_filter:
 	"""	Filter with bcftools """
-	input: rules.scramble.output	
+	input: rules.correctvcf.output	
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf"
 	params: bcf_filter = config['BCFTOOLS_FILTER']
 	shell: "bcftools view {params.bcf_filter} {input} -o {output}" 

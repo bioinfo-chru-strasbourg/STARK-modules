@@ -13,7 +13,7 @@
 # separate multiple variable with a space
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
-serviceName: "Fusions"
+serviceName: "FUSIONS"
 
 # Default repository/depository path from listener.py/launcher.py
 repository: "/STARK/output/repository"
