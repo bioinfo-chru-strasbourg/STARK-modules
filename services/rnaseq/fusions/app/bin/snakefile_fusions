@@ -363,7 +363,7 @@ rule STARFusion:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/star-fusion.fusion_predictions.tsv"
 	params:
 		libgencode=config['CTAT_LIB_GENCODE'],
-		fusiondir=f"{resultDir}/{{sample}}"
+		fusiondir=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/"
 	conda: "starfusion"
 	shell:
 		"""
@@ -414,6 +414,7 @@ use rule vcf2tsv as vcf2tsv_starfusion with:
 	input: rules.mergevcf_starfusion.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.tsv"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.vcf2tsv_converter.log"
+
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
