@@ -270,7 +270,7 @@ rule help:
 	Also use option --configfile another.yaml to replace and merge existing config.yaml file variables
 	Use -p to display shell commands
 	Use --lt to display docstrings of rules
-	Input file = fastq SE ou PE
+	Input file = fastq PE (SE don't work for now)
 	Output file = quant.sf files
 	"""
 
@@ -292,6 +292,22 @@ rule copy_fastq:
 		rsync -azvh {params.download_link1} {output.fastqR1} && rsync -azvh {params.download_link2} {output.fastqR2}
 		fi
 		"""
+
+# to be added to check for quality ? can also add some trim or UMI processing
+#rule fastp:
+#	input:
+#		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
+#		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
+#	output:
+#		fastqR1=temp(f"{resultDir}/{{sample}}.fastp.R1.fastq.gz"),
+#		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz")
+#	params:
+#		config['FASTP_PARAMS']
+#	threads: workflow.cores
+#	shell:	
+#		"""
+#		fastp --thread={threads} {params} --html={sample}.QC.html --report_title={sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
+#		"""
 
 rule copy_bam:
 	output: temp(f"{resultDir}/{{sample}}.bam")
