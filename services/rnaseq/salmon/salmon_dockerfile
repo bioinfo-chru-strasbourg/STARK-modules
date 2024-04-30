@@ -17,10 +17,10 @@ RUN apt-get update --fix-missing && \
 	apt-get install -y unzip vim rsync
 
 # Mamba install
-RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
+RUN mamba install -y -c conda-forge -c bioconda -c biobuilds -c bih-cubi  \
 	samtools~=1.19.2 bcftools~=1.19.0 bedtools~=2.31.1  \
-	snakemake~=7.32.4 pandas~=2.2.1 vcf2tsvpy~=0.6.1 \
-	salmon~=1.10.2 \
+	snakemake~=7.32.4 pandas~=2.2.1 vcf2tsvpy~=0.6.1 bcl2fastq2~=2.20.0.422 \
+	salmon~=1.10.2 seqkit~=2.8 fastp~=0.23\
 	&& mamba clean -afy
 
 
