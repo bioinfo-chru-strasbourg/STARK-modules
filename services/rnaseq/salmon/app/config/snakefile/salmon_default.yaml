@@ -7,7 +7,7 @@
 
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
-serviceName: "Salmon"
+serviceName: "SALMON"
 
 # Default repository/depository path from listener.py/launcher.py
 repository: "/STARK/output/repository"
@@ -69,9 +69,11 @@ RESULT_EXT_LIST: ['.sf']
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 ################## Salmon ##################
+# FASTP params
+FASTP_PARAMS: "--disable_quality_filtering --disable_trim_poly_g --disable_length_filtering --disable_adapter_trimming --trim_front1=5 --trim_tail1=5 --compression=1"
 
 # For Salmon quantification fastq mode, path to the index file
 REFSALMONQUANTFASTQ_PATH: "/STARK/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
 # SE ou PE Reads
-SALMON_FASTQ_TYPE: "PE"
+SALMON_FASTQ_TYPE: "PE"  # won't work with SE for the moment
 MISC_SALMON_OPTIONS: ""
