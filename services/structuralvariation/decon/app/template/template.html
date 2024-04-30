@@ -28,7 +28,7 @@
         {{ item|replace("allsamples", "") }}
         {% endfor %}
         </p> 
-        <p>Here is the details for each samples</p><br>
+        <p>Here are the details for each samples</p><br>
         {% for run_id, details in runDict.items() %}
             <h1 id="{{ run_id }}">{{ run_id }}</h1>
             <table>

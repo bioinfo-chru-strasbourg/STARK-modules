@@ -733,12 +733,12 @@ onsuccess:
 	print(dict(resultDict))
 
 	list_XX = [os.path.basename(file).split('.')[0] for file in files_list_XX]
-    list_XY = [os.path.basename(file).split('.')[0] for file in files_list_XY]
+	list_XY = [os.path.basename(file).split('.')[0] for file in files_list_XY]
 
 	none_gender_samples = [sample for sample, data in runDict.items() if data.get('gender') == 'None']
 	print(none_gender_samples)
 	# Generate html report
-	generate_html_report(resultDict, runName, serviceName, sample_list_to_copy, f"{outputDir}/{serviceName}_report.html", sample_list_addruns, gender_list, list_XX, list_XY, none_gender_samples)
+	generate_html_report(resultDict, runName, serviceName, sample_list_to_copy, f"{outputDir}/{serviceName}_{date_time}_report.html", sample_list_addruns, gender_list, list_XX, list_XY, none_gender_samples)
 	copy2(config['TEMPLATE_DIR'] + '/style.css', outputDir)
 
 onerror:
