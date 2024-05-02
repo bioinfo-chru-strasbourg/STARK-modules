@@ -57,9 +57,6 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-## DEBUG ##
-DEBUG_MODE: False
-
 # List of extensions to include in the report.html
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 # Path of the template (template is template.html)

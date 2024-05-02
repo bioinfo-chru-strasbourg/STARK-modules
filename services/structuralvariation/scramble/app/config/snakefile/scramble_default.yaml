@@ -66,9 +66,6 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-## DEBUG ##
-DEBUG_MODE: False
-
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="DRAWFUSIONS_style.css">
     <title>Report</title>
 </head>
 <body>
@@ -21,14 +21,14 @@
         <p>We analyse run {{ runName }}</p>
         <p>Number of samples : {{ sample_list|length -1 }}</p>
         <p>Sample list: 
-        {% set first_item = true %}
-        {% for item in sample_list %}
-        {% if not first_item %},{% endif %}
-        {% set first_item = false %}
-        {{ item|replace("allsamples", "") }}
-        {% endfor %}
-        </p> 
-        <p>Here are the details for each samples</p><br>
+            {% set first_item = true %}
+            {% for item in sample_list %}
+              {% if not first_item %},{% endif %}
+              {% set first_item = false %}
+              {{ item|replace("allsamples", "") }}
+            {% endfor %}
+            </p>
+            <p>Here are the details for each samples</p><br>
         {% for run_id, details in runDict.items() %}
             <h1 id="{{ run_id }}">{{ run_id }}</h1>
             <table>

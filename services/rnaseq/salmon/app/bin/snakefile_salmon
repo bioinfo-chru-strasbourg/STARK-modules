@@ -116,8 +116,8 @@ def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ex
 				if include_ext in items and (exclude_ext is None or exclude_ext not in items):
 					if os.path.exists(items) and os.path.getsize(items) != 0:
 						search_result = items
-			except KeyError:
-				pass
+			except KeyError as e:
+				print(f"KeyError encountered: {e}")
 	
 	return search_result
 
@@ -143,10 +143,10 @@ def extractlistfromfiles(file_list, ext_list, sep, position):
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
-def generate_html_report(result_dict, run_name, service_name, sample_list, output_file='report.html'):
+def generate_html_report(result_dict, run_name, service_name, sample_list, template_name, output_file='report.html'):
 	# Set up Jinja2 environment
 	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
-	template = env.get_template('template.html')
+	template = env.get_template(template_name)
 
 	# Render the template with the provided data
 	rendered_html = template.render(
@@ -165,22 +165,23 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, outpu
 
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
-date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 runName = os.path.basename(os.path.normpath(config['run']))
+date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 resultDir = f"/app/res/{runName}/{date_time}"
-logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
 outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
-
-try:
-	config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
-	config['APP_NAME'] = os.path.normpath(config['run']).split('/')[5]
-except IndexError: 
-	pass
-depotDir = f"{config['depository']}/{config['GROUP_NAME']}/{config['APP_NAME']}/{runName}"
-
 directories = [resultDir, outputDir]
+
 if config['DEPOT_COPY']:
+	try:
+		config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
+		config['APP_NAME'] = os.path.normpath(config['run']).split('/')[5]
+	except IndexError: 
+		# Handle the case when index 4 or 5 doesn't exist in the split list
+		config['GROUP_NAME'] = 'UNKNOWN'
+		config['APP_NAME'] = 'UNKNOWN'
+	depotDir = f"{config['depository']}/{config['GROUP_NAME']}/{config['APP_NAME']}/{runName}"
 	directories.append(depotDir)
+
 for directory in directories:
 	os.makedirs(directory, exist_ok=True)
 
@@ -218,15 +219,6 @@ config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, co
 config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
 # Find transcripts files (NM)
 config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
-# If transcript file exist, create the annotation file for AnnotSV
-annotation_file = f"{resultDir}/{serviceName}.{date_time}.AnnotSV.txt"
-if os.path.exists(config['TRANSCRIPTS_FILE']) and os.path.getsize(config['TRANSCRIPTS_FILE']):
-	df = pd.read_csv(config['TRANSCRIPTS_FILE'], sep='\t', names=["NM", "Gene"])
-	with open(annotation_file, 'w+') as f:
-		f.write('\t'.join(df['NM']))
-else:
-	with open(annotation_file, 'w') as f:
-		f.write("No NM found")
 
 
 log_items = [
@@ -241,23 +233,16 @@ log_items = [
 ]
 
 for item in log_items:
+	logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
 	log_file(logfile, item[0], "\n", items_list=item[1] if isinstance(item[1], list) else None, items=item[1] if not isinstance(item[1], list) else None)
 
-# Copy2 bed_file & genes_file & transcripts_file for debug
-if config['DEBUG_MODE']:
-	try:
-		files_to_copy = (config['BED_FILE'], config['GENES_FILE'], config['TRANSCRIPTS_FILE'])
-		for file_path in files_to_copy:
-			copy2(file_path, resultDir)
-	except FileNotFoundError:
-		pass
 
 ################################################## RULES ##################################################
 ruleorder: copy_fastq > cramtobam > copy_bam > samtools_fastq 
 
 rule all:
 	input:
-		expand(f"{resultDir}/{{sample}}.salmon.quant/{{sample}}.quant.sf",sample=sample_list)
+		expand(f"{resultDir}/{{sample}}/{{sample}}.quant.sf",sample=sample_list)
 
 
 rule help:
@@ -354,13 +339,13 @@ rule salmon:
 		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz",
 		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz"
 	output:
-		f"{resultDir}/{{sample}}.salmon.quant/quant.sf"
+		f"{resultDir}/tmp/{{sample}}.salmon.quant/quant.sf"
 	params:
 		threads = workflow.cores,
 		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
 		fastq_type = config['SALMON_FASTQ_TYPE'],
 		misc_options = config['MISC_SALMON_OPTIONS'],
-		salmondir= f"{resultDir}/{{sample}}.salmon.quant/"
+		salmondir= f"{resultDir}/tmp/{{sample}}.salmon.quant/"
 	shell:
 		"""
 		if [ "{params.fastq_type}" = 'PE' ];
@@ -375,7 +360,7 @@ rule salmon:
 
 rule rename:
 	input: rules.salmon.output
-	output: f"{resultDir}/{{sample}}.salmon.quant/{{sample}}.quant.sf"
+	output: f"{resultDir}/{{sample}}/{{sample}}.quant.sf"
 	shell:
 		"""
 		mv {input} {output}
@@ -403,7 +388,7 @@ onsuccess:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 	
 	# Copy results to the main output directory
-	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
+	shell("rsync -azvh --include={include} --exclude={{'*','/tmp*'}}  {resultDir}/ {outputDir}")
 
 	# Copy individual sample results to their respective directories
 	for sample in sample_list:
@@ -411,7 +396,7 @@ onsuccess:
 
 	# Optionally, perform DEPOT_COPY
 	if config['DEPOT_COPY']:
-		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
+		shell("rsync -azvh --include={include} --exclude={{'*','/tmp*'}} {resultDir}/ {depotDir}")
 		for sample in sample_list:
 			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
@@ -425,8 +410,8 @@ onsuccess:
 	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
 	# Generate html report (need to add the run results)
-	generate_html_report(resultDict, runName, serviceName, sample_list, f"{outputDir}/{serviceName}_report.html")
-	copy2(config['TEMPLATE_DIR'] + '/style.css', outputDir)
+	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}_template.html" , f"{outputDir}/{serviceName}_{date_time}_report.html")
+	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '_style.css', outputDir)
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']

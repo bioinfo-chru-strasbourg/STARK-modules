@@ -26,7 +26,6 @@ depository: "/STARK/output/depository"
 OUTPUT_DIR: ""
 # Copy to depot directory (archive)
 DEPOT_COPY: True
-
 # Group and App default name
 GROUP_NAME: "UNKNOWN"
 APP_NAME: "UNKNOWN"
@@ -67,9 +66,6 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed','*/'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-## DEBUG ##
-DEBUG_MODE: FALSE
-
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
@@ -108,6 +104,7 @@ customexon: FALSE
 KMER: ""
 # Path to Decon R directory
 DECON_PATH: "/app/scripts/R"
+
 ############# ReadInbams params ##############
 # path to the tsv file containing 2 columns : bam for the list of reference bams for CNV calling (full path of bams), and gender (F/M)
 # the bam files have to be indexed
