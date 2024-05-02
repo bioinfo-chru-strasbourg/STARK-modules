@@ -363,7 +363,7 @@ rule rename:
 	output: f"{resultDir}/{{sample}}/{{sample}}.quant.sf"
 	shell:
 		"""
-		mv {input} {output}
+		mv {input} {output} ; rm -rf {resultDir}/tmp/
 		"""
 
 
@@ -388,7 +388,7 @@ onsuccess:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 	
 	# Copy results to the main output directory
-	shell("rsync -azvh --include={include} --exclude={{'*','/tmp*'}}  {resultDir}/ {outputDir}")
+	shell("rsync -azvh --include={include} --exclude='*'  {resultDir}/ {outputDir}")
 
 	# Copy individual sample results to their respective directories
 	for sample in sample_list:
@@ -396,7 +396,7 @@ onsuccess:
 
 	# Optionally, perform DEPOT_COPY
 	if config['DEPOT_COPY']:
-		shell("rsync -azvh --include={include} --exclude={{'*','/tmp*'}} {resultDir}/ {depotDir}")
+		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
 		for sample in sample_list:
 			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
@@ -416,5 +416,5 @@ onsuccess:
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
 	shell(f"touch {outputDir}/{serviceName}Failed.txt")
-	shell(f"rm -f {config['OUTPUT_DIR']}/{serviceName}Running.txt")
+	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
 	shell("rsync -azvh --include={include_log} --exclude='*' {resultDir}/ {outputDir}")

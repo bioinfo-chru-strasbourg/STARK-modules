@@ -281,40 +281,34 @@ rule copy_fastq:
 # ./, i.e. all output files are written in the current directory
 # name.bam + Aligned.toTranscriptome.out.bam or Aligned.sortedByCoord.out.bam
 # --limitBAMsortRAM 32000000000 is minimum
-# --chimOutType Junctions (STAR Fusion) or --chimOutType WithinBAM (arriba)
 # output will be Sample.Chimeric.out.junction
 # --genomeLoad LoadAndRemove or --genomeLoad NoSharedMemory if 2 pass
-# --quantTranscriptomeBan Singleend seems depreciated
 rule STAR:
 	input:
 		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz", 
 		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz",
 	output:
-		bam = f"{resultDir}/{{sample}}.STAR.bam",
-		junction = f"{resultDir}/{{sample}}.Chimeric.out.junction"
+		bam = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam",
+		junction = f"{resultDir}/{{sample}}/{{sample}}.Chimeric.out.junction"
 	threads: workflow.cores
 	params:
 		genomepath_indexed=config['GENOME_PATH_INDEXED'],
 		RG="ID:1 PL:ILLUMINA PU:PU LB:001 SM:{sample}",
-		stardir=f"{resultDir}/{{sample}}/",
+		tmpdir=f"{resultDir}/tmp/",
 		juncfile=config['JUNCTION_FILE'],
-		prefix=f"{resultDir}/{{sample}}."
+		prefix=f"{resultDir}/{{sample}}/{{sample}}."
 	shell:
 		"""
-		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {params.prefix} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.stardir} && mv {params.prefix}Aligned.sortedByCoord.out.bam {output.bam}
+		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {params.prefix} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.tmpdir} && mv {params.prefix}Aligned.sortedByCoord.out.bam {output.bam} ; rm -rf {params.prefix}_STARgenome/ ; rm -rf {params.prefix}_STARpass1/
 		"""
 
-# input is STAR bam Aligned.sortedByCoord.out.bam
-# different files can be used for filtering and tagging, but the provided one can be used for both
+
 # -f will disable filters / -f known_fusions to reduce sensibility / -f isoforms to reduce false positive
 # -S MIN_SUPPORTING_READS : The filter min_support discards all fusions with fewer than this many supporting reads (split reads and discordant mates combined). Default: 2
 # -z MIN_ITD_ALLELE_FRACTION : Required fraction of supporting reads to report an internal tandem duplication. Default: 0.07
 # -Z MIN_ITD_SUPPORTING_READS : Required absolute number of supporting reads to report an internal tandem duplication. Default: 10
-# -O {output.tsvdisc}  Output file with fusions that were discarded due to filtering ; tsvdisc = tmpdir + "/{sample}.fusion.discarded.tsv"
 # -k File containing known/recurrent fusions
 # -t Tab-separated file containing fusions to annotate with tags in the 'tags' column
-# Note :  When STAR was run with the parameter --chimOutType SeparateSAMold, the main output file lacks chimeric alignments. Instead, STAR writes them to a separate output file named Chimeric.out.sam. 
-# In this case, the file needs to be passed to Arriba via the parameter -c in addition to the main output file Aligned.out.bam.
 rule Arriba:
 	input: rules.STAR.output.bam
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.tsv"
@@ -339,15 +333,14 @@ rule variantconvert:
 		variantconvert convert -i {input} -o {output} -c {params}
 		"""
 
-# For STAR_Fusion (--outSAMstrandField intronMotif ?)
+# Settings for STAR used by Starfusion
 # STAR  --chimSegmentMin 12  --chimJunctionOverhangMin 12 --chimOutJunctionFormat 1 --alignSJDBoverhangMin 10 --alignMatesGapMax 100000 --alignIntronMax 100000 --chimMultimapScoreRange 3 --chimScoreJunctionNonGTAG -4 --chimMultimapNmax 20 --chimNonchimScoreDropMin 10 --peOverlapNbasesMin 12 --peOverlapMMp 0.1 
-# Note, if you use this -J Chimeric.out.junction file, it is essential that the new '--chimOutJunctionFormat 1' parameter was used, since this integrates alignment statistics at the end of the junction file, which are used for estimating the FFPM fusion ~expression estimates.
 rule STARFusion:
 	input: rules.STAR.output.junction
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/star-fusion.fusion_predictions.tsv"
+	output: f"{resultDir}/{{sample}}/tmp/star-fusion.fusion_predictions.tsv"
 	params:
 		libgencode=config['CTAT_LIB_GENCODE'],
-		fusiondir=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/"
+		fusiondir=f"{resultDir}/{{sample}}/tmp/"
 	conda: "starfusion"
 	shell:
 		"""
@@ -359,7 +352,7 @@ rule rename_tsv:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.tsv"
 	shell:
 		"""
-		mv {input} {output}
+		mv {input} {output} ; rm -rf {resultDir}/{{sample}}/tmp/
 		"""
 
 use rule variantconvert as variantconvert_starfusion with:
@@ -416,10 +409,11 @@ onsuccess:
 	with open(logfile, "a+") as f:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
-	# Clear existing output directories
+	# Clear existing output directories & rm tmp
 	for sample in sample_list:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-	
+		shell(f"rm -rf {resultDir}/{sample}/tmp/* || true")
+
 	# Copy results to the main output directory
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 
@@ -449,5 +443,5 @@ onsuccess:
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
 	shell(f"touch {outputDir}/{serviceName}Failed.txt")
-	shell(f"rm -f {config['OUTPUT_DIR']}/{serviceName}Running.txt")
+	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
 	shell("rsync -azvh --include={include_log} --exclude='*' {resultDir}/ {outputDir}")

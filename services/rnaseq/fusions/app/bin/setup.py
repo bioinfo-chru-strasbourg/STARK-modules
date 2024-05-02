@@ -16,6 +16,8 @@
 #
 # This script will setup a cli ie checking and installing proper databases if needed ; copying launcher.py, .conf and .json files in the specific directory
 #
+# # indexing genome for STAR with the command :
+# STAR --runThreadN 8 --runMode genomeGenerate --genomeDir /STARK/databases/STAR/ --genomeFastaFiles /STARK/databases/STAR/hg19.fa --sjdbGTFfile /STARK/databases/gtf/current/gencode.v19.annotation.gtf_withproteinids --sjdbOverhang 99 --outFileNamePrefix /STARK/databases/STAR/log/ --genomeChrBinNbits 15
 ####################################
 
 import os
