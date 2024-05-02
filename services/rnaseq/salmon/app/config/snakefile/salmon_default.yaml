@@ -49,16 +49,13 @@ FILTER_SAMPLE: []
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*.sf','*/'}"
+INCLUDE_RSYNC: "{'*.sf','/*'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*Failed.txt','*.log','*.err'}"
 
 # Search parameters
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "*/*"
-
-## DEBUG ##
-DEBUG_MODE: False
 
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"

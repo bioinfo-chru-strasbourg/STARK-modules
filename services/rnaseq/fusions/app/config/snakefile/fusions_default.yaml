@@ -64,13 +64,10 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-# Path of the template (template is template.html)
+# Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
 RESULT_EXT_LIST: ['.tsv','.bam','.vcf']
-
-## DEBUG ##
-DEBUG_MODE: True
 
 ############## Tools specific parameters ##############
 

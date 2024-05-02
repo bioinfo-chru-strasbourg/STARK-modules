@@ -51,9 +51,6 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed','*/'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-## DEBUG ##
-DEBUG_MODE: FALSE
-
 # Path of the dummy vcf
 DUMMY_PATH: "/app/scripts/dummy"
 # R scripts
