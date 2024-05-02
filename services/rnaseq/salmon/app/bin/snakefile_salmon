@@ -374,8 +374,8 @@ rule salmon:
 		"""
 
 rule rename:
-	input: rule.salmon.output
-	ouput: f"{resultDir}/{{sample}}.salmon.quant/{{sample}}.quant.sf"
+	input: rules.salmon.output
+	output: f"{resultDir}/{{sample}}.salmon.quant/{{sample}}.quant.sf"
 	shell:
 		"""
 		mv {input} {output}
