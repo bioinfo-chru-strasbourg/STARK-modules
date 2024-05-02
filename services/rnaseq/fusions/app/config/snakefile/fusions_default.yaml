@@ -23,10 +23,6 @@ OUTPUT_DIR: ""
 # Copy to depot directory (archive)
 DEPOT_COPY: False
 
-# Group and App default name
-GROUP_NAME: "UNKNOWN"
-APP_NAME: "UNKNOWN"
-
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 # Bed file
@@ -51,12 +47,12 @@ ALIGNER_NAME:
 
 # Samples list exclusion (not to be analysed) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
-# Sample filter
+# Sample filter : analysing only
 FILTER_SAMPLE: []
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*.tsv','*.bam','*.vcf','*/'}"
+INCLUDE_RSYNC: "{'*arriba.tsv','*STAR.bam','*arriba.vcf','*starfusion.tsv','*starfusion.vcf','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
