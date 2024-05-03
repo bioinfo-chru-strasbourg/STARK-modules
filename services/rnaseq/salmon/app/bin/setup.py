@@ -84,10 +84,6 @@ if not config:
 if os.path.exists(f"{services}/cli/SETUPComplete.txt"):
 	systemcall(f"rm {services}/cli/SETUPComplete.txt")
 
-### START #####
-if os.path.exists(f"{services}/cli/SETUPComplete.txt"):
-	systemcall(f"rm {services}/cli/SETUPComplete.txt")
-
 ###############
 # GENCODE DB  #
 ###############
@@ -143,7 +139,6 @@ if not os.path.isdir(GENCODE_PARAM_DATABASE_FOLDER_LINK):
 REFGENOME = f"{DATABASES}gencode/{GENCODE_VERSION}/{GENCODEREF_TARBALL}"
 GENCODE = f"{DATABASES}gencode/{GENCODE_VERSION}/{GENCODE_TARBALL}"
 
-#systemcall("grep "^>" <(gunzip -c "+REFGENOME+") | cut -d " " -f 1 > decoys.txt")
 systemcall(f"grep '^>' <(gunzip -c {REFGENOME}) | cut -d ' ' -f 1 > decoys.txt")
 systemcall("sed -i.bak -e 's/>//g' decoys.txt")
 systemcall(f"cat {GENCODE} {REFGENOME} > gentrome.fa.gz")

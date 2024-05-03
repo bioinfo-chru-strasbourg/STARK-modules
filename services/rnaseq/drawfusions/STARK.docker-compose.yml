@@ -23,7 +23,7 @@ services:
         volumes:
             - /home1/data/STARK/services/rnaseq/drawfusions:/services/rnaseq/drawfusions:rw
             - /home1/data/STARK/config/rnaseq/drawfusions:/config/rnaseq/drawfusions:rw
-            - /home1/data/STARK/databases:/STARK/databases:rw
+            - /home1/data/STARK/databases:/databases:rw
         networks:
             - stark_stark
 

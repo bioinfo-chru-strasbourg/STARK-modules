@@ -47,7 +47,7 @@ ALIGNER_NAME:
 
 # Samples list exclusion (not to be analysed) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC']
-# Sample filter : analysing only
+# Sample filter : analysing only those samples
 FILTER_SAMPLE: []
 
 # Extension files to copy after pipeline success

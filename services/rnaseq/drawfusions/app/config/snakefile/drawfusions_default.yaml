@@ -13,19 +13,16 @@
 # separate multiple variable with a space
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
-serviceName: "Drawfusion"
+serviceName: "DRAWFUSIONS"
 
 # Default repository/depository path from listener.py/launcher.py
-repository: "/STARK/output/repository"
-depository: "/STARK/output/depository"
+repository: "/output/repository"
+depository: "/output/depository"
 # Output directory if not repository
 OUTPUT_DIR: ""
 # Copy to depot directory (archive)
-DEPOT_COPY: False
+DEPOSITORY_COPY: False
 
-# Group and App default name
-GROUP_NAME: "UNKNOWN"
-APP_NAME: "UNKNOWN"
 
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
@@ -64,8 +61,6 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-## DEBUG ##
-DEBUG_MODE: True
 
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
@@ -78,11 +73,11 @@ RESULT_EXT_LIST: ['.pdf']
 FUSION_TOOL: ['arriba', 'starfusion']
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 # GTF file (Gencode)
-REFGTFGENCODE_PATH: "/STARK/databases/gencode/current/gencode.v19.annotation.gtf_withproteinids"
+REFGTFGENCODE_PATH: "/databases/gencode/current/gencode.v19.annotation.gtf_withproteinids"
 # Arriba specifics databases (default is /opt/conda/var/lib/arriba)
-REFPROTDOMAIN_PATH: "/STARK/databases/arriba/current/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
-REFCYTOBAND_PATH: "/STARK/databases/arriba/current/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
+REFPROTDOMAIN_PATH: "/databases/arriba/current/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
+REFCYTOBAND_PATH: "/databases/arriba/current/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
 ARRIBA_SCRIPTS: "app/config/scripts"
 
