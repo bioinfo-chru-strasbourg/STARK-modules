@@ -239,7 +239,8 @@ rule all:
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.vcf.gz",sample=sample_list),
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf.gz",sample=sample_list),
 		f"{resultDir}/{serviceName}.{date_time}.allsamples.arriba.tsv",
-		f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.tsv"
+		f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.tsv",
+		f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam.bai
 
 rule help:
 	"""
@@ -304,6 +305,12 @@ rule STAR:
 		STAR --genomeDir {params.genomepath_indexed} --runThreadN {threads} --readFilesIn {input.fastqR1} {input.fastqR2} --genomeLoad NoSharedMemory --readFilesCommand zcat --outFileNamePrefix {params.prefix} --outSAMattrRGline {params.RG} --outSAMtype BAM SortedByCoordinate --chimOutJunctionFormat 1 --outSAMunmapped Within --outBAMcompression 6 --outFilterMultimapNmax 50 --peOverlapNbasesMin 10 --alignSplicedMateMapLminOverLmate 0.5 --alignSJstitchMismatchNmax 5 -1 5 5 --chimSegmentMin 10 --chimOutType {params.juncfile} HardClip --chimJunctionOverhangMin 10 --chimScoreDropMax 30 --chimScoreJunctionNonGTAG 0 --chimScoreSeparation 1 --chimSegmentReadGapMax 3 --chimMultimapNmax 50 --twopassMode Basic --quantMode TranscriptomeSAM GeneCounts --outTmpDir {params.tmpdir} && mv {params.prefix}Aligned.sortedByCoord.out.bam {output.bam} ; rm -rf {params.prefix}_STARgenome/ ; rm -rf {params.prefix}_STARpass1/
 		"""
 
+rule indexing:
+	""" Indexing bam files with samtools """
+	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam.bai"
+	threads: workflow.cores
+	shell: "samtools index -b -@ {threads} {input} {output}"
 
 # -f will disable filters / -f known_fusions to reduce sensibility / -f isoforms to reduce false positive
 # -S MIN_SUPPORTING_READS : The filter min_support discards all fusions with fewer than this many supporting reads (split reads and discordant mates combined). Default: 2

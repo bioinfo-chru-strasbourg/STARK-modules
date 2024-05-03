@@ -20,7 +20,7 @@ repository: "/output/repository"
 depository: "/output/depository"
 # Output directory if not repository
 OUTPUT_DIR: ""
-# Copy to depot directory (archive)
+# Copy to depository directory (archive)
 DEPOSITORY_COPY: True
 
 # Default path to the input datas == {run} from listener.py/launcher.py
@@ -38,7 +38,7 @@ LIST_GENES: ""
 SCRIPTS_PATH: "/app/scripts"
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
-# Sample filter
+# Sample filter, only those samples will be analysed
 FILTER_SAMPLE: []
 
 # Files to index into the dictionary depending on extension (endwith)
@@ -86,7 +86,7 @@ nCluster: 5 # min cluster size to analyze (default 5)
 mei-score: 50 # min MEI alignment score to call (default 50)
 poly-a-frac: 0.75 # fraction of clipped length for calling polyA tail in MEIs (default 0.75)
 poly-a-dist: 100 # how far from MEI to look for polyA tail (default 100)
-# choose to evaluate meis or deletions or both
+# choose to evaluate meis (default) or deletions or both
 # --eval-meis / --eval-dels / --eval-meis --eval-dels
 scramble_mode: "--eval-meis"
 # Default path to an FASTA file with MEI Ref sequences
