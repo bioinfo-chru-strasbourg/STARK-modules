@@ -17,13 +17,13 @@ services:
         environment:
             - DOCKER_STARK_MODULE_SUBMODULE_NAME=fusions
             - DOCKER_STARK_MODULE_NAME=rnaseq
-            - DOCKER_STARK_INNER_FOLDER_DATABASES=/STARK/databases
-            - DOCKER_STARK_INNER_FOLDER_SERVICES=/STARK/services
-            - DOCKER_STARK_INNER_FOLDER_CONFIG=/STARK/config
+            - DOCKER_STARK_INNER_FOLDER_DATABASES=/databases
+            - DOCKER_STARK_INNER_FOLDER_SERVICES=/services
+            - DOCKER_STARK_INNER_FOLDER_CONFIG=/config
         volumes:
-            - /home1/data/STARK/services/rnaseq/fusions:/STARK/services/rnaseq/fusions:rw
-            - /home1/data/STARK/config/rnaseq/fusions:/STARK/config/rnaseq/fusions:rw
-            - /home1/data/STARK/databases:/STARK/databases:rw
+            - /home1/data/STARK/services/rnaseq/fusions:/services/rnaseq/fusions:rw
+            - /home1/data/STARK/config/rnaseq/fusions:/config/rnaseq/fusions:rw
+            - /home1/data/STARK/databases:/databases:rw
         networks:
             - stark_stark
 
@@ -37,11 +37,11 @@ services:
         entrypoint: [ "/bin/bash", "-l", "-c" ]
         command: "'while true; do sleep 60; done'"
         volumes:
-            - /home1/data/STARK/output/repository:/STARK/output/repository:rw
-            - /home1/data/STARK/output/depository:/STARK/output/depository:rw
-            - /home1/data/STARK/services/rnaseq/fusions/cli:/STARK/services/rnaseq/fusions/cli:rw
-            - /home1/data/STARK/config/rnaseq/fusions/cli:/STARK/config/rnaseq/fusions/cli:ro
-            - /home1/data/STARK/databases:/STARK/databases:ro
+            - /home1/data/STARK/output/repository:/output/repository:rw
+            - /home1/data/STARK/output/depository:/output/depository:rw
+            - /home1/data/STARK/services/rnaseq/fusions/cli:/services/rnaseq/fusions/cli:rw
+            - /home1/data/STARK/config/rnaseq/fusions/cli:/config/rnaseq/fusions/cli:ro
+            - /home1/data/STARK/databases:/databases:ro
         networks:
             - stark_stark
         healthcheck:
@@ -50,7 +50,7 @@ services:
                     "CMD",
                     "test",
                     "-f",
-                    "/STARK/services/rnaseq/fusions/cli/SETUPComplete.txt"
+                    "/services/rnaseq/fusions/cli/SETUPComplete.txt"
                 ]
             timeout: 10s
             interval: 60s
@@ -61,15 +61,15 @@ services:
         image: stark/stark-module-common-submodule-listener-service-listener:2.0
         container_name: stark-module-rnaseq-submodule-fusions-service-listener
         entrypoint: "python3"
-        command: "/app/bin/listener.py --input=/STARK/output/repository --json=/STARK/config/rnaseq/fusions/listener/fusions.json --config=/STARK/config/rnaseq/fusions/listener/fusions.conf --servicename=FUSIONS --containersfile=/STARK/services/rnaseq/fusions/listener --nbDaysBack=30 --minDelay=1"
+        command: "/app/bin/listener.py --input=/output/repository --json=/config/rnaseq/fusions/listener/fusions.json --config=/config/rnaseq/fusions/listener/fusions.conf --servicename=FUSIONS --containersfile=/services/rnaseq/fusions/listener --nbDaysBack=30 --minDelay=1"
         restart: always
         environment:
-            - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/STARK/config/rnaseq/fusions
+            - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/config/rnaseq/fusions
         volumes:
-            - /home1/data/STARK/output/repository:/STARK/output/repository:ro
-            - /home1/data/STARK/output/depository:/STARK/output/depository:ro
-            - /home1/data/STARK/services/rnaseq/fusions:/STARK/services/rnaseq/fusions:rw
-            - /home1/data/STARK/config/rnaseq/fusions:/STARK/config/rnaseq/fusions:ro
+            - /home1/data/STARK/output/repository:/output/repository:ro
+            - /home1/data/STARK/output/depository:/output/depository:ro
+            - /home1/data/STARK/services/rnaseq/fusions:/services/rnaseq/fusions:rw
+            - /home1/data/STARK/config/rnaseq/fusions:/config/rnaseq/fusions:ro
             - /home1/data/STARK/config/rnaseq/fusions/listener/launcher.py:/app/bin/config/launcher.py:ro
             - /var/run/docker.sock:/var/run/docker.sock
         networks:
