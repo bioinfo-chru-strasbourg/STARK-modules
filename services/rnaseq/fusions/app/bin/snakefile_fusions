@@ -237,7 +237,9 @@ rule all:
 	"""
 	input:
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.vcf.gz",sample=sample_list),
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf.gz",sample=sample_list)
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf.gz",sample=sample_list),
+		f"{resultDir}/{serviceName}.{date_time}.allsamples.arriba.tsv",
+		f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.tsv"
 
 rule help:
 	"""
@@ -412,7 +414,7 @@ onsuccess:
 	# Clear existing output directories & rm tmp
 	for sample in sample_list:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-		shell(f"rm -rf {resultDir}/{sample}/tmp/* || true")
+		shell(f"rm -rf {resultDir}/{sample}/tmp/ || true")
 
 	# Copy results to the main output directory
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
