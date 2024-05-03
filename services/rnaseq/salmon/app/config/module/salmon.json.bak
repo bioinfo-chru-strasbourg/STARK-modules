@@ -12,7 +12,7 @@
 						"STARKCopyComplete.txt",
 						"!SALMONRunning.txt",
 						"!SALMONComplete.txt",
-						"!FSALMONFailed.txt"
+						"!SALMONFailed.txt"
 					],
 					"OR_1":{
 						"tags":[

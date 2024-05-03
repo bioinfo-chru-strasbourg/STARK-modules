@@ -12,7 +12,7 @@
 						"STARKCopyComplete.txt",
 						"!FILT3RRunning.txt",
 						"!FILT3RComplete.txt",
-						"!FFILT3RFailed.txt"
+						"!FILT3RFailed.txt"
 					],
 					"OR_1":{
 						"tags":[
