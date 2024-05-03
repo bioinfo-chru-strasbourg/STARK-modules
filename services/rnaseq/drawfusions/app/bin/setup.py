@@ -85,10 +85,6 @@ if not config:
 if os.path.exists(f"{services}/cli/SETUPComplete.txt"):
 	systemcall(f"rm {services}/cli/SETUPComplete.txt")
 
-### START #####
-if os.path.exists(f"{services}/cli/SETUPComplete.txt"):
-	systemcall(f"rm {services}/cli/SETUPComplete.txt")
-
 #######################
 # Copy config files (service.conf & service.json) and launcher.py from app/config to /config/module/servicename/listener/
 #######################

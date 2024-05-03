@@ -64,7 +64,9 @@ RESULT_EXT_LIST: ['.sf']
 REFGENOMEFA_PATH: "/databases/genomes/current/hg19.fa"
 ################## Salmon ##################
 # FASTP params
-FASTP_PARAMS: "--disable_quality_filtering --disable_trim_poly_g --disable_length_filtering --disable_adapter_trimming --trim_front1=5 --trim_tail1=5 --compression=1"
+FASTP_GLOBALS_PARAMS: "--disable_quality_filtering --disable_trim_poly_g --disable_length_filtering --disable_adapter_trimming"
+FASTP_COMPRESSION: 1
+FASTP_TRIM: "--trim_front2=5 --trim_tail2=5"
 
 # For Salmon quantification fastq mode, path to the index file
 REFSALMONQUANTFASTQ_PATH: "/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
