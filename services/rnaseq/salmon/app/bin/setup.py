@@ -60,16 +60,29 @@ date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 # DATABASE VARIABLES #
 ######################
 
-#DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') 
-DATABASES = "/STARK/databases"
-#serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') 
-serviceName = "salmon"
-#moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') 
-moduleName = "rnaseq"
-#services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
-#config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
-services = f"/STARK/services/{moduleName}/{serviceName}"
-config = f"/STARK/config/{moduleName}/{serviceName}"
+DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES')
+if not DATABASES:
+	print('No databases value found')
+
+serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') 
+if not serviceName:
+	print('No serviceName value found')
+
+moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') 
+if not moduleName:
+	print('No moduleName value found')
+
+services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
+if not services:
+	services = f"/services/{moduleName}/{serviceName}"
+
+config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
+if not config:
+	config = f"/config/{moduleName}/{serviceName}"
+
+### START #####
+if os.path.exists(f"{services}/cli/SETUPComplete.txt"):
+	systemcall(f"rm {services}/cli/SETUPComplete.txt")
 
 ### START #####
 if os.path.exists(f"{services}/cli/SETUPComplete.txt"):

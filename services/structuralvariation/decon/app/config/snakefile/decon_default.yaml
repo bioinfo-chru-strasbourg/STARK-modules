@@ -20,15 +20,13 @@
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "DECON"
 # Default repository/depository path from listener.py/launcher.py
-repository: "/STARK/output/repository"
-depository: "/STARK/output/depository"
+repository: "/output/repository"
+depository: "/output/depository"
 # Output directory if not repository
 OUTPUT_DIR: ""
 # Copy to depot directory (archive)
-DEPOT_COPY: True
-# Group and App default name
-GROUP_NAME: "UNKNOWN"
-APP_NAME: "UNKNOWN"
+DEPOSITORY_COPY: True
+
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 # Bed file
@@ -74,9 +72,9 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv']
 ############## Tools specific parameters ##############
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 # Default path to Refgene file containing custom exon numbers
-REFSEQGENE_PATH: "/STARK/databases/refGene/current/formated_refgene.tsv"
+REFSEQGENE_PATH: "/databases/refGene/current/formated_refgene.tsv"
 # Paths
 SCRIPTS_CONFIG: "/app/config/fileconversion"
 DUMMY_PATH: "/app/scripts/dummy"
@@ -125,4 +123,4 @@ transProb: 0.01 # Transition probability – the transition probability between 
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: split # split, full or both (defaut both)
-annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database 
+annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database 

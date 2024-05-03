@@ -1,16 +1,14 @@
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "CANOES"
 # Default repository/depository path from listener.py/launcher.py
-repository: "/STARK/output/repository"
-depository: "/STARK/output/depository"
+repository: "/output/repository"
+depository: "/output/depository"
 # Output directory if not repository
 OUTPUT_DIR: ""
 # Copy to depository directory
-DEPOT_COPY: True
+DEPOSITORY_COPY: True
 
-# Group and App default name
-GROUP_NAME: "UNKNOWN"
-APP_NAME: "UNKNOWN"
+
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 # Bed file
@@ -75,7 +73,7 @@ REMOVE_A: False
 
 ################## Misc params ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 # Java mem option for gatk4 GC extraction
 JAVA_OPTION: "-Xmx8G"
 
@@ -83,7 +81,7 @@ JAVA_OPTION: "-Xmx8G"
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: both # split, full or both (defaut both)
-annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database
+annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database
 ##################   Plots params   ##################
 # Generate plot coverage (warning if the number of rows is high (ie number of regions defined with the bed > 1 000)) it will generate a huge file
 plots: False

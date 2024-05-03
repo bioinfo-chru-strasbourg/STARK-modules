@@ -56,20 +56,28 @@ def installdatabase(destination, source, archive_name, logfile, errfile, tool=No
 ### INSTALL DATABASES ###
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-### INSTALL DATABASES ###
-#DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES') 
-DATABASES = "/STARK/databases"
-#serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') 
-serviceName = "canoes"
-#moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') 
-moduleName = "structuralvariation"
-#services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
-#config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
-services = f"/STARK/services/{moduleName}/{serviceName}"
-config = f"/STARK/config/{moduleName}/{serviceName}"
+### VARIABLES DATABASES ###
 
-#REFGENEFA = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES_REFGENOME')
-REFGENEFA = "/STARK/databases/genomes/current/hg19.fa"
+DATABASES = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES')
+if not DATABASES:
+	print('No databases value found')
+
+serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME') 
+if not serviceName:
+	print('No serviceName value found')
+
+moduleName = os.getenv('DOCKER_STARK_MODULE_NAME') 
+if not moduleName:
+	print('No moduleName value found')
+
+services = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
+if not services:
+	services = f"/services/{moduleName}/{serviceName}"
+
+config = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
+if not config:
+	config = f"/config/{moduleName}/{serviceName}"
+
 
 ### START #####
 if os.path.exists(f"{services}/cli/SETUPComplete.txt"):
@@ -190,12 +198,6 @@ if not os.path.exists(GENEHANCER_install_path) and os.path.exists(GENEHANCER_sou
 	os.makedirs(GENEHANCER_install_path, exist_ok = True)
 	systemcall(f"unzip -q {GENEHANCER_source} -d {GENEHANCER_install_path}")
 
-#############################
-# Indexing reference genome #
-#############################
-	# os.path.exists(f"{os.path.splitext(REFGENEFA)[0]}.ndb")
-if os.path.exists(REFGENEFA) and not os.path.exists(f"{(REFGENEFA)}.ndb"):
-	systemcall(f"makeblastdb -in {REFGENEFA} -dbtype nucl 1>> {logfile} 2>> {errfile}")
 
 #######################
 # Copy config files (service.conf & service.json) & launcher.py)

@@ -197,7 +197,7 @@ resultDir = f"/app/res/{runName}/{date_time}"
 outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
 directories = [resultDir, outputDir]
 
-if config['DEPOT_COPY']:
+if config['DEPOSITORY_COPY']:
 	try:
 		config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
 		config['APP_NAME'] = os.path.normpath(config['run']).split('/')[5]
@@ -700,8 +700,8 @@ onsuccess:
 	for sample in sample_list_to_copy:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 
-	# Optionally, perform DEPOT_COPY
-	if config['DEPOT_COPY']:
+	# Optionally, perform DEPOSITORY_COPY
+	if config['DEPOSITORY_COPY']:
 		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
 		for sample in sample_list_to_copy:
 			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")

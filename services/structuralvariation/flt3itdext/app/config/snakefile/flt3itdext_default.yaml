@@ -9,18 +9,16 @@
 serviceName: "FLT3ITDEXT"
 
 # Default repository/depository path from listener.py/launcher.py
-repository: "/STARK/output/repository"
-depository: "/STARK/output/depository"
+repository: "/output/repository"
+depository: "/output/depository"
 # Copy to depot directory (archive)
-DEPOT_COPY: False
+DEPOSITORY_COPY: False
 # Output directory (default is repository) ; if not NULL, it won't copy in repository
 OUTPUT_DIR: ""
 
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
-# Group and App default name
-GROUP_NAME: "UNKNOWN"
-APP_NAME: "UNKNOWN"
+
 # Bed file
 BED_FILE: ""
 # Genes file
@@ -56,9 +54,6 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-## DEBUG ##
-DEBUG_MODE: False
-
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
@@ -67,14 +62,14 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
 DUMMY_PATH: "/app/scripts/dummy"
-REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 # Script path
 SCRIPT_PATH: "/app/scripts"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/RAF>=0.01'"
 BCFTOOLS_FILTER: "-i 'INFO/RAF>=0.01'"
 ################## flt3_itd_ext ##################
-REF_ITD_PATH: "/STARK/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
+REF_ITD_PATH: "/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
 # Assembly (hg19/hg38)
 ASSEMBLY: "hg19"
 # Type of sequencing technology (HC = capture)
