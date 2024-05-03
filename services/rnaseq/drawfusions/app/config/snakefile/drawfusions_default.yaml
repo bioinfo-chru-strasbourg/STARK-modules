@@ -61,12 +61,10 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
 RESULT_EXT_LIST: ['.pdf']
-
 
 ############## Tools specific parameters ##############
 # List of tools used to generate fusion analysis
@@ -80,4 +78,3 @@ REFGTFGENCODE_PATH: "/databases/gencode/current/gencode.v19.annotation.gtf_withp
 REFPROTDOMAIN_PATH: "/databases/arriba/current/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
 REFCYTOBAND_PATH: "/databases/arriba/current/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
 ARRIBA_SCRIPTS: "app/config/scripts"
-
