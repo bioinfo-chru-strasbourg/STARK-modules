@@ -21,9 +21,9 @@
 serviceName: "DECON"
 
 # Output directory
-OUTPUT_DIR: "/output/repository"
+OUTPUT_DIR: "/STARK/output/repository"
 # If not empty will copy the results in this folder
-depository: "/output/depository"
+depository: "/STARK/output/depository"
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 
@@ -70,9 +70,9 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv']
 ############## Tools specific parameters ##############
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Default path to Refgene file containing custom exon numbers
-REFSEQGENE_PATH: "/databases/refGene/current/formated_refgene.tsv"
+REFSEQGENE_PATH: "/STARK/databases/refGene/current/formated_refgene.tsv"
 # Paths
 SCRIPTS_CONFIG: "/app/config/fileconversion"
 DUMMY_PATH: "/app/scripts/dummy"
@@ -121,4 +121,4 @@ transProb: 0.01 # Transition probability – the transition probability between 
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: split # split, full or both (defaut both)
-annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database 
+annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database 

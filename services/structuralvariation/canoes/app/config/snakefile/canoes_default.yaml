@@ -1,10 +1,10 @@
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "CANOES"
 
-# Output directory
-OUTPUT_DIR: "/output/repository"
-# If not empty will copy the results in this folder
-depository: "/output/depository"
+# Output directory (should be defined in the container if using docker)
+OUTPUT_DIR: "/STARK/output/repository"
+# If not empty will copy the results in this folder (should be defined in the container if using docker)
+depository: "/STARK/output/depository"
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 
@@ -70,7 +70,7 @@ REMOVE_A: False
 
 ################## Misc params ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Java mem option for gatk4 GC extraction
 JAVA_OPTION: "-Xmx8G"
 
@@ -78,7 +78,7 @@ JAVA_OPTION: "-Xmx8G"
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: both # split, full or both (defaut both)
-annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database
+annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database
 ##################   Plots params   ##################
 # Generate plot coverage (warning if the number of rows is high (ie number of regions defined with the bed > 1 000)) it will generate a huge file or crash
 plots: False

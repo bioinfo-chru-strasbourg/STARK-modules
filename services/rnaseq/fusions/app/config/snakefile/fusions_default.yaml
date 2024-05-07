@@ -16,9 +16,9 @@
 serviceName: "FUSIONS"
 
 # Output directory
-OUTPUT_DIR: "/output/repository"
+OUTPUT_DIR: "/STARK/output/repository"
 # If not empty will copy the results in this folder
-depository: "/output/depository"
+depository: "/STARK/output/depository"
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 
@@ -67,18 +67,18 @@ RESULT_EXT_LIST: ['.tsv','.bam','.vcf']
 
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENOMEFA_PATH: "/databases/genomes/current/hg19.fa"
+REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # GTF file (Gencode)
-REFGTFGENCODE_PATH: "/databases/gencode/current/gencode.v19.annotation.gtf_withproteinids"
+REFGTFGENCODE_PATH: "/STARK/databases/gencode/current/gencode.v19.annotation.gtf_withproteinids"
 ########## STAR ##########
 # STAR option to junction file
 JUNCTION_FILE: "Junctions WithinBAM"
-GENOME_PATH_INDEXED: "/databases/CTAT_LIB/current/ref_genome.fa.star.idx"
+GENOME_PATH_INDEXED: "/STARK/databases/CTAT_LIB/current/ref_genome.fa.star.idx"
 ########## ARRIBA ##########
 # Arriba specifics databases (default is /opt/conda/var/lib/arriba)
-REFPROTDOMAIN_PATH: "/databases/arriba/current/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
-REFCYTOBAND_PATH: "/databases/arriba/current/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
-BLACKLIST_PATH: "/databases/arriba/current/blacklist_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
-REFFUSION_PATH: "/databases/arriba/current/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
+REFPROTDOMAIN_PATH: "/STARK/databases/arriba/current/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
+REFCYTOBAND_PATH: "/STARK/databases/arriba/current/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
+BLACKLIST_PATH: "/STARK/databases/arriba/current/blacklist_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
+REFFUSION_PATH: "/STARK/databases/arriba/current/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
 ########## STAR FUSION ##########
-CTAT_LIB_GENCODE: "/databases/CTAT_LIB/current/"
+CTAT_LIB_GENCODE: "/STARK/databases/CTAT_LIB/current/"

@@ -17,13 +17,13 @@ services:
         environment:
             - DOCKER_STARK_MODULE_SUBMODULE_NAME=filt3r
             - DOCKER_STARK_MODULE_NAME=structuralvariation
-            - DOCKER_STARK_INNER_FOLDER_DATABASES=/databases
-            - DOCKER_STARK_INNER_FOLDER_SERVICES=/services
-            - DOCKER_STARK_INNER_FOLDER_CONFIG=/config
+            - DOCKER_STARK_INNER_FOLDER_DATABASES=/STARK/databases
+            - DOCKER_STARK_INNER_FOLDER_SERVICES=/STARK/services
+            - DOCKER_STARK_INNER_FOLDER_CONFIG=/STARK/config
         volumes:
-            - /home1/data/STARK/services/structuralvariation/filt3r:/services/structuralvariation/filt3r:rw
-            - /home1/data/STARK/config/structuralvariation/filt3r:/config/structuralvariation/filt3r:rw
-            - /home1/data/STARK/databases:/databases:rw
+            - /home1/data/STARK/services/structuralvariation/filt3r:/STARK/services/structuralvariation/filt3r:rw
+            - /home1/data/STARK/config/structuralvariation/filt3r:/STARK/config/structuralvariation/filt3r:rw
+            - /home1/data/STARK/databases:/STARK/databases:rw
         networks:
             - stark_stark
 
@@ -37,11 +37,11 @@ services:
         entrypoint: [ "/bin/bash", "-l", "-c" ]
         command: "'while true; do sleep 60; done'"
         volumes:
-            - /home1/data/STARK/output/repository:/output/repository:rw
-            - /home1/data/STARK/output/depository:/output/depository:rw
-            - /home1/data/STARK/services/structuralvariation/filt3r/cli:/services/structuralvariation/filt3r/cli:rw
-            - /home1/data/STARK/config/structuralvariation/filt3r/cli:/config/structuralvariation/filt3r/cli:ro
-            - /home1/data/STARK/databases:/databases:ro
+            - /home1/data/STARK/output/repository:/STARK/output/repository:rw
+            - /home1/data/STARK/output/depository:/STARK/output/depository:rw
+            - /home1/data/STARK/services/structuralvariation/filt3r/cli:/STARK/services/structuralvariation/filt3r/cli:rw
+            - /home1/data/STARK/config/structuralvariation/filt3r/cli:/STARK/config/structuralvariation/filt3r/cli:ro
+            - /home1/data/STARK/databases:/STARK/databases:ro
         networks:
             - stark_stark
         healthcheck:
@@ -50,7 +50,7 @@ services:
                     "CMD",
                     "test",
                     "-f",
-                    "/services/structuralvariation/filt3r/cli/SETUPComplete.txt"
+                    "/STARK/services/structuralvariation/filt3r/cli/SETUPComplete.txt"
                 ]
             timeout: 10s
             interval: 60s
@@ -60,15 +60,15 @@ services:
         image: stark/stark-module-common-submodule-listener-service-listener:2.0
         container_name: stark-module-structuralvariation-submodule-filt3r-service-listener
         entrypoint: "python3"
-        command: "/app/bin/listener.py --input=/output/repository --json=/config/structuralvariation/filt3r/listener/filt3r.json --config=/config/structuralvariation/filt3r/listener/filt3r.conf --servicename=FILT3R --containersfile=/services/structuralvariation/filt3r/listener --nbDaysBack=30 --minDelay=1"
+        command: "/app/bin/listener.py --input=/STARK/output/repository --json=/STARK/config/structuralvariation/filt3r/listener/filt3r.json --config=/STARK/config/structuralvariation/filt3r/listener/filt3r.conf --servicename=FILT3R --containersfile=/STARK/services/structuralvariation/filt3r/listener --nbDaysBack=30 --minDelay=1"
         restart: always
         environment:
-            - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/config/structuralvariation/filt3r
+            - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/STARK/config/structuralvariation/filt3r
         volumes:
-            - /home1/data/STARK/output/repository:/output/repository:ro
-            - /home1/data/STARK/output/depository:/output/depository:ro
-            - /home1/data/STARK/services/structuralvariation/filt3r:/services/structuralvariation/filt3r:rw
-            - /home1/data/STARK/config/structuralvariation/filt3r:/config/structuralvariation/filt3r:ro
+            - /home1/data/STARK/output/repository:/STARK/output/repository:ro
+            - /home1/data/STARK/output/depository:/STARK/output/depository:ro
+            - /home1/data/STARK/services/structuralvariation/filt3r:/STARK/services/structuralvariation/filt3r:rw
+            - /home1/data/STARK/config/structuralvariation/filt3r:/STARK/config/structuralvariation/filt3r:ro
             - /home1/data/STARK/config/structuralvariation/filt3r/listener/launcher.py:/app/bin/config/launcher.py:ro
             - /var/run/docker.sock:/var/run/docker.sock
         networks:

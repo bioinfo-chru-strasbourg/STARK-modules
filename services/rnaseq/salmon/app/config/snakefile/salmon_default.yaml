@@ -10,9 +10,9 @@
 serviceName: "SALMON"
 
 # Output directory
-OUTPUT_DIR: "/output/repository"
+OUTPUT_DIR: "/STARK/output/repository"
 # If not empty will copy the results in this folder
-depository: "/output/depository"
+depository: "/STARK/output/depository"
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 
@@ -58,7 +58,7 @@ RESULT_EXT_LIST: ['.sf']
 
 ################## Tools parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENOMEFA_PATH: "/databases/genomes/current/hg19.fa"
+REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 ################## Salmon ##################
 # FASTP params
 FASTP_GLOBALS_PARAMS: "--disable_quality_filtering --disable_trim_poly_g --disable_length_filtering --disable_adapter_trimming"
@@ -66,7 +66,7 @@ FASTP_COMPRESSION: 1
 FASTP_TRIM: "--trim_front2=5 --trim_tail2=5"
 
 # For Salmon quantification fastq mode, path to the index file
-REFSALMONQUANTFASTQ_PATH: "/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
+REFSALMONQUANTFASTQ_PATH: "/STARK/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
 # SE ou PE Reads
 SALMON_FASTQ_TYPE: "PE"  # won't work with SE for the moment
 MISC_SALMON_OPTIONS: ""
