@@ -8,14 +8,10 @@
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "FILT3R"
 
-# Default repository/depository path from listener.py/launcher.py
-repository: "/output/repository"
+# Output directory
+OUTPUT_DIR: "/output/repository"
+# If not empty will copy the results in this folder
 depository: "/output/depository"
-# Copy to depot directory (archive)
-DEPOSITORY_COPY: False
-# Output directory (default is repository) ; if not NULL, it won't copy in repository
-OUTPUT_DIR: ""
-
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 
@@ -57,7 +53,7 @@ SEARCH_ARGUMENT: "/*/STARK/*"
 
 # List of extensions to include in the report.html
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
-# Path of the template (template is template.html)
+# Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 
 ################## Tools parameters ##################

@@ -1,16 +1,13 @@
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "CANOES"
-# Default repository/depository path from listener.py/launcher.py
-repository: "/output/repository"
+
+# Output directory
+OUTPUT_DIR: "/output/repository"
+# If not empty will copy the results in this folder
 depository: "/output/depository"
-# Output directory if not repository
-OUTPUT_DIR: ""
-# Copy to depository directory
-DEPOSITORY_COPY: True
-
-
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
+
 # Bed file
 BED_FILE: ""
 # Genes file
@@ -58,7 +55,7 @@ pyscripts: "/app/scripts/python"
 # Path of the fileconversion json
 scriptsconfig: "/app/config/fileconversion/"
 
-# Path of the template (template is template.html)
+# Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv', 'gender', 'HPO']

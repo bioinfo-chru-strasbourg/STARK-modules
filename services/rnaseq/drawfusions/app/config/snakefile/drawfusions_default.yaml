@@ -15,17 +15,13 @@
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "DRAWFUSIONS"
 
-# Default repository/depository path from listener.py/launcher.py
-repository: "/output/repository"
+# Output directory
+OUTPUT_DIR: "/output/repository"
+# If not empty will copy the results in this folder
 depository: "/output/depository"
-# Output directory if not repository
-OUTPUT_DIR: ""
-# Copy to depot directory (archive)
-DEPOSITORY_COPY: False
-
-
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
+
 # Bed file
 BED_FILE: ""
 # Genes file

@@ -8,14 +8,10 @@
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "FLT3ITDEXT"
 
-# Default repository/depository path from listener.py/launcher.py
-repository: "/output/repository"
+# Output directory
+OUTPUT_DIR: "/output/repository"
+# If not empty will copy the results in this folder
 depository: "/output/depository"
-# Copy to depot directory (archive)
-DEPOSITORY_COPY: False
-# Output directory (default is repository) ; if not NULL, it won't copy in repository
-OUTPUT_DIR: ""
-
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 

@@ -171,7 +171,7 @@ resultDir = f"/app/res/{runName}/{date_time}"
 outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
 directories = [resultDir, outputDir]
 
-if config['DEPOSITORY_COPY']:
+if config['depository']:
 	try:
 		config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
 		config['APP_NAME'] = os.path.normpath(config['run']).split('/')[5]
@@ -258,6 +258,16 @@ rule help:
 	Input file = fastq PE (SE don't work for now)
 	Output file = quant.sf files
 	"""
+
+
+#rule bcl2fastq:
+#input:
+#output:
+#params:
+#	shell:
+#		"""
+#		bcl2fastq --runfolder-dir {input.folder} --output-dir {output.folder} --sample-sheet {params.samplesheet}--barcode-mismatches 1 --fastq-compression-level 1 -r 1 -p 1 -w 6 --no-lane-splitting
+#		"""
 
 rule copy_fastq:
 	""" Copy input files """
@@ -396,8 +406,8 @@ onsuccess:
 	for sample in sample_list:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 
-	# Optionally, perform DEPOSITORY_COPY
-	if config['DEPOSITORY_COPY']:
+	# Optionally, perform depository cp
+	if config['depository']:
 		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
 		for sample in sample_list:
 			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
