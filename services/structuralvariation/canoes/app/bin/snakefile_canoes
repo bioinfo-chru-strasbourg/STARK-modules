@@ -187,6 +187,43 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, templ
 
 	print(f"HTML report generated successfully: {output_file}")
 
+def pedigree_into_dict(ped_file, sample_list, dictionary, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex'):
+	"""
+	Add dictionary based on data from a pedigree file.
+
+	Parameters:
+		ped_file (str): Path to the ped file.
+		sample_list (list): List of sample IDs to filter.
+		dictionary (dict): Dictionary to update with HPO and sex information.
+		individual_id_column (str): Column name for individual IDs.
+		hpo_list_column (str): Column name for HPO lists.
+		sex_column (str): Column name for sex information.
+
+	Returns:
+		None
+	"""
+	df = pd.read_csv(ped_file, sep='\t', dtype=str)
+	for index, row in df.iterrows():
+		individual_id = row[individual_id_column]
+		hpo_list = row[hpo_list_column]
+		gender = row[sex_column]
+
+		if isinstance(hpo_list, float):
+			hpo_list = str(hpo_list)
+		hpo_list = hpo_list.replace(" ", "")
+
+		# Convert Sex to M/F/None
+		if gender == '1':
+			gender = 'M'
+		elif gender == '2':
+			gender = 'F'
+		else:
+			gender = None
+
+		if individual_id in sample_list:
+			dictionary.setdefault(individual_id, {})['hpo'] = hpo_list
+			dictionary.setdefault(individual_id, {})['gender'] = gender
+
 ### END OF FUNCTIONS ###
 
 # Definition of paths and name files
@@ -265,13 +302,27 @@ else:
 sample_list_to_copy = [x for x in sample_list if x not in sample_list_addruns]
 
 # Set a filelist with all the files tag ; file format is sample.tag
-tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
-
+#tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
 # Extract the tags from the list
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
-for tagfile in tagfile_list:
-	for sample in sample_list:
-		runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
+#for tagfile in tagfile_list:
+#	for sample in sample_list:
+#		runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
+
+# Set a filelist with all the files tag ; file format is sample.tag
+# tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
+ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
+if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
+	for individual_id in runDict:
+		runDict[individual_id]['hpo'] = None
+	pedigree_into_dict(ped_file, sample_list, runDict, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex')
+else:
+	tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]:
+	for tagfile in tagfile_list:
+		for sample in sample_list:
+			runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
+	else:
+		print('[INFO] No gender found for the samples')
 
 # Extract the gender_list from dictionary with the key gender
 gender_list = ['A'] + ['XX' if runDict[sample]['gender'] == 'F' else 'XY' for sample in sample_list if sample in runDict and 'gender' in runDict[sample]]
@@ -299,7 +350,7 @@ config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, co
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
 panel_list = []
-panel_list_trunc = []
+#panel_list_trunc = []
 if config['LIST_GENES']:
 	with open(config['LIST_GENES']) as f:
 		panel_list = f.read().splitlines()

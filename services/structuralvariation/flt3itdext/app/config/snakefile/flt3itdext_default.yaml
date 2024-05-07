@@ -9,9 +9,9 @@
 serviceName: "FLT3ITDEXT"
 
 # Output directory
-OUTPUT_DIR: "/output/repository"
+OUTPUT_DIR: "/STARK/output/repository"
 # If not empty will copy the results in this folder
-depository: "/output/depository"
+depository: "/STARK/output/depository"
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 
@@ -58,14 +58,14 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
 DUMMY_PATH: "/app/scripts/dummy"
-REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Script path
 SCRIPT_PATH: "/app/scripts"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/RAF>=0.01'"
 BCFTOOLS_FILTER: "-i 'INFO/RAF>=0.01'"
 ################## flt3_itd_ext ##################
-REF_ITD_PATH: "/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
+REF_ITD_PATH: "/STARK/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
 # Assembly (hg19/hg38)
 ASSEMBLY: "hg19"
 # Type of sequencing technology (HC = capture)

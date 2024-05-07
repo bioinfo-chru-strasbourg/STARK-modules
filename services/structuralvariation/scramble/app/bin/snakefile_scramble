@@ -135,6 +135,11 @@ def extractlistfromfiles(file_list, ext_list, sep, position):
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
+def extract_tag(tagfile, tag, tagsep, sep):
+	""" Function to extract a tag """
+	row = open(tagfile, 'r').readline().strip().split(tagsep)
+	output_tag = next((items.split(sep)[-1] for items in row if tag in items and sep in items), "")
+	return output_tag
 
 def generate_html_report(result_dict, run_name, service_name, sample_list, template_name, output_file='report.html'):
 	# Set up Jinja2 environment
@@ -154,6 +159,43 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, templ
 		f.write(rendered_html)
 
 	print(f"HTML report generated successfully: {output_file}")
+
+def pedigree_into_dict(ped_file, sample_list, dictionary, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex'):
+	"""
+	Add dictionary based on data from a pedigree file.
+
+	Parameters:
+		ped_file (str): Path to the ped file.
+		sample_list (list): List of sample IDs to filter.
+		dictionary (dict): Dictionary to update with HPO and sex information.
+		individual_id_column (str): Column name for individual IDs.
+		hpo_list_column (str): Column name for HPO lists.
+		sex_column (str): Column name for sex information.
+
+	Returns:
+		None
+	"""
+	df = pd.read_csv(ped_file, sep='\t', dtype=str)
+	for index, row in df.iterrows():
+		individual_id = row[individual_id_column]
+		hpo_list = row[hpo_list_column]
+		gender = row[sex_column]
+
+		if isinstance(hpo_list, float):
+			hpo_list = str(hpo_list)
+		hpo_list = hpo_list.replace(" ", "")
+
+		# Convert Sex to M/F/None
+		if gender == '1':
+			gender = 'M'
+		elif gender == '2':
+			gender = 'F'
+		else:
+			gender = None
+
+		if individual_id in sample_list:
+			dictionary.setdefault(individual_id, {})['hpo'] = hpo_list
+			dictionary.setdefault(individual_id, {})['gender'] = gender
 
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
@@ -222,7 +264,7 @@ else:
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
 panel_list = []
-panel_list_trunc = []
+#panel_list_trunc = []
 if config['LIST_GENES']:
 	with open(config['LIST_GENES']) as f:
 		panel_list = f.read().splitlines()
@@ -236,27 +278,22 @@ for panel in panel_list:
 	outputfile = f"{resultDir}/{panel_trunc}"
 	copy2(inputfile, outputfile)
 	# Create a new list for expand, names are filenames without sample and .genes.bed ext
-	panel_list_trunc.append(panel_trunc)
+	panel_list_trunc = [panel_trunc]
 
-# Process .ped files 
+# Set a filelist with all the files tag ; file format is sample.tag
+# tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
-# Add 'hpo' key with None value for all individuals
-for individual_id in runDict:
-	runDict[individual_id]['hpo'] = None
-
 if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
-	df = pd.read_csv(ped_file, sep='\t', dtype=str)
-	# Iterate over rows and update runDict
-	for index, row in df.iterrows():
-		individual_id = row['Individual ID']
-		hpo_list = row['HPOList']
-
-		if isinstance(hpo_list, float):
-			hpo_list = str(hpo_list)
-		hpo_list = hpo_list.replace(" ", "")
-
-		if individual_id in sample_list:
-			runDict[individual_id]['hpo'] = hpo_list
+	for individual_id in runDict:
+		runDict[individual_id]['hpo'] = None
+	pedigree_into_dict(ped_file, sample_list, runDict, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex')
+else:
+	tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]:
+	for tagfile in tagfile_list:
+		for sample in sample_list:
+			runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
+	else:
+		print('[INFO] No gender found for the samples')
 
 log_items = [
 	('Start of the analysis:', date_time),
@@ -274,6 +311,7 @@ for item in log_items:
 	log_file(logfile, item[0], "\n", items_list=item[1] if isinstance(item[1], list) else None, items=item[1] if not isinstance(item[1], list) else None)
 
 print(dict(runDict))
+
 
 ################################################## RULES ##################################################
 

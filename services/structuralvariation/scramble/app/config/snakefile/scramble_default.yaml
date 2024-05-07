@@ -16,9 +16,9 @@
 serviceName: "SCRAMBLE"
 
 # Output directory
-OUTPUT_DIR: "/output/repository"
+OUTPUT_DIR: "/STARK/output/repository"
 # If not empty will copy the results in this folder
-depository: "/output/depository"
+depository: "/STARK/output/depository"
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 
@@ -68,7 +68,7 @@ SCRIPTS_PATH: "/app/scripts"
 BCFTOOLS_FILTER: "-e 'SVLEN>=1000'"
 ################## Tools specific parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Path to Scramble R directory scripts
 SCRAMBLE_PATH: "/opt/conda/share/scramble/bin"
 DUMMY_PATH: "/app/scripts/dummy"
@@ -92,4 +92,4 @@ REFMEI_PATH: "/opt/conda/share/scramble/resources/MEI_consensus_seqs.fa"
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: full # split, full or both (defaut both)
-annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database
+annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database
