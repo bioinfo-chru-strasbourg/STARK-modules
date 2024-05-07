@@ -9,13 +9,10 @@
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "SALMON"
 
-# Default repository/depository path from listener.py/launcher.py
-repository: "/output/repository"
+# Output directory
+OUTPUT_DIR: "/output/repository"
+# If not empty will copy the results in this folder
 depository: "/output/depository"
-# Copy to depot directory (archive)
-DEPOSITORY_COPY: False
-# Output directory if not repository
-OUTPUT_DIR: ""
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 
@@ -54,7 +51,7 @@ INCLUDE_LOG_RSYNC: "{'*Failed.txt','*.log','*.err'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "*/*"
 
-# Path of the template (template is template.html)
+# Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
 RESULT_EXT_LIST: ['.sf']

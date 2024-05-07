@@ -15,16 +15,13 @@
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "SCRAMBLE"
 
-# Default repository/depository path for STARK directories structure
-repository: "/output/repository"
+# Output directory
+OUTPUT_DIR: "/output/repository"
+# If not empty will copy the results in this folder
 depository: "/output/depository"
-# Output directory if not repository
-OUTPUT_DIR: ""
-# Copy to depository directory (archive)
-DEPOSITORY_COPY: True
-
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
+
 # Bed file
 BED_FILE: ""
 # Genes file
@@ -34,8 +31,6 @@ TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
 
-# Path to scripts
-SCRIPTS_PATH: "/app/scripts"
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
 # Sample filter, only those samples will be analysed
@@ -62,11 +57,12 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
 
-# Path of the template (template is template.html)
+# Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf']
-
+# Path to scripts
+SCRIPTS_PATH: "/app/scripts"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/VAF>=0.01'" or "-e 'SVLEN>=1000'"
 BCFTOOLS_FILTER: "-e 'SVLEN>=1000'"
