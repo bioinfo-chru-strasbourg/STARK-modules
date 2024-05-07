@@ -282,13 +282,13 @@ for panel in panel_list:
 
 # Set a filelist with all the files tag ; file format is sample.tag
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
+for individual_id in runDict:
+	runDict[individual_id]['hpo'] = None
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
 if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
-	for individual_id in runDict:
-		runDict[individual_id]['hpo'] = None
 	pedigree_into_dict(ped_file, sample_list, runDict, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex')
 else:
-	tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]:
+	tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
 	for tagfile in tagfile_list:
 		for sample in sample_list:
 			runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')

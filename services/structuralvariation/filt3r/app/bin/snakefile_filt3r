@@ -202,34 +202,6 @@ config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, co
 config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
 # Find transcripts files (NM)
 config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
-# If transcript file exist, create the annotation file for AnnotSV
-annotation_file = f"{resultDir}/{serviceName}.{date_time}.AnnotSV.txt"
-if os.path.exists(config['TRANSCRIPTS_FILE']) and os.path.getsize(config['TRANSCRIPTS_FILE']):
-	df = pd.read_csv(config['TRANSCRIPTS_FILE'], sep='\t', names=["NM", "Gene"])
-	with open(annotation_file, 'w+') as f:
-		f.write('\t'.join(df['NM']))
-else:
-	with open(annotation_file, 'w') as f:
-		f.write("No NM found")
-
-# Transform list_genes into a list if list_genes exist, else use genes_file if exist
-panel_list = []
-panel_list_trunc = []
-if config['LIST_GENES']:
-	with open(config['LIST_GENES']) as f:
-		panel_list = f.read().splitlines()
-elif config['GENES_FILE'] and not config['LIST_GENES']:
-	panel_list.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
-# cp files from panel_list to resultDir and rename them
-for panel in panel_list:
-	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{panel}.bed"# panel_list don't have the bed extension, need that for the copy
-	# cut sample. and .genes from file name so files will have the same name as the truncated name list
-	panel_trunc = panel.split(".", 1)[1].split(".genes",1)[0]
-	outputfile = f"{resultDir}/{panel_trunc}"
-	copy2(inputfile, outputfile)
-	# Create a new list for expand, names are filenames without sample and .genes.bed ext
-	panel_list_trunc.append(panel_trunc)
-
 
 log_items = [
 	('Start of the analysis:', date_time),

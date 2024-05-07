@@ -314,22 +314,14 @@ runDict = defaultdict(dict)
 populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
 
 # Set a filelist with all the files tag ; file format is sample.tag
-#tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
-# Extract the tags from the list
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
-#for tagfile in tagfile_list:
-#	for sample in sample_list:
-#		runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
-
-# Set a filelist with all the files tag ; file format is sample.tag
-# tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
+for individual_id in runDict:
+	runDict[individual_id]['hpo'] = None
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
 if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
-	for individual_id in runDict:
-		runDict[individual_id]['hpo'] = None
 	pedigree_into_dict(ped_file, sample_list, runDict, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex')
 else:
-	tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]:
+	tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
 	for tagfile in tagfile_list:
 		for sample in sample_list:
 			runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
@@ -362,7 +354,6 @@ config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, co
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
 panel_list = []
-#panel_list_trunc = []
 if config['LIST_GENES']:
 	with open(config['LIST_GENES']) as f:
 		panel_list = f.read().splitlines()
@@ -376,7 +367,7 @@ for panel in panel_list:
 	outputfile = f"{resultDir}/{panel_trunc}"
 	copy2(inputfile, outputfile)
 	# Create a new list for expand, names are filenames without sample and .genes.bed ext
-	panel_list_trunc.append(panel_trunc)
+	panel_list_trunc = [panel_trunc]
 
 ### DECON bed ###
 # DECON need a 4 columns bed for the ReadInBams rule, if bed is not set correctly ReadInBams will crash
