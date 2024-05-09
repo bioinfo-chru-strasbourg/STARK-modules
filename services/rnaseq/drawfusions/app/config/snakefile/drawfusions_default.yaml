@@ -14,7 +14,8 @@
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "DRAWFUSIONS"
-
+# Specify a DATE_TIME value (for rerun)
+DATE_TIME: ""
 # Output directory
 OUTPUT_DIR: "/STARK/output/repository"
 # If not empty will copy the results in this folder

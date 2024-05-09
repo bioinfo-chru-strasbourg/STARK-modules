@@ -8,7 +8,8 @@
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "SALMON"
-
+# Specify a DATE_TIME value (for rerun)
+DATE_TIME: ""
 # Output directory
 OUTPUT_DIR: "/STARK/output/repository"
 # If not empty will copy the results in this folder
@@ -55,6 +56,9 @@ SEARCH_ARGUMENT: "*/*"
 TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
 RESULT_EXT_LIST: ['.sf']
+
+# Setup threads for salmon (workflow.cores or a integer)
+THREADS: 4
 
 ################## Tools parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)

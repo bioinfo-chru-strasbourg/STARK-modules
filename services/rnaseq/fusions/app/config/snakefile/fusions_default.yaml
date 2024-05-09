@@ -14,7 +14,8 @@
 ################## Directories and variables ##################
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "FUSIONS"
-
+# Specify a DATE_TIME value (for rerun)
+DATE_TIME: ""
 # Output directory
 OUTPUT_DIR: "/STARK/output/repository"
 # If not empty will copy the results in this folder
@@ -53,7 +54,6 @@ INCLUDE_RSYNC: "{'*arriba.tsv','*STAR.bam','*arriba.vcf','*starfusion.tsv','*sta
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
-
 ##### Search parameters of input for the search function #####
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: "/*/STARK/*"
@@ -64,8 +64,6 @@ TEMPLATE_DIR: "/app/template"
 RESULT_EXT_LIST: ['.tsv','.bam','.vcf']
 
 ############## Tools specific parameters ##############
-
-### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # GTF file (Gencode)

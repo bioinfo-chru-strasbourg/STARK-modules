@@ -1,6 +1,7 @@
 # Name of the module = {serviceName} from listener.py/launcher.py
 serviceName: "CANOES"
-
+# Specify a DATE_TIME value (for rerun)
+DATE_TIME: ""
 # Output directory (should be defined in the container if using docker)
 OUTPUT_DIR: "/STARK/output/repository"
 # If not empty will copy the results in this folder (should be defined in the container if using docker)
