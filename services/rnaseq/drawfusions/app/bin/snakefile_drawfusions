@@ -155,7 +155,7 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, templ
 
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
-date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 runName = os.path.basename(os.path.normpath(config['run']))
 resultDir = f"/app/res/{runName}/{date_time}"
 outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']

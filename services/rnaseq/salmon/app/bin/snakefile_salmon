@@ -166,7 +166,7 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, templ
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
 runName = os.path.basename(os.path.normpath(config['run']))
-date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 resultDir = f"/app/res/{runName}/{date_time}"
 outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
 directories = [resultDir, outputDir]
@@ -353,7 +353,7 @@ rule salmon:
 	output:
 		f"{resultDir}/tmp/{{sample}}.salmon.quant/quant.sf"
 	params:
-		threads = workflow.cores,
+		threads = config['THREADS'],
 		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
 		fastq_type = config['SALMON_FASTQ_TYPE'],
 		misc_options = config['MISC_SALMON_OPTIONS'],
