@@ -19,7 +19,7 @@ def annotate(run_informations):
         "HGMD",
         "current",
         "hg19",
-        "HGMD_Pro_2023.4_hg19.clean2.vcf.gz",
+        "HGMD.vcf.gz",
     )
 
     for vcf_file in analysis_folder_vcf_files:
