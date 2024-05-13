@@ -240,7 +240,7 @@ rule all:
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf.gz",sample=sample_list),
 		f"{resultDir}/{serviceName}.{date_time}.allsamples.arriba.tsv",
 		f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.tsv",
-		f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam.bai
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam.bai",sample=sample_list)
 
 rule help:
 	"""
