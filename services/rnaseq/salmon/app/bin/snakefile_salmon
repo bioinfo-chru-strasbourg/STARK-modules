@@ -375,7 +375,7 @@ rule rename:
 	output: f"{resultDir}/{{sample}}/{{sample}}.quant.sf"
 	shell:
 		"""
-		mv {input} {output} ; rm -rf {resultDir}/tmp/
+		mv {input} {output}
 		"""
 
 
@@ -424,6 +424,7 @@ onsuccess:
 	# Generate html report (need to add the run results)
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}_template.html" , f"{outputDir}/{serviceName}_{date_time}_report.html")
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '_style.css', outputDir)
+	shell("rm -rf {resultDir}/tmp/")
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
