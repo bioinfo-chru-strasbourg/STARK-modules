@@ -40,7 +40,7 @@ RUN conda install -c intel tcl
 RUN conda create -n common python=3.12
 
 # Java
-RUN yum -y install java-11-openjdk
+RUN yum -y --disablerepo=extras install java-11-openjdk
 
 # VaRank
 RUN mkdir /tools; \
