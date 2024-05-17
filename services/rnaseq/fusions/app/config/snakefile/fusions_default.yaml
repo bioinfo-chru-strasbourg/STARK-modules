@@ -50,7 +50,7 @@ FILTER_SAMPLE: []
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*arriba.tsv','*STAR.bam','*arriba.vcf','*starfusion.tsv','*starfusion.vcf','*/'}"
+INCLUDE_RSYNC: "{'*arriba.tsv','*STAR.bam','*arriba.vcf.gz','*starfusion.tsv','*starfusion.vcf.gz','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
@@ -61,7 +61,7 @@ SEARCH_ARGUMENT: "/*/STARK/*"
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
-RESULT_EXT_LIST: ['.tsv','.bam','.vcf']
+RESULT_EXT_LIST: ['.tsv','.bam','.vcf.gz']
 
 ############## Tools specific parameters ##############
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
