@@ -64,7 +64,7 @@ services:
         command: "/app/bin/listener.py --input=/STARK/output/repository --json=/STARK/config/rnaseq/salmon/listener/salmon.json --config=/STARK/config/rnaseq/salmon/listener/salmon.conf --servicename=SALMON --containersfile=/STARK/services/rnaseq/salmon/listener --nbDaysBack=30 --minDelay=1"
         restart: always
         environment:
-            - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/config/rnaseq/salmon
+            - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/STARK/config/rnaseq/salmon
         volumes:
             - /home1/data/STARK/output/repository:/STARK/output/repository:ro
             - /home1/data/STARK/output/depository:/STARK/output/depository:ro
