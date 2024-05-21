@@ -238,7 +238,7 @@ for item in log_items:
 
 
 ################################################## RULES ##################################################
-ruleorder: copy_fastq > cramtobam > copy_bam > samtools_fastq 
+ruleorder: copy_fastq > cramtobam > copy_bam > samtools_fastq > fastp
 
 rule all:
 	input:
@@ -331,8 +331,8 @@ rule samtools_fastq:
 # https://github.com/OpenGene/fastp
 rule fastp:
 	input:
-		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
+		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz",
+		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz"
 	output:
 		fastqR1=temp(f"{resultDir}/{{sample}}.fastp.R1.fastq.gz"),
 		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz")
@@ -343,13 +343,13 @@ rule fastp:
 	threads: workflow.cores
 	shell:	
 		"""
-		fastp --thread={threads} {params.miscs} --compression={params.compression} --html={sample}.QC.html --report_title={sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
+		fastp --thread={threads} {params.miscs} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
 		"""
 
 rule salmon:
 	input:
-		fastqR1=f"{resultDir}/{{sample}}.fastp.R1.fastq.gz",
-		fastqR2=f"{resultDir}/{{sample}}.fastp.R2.fastq.gz"
+		fastqR1=rules.fastp.output.fastqR1,
+		fastqR2=rules.fastp.output.fastqR2
 	output:
 		f"{resultDir}/tmp/{{sample}}.salmon.quant/quant.sf"
 	params:
@@ -400,6 +400,7 @@ onsuccess:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 	
 	# Copy results to the main output directory
+	shell(f"rm -f {resultDir}/tmp")
 	shell("rsync -azvh --include={include} --exclude='*'  {resultDir}/ {outputDir}")
 
 	# Copy individual sample results to their respective directories
