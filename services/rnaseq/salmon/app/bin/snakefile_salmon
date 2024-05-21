@@ -288,24 +288,6 @@ rule copy_fastq:
 		fi
 		"""
 
-# https://github.com/OpenGene/fastp
-rule fastp:
-	input:
-		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
-	output:
-		fastqR1=temp(f"{resultDir}/{{sample}}.fastp.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz")
-	params:
-		global = config['FASTP_GLOBALS_PARAMS'],
-		compression = config['FASTP_COMPRESSION'],
-		trim = config['FASTP_TRIM']
-	threads: workflow.cores
-	shell:	
-		"""
-		fastp --thread={threads} {params.global} --compression={params.compression} --html={sample}.QC.html --report_title={sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
-		"""
-
 rule copy_bam:
 	output: temp(f"{resultDir}/{{sample}}.bam")
 	params:
@@ -346,10 +328,28 @@ rule samtools_fastq:
 	shell: "samtools fastq -1 {output.fastqR1} -2 {output.fastqR2} {input}"
 
 
+# https://github.com/OpenGene/fastp
+rule fastp:
+	input:
+		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
+		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
+	output:
+		fastqR1=temp(f"{resultDir}/{{sample}}.fastp.R1.fastq.gz"),
+		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz")
+	params:
+		miscs = config['FASTP_GLOBALS_PARAMS'],
+		compression = config['FASTP_COMPRESSION'],
+		trim = config['FASTP_TRIM']
+	threads: workflow.cores
+	shell:	
+		"""
+		fastp --thread={threads} {params.miscs} --compression={params.compression} --html={sample}.QC.html --report_title={sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
+		"""
+
 rule salmon:
 	input:
-		fastqR1=f"{resultDir}/{{sample}}.R1.fastp.fastq.gz",
-		fastqR2=f"{resultDir}/{{sample}}.R2.fastp.fastq.gz"
+		fastqR1=f"{resultDir}/{{sample}}.fastp.R1.fastq.gz",
+		fastqR2=f"{resultDir}/{{sample}}.fastp.R2.fastq.gz"
 	output:
 		f"{resultDir}/tmp/{{sample}}.salmon.quant/quant.sf"
 	params:
