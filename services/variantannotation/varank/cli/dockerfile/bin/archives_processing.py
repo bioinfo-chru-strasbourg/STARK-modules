@@ -281,6 +281,20 @@ def cleaner(run_informations):
     )
     log.info(f"Copied new VaRank.log")
 
+    if os.path.isfile(osj(run_informations["run_processing_folder"], "VCF_Coordinates_Conversion.tsv")):
+        os.remove(osj(run_informations["run_processing_folder"], "VCF_Coordinates_Conversion.tsv"))
+        log.info(f"Removed old VCF_Coordinates_Conversion.tsv")
+
+    subprocess.run(
+        [
+            "rsync",
+            "-rp",
+            osj(run_informations["analysis_folder"], "VCF_Coordinates_Conversion.tsv"),
+            run_informations["run_processing_folder"],
+        ]
+    )
+    log.info(f"Copied new VCF_Coordinates_Conversion.tsvg")
+
     with open(
         osj(run_informations["run_processing_folder_tsv"], "TSVCopyComplete.txt"),
         mode="a",
