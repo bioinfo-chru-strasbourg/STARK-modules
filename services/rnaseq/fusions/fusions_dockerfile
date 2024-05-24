@@ -32,7 +32,7 @@ RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set G
 # star-fusion 1.13.0 uses STAR aligner 2.7.11a
 # To activate the environnement use mamba activate starfusion
 # To deactivate use mamba deactivate
-RUN mamba create -n starfusion -y -c conda-forge -c bioconda -c biobuilds star-fusion~=1.13.0
+RUN mamba create -n starfusion -y -c conda-forge -c bioconda -c biobuilds star-fusion~=1.13.0 && mamba clean -afy
 
 # Copy applications files (/app)
 COPY ./app /app
