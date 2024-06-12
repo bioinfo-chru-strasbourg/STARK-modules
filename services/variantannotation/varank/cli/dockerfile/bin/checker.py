@@ -183,7 +183,7 @@ def depository_checker(run_informations):
 
 def pattern_checker(run_informations):
     run_repository = run_informations["run_repository"]
-    pattern = run_informations["run_pattern"]
+    pattern = run_informations["vcf_pattern"]
 
     for element in pattern:
         vcf_files = glob.glob(osj(run_repository, element))
@@ -457,7 +457,7 @@ def configfile(run_informations):
 
 def logfile(run_informations):
     varank_error = True
-    logfile = osj(run_informations["run_processing_folder"], "VaRank.log")
+    logfile = osj(run_informations["archives_project_folder"], "VaRank.log")
 
     with open(logfile, "r") as read_file:
         for line in read_file.readlines():

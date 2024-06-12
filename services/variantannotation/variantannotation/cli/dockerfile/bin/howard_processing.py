@@ -9,134 +9,148 @@ import json
 import multiprocessing
 
 
-def root_vcf_initialisation(run_informations):
-    other_vcfs = glob.glob(
-        osj(run_informations["run_processing_folder"], "*.final.vcf*")
-    ) + glob.glob(osj(run_informations["run_processing_folder"], "*", "*.final.vcf*"))
+def folder_initialisation(run_informations):
+    input_files = glob.glob(
+        osj(run_informations["archives_project_folder"], "*.final.vcf*")
+    ) + glob.glob(osj(run_informations["archives_project_folder"], "*", "*.final.vcf*"))
 
-    if len(other_vcfs) != 0:
+    if len(input_files) != 0:
         if not os.path.isdir(
-            osj(run_informations["run_processing_folder"], "VCF", "DEFAULT")
+            osj(run_informations["archives_project_folder"], "VCF", "DEFAULT")
         ):
             os.makedirs(
-                osj(run_informations["run_processing_folder"], "VCF", "DEFAULT", ""),
+                osj(run_informations["archives_project_folder"], "VCF", "DEFAULT", ""),
                 0o775,
             )
         archives_default_vcf_folder = osj(
-            run_informations["run_processing_folder"], "VCF", "DEFAULT", ""
+            run_informations["archives_project_folder"], "VCF", "DEFAULT", ""
         )
 
-        for archives_other_processing_vcf_files in other_vcfs:
+        for input_file in input_files:
             subprocess.run(
                 [
                     "rsync",
                     "-rp",
-                    archives_other_processing_vcf_files,
+                    input_file,
                     archives_default_vcf_folder,
                 ]
             )
-            os.remove(archives_other_processing_vcf_files)
+            os.remove(input_file)
 
-    vcf_files = glob.glob(
-        osj(run_informations["run_processing_folder"], "VCF", "*", "*.final.vcf*")
+    vcf_file_list = glob.glob(
+        osj(run_informations["archives_project_folder"], "VCF", "*", "*.final.vcf*")
     )
 
-    tmp_folders = glob.glob("/tmp_*")
-    for tmp_folder in tmp_folders:
-        shutil.rmtree(tmp_folder)
+    if os.path.isdir(run_informations["tmp_analysis_folder"]):
+        log.error(f"{run_informations["tmp_analysis_folder"]} already existing, be careful that the analysis is not already running")
+        raise ValueError(run_informations["tmp_analysis_folder"])
+    else:
+        os.mkdir(run_informations["tmp_analysis_folder"])
 
-    os.mkdir(run_informations["analysis_folder"])
-
-    for vcf_file in vcf_files:
+    for processed_vcf_file in vcf_file_list:
         subprocess.run(
             [
                 "rsync",
                 "-rp",
-                vcf_file,
-                run_informations["analysis_folder"],
+                processed_vcf_file,
+                run_informations["tmp_analysis_folder"],
             ]
         )
 
-
-def initialisation(run_informations):
-    archives_vcf_files = glob.glob(
-        osj(run_informations["run_processing_folder"], "VCF", "*", "*.final.vcf*")
-    )
-    deleted_samples_file = osj(
-        os.environ[
-            "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARIANTANNOTATION_FOLDER_CONFIG"
-        ],
-        "variantannotation",
-        "variantannotation",
-        "configfiles",
-        "deleted_samples_config.tsv",
-    )
-
-    with open(deleted_samples_file, "r") as read_file:
-        next(read_file)
-        for line in read_file.readlines():
-            line = line.split("\t")
-            if line[4] == os.path.basename(run_informations["run_processing_folder"]):
-                vcf_file_to_delete = osj(
-                    run_informations["run_processing_folder"], "VCF", line[1], line[0]
-                )
-                if os.path.isfile(vcf_file_to_delete):
-                    os.remove(vcf_file_to_delete)
-
-    if len(archives_vcf_files) != 0:
-        archives_vcf_files = sorted(archives_vcf_files)
-        vcf_file_list = glob.glob(
-            osj(run_informations["run_processing_folder_vcf_run"], "*.final.vcf*")
-        )
-        for processed_vcf_file in vcf_file_list:
-            subprocess.run(
-                [
-                    "rsync",
-                    "-rp",
-                    processed_vcf_file,
-                    run_informations["analysis_folder"],
-                ]
-            )
-
-    if os.path.isdir(run_informations["run_processing_folder"]):
-        log.info(f"Cleaning old files in {run_informations['run_processing_folder']}")
-        with open(
-            osj(run_informations["run_processing_folder"], "RESULTSDeleting.txt"),
-            mode="a",
-        ):
-            pass
-        # for results_file in glob.glob(
-        #     osj(run_informations["run_processing_folder"], "*")
-        # ):
-        #     os.remove(results_file)
-        os.remove(osj(run_informations["run_processing_folder"], "RESULTSDeleting.txt"))
-    else:
-        os.mkdir(run_informations["run_processing_folder"])
     vcf_file_to_analyse = glob.glob(
-        osj(run_informations["analysis_folder"], "*.final.vcf*")
+        osj(run_informations["tmp_analysis_folder"], "*.final.vcf*")
     )
     for vcf_file in vcf_file_to_analyse:
         howard_launcher(run_informations, vcf_file)
+        os.remove(vcf_file)
+
+def run_initialisation(run_informations):
+    vcf_file_list = glob.glob(
+        osj(run_informations["archives_run_folder"], "*.final.vcf*")
+    )
+    if os.path.isdir(run_informations["tmp_analysis_folder"]):
+        shutil.rmtree(run_informations["tmp_analysis_folder"])
+        os.mkdir(run_informations["tmp_analysis_folder"])
+    else:
+        os.mkdir(run_informations["tmp_analysis_folder"])
+
+    for processed_vcf_file in vcf_file_list:
+        subprocess.run(
+            [
+                "rsync",
+                "-rp",
+                processed_vcf_file,
+                osj(run_informations["tmp_analysis_folder"], ""),
+            ]
+        )
+
+    vcf_file_to_analyse = glob.glob(
+        osj(run_informations["tmp_analysis_folder"], "*.final.vcf*")
+    ) 
+    for vcf_file in vcf_file_to_analyse:
+        howard_launcher(run_informations, vcf_file)
+        os.remove(vcf_file)
 
 
 def howard_launcher(run_informations, vcf_file):
-    print(f"launching for {vcf_file}")
-    logfile = osj(run_informations["analysis_folder"], "variantannotation.log")
-    output_file = osj(
-        run_informations["analysis_folder"], f"output_{os.path.basename(vcf_file)}"
+    log.info(f"Launching for {vcf_file}")
+    logfile = osj(
+        run_informations["tmp_analysis_folder"], f"VA_{os.path.basename(vcf_file.split(".")[0])}.log"
     )
-    log.info(f"Generating results files")
+
+    if run_informations["output_format"] != None:
+        output_file = osj(
+            run_informations["tmp_analysis_folder"], f"VA_{os.path.basename(vcf_file).split(".")[0]}.{run_informations["output_format"]}"
+        )
+    else:
+        output_file = osj(
+            run_informations["tmp_analysis_folder"], f"VA_{os.path.basename(vcf_file)}"
+        )
+
+    if run_informations["parameters_file"] == None:
+        param_file = osj(os.environ["DOCKER_MODULE_CONFIG"], "configfiles", f"param.{run_informations["run_platform_application"]}.json")
+    else:
+        param_file = run_informations["parameters_file"]
+    
+    module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        howard_image = data["howard_image"]
+    
+    container_name = f"VA_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+
+    log.info("Generating results files")
+    
     with open(logfile, "w") as f:
         subprocess.call(
             [
-                "howard",
+                "docker",
+                "run",
+                "--rm",
+                "--name",
+                container_name,
+                "--env",
+                f"http_proxy={os.environ["http_proxy"]}",
+                "--env",
+                f"ftp_proxy={os.environ["ftp_proxy"]}",
+                "--env",
+                f"https_proxy={os.environ["https_proxy"]}",
+                "-v",
+                f"{os.environ["HOST_TMP"]}:{os.environ["DOCKER_TMP"]}",
+                "-v",
+                f"{os.environ["HOST_DATABASES"]}:/databases/",
+                "-v",
+                f"{os.environ["HOST_CONFIG"]}:{os.environ["DOCKER_CONFIG"]}",
+                howard_image,
                 "annotation",
                 "--input",
                 vcf_file,
                 "--output",
                 output_file,
-                "--annotations",
-                "/HOWARD/databases/dbsnp/current/hg19/b156/dbsnp.parquet",
+                "--param",
+                param_file,
+                "--assembly",
+                run_informations["assembly"],
             ],
             stdout=f,
             stderr=subprocess.STDOUT,
@@ -146,67 +160,28 @@ def howard_launcher(run_informations, vcf_file):
 
 
 def cleaner(run_informations):
-    tsv_files = glob.glob(osj(run_informations["analysis_folder"], "*rankingByVar.tsv"))
-    statistics_files = glob.glob(
-        osj(run_informations["analysis_folder"], "*statistics.tsv")
-    )
-    vcf_files = glob.glob(osj(run_informations["analysis_folder"], "*final.vcf.gz"))
-    log.info(f"Cleaning the analysis folder")
+    log.info("Cleaning the analysis folder")
+    results_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*"))
 
-    if os.path.isdir(osj(run_informations["run_processing_folder"], "TSV")):
-        shutil.rmtree(osj(run_informations["run_processing_folder"], "TSV"))
-        os.mkdir(osj(run_informations["run_processing_folder"], "TSV"))
+    if os.path.isdir(run_informations["archives_results_folder"]):
+        shutil.rmtree(run_informations["archives_results_folder"])
+        os.mkdir(run_informations["archives_results_folder"])
     else:
-        os.mkdir(osj(run_informations["run_processing_folder"], "TSV"))
+        os.mkdir(run_informations["archives_results_folder"])
 
-    for file in tsv_files:
-        os.chmod(file, 0o777)
-        shutil.move(file, run_informations["run_processing_folder_tsv"])
-    for file in statistics_files:
-        os.chmod(file, 0o777)
-        shutil.move(file, run_informations["run_processing_folder_tsv"])
-    log.info(f"Moved generated tsv files")
-
-    if os.path.isdir(osj(run_informations["run_processing_folder"], "Alamut")):
-        shutil.rmtree(osj(run_informations["run_processing_folder"], "Alamut"))
-        log.info(f"Removed old Alamut folder")
-
-    subprocess.run(
-        [
-            "rsync",
-            "-rp",
-            osj(run_informations["analysis_folder"], "Alamut"),
-            run_informations["run_processing_folder"],
-        ]
-    )
-    log.info(f"Copied new Alamut folder")
-
-    if os.path.isfile(osj(run_informations["run_processing_folder"], "VaRank.log")):
-        os.remove(osj(run_informations["run_processing_folder"], "VaRank.log"))
-        log.info(f"Removed old VaRank.log")
-
-    subprocess.run(
-        [
-            "rsync",
-            "-rp",
-            osj(run_informations["analysis_folder"], "VaRank.log"),
-            run_informations["run_processing_folder"],
-        ]
-    )
-    log.info(f"Copied new VaRank.log")
+    for results_file in results_files:
+        os.chmod(results_file, 0o777)
+        shutil.move(results_file, run_informations["archives_results_folder"])
+    log.info("Moved generated tsv files")
 
     with open(
-        osj(run_informations["run_processing_folder_tsv"], "TSVCopyComplete.txt"),
+        osj(run_informations["archives_results_folder"], "VACopyComplete.txt"),
         mode="a",
     ):
         pass
 
-    for file in vcf_files:
-        os.remove(file)
-    log.info(f"Deleted used vcf file")
-
-    shutil.rmtree(run_informations["analysis_folder"])
-    log.info(f"Deleted temporary analysis folder")
+    shutil.rmtree(run_informations["tmp_analysis_folder"])
+    log.info("Deleted temporary analysis folder")
 
 
 if __name__ == "__main__":

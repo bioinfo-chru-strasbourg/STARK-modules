@@ -12,21 +12,13 @@ def absolute_folder_path(path):
     if (
         os.path.isabs(path)
         and os.path.isdir(path)
-        and not path.startswith(
-            os.environ[
-                "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARIANTANNOTATION_FOLDER_REPOSITORY"
-            ]
-        )
+        and not path.startswith(os.environ["DOCKER_REPOSITORY"])
     ):
         return path
     elif (
         not os.path.isabs(path)
         and os.path.isdir(path)
-        and not os.path.abspath(path).starstwith(
-            os.environ[
-                "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARIANTANNOTATION_FOLDER_REPOSITORY"
-            ]
-        )
+        and not os.path.abspath(path).starstwith(os.environ["DOCKER_REPOSITORY"])
     ):
         return os.path.abspath(path)
     else:
@@ -37,25 +29,18 @@ def absolute_run_path(path):
     if (
         os.path.isabs(path)
         and os.path.isdir(path)
-        and path.startswith(
-            os.environ[
-                "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARIANTANNOTATION_FOLDER_REPOSITORY"
-            ]
-        )
+        and path.startswith(os.environ["DOCKER_REPOSITORY"])
     ):
         return path
     elif (
         not os.path.isabs(path)
         and os.path.isdir(path)
-        and os.path.abspath(path).startswith(
-            os.environ[
-                "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARIANTANNOTATION_FOLDER_REPOSITORY"
-            ]
-        )
+        and os.path.abspath(path).startswith(os.environ["DOCKER_REPOSITORY"])
     ):
         return os.path.abspath(path)
     else:
         raise ValueError(path)
+
 
 def depository_checker(run_informations):
     run_repository = run_informations["run_repository"]
@@ -63,7 +48,7 @@ def depository_checker(run_informations):
 
     if not os.path.isdir(run_depository):
         log.warning(
-            f"Specified depository folder doesn't exists, maybe it was sent to the Archives ? Creating a new folder with all subfolders tree."
+            "Specified depository folder doesn't exists, maybe it was sent to the Archives ? Creating a new folder with all subfolders tree."
         )
         run_repository_sample_folders = glob.glob(osj(run_repository, "*", ""))
         os.makedirs(run_depository, 0o775)
@@ -76,7 +61,7 @@ def depository_checker(run_informations):
 
 def pattern_checker(run_informations):
     run_repository = run_informations["run_repository"]
-    pattern = run_informations["run_pattern"]
+    pattern = run_informations["vcf_pattern"]
 
     for element in pattern:
         vcf_files = glob.glob(osj(run_repository, element))
@@ -91,24 +76,6 @@ def pattern_checker(run_informations):
                 f"There is no vcf files with the default STARK analysis pattern {element}, please check the analysis integrity"
             )
             raise ValueError(element)
-
-
-# def configfile(run_informations):
-
-def logfile(run_informations):
-    variantannotation_error = True
-    logfile = osj(run_informations["run_processing_folder"], "variantannotation.log")
-
-    with open(logfile, "r") as read_file:
-        for line in read_file.readlines():
-            if re.match(r"^\.\.\.variantannotation is done with the analysis", line):
-                variantannotation_error = False
-                log.info(
-                    f"variantannotation is done with the analysis, non redundant will be launched {logfile}"
-                )
-
-    if variantannotation_error is True:
-        log.error(f"Unexpected error just happened, please check {logfile}")
 
 
 if __name__ == "__main__":

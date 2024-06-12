@@ -45,9 +45,6 @@ def main(args):
         commons.set_log_level_default(args)
         howard_folder.launch_folder(args)
 
-    # elif args.allsync18:
-    # 	pattern = pattern_generator(args)
-    # 	launch_universal_sync18(pattern)
     os.umask(original_umask)
 
 
@@ -100,23 +97,21 @@ def parse_args():
     output_format_parser.add_argument(
         "-of",
         "--output_format",
-        action="store_true",
         help="Choose output format, available VCF, Parquet, TSV, CSV, PSV or duckDB",
     )
     param_parser = argparse.ArgumentParser(add_help=False)
     param_parser.add_argument(
         "-pa",
         "--param",
-        action="store_true",
         help="Parameters JSON file (or string) defines parameters to process annotations, calculations, prioritizations, convertions and queries.",
     )
-    type_parser = argparse.ArgumentParser(add_help=False)
-    type_parser.add_argument(
-        "-t",
-        "--type",
-        action="store_true",
-        help="Choose howard analysis type, annotation or calculation",
-    )
+    # type_parser = argparse.ArgumentParser(add_help=False)
+    # type_parser.add_argument(
+    #     "-t",
+    #     "--type",
+    #     action="store_true",
+    #     help="Choose howard analysis type, annotation or calculation",
+    # )
 
     # Subparser definition
     subparsers = main_parser.add_subparsers(help="sub-command help")
@@ -130,7 +125,6 @@ def parse_args():
             assembly_parser,
             output_format_parser,
             param_parser,
-            type_parser,
         ],
     )
     parser_folder.add_argument(
@@ -152,7 +146,6 @@ def parse_args():
             assembly_parser,
             output_format_parser,
             param_parser,
-            type_parser,
         ],
     )
     parser_run.add_argument(
@@ -161,23 +154,6 @@ def parse_args():
         required=True,
         type=checker.absolute_run_path,
         help="absolute path to STARK run for which you want to launch variantannotation analysis",
-    )
-
-    parser_sync = subparsers.add_parser(
-        "sync",
-        help="used to rsync all VCF files in the described STARK repository/archives and defined pattern",
-        parents=[verbosity_parser, pattern_parser, mode_parser],
-    )
-    sync_group = parser_sync.add_mutually_exclusive_group(required=True)
-    sync_group.add_argument(
-        "-sr",
-        "--syncrepo",
-        action="store_true",
-    )
-    sync_group.add_argument(
-        "-sa",
-        "--syncarchives",
-        action="store_true",
     )
 
     args = main_parser.parse_args()

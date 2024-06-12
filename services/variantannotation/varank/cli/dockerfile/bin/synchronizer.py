@@ -10,13 +10,13 @@ import re
 
 def processing_folder_vcf_synchronizer(run_informations):
     run_repository = run_informations["run_repository"]
-    pattern = run_informations["run_pattern"]
+    pattern = run_informations["vcf_pattern"]
     for i in pattern:
         log.info(f"Syncronizing vcf files according to pattern {i}")
 
-    if not os.path.isdir(run_informations["run_processing_folder_vcf_run"]):
-        os.makedirs(run_informations["run_processing_folder_vcf_run"])
-        os.chmod(run_informations["run_processing_folder_vcf_run"], 0o777)
+    if not os.path.isdir(run_informations["archives_run_folder"]):
+        os.makedirs(run_informations["archives_run_folder"])
+        os.chmod(run_informations["archives_run_folder"], 0o777)
 
     for element in pattern:
         vcf_files = glob.glob(osj(run_repository, element))
@@ -35,7 +35,7 @@ def processing_folder_vcf_synchronizer(run_informations):
                             "rsync",
                             "-rp",
                             stark_vcf_file,
-                            run_informations["run_processing_folder_vcf_run"],
+                            run_informations["archives_run_folder"],
                         ]
                     )
         else:
@@ -45,7 +45,7 @@ def processing_folder_vcf_synchronizer(run_informations):
                         "rsync",
                         "-rp",
                         pattern_vcf_file,
-                        run_informations["run_processing_folder_vcf_run"],
+                        run_informations["archives_run_folder"],
                     ]
                 )
                 log.info(

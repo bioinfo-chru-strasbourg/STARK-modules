@@ -51,7 +51,7 @@ def logger_header_run(log_file):
 #########################
 
 ####################
-#   Release: {os.environ["DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_RELEASE"]} #
+#   Release: {os.environ["DOCKER_SERVICE_CLI_RELEASE"]} #
 ####################
 
 """
@@ -84,9 +84,7 @@ def set_log_level_run(args):
         )
 
     log_file = osj(
-        os.environ[
-            "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARIANTANNOTATION_FOLDER_SERVICES"
-        ],
+        os.environ["DOCKER_SERVICES"],
         "logs",
         log_file,
     )

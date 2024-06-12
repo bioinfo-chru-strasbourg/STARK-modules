@@ -16,38 +16,26 @@ def launch_folder(args):
     folder_path_list = folder_path.split("/")
     in_application = False
 
-    if folder_path.startswith(
-        osj(
-            os.environ[
-                "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES"
-            ],
-            "Archives",
-        )
-    ):
-        for i in glob.glob(
-            osj(
-                os.environ[
-                    "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES"
-                ],
-                "Archives",
-                "*",
-                "*",
-            )
-        ):
+    if folder_path.startswith(osj(os.environ["DOCKER_SERVICES"], "Archives")):
+        for i in glob.glob(osj(os.environ["DOCKER_SERVICES"], "Archives", "*", "*")):
             if folder_path_list[-1] == i.split("/")[-1]:
                 in_application = True
                 run_informations = {
+                    "assembly": args.assembly,
+                    "parameters_file": args.param,
+                    "output_format": args.output_format,
                     "run_name": "none",
                     "run_application": folder_path_list[-1],
                     "run_platform": folder_path_list[-2],
                     "run_platform_application": f"{folder_path_list[-2]}.{folder_path_list[-1]}",
                     "run_depository": "none",
-                    "run_pattern": "none",
-                    "run_processing_folder": folder_path,
                     "run_repository": "none",
-                    "run_processing_folder_tsv": osj(folder_path, "TSV"),
-                    "run_processing_folder_vcf_run": "none",
-                    "analysis_folder": f"/tmp_{folder_path_list[-2]}.{folder_path_list[-1]}",
+                    "vcf_pattern": "none",
+                    "archives_project_folder": folder_path,
+                    "archives_results_folder": osj(folder_path, "results"),
+                    "archives_run_folder": "none",
+                    "tmp_analysis_folder": osj(os.environ["DOCKER_TMP"], folder_path_list[-1]),
+                    "module_config": osj(os.environ["DOCKER_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json"),
                 }
         if in_application is False:
             log.error(
@@ -61,28 +49,29 @@ def launch_folder(args):
 
     else:
         run_informations = {
+            "assembly": args.assembly,
+            "parameters_file": args.param,
+            "output_format": args.output_format,
             "run_name": "none",
             "run_application": "none",
             "run_platform": "none",
             "run_platform_application": "default",
             "run_depository": "none",
-            "run_pattern": "none",
-            "run_processing_folder": folder_path,
+            "vcf_pattern": "none",
+            "archives_project_folder": folder_path,
             "run_repository": "none",
-            "run_processing_folder_tsv": osj(folder_path, "TSV"),
-            "run_processing_folder_vcf_run": "none",
-            "analysis_folder": f"/tmp_{folder_path_list[-2]}.{folder_path_list[-1]}",
+            "archives_results_folder": osj(folder_path, "results"),
+            "archives_run_folder": "none",
+            "tmp_analysis_folder": osj(os.environ["DOCKER_TMP"], folder_path_list[-1]),
+            "module_config": osj(os.environ["DOCKER_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json"),
         }
         log.info(f"Starting folder analysis from {folder_path}")
 
-    howard_processing.root_vcf_initialisation(run_informations)
-    howard_processing.configfile_manager(run_informations)
-    howard_processing.varank_launcher(run_informations)
+    howard_processing.folder_initialisation(run_informations)
     howard_processing.cleaner(run_informations)
-    checker.logfile(run_informations)
-    non_redundant_generator.generate(run_informations)
+    # non_redundant_generator.generate(run_informations)
 
-    log.info(f"VaRank analysis for folder {folder_path} ended well")
+    log.info(f"VariantAnnotation analysis for folder {folder_path} ended well")
 
 
 if __name__ == "__main__":
