@@ -24,16 +24,16 @@ def launch_folder(args):
                     "assembly": args.assembly,
                     "parameters_file": args.param,
                     "output_format": args.output_format,
-                    "run_name": "none",
+                    "run_name": "",
                     "run_application": folder_path_list[-1],
                     "run_platform": folder_path_list[-2],
                     "run_platform_application": f"{folder_path_list[-2]}.{folder_path_list[-1]}",
-                    "run_depository": "none",
-                    "run_repository": "none",
-                    "vcf_pattern": "none",
+                    "run_depository": "",
+                    "run_repository": "",
+                    "vcf_pattern": "",
                     "archives_project_folder": folder_path,
                     "archives_results_folder": osj(folder_path, "results"),
-                    "archives_run_folder": "none",
+                    "archives_run_folder": "",
                     "tmp_analysis_folder": osj(os.environ["DOCKER_TMP"], folder_path_list[-1]),
                     "module_config": osj(os.environ["DOCKER_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json"),
                 }
@@ -52,16 +52,16 @@ def launch_folder(args):
             "assembly": args.assembly,
             "parameters_file": args.param,
             "output_format": args.output_format,
-            "run_name": "none",
-            "run_application": "none",
-            "run_platform": "none",
-            "run_platform_application": "default",
-            "run_depository": "none",
-            "vcf_pattern": "none",
+            "run_name": "",
+            "run_application": "",
+            "run_platform": "",
+            "run_platform_application": "",
+            "run_depository": "",
+            "vcf_pattern": "",
             "archives_project_folder": folder_path,
-            "run_repository": "none",
+            "run_repository": "",
             "archives_results_folder": osj(folder_path, "results"),
-            "archives_run_folder": "none",
+            "archives_run_folder": "",
             "tmp_analysis_folder": osj(os.environ["DOCKER_TMP"], folder_path_list[-1]),
             "module_config": osj(os.environ["DOCKER_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json"),
         }
@@ -69,6 +69,8 @@ def launch_folder(args):
 
     howard_processing.folder_initialisation(run_informations)
     howard_processing.cleaner(run_informations)
+    howard_processing.merge_vcf_files(run_informations)
+
     # non_redundant_generator.generate(run_informations)
 
     log.info(f"VariantAnnotation analysis for folder {folder_path} ended well")

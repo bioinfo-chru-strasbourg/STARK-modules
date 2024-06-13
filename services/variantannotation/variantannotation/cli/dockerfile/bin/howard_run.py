@@ -70,8 +70,13 @@ def launch_run(args):
     synchronizer.processing_folder_vcf_synchronizer(run_informations)
     howard_processing.run_initialisation(run_informations)
     howard_processing.cleaner(run_informations)
+    howard_processing.merge_vcf_files(run_informations)
     # non_redundant_generator.generate(run_informations)
     results_provider.distribute(run_informations)
+
+    lock_file = osj(run_repository, "VAComplete.txt")
+    with open(lock_file, "w") as write_file:
+        pass
 
     log.info(
         f"VariantAnnotation analysis for run {run_informations['run_name']} ended well"

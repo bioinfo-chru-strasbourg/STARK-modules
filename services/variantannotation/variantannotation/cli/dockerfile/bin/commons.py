@@ -6,8 +6,9 @@ from threading import local
 import sys
 import time
 
-default_pattern = "*/STARK/*.reports/*.final.vcf.gz"
-
+def get_default_pattern():
+    default_pattern = "*/STARK/*.reports/*.final.vcf.gz"
+    return default_pattern
 
 def set_logger_info_run(args):
     mylog = log.getLogger()

@@ -20,7 +20,7 @@ def processing_folder_vcf_synchronizer(run_informations):
 
     for element in pattern:
         vcf_files = glob.glob(osj(run_repository, element))
-        if element == commons.default_pattern:
+        if element == commons.get_default_pattern():
             for stark_vcf_file in vcf_files:
                 if re.match(
                     run_repository

@@ -67,7 +67,7 @@ def parse_args():
         "-p",
         "--pattern",
         type=str,
-        default=commons.default_pattern,
+        default=commons.get_default_pattern(),
         help="pattern describing which vcf files to synchronize in STARK folders, actual patterns : */STARK/*.reports/*.final.vcf.gz (default), */POOL/*.final.vcf.gz. You can use two patterns with space as separator",
     )
     mode_parser = argparse.ArgumentParser(add_help=False)
@@ -159,10 +159,10 @@ def parse_args():
     args = main_parser.parse_args()
 
     if hasattr(args, "pattern"):
-        if commons.default_pattern not in args.pattern:
-            setattr(args, "pattern", [commons.default_pattern, args.pattern])
-        elif args.pattern == commons.default_pattern:
-            setattr(args, "pattern", [commons.default_pattern])
+        if commons.get_default_pattern() not in args.pattern:
+            setattr(args, "pattern", [commons.get_default_pattern(), args.pattern])
+        elif args.pattern == commons.get_default_pattern():
+            setattr(args, "pattern", [commons.get_default_pattern()])
 
     if len(sys.argv) == 1:
         main_parser.print_help(sys.stderr)

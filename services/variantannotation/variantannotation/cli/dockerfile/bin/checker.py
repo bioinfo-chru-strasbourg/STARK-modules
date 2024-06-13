@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
-import json
 import logging as log
 import glob
 from os.path import join as osj
 import commons
-import re
 
 
 def absolute_folder_path(path):
@@ -65,13 +63,13 @@ def pattern_checker(run_informations):
 
     for element in pattern:
         vcf_files = glob.glob(osj(run_repository, element))
-        if len(vcf_files) == 0 and element != commons.default_pattern:
+        if len(vcf_files) == 0 and element != commons.get_default_pattern():
             log.error(
                 f"There is no vcf files with the specified pattern {element}, please check your command-line"
             )
             raise ValueError(element)
 
-        elif len(vcf_files) == 0 and element == commons.default_pattern:
+        elif len(vcf_files) == 0 and element == commons.get_default_pattern():
             log.error(
                 f"There is no vcf files with the default STARK analysis pattern {element}, please check the analysis integrity"
             )
