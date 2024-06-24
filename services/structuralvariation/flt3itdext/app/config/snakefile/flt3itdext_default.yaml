@@ -49,7 +49,7 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
 # Search parameters
 RECURSIVE_SEARCH: False
-SEARCH_ARGUMENT: "/*/STARK/*"
+SEARCH_ARGUMENT: ["/*/STARK/*"]
 
 # Path of the template (template is template.html)
 TEMPLATE_DIR: "/app/template"

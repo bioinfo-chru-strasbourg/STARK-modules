@@ -82,6 +82,7 @@ def getSampleInfos(samplesheet_path, exclude_samples):
 def populate_dictionary(dictionary, samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None, split_index=0):
 	for sample in samples_list:
 		for ext in extensions_list:
+			found = False
 			for file in files_list:
 				file_parts = os.path.basename(file).split(".")
 				
@@ -94,15 +95,17 @@ def populate_dictionary(dictionary, samples_list, extensions_list, files_list, p
 					continue
 
 				if pattern_exclude and pattern_exclude in file:
-					print('pattern_exclude')
 					continue
 
 				if pattern_include and pattern_include not in file:
-					print('pattern_include')
 					continue
 
 				dictionary.setdefault(sample, {})[ext] = file
-				#dictionary.setdefault(sample, defaultdict(list))[ext].append(file)
+				found = True
+				break  # Stop after the first match
+
+			if not found:
+				dictionary.setdefault(sample, {})[ext] = None
 
 
 def filter_files(files_list, filter_in=None, filter_out=None):
@@ -125,9 +128,12 @@ def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ex
 	
 	return search_result
 
-def searchfiles(directory, search_arg, recursive_arg):
-	""" Function to search all files in a directory, adding a search arguement append to the directory and a recursive_search options (True/False) """
-	return sorted(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
+def searchfiles(directory, search_args, recursive_arg):
+	""" Function to search all files in a directory with multiple search patterns and an option for recursive search """
+	results = []
+	for search_arg in search_args:
+		results.extend(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
+	return sorted(results)
 
 def log_file(logfile, text, sep, items_list=None, items=None):
 	""" Function to log a variable value or a list of values into a log file """
@@ -272,19 +278,11 @@ date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strft
 runName = os.path.basename(os.path.normpath(config['run']))
 resultDir = f"/app/res/{runName}/{date_time}"
 outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
-directories = [resultDir, outputDir]
 
-if config['depository']:
-	try:
-		config['GROUP_NAME'] = os.path.normpath(config['run']).split('/')[4]
-		config['APP_NAME'] = os.path.normpath(config['run']).split('/')[5]
-	except IndexError: 
-		# Handle the case when index 4 or 5 doesn't exist in the split list
-		config['GROUP_NAME'] = 'UNKNOWN'
-		config['APP_NAME'] = 'UNKNOWN'
-	depotDir = f"{config['depository']}/{config['GROUP_NAME']}/{config['APP_NAME']}/{runName}"
-	directories.append(depotDir)
+if config['DEPOT_DIR']:
+	depotDir = outputDir.replace("repository", "depository")
 
+directories = [resultDir, outputDir, depotDir]
 for directory in directories:
 	os.makedirs(directory, exist_ok=True)
 
@@ -730,10 +728,11 @@ rule AnnotSV:
 		overlap=config['overlap'],
 		mode=config['annotationMode'],
 		annotation=config['annotationdir'],
-		hpo=lambda wildcards: runDict[wildcards.sample]['hpo']
+		hpo=lambda wildcards: runDict[wildcards.sample]['hpo'],
+		samplevcf=lambda wildcards: runDict[wildcards.sample]['.final.vcf.gz'] # -snvIndelSamples to specify samples in the vcf
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
 rule variantconvert_annotsv:
@@ -853,11 +852,12 @@ onsuccess:
 	for sample in sample_list:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 
-	# Optionally, perform depository cp
-	if config['depository']:
-		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
-		for sample in sample_list:
-			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
+	# Optionally, perform DEPOT_DIR copy
+	if config['DEPOT_DIR']:
+		if outputDir != depotDir:
+			shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
+			for sample in sample_list:
+				shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
 	# Generate dictionary for results
 	result_files_list_sample = searchfiles(os.path.normpath(config['run']), f"/*/{serviceName}/*", False)

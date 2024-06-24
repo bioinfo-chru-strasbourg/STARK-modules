@@ -135,6 +135,9 @@ if not os.path.isdir(GENCODE_PARAM_DATABASE_FOLDER_LINK):
 # cat gencode.v41.transcripts.fa.gz GRCh38.primary_assembly.genome.fa.gz > gentrome.fa.gz
 # salmon index -t gentrome.fa.gz -d decoys.txt -p 12 -i salmon_index --gencode
 # eventually use --keepDuplicates for isoform analysis
+# to generate the transcript/gene table for alevin
+# zgrep "^>" gentrome.fa.gz| cut -d "|" -f 1,6 --output-delimiter=$'\t' - | sed 's/>//g; s/gene_symbol://g; s/"//g' > txp2gene.tsv
+
 
 REFGENOME = f"{DATABASES}gencode/{GENCODE_VERSION}/{GENCODEREF_TARBALL}"
 GENCODE = f"{DATABASES}gencode/{GENCODE_VERSION}/{GENCODE_TARBALL}"
