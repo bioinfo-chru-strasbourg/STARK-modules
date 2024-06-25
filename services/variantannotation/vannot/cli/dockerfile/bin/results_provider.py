@@ -16,7 +16,7 @@ def distribute(run_informations):
     d = datetime.datetime.now()
     date = f"{d.strftime('%Y%m%d')}-{d.strftime('%H%M%S')}"
 
-    renamed_wrapper_log_file = f"VARIANTANNOTATION.{date}.analysis.log"
+    renamed_wrapper_log_file = f"VANNOT.{date}.analysis.log"
     output_folders = [
         run_informations["run_repository"],
         run_informations["run_depository"],
@@ -26,14 +26,14 @@ def distribute(run_informations):
         sample = os.path.basename(os.path.dirname(sample))
 
         for output_folder in output_folders:
-            if not os.path.isdir(osj(output_folder, sample, "VARIANTANNOTATION", "")):
-                os.mkdir(osj(output_folder, sample, "VARIANTANNOTATION", ""))
+            if not os.path.isdir(osj(output_folder, sample, "VANNOT", "")):
+                os.mkdir(osj(output_folder, sample, "VANNOT", ""))
                 log.info(
-                    f"Created VARIANTANNOTATION folder for sample {sample} into {output_folder}"
+                    f"Created VANNOT folder for sample {sample} into {output_folder}"
                 )
 
         existing_results_files = glob.glob(
-            osj(run_informations["run_repository"], sample, "VARIANTANNOTATION", "*")
+            osj(run_informations["run_repository"], sample, "VANNOT", "*")
         )
 
         for existing_results_file in existing_results_files:
@@ -43,15 +43,20 @@ def distribute(run_informations):
         variantannotation_folder_name = f"{os.path.basename(sample)}_{date}"
         results_files = (
             glob.glob(
-                osj(run_informations["archives_results_folder"], f"VA_{sample}.tsv")
+                osj(run_informations["archives_results_folder"], f"VANNOT_{sample}.tsv")
             )
             + glob.glob(
-                osj(run_informations["archives_results_folder"], f"VA_*{sample}.log")
+                osj(run_informations["archives_results_folder"], f"VANNOT_*{sample}.log")
             )
             + glob.glob(
-                osj(run_informations["archives_results_folder"], f"VA_*{sample}*.vcf*")
+                osj(
+                    run_informations["archives_results_folder"], f"VANNOT_*{sample}*.vcf.gz"
+                )
             )
         )
+
+        merged_vcf = osj(run_informations["archives_results_folder"], f"merged_VANNOT_{run_informations["run_name"]}.vcf.gz",)
+        renamed_merged_vcf = f"VANNOT.{date}.vcf.gz"
 
         for results_file in results_files:
             for output_folder in output_folders:
@@ -63,7 +68,7 @@ def distribute(run_informations):
                         osj(
                             output_folder,
                             os.path.basename(sample),
-                            "VARIANTANNOTATION",
+                            "VANNOT",
                             variantannotation_folder_name,
                             "",
                         ),
@@ -81,7 +86,7 @@ def distribute(run_informations):
                     osj(
                         run_informations["run_repository"],
                         os.path.basename(sample),
-                        "VARIANTANNOTATION",
+                        "VANNOT",
                         "",
                     ),
                 ]
@@ -90,7 +95,7 @@ def distribute(run_informations):
                 osj(
                     run_informations["run_repository"],
                     os.path.basename(sample),
-                    "VARIANTANNOTATION",
+                    "VANNOT",
                     "*.log",
                 )
             ):
@@ -109,10 +114,14 @@ def distribute(run_informations):
             ]
         )
         log.info(f"Copied {renamed_wrapper_log_file} into {output_folder}")
+        subprocess.run(
+            ["rsync", "-rp", merged_vcf, osj(output_folder, renamed_merged_vcf)]
+        )
+        log.info(f"Copied {renamed_merged_vcf} into {output_folder}")
 
-    if os.path.isfile(osj(run_informations["run_repository"], "VARunning.txt")):
-        os.remove(osj(run_informations["run_repository"], "VARunning.txt"))
-        log.info("Deleted VARunning.txt")
+    if os.path.isfile(osj(run_informations["run_repository"], "VANNOTRunning.txt")):
+        os.remove(osj(run_informations["run_repository"], "VANNOTRunning.txt"))
+        log.info("Deleted VANNOTRunning.txt")
 
 
 if __name__ == "__main__":

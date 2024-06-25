@@ -4,16 +4,17 @@ LABEL name="Mateusz RAUCH" email="<rauchmateusz@gmail.com>"
 
 ##########################################################################
 # Dockerfile Version:   1.0
-# Software:             VariantAnnotation
+# Software:             vannot
 # Software Version:     1.0
 # Software Website:     https://github.com/bioinfo-chru-strasbourg/howard
-# Description:          Dockerfile to build VariantAnnotation image
+# Description:          Dockerfile to build vannot image
 ##########################################################################
 
 # DNF envs
 RUN dnf -y install dnf-plugins-core
 RUN dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
 RUN dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+RUN dnf -y install gcc zlib-devel bzip2 bzip2-devel xz-devel make
 RUN dnf -y install wget rsync
 
 #mamba
@@ -28,11 +29,31 @@ ENV MAMBA="/usr/local/lib/mamba/bin/mamba"
 RUN $MAMBA create -n common python=3.12
 RUN $MAMBA init
 
-COPY bin/*.py /tools/variantannotation/
+#bcftools
+WORKDIR /tmp
+RUN wget https://github.com/samtools/bcftools/releases/download/1.8/bcftools-1.8.tar.bz2
+RUN tar -xvf bcftools-1.8.tar.bz2
+WORKDIR /tmp/bcftools-1.8
+RUN ./configure --prefix=/tools/
+RUN make
+RUN make install
+ENV bcftools=/tools/bin/bcftools
+
+#tabix
+WORKDIR /tmp
+RUN wget https://github.com/samtools/htslib/releases/download/1.20/htslib-1.20.tar.bz2
+RUN tar -xvf htslib-1.20.tar.bz2
+WORKDIR /tmp/htslib-1.20
+RUN ./configure --prefix=/tools/
+RUN make
+RUN make install
+ENV tabix=/tools/bin/tabix
+
+COPY bin/*.py /tools/vannot/
 RUN chmod -R 777 /tools/
 
 RUN echo "source activate common" >> ~/.bashrc
 RUN echo "alias ll='ls -lra'" >> ~/.bashrc
-# RUN echo "alias variantannotation='python3.12 /tools/variantannotation/current/scripts/__main__.py'" >> ~/.bashrc
+# RUN echo "alias vannot='python3.12 /tools/vannot/current/scripts/__main__.py'" >> ~/.bashrc
 
 WORKDIR /

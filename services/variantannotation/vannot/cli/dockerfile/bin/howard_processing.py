@@ -177,10 +177,19 @@ def howard_launcher(run_informations, vcf_file, howard_image):
 
 def merge_vcf_files(run_informations):
     log.info("Merging all vcfs into one")
-    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf*"))
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
     logfile = osj(run_informations["tmp_analysis_folder"], f"VA_merged_{run_informations["run_name"]}.log")
-    container_name = f"VA_merge_{run_informations['run_name']}"
-    output_file = osj(run_informations["tmp_analysis_folder"], f"VA_merged_{run_informations["run_name"]}.vcf.gz")
+    output_file = osj(run_informations["tmp_analysis_folder"], f"merged_VA_{run_informations["run_name"]}.vcf.gz")
+    
+    for vcf_file in vcf_files:
+        with open(logfile, "a") as f:
+            subprocess.call(["/tools/bin/tabix", vcf_file], stdout=f, stderr=subprocess.STDOUT, universal_newlines=True)
+
+    cmd = ["/tools/bin/bcftools", "merge", "-o", output_file, "-O", "z"]
+    for vcf_file in vcf_files:
+        cmd.append(vcf_file)
+    with open(logfile, "a") as f:
+        subprocess.call(cmd, stdout=f, stderr=subprocess.STDOUT, universal_newlines=True)
     
 
 def convert_to_final_tsv(run_informations, input_file, howard_image):
@@ -226,8 +235,7 @@ def convert_to_final_tsv(run_informations, input_file, howard_image):
 
 def cleaner(run_informations):
     log.info("Moving results from temporary folder")
-    merge_vcf_files(run_informations)
-    results_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*tsv")) + glob.glob(osj(run_informations["tmp_analysis_folder"], "*log")) + glob.glob(osj(run_informations["tmp_analysis_folder"], "*vcf*"))
+    results_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*tsv")) + glob.glob(osj(run_informations["tmp_analysis_folder"], "*log")) + glob.glob(osj(run_informations["tmp_analysis_folder"], "*vcf.gz"))
 
     if os.path.isdir(run_informations["archives_results_folder"]):
         log.info("Removing old results folder in archives")

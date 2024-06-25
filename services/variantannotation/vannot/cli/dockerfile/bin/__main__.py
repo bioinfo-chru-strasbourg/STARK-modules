@@ -5,7 +5,7 @@
 """
 ##################################
 ##							    ##
-##  VARIANTANNOTATION ANALYSIS  ##
+##  VANNOT ANALYSIS  ##
 ##    Author : Mateusz RAUCH    ##
 ##							    ##
 ##################################
@@ -51,7 +51,7 @@ def main(args):
 def parse_args():
 
     # Main parser
-    main_parser = argparse.ArgumentParser(prog="variantannotation")
+    main_parser = argparse.ArgumentParser(prog="vannot")
 
     # Secondary parsers with global arguments
     verbosity_parser = argparse.ArgumentParser(add_help=False)
@@ -118,7 +118,7 @@ def parse_args():
 
     parser_folder = subparsers.add_parser(
         "folder",
-        help="run variantannotation on any folder you want, must containing VCFs and optional custom configfile",
+        help="run vannot on any folder you want, must containing VCFs and optional custom configfile",
         parents=[
             verbosity_parser,
             varank_parser,
@@ -132,12 +132,12 @@ def parse_args():
         "--folder",
         required=True,
         type=checker.absolute_folder_path,
-        help="absolute path to the folder where you want to launch variantannotation analysis",
+        help="absolute path to the folder where you want to launch vannot analysis",
     )
 
     parser_run = subparsers.add_parser(
         "run",
-        help="run variantannotation on STARK run repository",
+        help="run vannot on STARK run repository",
         parents=[
             verbosity_parser,
             pattern_parser,
@@ -153,7 +153,7 @@ def parse_args():
         "--run",
         required=True,
         type=checker.absolute_run_path,
-        help="absolute path to STARK run for which you want to launch variantannotation analysis",
+        help="absolute path to STARK run for which you want to launch vannot analysis",
     )
 
     args = main_parser.parse_args()

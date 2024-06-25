@@ -70,7 +70,7 @@ def varank_services():
 
     if not os.path.isfile(stark_module):
         json = {
-            "code": "variantannotation",
+            "code": "v",
             "name": "Variant Annotation",
             "fullname": "Variant Annotation Services",
             "release": os.environ["DOCKER_STARK_MODULE_SUBMODULE_RELEASE"],

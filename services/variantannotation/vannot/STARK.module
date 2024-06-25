@@ -1,0 +1,26 @@
+{
+  "submodules": {
+    "vannot": {
+      "description": "Only vannot annotation tool",
+      "services": {
+        "cli": {
+          "code": "cli",
+          "name": "vannot cli",
+          "type": "CLI",
+          "description": "A vannot CLI.",
+          "release": "2.1",
+          "available": true
+        },
+        "listener": {
+          "code": "listener",
+          "name": "vannot listener",
+          "type": "listener",
+          "description": "A vannot listener service is started as a daemon, listening for new STARK analyzed run (new folder in output/repository) and well configured (STARKComplete.txt without VaRankRunning.txt or VaRankComplete.txt), and check triggers to launch or not analysis.",
+          "release": "1.1",
+          "available": true
+        } 
+      }
+    }
+  }
+}
+

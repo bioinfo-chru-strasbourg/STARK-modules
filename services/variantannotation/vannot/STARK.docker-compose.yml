@@ -10,7 +10,7 @@ version: '3'
 
 services:
     # # setup
-    # stark-module-variantannotation-submodule-variantannotation-service-setup:
+    # stark-module-variantannotation-submodule-vannot-service-setup:
     #     image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_IMAGE}
     #     build:
     #         context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_IMAGE_CONTEXT}
@@ -30,14 +30,14 @@ services:
     #         - DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_RELEASE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_RELEASE}
     #     volumes:
     #         - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_INNER_FOLDER_CONFIG}:rw
-    #         # - /home1/bin/STARK-modules/dev.MR/services/variantannotation/variantannotation/setup/dockerfile/bin/setup.py:/setup/setup.py:rw
+    #         # - /home1/bin/STARK-modules/dev.MR/services/vannot/vannot/setup/dockerfile/bin/setup.py:/setup/setup.py:rw
     #         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:rw
     #         - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_SERVICES}:${DOCKER_STARK_INNER_FOLDER_SERVICES}:rw
     #     networks:
     #         - ${DOCKER_STARK_MAIN_NETWORK}
 
     # cli
-    stark-module-variantannotation-submodule-variantannotation-service-cli:
+    stark-module-variantannotation-submodule-vannot-service-cli:
         image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
         build:
             context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT}
@@ -77,12 +77,12 @@ services:
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATA}:${DOCKER_STARK_INNER_FOLDER_DATA}:rw
             # Volume for Docker to work inside a container
             - /var/run/docker.sock:/var/run/docker.sock
-            # Volumes for variantannotation configuration
+            # Volumes for vannot configuration
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}:${DOCKER_STARK_INNER_FOLDER_CONFIG}:rw
             # Volumes for databases
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
             # Volume for developing, to comment if not used
-            - /home1/bin/STARK-modules/dev.MR_real/services/variantannotation/variantannotation/cli/dockerfile/bin/:/tools/variantannotation/:rw
+            - /home1/bin/STARK-modules/dev.MR_real/services/variantannotation/vannot/cli/dockerfile/bin/:/tools/vannot/:rw
             - /home1/BAS/HOWARD/:/HOWARD/:rw
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
@@ -99,10 +99,10 @@ services:
         #     retries: 3600
 
     # # listener
-    # stark-module-variantannotation-submodule-variantannotation-service-listener:
+    # stark-module-variantannotation-submodule-vannot-service-listener:
     #     image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE}
     #     depends_on:
-    #         stark-module-variantannotation-submodule-variantannotation-service-cli:
+    #         stark-module-variantannotation-submodule-vannot-service-cli:
     #             condition: service_healthy
     #     container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_NAME}
     #     entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_ENTRYPOINT}

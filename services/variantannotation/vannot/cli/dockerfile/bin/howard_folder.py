@@ -68,12 +68,12 @@ def launch_folder(args):
         log.info(f"Starting folder analysis from {folder_path}")
 
     howard_processing.folder_initialisation(run_informations)
-    howard_processing.cleaner(run_informations)
     howard_processing.merge_vcf_files(run_informations)
+    howard_processing.cleaner(run_informations)
 
     # non_redundant_generator.generate(run_informations)
 
-    log.info(f"VariantAnnotation analysis for folder {folder_path} ended well")
+    log.info(f"vannot analysis for folder {folder_path} ended well")
 
 
 if __name__ == "__main__":
