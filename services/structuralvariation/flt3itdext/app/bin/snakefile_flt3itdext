@@ -164,7 +164,8 @@ runName = os.path.basename(os.path.normpath(config['run']))
 resultDir = f"/app/res/{runName}/{date_time}"
 outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
 
-if config['DEPOT_DIR']:
+depotDir = config['DEPOT_DIR']
+if config['DEPOT_DIR'] == "depository":
 	depotDir = outputDir.replace("repository", "depository")
 
 directories = [resultDir, outputDir, depotDir]

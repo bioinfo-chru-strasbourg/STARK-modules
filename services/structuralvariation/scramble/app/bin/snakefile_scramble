@@ -17,10 +17,11 @@
 	# keep "Running.txt" file if failed, avoiding multiple analysis launch by the listener
 
 # PROD version 3 : 19/09/2023 changelog
-	# AnnotSV version 3.3.7 (include the vcf converter)
-	# Add the deletion mode
-	# refactor snakemake code a lot
+	# AnnotSV version 3.4.2 (include the vcf converter) ; add -snvIndelFiles option
+	# Add the deletion mode to SCRAMBLE
+	# refactor snakemake code a lot ; searchfiles function use a list of folder 
 	# remove header from tsv converted
+	
 ################## Import libraries ##################
 import os
 import glob
@@ -121,7 +122,7 @@ def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ex
 	return search_result
 
 def searchfiles(directory, search_args, recursive_arg):
-	""" Function to search all files in a directory with multiple search patterns and an option for recursive search """
+	""" Function to search all files in a directory list with multiple search patterns and an option for recursive search """
 	results = []
 	for search_arg in search_args:
 		results.extend(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
@@ -213,8 +214,10 @@ date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strft
 runName = os.path.basename(os.path.normpath(config['run']))
 resultDir = f"/app/res/{runName}/{date_time}"
 outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
+vcf_extension = config['vcf_extension']
 
-if config['DEPOT_DIR']:
+depotDir = config['DEPOT_DIR']
+if config['DEPOT_DIR'] == "depository":
 	depotDir = outputDir.replace("repository", "depository")
 
 directories = [resultDir, outputDir, depotDir]
@@ -484,7 +487,7 @@ rule AnnotSV:
 		dummypath = config['DUMMY_PATH'],
 		annotation=config['annotationdir'],
 		hpo=lambda wildcards: runDict[wildcards.sample]['hpo'],
-		samplevcf=lambda wildcards: runDict[wildcards.sample]['.final.vcf.gz'] # -snvIndelSamples to specify samples in the vcf
+		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in the vcf
 	shell: 
 		"""
 		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}

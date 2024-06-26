@@ -23,8 +23,9 @@ serviceName: "DECON"
 DATE_TIME: ""
 # Output directory
 OUTPUT_DIR: "/STARK/output/repository"
-# If not empty will copy the results in this folder
-depository: "/STARK/output/depository"
+# Other path to copy results, leave empty to not copy, add a path to copy to this folder
+# Replace by "depository" will copy the results in a second folder based on OUTPUT_DIR, replacing "repository" with "depository" if repository exist
+DEPOT_DIR: "depository"
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 
@@ -43,7 +44,7 @@ EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC',
 FILTER_SAMPLE: []
 
 # Files to index into the dictionary depending on extension (endwith)
-EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes", ".tag", ".ped"]
+EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes", ".tag", ".ped", ".final.vcf.gz"]
 # List of files extension to process
 PROCESS_FILE: ['.bam']
 # How to copy input files (bam, bai, cram) : ls or leave empty (it will rsync files or index for bai from bam)
@@ -122,4 +123,5 @@ transProb: 0.01 # Transition probability – the transition probability between 
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: split # split, full or both (defaut both)
-annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database 
+annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database
+vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFiles option ; extension should be in EXT_INDEX_LIST

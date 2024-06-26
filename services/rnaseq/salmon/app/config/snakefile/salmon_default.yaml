@@ -12,8 +12,9 @@ serviceName: "SALMON"
 DATE_TIME: ""
 # Output directory
 OUTPUT_DIR: ""
-# If TRUE will copy the results in a second folder based on OUTPUT_DIR, replacing repository with depository if repository in the path
-DEPOT_DIR: True
+# Other path to copy results, leave empty to not copy, add a path to copy to this folder
+# Replace by "depository" will copy the results in a second folder based on OUTPUT_DIR, replacing "repository" with "depository" if repository exist
+DEPOT_DIR: "depository"
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 
