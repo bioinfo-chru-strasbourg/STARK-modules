@@ -1,5 +1,5 @@
 ##########################################################################
-# pybedtools        	Version: 2.0
+# pybedtools.py       	Version: 2.0
 # Description:          Python script to extract coverage from a bam file or a list of bams, using a bed file
 ##########################################################################
 
