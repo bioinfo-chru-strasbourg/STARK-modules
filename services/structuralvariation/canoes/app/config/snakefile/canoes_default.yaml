@@ -93,3 +93,9 @@ dist: "70000" # dist: expected distance between targets in a CNV (integer) defau
 tnum: "6" # tnum: expected number of targets in a CNV (integer) default is 6
 numref: "30" # numref : maximum number of reference samples to use (integer) default is 30 ; the weighted variance calculations will take a long time if too many reference samples are used
 homdel: "0.2" # threeshold for homozygous deletion
+# path to the tsv file containing 2 columns : bam for the list of reference bams for CNV calling (full path of bams), and gender (F/M)
+# the bam files have to be indexed
+# number of reference patients should be 10 or more, and if the gender is considere, 10 per gender
+# the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
+# REF_BAM_LIST: "--refbams /app/res/list.tsv"
+REF_BAM_LIST: ""

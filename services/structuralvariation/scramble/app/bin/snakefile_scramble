@@ -72,7 +72,10 @@ def getSampleInfos(samplesheet_path, exclude_samples):
 	return result_dict
 
 
-def populate_dictionary(dictionary, samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None, split_index=0):
+def populate_dictionary(samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None, split_index=0):
+	
+	dictionary = defaultdict(dict)
+
 	for sample in samples_list:
 		for ext in extensions_list:
 			found = False
@@ -99,7 +102,8 @@ def populate_dictionary(dictionary, samples_list, extensions_list, files_list, p
 
 			if not found:
 				dictionary.setdefault(sample, {})[ext] = None
-
+	
+	return dictionary
 
 def filter_files(files_list, filter_in=None, filter_out=None):
 	return [file_name for file_name in files_list if (not filter_in or filter_in in file_name) and (not filter_out or filter_out not in file_name)]
@@ -246,8 +250,7 @@ if config['VALIDATION_ONLY']:
 else:
 	filter_files(files_list, None ,filter_out='validation')
 	
-runDict = defaultdict(dict)
-populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
+runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
 
 # Find bed file (Design)
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
@@ -269,7 +272,6 @@ else:
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
 panel_list = []
-#panel_list_trunc = []
 if config['LIST_GENES']:
 	with open(config['LIST_GENES']) as f:
 		panel_list = f.read().splitlines()
@@ -316,7 +318,6 @@ for item in log_items:
 	log_file(logfile, item[0], "\n", items_list=item[1] if isinstance(item[1], list) else None, items=item[1] if not isinstance(item[1], list) else None)
 
 print(dict(runDict))
-
 
 ################################################## RULES ##################################################
 
@@ -595,13 +596,11 @@ onsuccess:
 				shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
 	# Generate dictionary for results
-	result_files_list_sample = searchfiles(os.path.normpath(config['run']), f"/*/{serviceName}/*", False)
-	result_files_list_all = searchfiles(os.path.normpath(config['run']), f"/*", False)
-	result_files_list = result_files_list_all + result_files_list_sample
+	search_args = [arg.format(serviceName=serviceName) for arg in ["/*/{serviceName}/*", "/*"]]
+	result_files_list = searchfiles(os.path.normpath(config['run']), search_args, False)
 	replaced_paths = replace_path(result_files_list, config['run'], "")
 	sample_list.insert(0,"allsamples")
-	resultDict = defaultdict(dict)
-	populate_dictionary(resultDict, sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
+	resultDict = populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
 	# Generate html report (need to add the run results)
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}_template.html" , f"{outputDir}/{serviceName}_{date_time}_report.html")
