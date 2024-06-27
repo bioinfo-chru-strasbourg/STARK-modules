@@ -22,7 +22,7 @@ suppressMessages(library(dplyr))
 
 option_list <- list(
   make_option("--gcfile", type="character", default="gc.tsv", dest='gc', help="File containing the GC values in column 4"),
-  make_option("--readsfile", type="character", default="canoes.reads.tsv", dest='reads', help="File containing the reads data"),
+  make_option("--readsfile", type="character", default="canoes.reads.tsv", dest='reads', help="File containing the coverage reads data"),
   make_option("--chromosome",default="A",help='Perform calling for autosomes (A) or chrX (XX) or chrY (XY) ', dest='modechrom'),
   make_option("--samples",default=NULL,help="Text file containing the list of sample bams to analyse",dest='samples'),
   make_option("--pvalue", type="numeric", default=1e-08, dest='pvalue', help="Average rate of occurrence of CNVs"),
@@ -33,7 +33,8 @@ option_list <- list(
   make_option("--output", type="character", default="CNVCall.csv", dest='output', help="Output file name for the raw results"),
   make_option("--pdf", type="character", default=NULL, dest='pdf', help="Output PDF file name for plots"),
   make_option("--rdata", type="character", default="CANOES.Rdata", dest='outputrdata', help="Output file name for the .Rdata results"),
-  make_option("--refbams", type="character", default=NULL, dest='refbams', help="Text file containing the list of reference bam files for calling (full path) (optional)")
+  make_option("--refbams", type="character", default=NULL, dest='refbams', help="Text file containing the list of reference bam files for calling (full path) (optional)"),
+  make_option("--readsrefs", type="character", default="refsamples.reads.tsv", dest='readsrefs', help="File containing the coverage reads data for the reference set (optional)")
 )
 
 opt_parser <- OptionParser(option_list=option_list)
@@ -47,7 +48,7 @@ multi_strsplit<-function(x,splits,y){
 }
 
 # Test function
-Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output = NULL, rdata_output = NULL, refbams_file= NULL) {
+Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output = NULL, rdata_output = NULL, refbams_file= NULL, ref_reds = NULL) {
   datagc <- read.table(gc_file, header = TRUE)
   if (colnames(datagc)[4] == "GC_CONTENT") {
   gc <- datagc[[4]]
@@ -55,6 +56,7 @@ Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numr
   stop("The fourth column is not named GC_CONTENT")
   }
   names(gc) <- "gc" # column name is gc
+  
   canoes.reads_un <- read.table(reads_file,header=TRUE)
   data <- read.table(reads_file,header=TRUE)
   sample.names <- names(data)[4:length(names(data))]
@@ -857,4 +859,4 @@ CalcCopyNumber <- function(data, cnvs, homdel.mean){
 }
 
 # Call the Test function with parsed arguments
-Test(options$gc, options$reads, options$modechrom, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$pdf, options$outputrdata, options$refbams)
+Test(options$gc, options$reads, options$modechrom, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$pdf, options$outputrdata, options$refbams, options$readsrefs)
