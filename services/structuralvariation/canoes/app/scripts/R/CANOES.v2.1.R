@@ -31,9 +31,9 @@ option_list <- list(
   make_option("--numrefs", type="integer", default=30, dest='numrefs', help="Maximum number of reference samples to use"),
   make_option("--homdel", type="numeric", default=0.2, dest='homdel', help="Threeshold for homozigous deletion"),
   make_option("--output", type="character", default="CNVCall.csv", dest='output', help="Output file name"),
-  make_option("--pdf", type="character", default=NULL, dest='pdf', help="Output PDF file name for plots")
+  make_option("--pdf", type="character", default=NULL, dest='pdf', help="Output PDF file name for plots"),
+  make_option("--refbams",default=NULL,help="Text file containing the list of reference bam files for calling (full path) (optional)",dest='refbams'),
 )
-
 
 opt_parser <- OptionParser(option_list=option_list)
 options <- parse_args(opt_parser)
@@ -46,7 +46,7 @@ multi_strsplit<-function(x,splits,y){
 }
 
 # Test function
-Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output) {
+Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output, refbams_file) {
   datagc <- read.table(gc_file, header = TRUE)
   if (colnames(datagc)[4] == "GC_CONTENT") {
   gc <- datagc[[4]]
@@ -71,6 +71,17 @@ if(length(samples)>0){
     message('ERROR: No samples to analyse')
     quit()
 }
+
+#refsample.names<-vector()
+if(length(refbams_file)>0){
+    rawrefbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
+    refbams<-apply(rawrefbams,1,toString)
+    a<-length(strsplit(refbams[1],"/")[[1]])
+    refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
+    names(refsample.names)<-NULL
+    message('INFO: We will use external references for the analysis')
+    head(refsample.names)
+
 # We filter out samples depending on the list for XX/XY analysis
 canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end", sample.names_toanalyse)]
 
@@ -164,8 +175,17 @@ PlotCNV <- function(counts, sample.name, targets, offset=1){
   if ((end.target + offset) %in% counts$target){
     end.target <- end.target + offset
   }
-  ref.sample.names <- setdiff(as.character(names(counts)[-seq(1,5)]), 
+  # TODO adapt to reference
+
+	if(length(refsample.names)==0){
+		ref.sample.names <-  setdiff(as.character(names(counts)[-seq(1,5)]), 
                               sample.name)
+    }else{
+       ref.sample.names <- refsample.names
+    }
+
+  # ref.sample.names <- setdiff(as.character(names(counts)[-seq(1,5)]), 
+  #                             sample.name)
   data <- subset(counts, target >= start.target & target <= end.target)
   sample.data <- data[, sample.name]
   means <- apply(data[, ref.sample.names], 1, mean)
@@ -238,7 +258,6 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
     # remove sex chromosomes
     #cat("Trying to remove sex chromosomes and 'chr' prefixes\n")
     #counts <- subset(counts, !chromosome %in% c("chrX", "chrY", "X", "Y"))
-    
        
     if (sum(grepl("chr", counts$chromosome))==length(counts$chromosome)){
       counts <- counts %>%
@@ -273,9 +292,17 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
                  round(x * mean.counts / mean(x)), mean.counts)
   # calculate covariance of read count across samples
   cov <- cor(counts[, sample.names], counts[, sample.names])
-  # for a future version, add an external reference.samples instead of using the samples from the list of samples as referene
-  # we need to construct a df with those reference.samples before
-  reference.samples <- setdiff(sample.names, sample.name)
+
+  # add an external reference.samples instead of using the samples from the list of samples as referene
+  
+	if(length(refsample.names)==0){
+		reference.samples <- setdiff(sample.names, sample.name)
+    }else{
+       reference.samples <- refsample.names
+    }
+
+  #reference.samples <- setdiff(sample.names, sample.name)
+  
   covariances <- cov[sample.name, reference.samples]
   reference.samples <- names(sort(covariances, 
           decreasing=T)[1:min(numrefs, length(covariances))])
@@ -822,4 +849,4 @@ CalcCopyNumber <- function(data, cnvs, homdel.mean){
 }
 
 # Call the Test function with parsed arguments
-Test(options$gc, options$reads, options$modechrom, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$pdf)
+Test(options$gc, options$reads, options$modechrom, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$pdf, opt$refbams)

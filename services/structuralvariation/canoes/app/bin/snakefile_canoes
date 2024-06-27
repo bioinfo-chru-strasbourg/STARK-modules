@@ -66,7 +66,10 @@ def getSampleInfos(samplesheet_path, exclude_samples):
 	
 	return result_dict
 
-def populate_dictionary(dictionary, samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None, split_index=0):
+def populate_dictionary(samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None, split_index=0):
+	
+	dictionary = defaultdict(dict)
+
 	for sample in samples_list:
 		for ext in extensions_list:
 			found = False
@@ -93,6 +96,8 @@ def populate_dictionary(dictionary, samples_list, extensions_list, files_list, p
 
 			if not found:
 				dictionary.setdefault(sample, {})[ext] = None
+	
+	return dictionary
 
 
 def filter_files(files_list, filter_in=None, filter_out=None):
@@ -274,8 +279,7 @@ else:
 	filter_files(files_list, None ,filter_out='validation')
 
 # Populate dictionnary
-runDict = defaultdict(dict)
-populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
+runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
 
 # Add other runs/samples to improve sensibility
 if config['addruns']:
@@ -285,9 +289,8 @@ if config['addruns']:
 		files_list_addrun.extend(result)
 	# We generate the sample list with the ext of the file in the PROCESS_FILE varialbe (bam/cram for ex)
 	sample_list_addruns = extractlistfromfiles(files_list_addrun, config['PROCESS_FILE'], '.', 0)
-	addrunDict = defaultdict(dict)
 	# We populate the dictionnary with the same EXT_INDEX_LIST variable as the original list, to get HPO and gender is avalaible
-	populate_dictionary(addrunDict, sample_list_addruns, config['EXT_INDEX_LIST'], files_list_addrun, None, 'validation')
+	addrunDict = populate_dictionary(sample_list_addruns, config['EXT_INDEX_LIST'], files_list_addrun, None, 'validation')
 	
 	# Merge runDict dictionnary with the addrunDict
 	for key, value in addrunDict.items():
@@ -569,7 +572,8 @@ rule canoes_calling:
 			distance = config["dist"],
 			tnumeric = config["tnum"],
 			numreference = config["numref"],
-			hom = config["homdel"]
+			hom = config["homdel"],
+			refbamlist=config['REF_BAM_LIST']
 	output:
 			cnvcall = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv",
 			success = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.success"
@@ -581,7 +585,7 @@ rule canoes_calling:
 		"""
 			Rscript {params.Rscripts}/CANOES.v2.1.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
 			--samples {params.bamlist} --homdel {params.hom} --numref {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
-			--pvalue {params.pvalue} --output {output.cnvcall} 1> {log.log} 2> {log.err} && touch {output.success}
+			--pvalue {params.pvalue} {params.refbamlist} --output {output.cnvcall} 1> {log.log} 2> {log.err} && touch {output.success}
 		"""
 
 rule merge_makeCNVcalls:
@@ -754,13 +758,11 @@ onsuccess:
 				shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
 	# Generate dictionary for results
-	result_files_list_sample = searchfiles(os.path.normpath(config['run']), f"/*/{serviceName}/*", False)
-	result_files_list_all = searchfiles(os.path.normpath(config['run']), f"/*", False)
-	result_files_list = result_files_list_all + result_files_list_sample
+	search_args = [arg.format(serviceName=serviceName) for arg in ["/*/{serviceName}/*", "/*"]]
+	result_files_list = searchfiles(os.path.normpath(config['run']), search_args, False)
 	replaced_paths = replace_path(result_files_list, config['run'], "")
 	sample_list_to_copy.insert(0,"allsamples")
-	resultDict = defaultdict(dict)
-	populate_dictionary(resultDict, sample_list_to_copy, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
+	resultDict = populate_dictionary(sample_list_to_copy, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 
 	# Update resultDict with values from runDict
 	for sample, results in runDict.items():
