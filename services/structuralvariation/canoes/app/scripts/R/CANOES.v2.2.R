@@ -1,5 +1,5 @@
 ##########################################################################
-# CANOES Rscript         Version: 2.1
+# CANOES Rscript         Version: 2.2
 # Description:          R script to call CNVs (CNVs with an Arbitrary Number Of Exome Samples)
 ##########################################################################
 
@@ -13,7 +13,7 @@
 #   - fix GC content in column 4 with control, homdel variable not assigned
 #   - adapt script to chrX/Y
 #   - comment genotyping option not used
-#   - TODO reference samples should be a list of external samples in a list, with gender
+#   - Add reference samples should be a list of external samples in a list, with gender
 ########################################################################################################
 
 suppressMessages(library(optparse))
@@ -30,10 +30,11 @@ option_list <- list(
   make_option("--distance", type="integer", default=70000, dest='dvalue', help="Expected distance between targets in a CNV"),
   make_option("--numrefs", type="integer", default=30, dest='numrefs', help="Maximum number of reference samples to use"),
   make_option("--homdel", type="numeric", default=0.2, dest='homdel', help="Threeshold for homozigous deletion"),
-  make_option("--output", type="character", default="CNVCall.csv", dest='output', help="Output file name"),
-  make_option("--pdf", type="character", default=NULL, dest='pdf', help="Output PDF file name for plots")
+  make_option("--output", type="character", default="CNVCall.csv", dest='output', help="Output file name for the raw results"),
+  make_option("--pdf", type="character", default=NULL, dest='pdf', help="Output PDF file name for plots"),
+  make_option("--rdata", type="character", default="CANOES.Rdata", dest='outputrdata', help="Output file name for the .Rdata results"),
+  make_option("--refbams", type="character", default=NULL, dest='refbams', help="Text file containing the list of reference bam files for calling (full path) (optional)")
 )
-
 
 opt_parser <- OptionParser(option_list=option_list)
 options <- parse_args(opt_parser)
@@ -46,7 +47,7 @@ multi_strsplit<-function(x,splits,y){
 }
 
 # Test function
-Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output) {
+Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output = NULL, rdata_output = NULL, refbams_file= NULL) {
   datagc <- read.table(gc_file, header = TRUE)
   if (colnames(datagc)[4] == "GC_CONTENT") {
   gc <- datagc[[4]]
@@ -71,6 +72,18 @@ if(length(samples)>0){
     message('ERROR: No samples to analyse')
     quit()
 }
+
+refsample.names<-vector()
+if(length(refbams_file)>0){
+    rawrefbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
+    refbams<-apply(rawrefbams,1,toString)
+    a<-length(strsplit(refbams[1],"/")[[1]])
+    refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
+    names(refsample.names)<-NULL
+    message('INFO: We will use external references for the analysis')
+    head(refsample.names)
+}
+
 # We filter out samples depending on the list for XX/XY analysis
 canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end", sample.names_toanalyse)]
 
@@ -85,7 +98,7 @@ canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end"
 
   xcnv.list <- vector('list', length(sample.names_toanalyse))
   for (i in 1:length(sample.names_toanalyse)) {
-    xcnv.list[[i]] <- CallCNVs(sample.names_toanalyse[i], canoes.reads, p_value, Tnum, D, numrefs, FALSE, homdel_mean) 
+    xcnv.list[[i]] <- CallCNVs(sample.names_toanalyse[i], canoes.reads, p_value, Tnum, D, numrefs, FALSE, homdel_mean, refsample.names) 
   }
   
   xcnvs <- do.call('rbind', xcnv.list)
@@ -105,11 +118,18 @@ canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end"
   xcnvs_final$INTERVAL <- gsub("^(\\d+):", "chr\\1:", xcnvs_final$INTERVAL)
   write.table(xcnvs_final, file = output_file, sep = "\t", quote = FALSE)
   
+# Identify all data frames in the environment & save to an Rdata file
+data_frames <- sapply(ls(), function(x) is.data.frame(get(x)))
+data_frame_names <- names(data_frames[data_frames])
+save(list = data_frame_names, file = rdata_output)
+  
+if (!is.null(pdf_output)) {
   pdf(pdf_output)
   for (i in 1:nrow(xcnvs)) {
-    PlotCNV(canoes.reads, xcnvs[i, "SAMPLE"], xcnvs[i, "TARGETS"])
+    PlotCNV(canoes.reads, xcnvs[i, "SAMPLE"], xcnvs[i, "TARGETS"], offset = 1, refsample.names)
   }
   dev.off()
+}
   
   #genotyping.S2 <- GenotypeCNVs(xcnvs, "S2", canoes.reads, p_value, Tnum, D, numrefs)
   # Writing genotyping.S2 to a CSV file
@@ -143,7 +163,7 @@ DUPLICATION=3
 #     number of targets to add on either end (default=1)
 # Returns: 
 #   returns nothing
-PlotCNV <- function(counts, sample.name, targets, offset=1){
+PlotCNV <- function(counts, sample.name, targets, offset=1, refsample.names = NULL){
   sample.name <- as.character(sample.name)
   if (!sample.name %in% names(counts)){stop("No column for sample ", sample.name, " in counts matrix")}
   if (length(setdiff("target", names(counts)[1:5]) > 0)){
@@ -164,8 +184,17 @@ PlotCNV <- function(counts, sample.name, targets, offset=1){
   if ((end.target + offset) %in% counts$target){
     end.target <- end.target + offset
   }
-  ref.sample.names <- setdiff(as.character(names(counts)[-seq(1,5)]), 
+  # TODO adapt to reference
+
+	if(length(refsample.names)==0){
+		ref.sample.names <-  setdiff(as.character(names(counts)[-seq(1,5)]), 
                               sample.name)
+    }else{
+       ref.sample.names <- refsample.names
+    }
+
+  # ref.sample.names <- setdiff(as.character(names(counts)[-seq(1,5)]), 
+  #                             sample.name)
   data <- subset(counts, target >= start.target & target <= end.target)
   sample.data <- data[, sample.name]
   means <- apply(data[, ref.sample.names], 1, mean)
@@ -228,7 +257,7 @@ PlotCNV <- function(counts, sample.name, targets, offset=1){
 #      TARGETS: target numbers of CNV in the form start..stop
 #      NUM_TARG: how many targets are in the CNV
 #      Q_SOME: a Phred-scaled quality score for the CNV
-CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.mean){
+CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.mean, refsample.names = NULL){
   #sample.name, counts, p=1e-08, Tnum=6, D=70000, numrefs=30, get.dfs=F, homdel.mean=0.2
   if (!sample.name %in% names(counts)){stop("No column for sample ", sample.name, " in counts matrix")}
   if (length(setdiff(names(counts)[1:5], c("target", "chromosome", "start", "end", "gc"))) > 0){
@@ -238,7 +267,6 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
     # remove sex chromosomes
     #cat("Trying to remove sex chromosomes and 'chr' prefixes\n")
     #counts <- subset(counts, !chromosome %in% c("chrX", "chrY", "X", "Y"))
-    
        
     if (sum(grepl("chr", counts$chromosome))==length(counts$chromosome)){
       counts <- counts %>%
@@ -273,9 +301,16 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
                  round(x * mean.counts / mean(x)), mean.counts)
   # calculate covariance of read count across samples
   cov <- cor(counts[, sample.names], counts[, sample.names])
-  # for a future version, add an external reference.samples instead of using the samples from the list of samples as referene
-  # we need to construct a df with those reference.samples before
-  reference.samples <- setdiff(sample.names, sample.name)
+
+  # add an external reference.samples instead of using the samples from the list of samples as referene
+  if(length(refsample.names)==0){
+		reference.samples <- setdiff(sample.names, sample.name)
+    }else{
+       reference.samples <- refsample.names
+    }
+
+  #reference.samples <- setdiff(sample.names, sample.name)
+  
   covariances <- cov[sample.name, reference.samples]
   reference.samples <- names(sort(covariances, 
           decreasing=T)[1:min(numrefs, length(covariances))])
@@ -822,4 +857,4 @@ CalcCopyNumber <- function(data, cnvs, homdel.mean){
 }
 
 # Call the Test function with parsed arguments
-Test(options$gc, options$reads, options$modechrom, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$pdf)
+Test(options$gc, options$reads, options$modechrom, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$pdf, options$outputrdata, options$refbams)
