@@ -301,7 +301,6 @@ def pedigree_into_dict(ped_file, sample_list, dictionary, individual_id_column='
 			dictionary.setdefault(individual_id, {})['gender'] = gender
 
 ### END OF FUNCTIONS ###
-
 serviceName = config['serviceName']
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 runName = os.path.basename(os.path.normpath(config['run']))
