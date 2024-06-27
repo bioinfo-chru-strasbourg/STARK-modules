@@ -86,7 +86,7 @@ def populate_dictionary(samples_list, extensions_list, files_list, pattern_inclu
 				if file_base != sample or not os.path.basename(file).endswith(ext):
 					continue
 
-				if pattern_exclude and pattern_exclude in file:
+				if pattern_exclude and any(exclude in file for exclude in pattern_exclude):
 					continue
 
 				if pattern_include and pattern_include not in file:
@@ -101,8 +101,32 @@ def populate_dictionary(samples_list, extensions_list, files_list, pattern_inclu
 	
 	return dictionary
 
-def filter_files(files_list, filter_in=None, filter_out=None):
-	return [file_name for file_name in files_list if (not filter_in or filter_in in file_name) and (not filter_out or filter_out not in file_name)]
+def filter_files(files_list, filter_in=None, filter_out=None, extensions=None):
+	"""
+	Filters a list of file names based on inclusion and exclusion criteria,
+	only applied by the extensions specified.
+
+	:param files_list: List of file names to filter
+	:param filter_in: String that must be in the file name to include it (optional)
+	:param filter_out: String that must not be in the file name to exclude it (optional)
+	:param extensions: List of allowed file extensions (optional)
+	:return: Filtered list of file names
+	"""
+	filtered_files = []
+
+	for file_name in files_list:
+		if extensions and not any(file_name.endswith(ext) for ext in extensions):
+			continue
+		
+		if filter_in and filter_in not in file_name:
+			continue
+
+		if filter_out and filter_out in file_name:
+			continue
+
+		filtered_files.append(file_name)
+
+	return filtered_files
 
 			
 def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ext=None):
@@ -113,9 +137,10 @@ def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ex
 		for ext in ext_list:
 			try:
 				items = dictionary.get(sample, {}).get(ext, [])
-				if include_ext in items and (exclude_ext is None or exclude_ext not in items):
-					if os.path.exists(items) and os.path.getsize(items) != 0:
-						search_result = items
+				if items is not None:
+					if include_ext in items and (exclude_ext is None or exclude_ext not in items):
+						if os.path.exists(items) and os.path.getsize(items) != 0:
+							search_result = items
 			except KeyError as e:
 				print(f"KeyError encountered: {e}")
 	
@@ -198,13 +223,13 @@ if config['FILTER_SAMPLE']:
 
 # For validation analyse bam will be sample.aligner.validation.bam, so we append .validation to all the aligner strings
 if config['VALIDATION_ONLY']:
-	filter_files(files_list, filter_in='validation')
+	filter_files(files_list, filter_in='validation', extensions=config['PROCESS_FILE'])
 	append_aligner = '.validation'
 	aligner_list = [sub + append_aligner for sub in aligner_list]
 else:
-	filter_files(files_list, None ,filter_out='validation')
+	filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
 
-runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
+runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], files_list, None, None)
 print(dict(runDict))
 
 # Find bed file (Design)
