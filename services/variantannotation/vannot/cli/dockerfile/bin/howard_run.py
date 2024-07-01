@@ -6,6 +6,7 @@ from os.path import join as osj
 import synchronizer
 import howard_processing
 import results_provider
+import dejavu_processing
 
 # import non_redundant_generator
 import subprocess
@@ -54,6 +55,21 @@ def launch_run(args):
             "VCF",
             run_repository_list[-1],
         ),
+        "parquet_db_run_folder": osj(
+            os.environ["DOCKER_DEJAVU_DATABASE"],
+            "current",
+            args.assembly,
+            run_repository_list[-3],
+            run_repository_list[-2],
+            run_repository_list[-1],
+        ),
+        "parquet_db_project_folder": osj(
+            os.environ["DOCKER_DEJAVU_DATABASE"],
+            "current",
+            args.assembly,
+            run_repository_list[-3],
+            run_repository_list[-2],
+        ),
         "tmp_analysis_folder": osj(
             os.environ["DOCKER_TMP"],
             f"tmp_{run_repository_list[-1]}/",
@@ -62,12 +78,15 @@ def launch_run(args):
     }
     checker.depository_checker(run_informations)
     checker.pattern_checker(run_informations)
-    variantannotation_running_log = osj(run_repository, "VARunning.txt")
+    variantannotation_running_log = osj(run_repository, "VANNOTRunning.txt")
 
     with open(variantannotation_running_log, "w") as write_file:
         pass
 
-    synchronizer.processing_folder_vcf_synchronizer(run_informations)
+    synchronizer.parquet_database_synchronizer(run_informations)
+    synchronizer.vcf_synchronizer(run_informations)
+    dejavu_processing.convert_vcf_parquet(run_informations)
+    dejavu_processing.calculate_dejavu(run_informations)
     howard_processing.run_initialisation(run_informations)
     howard_processing.merge_vcf_files(run_informations)
     howard_processing.cleaner(run_informations)
@@ -75,7 +94,7 @@ def launch_run(args):
     # non_redundant_generator.generate(run_informations)
     results_provider.distribute(run_informations)
 
-    lock_file = osj(run_repository, "VAComplete.txt")
+    lock_file = osj(run_repository, "VANNOTComplete.txt")
     with open(lock_file, "w") as write_file:
         pass
 

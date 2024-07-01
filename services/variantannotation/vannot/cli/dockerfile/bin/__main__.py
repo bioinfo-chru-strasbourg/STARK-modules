@@ -76,14 +76,14 @@ def parse_args():
         "--launchmode",
         type=str,
         default="manual",
-        help="hidden argument to know if the varank analysis is manual or listener launched",
+        help="hidden argument to know if the vannot analysis is manual or listener launched",
     )
-    varank_parser = argparse.ArgumentParser(add_help=False)
-    varank_parser.add_argument(
-        "-va",
-        "--varank",
+    clean_parser = argparse.ArgumentParser(add_help=False)
+    clean_parser.add_argument(
+        "-ca",
+        "--clean_annotation",
         action="store_true",
-        help="additionnal argument to launch a preventive analysis with VaRank software if you want some annotation not generated with howard",
+        help="argument to clean vcf annotation if existing, it's based on module config file where kept annotations are written",
     )
     assembly_parser = argparse.ArgumentParser(add_help=False)
     assembly_parser.add_argument(
@@ -121,7 +121,7 @@ def parse_args():
         help="run vannot on any folder you want, must containing VCFs and optional custom configfile",
         parents=[
             verbosity_parser,
-            varank_parser,
+            clean_parser,
             assembly_parser,
             output_format_parser,
             param_parser,
@@ -142,7 +142,7 @@ def parse_args():
             verbosity_parser,
             pattern_parser,
             mode_parser,
-            varank_parser,
+            clean_parser,
             assembly_parser,
             output_format_parser,
             param_parser,

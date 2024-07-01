@@ -7,4 +7,5 @@ __all__ = [
     "howard_processing.py",
     "synchronizer.py",
     "results_provider",
+    "dejavu_processing",
 ]

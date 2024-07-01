@@ -63,10 +63,12 @@ services:
             - DOCKER_SERVICE_CLI_RELEASE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_RELEASE}
             - DOCKER_SERVICE_SETUP_RELEASE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_SETUP_RELEASE}
             - DOCKER_SERVICE_LISTENER_RELEASE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_RELEASE}
+            - DOCKER_DEJAVU_DATABASE=/STARK/databases/dejavu/
             # Host environment variables
             - HOST_TMP=${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_TMP}
-            - HOST_DATABASES=/home1/L_PROD/NGS/BAS/HOWARD/databases/
+            - HOST_DATABASES=/home1/BAS/HOWARD/databases/
             - HOST_CONFIG=${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}
+            - HOST_DEJAVU_DATABASE=/home1/BAS/HOWARD/databases/dejavu/
         volumes:
             # Volumes for generating, deposing and archiving results
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:rw
@@ -80,7 +82,8 @@ services:
             # Volumes for vannot configuration
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}:${DOCKER_STARK_INNER_FOLDER_CONFIG}:rw
             # Volumes for databases
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
+            - /home1/BAS/HOWARD/databases/:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
+            - /home1/BAS/HOWARD/databases/dejavu/:/STARK/databases/dejavu/:rw
             # Volume for developing, to comment if not used
             - /home1/bin/STARK-modules/dev.MR_real/services/variantannotation/vannot/cli/dockerfile/bin/:/tools/vannot/:rw
             - /home1/BAS/HOWARD/:/HOWARD/:rw

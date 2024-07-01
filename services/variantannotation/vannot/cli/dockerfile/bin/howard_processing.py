@@ -108,16 +108,16 @@ def run_initialisation(run_informations):
 def howard_launcher(run_informations, vcf_file, howard_image):
     log.info(f"Launching for {vcf_file}")
     logfile = osj(
-        run_informations["tmp_analysis_folder"], f"VA_annotate_{os.path.basename(vcf_file.split(".")[0])}.log"
+        run_informations["tmp_analysis_folder"], f"VANNOT_annotate_{os.path.basename(vcf_file.split(".")[0])}.log"
     )
 
     if run_informations["output_format"] != None:
         output_file = osj(
-            run_informations["tmp_analysis_folder"], f"VA_{os.path.basename(vcf_file).split(".")[0]}.{run_informations["output_format"]}"
+            run_informations["tmp_analysis_folder"], f"VANNOT_{os.path.basename(vcf_file).split(".")[0]}.{run_informations["output_format"]}"
         )
     else:
         output_file = osj(
-            run_informations["tmp_analysis_folder"], f"VA_{os.path.basename(vcf_file)}"
+            run_informations["tmp_analysis_folder"], f"VANNOT_{os.path.basename(vcf_file)}"
         )
 
     if run_informations["parameters_file"] == None:
@@ -132,7 +132,7 @@ def howard_launcher(run_informations, vcf_file, howard_image):
     if not os.path.isfile(configfile):
         log.error("param.default.json not found, please check your config directory")
 
-    container_name = f"VA_annotate_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+    container_name = f"VANNOT_annotate_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
 
     log.info("Annotating input files with HOWARD")
     
@@ -178,8 +178,8 @@ def howard_launcher(run_informations, vcf_file, howard_image):
 def merge_vcf_files(run_informations):
     log.info("Merging all vcfs into one")
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
-    logfile = osj(run_informations["tmp_analysis_folder"], f"VA_merged_{run_informations["run_name"]}.log")
-    output_file = osj(run_informations["tmp_analysis_folder"], f"merged_VA_{run_informations["run_name"]}.vcf.gz")
+    logfile = osj(run_informations["tmp_analysis_folder"], f"VANNOT_merged_{run_informations["run_name"]}.log")
+    output_file = osj(run_informations["tmp_analysis_folder"], f"merged_VANNOT_{run_informations["run_name"]}.vcf.gz")
     
     for vcf_file in vcf_files:
         with open(logfile, "a") as f:
@@ -194,8 +194,8 @@ def merge_vcf_files(run_informations):
 
 def convert_to_final_tsv(run_informations, input_file, howard_image):
     log.info("Converting output file into readable tsv")
-    logfile = osj(run_informations["tmp_analysis_folder"], f"VA_convert_{os.path.basename(input_file.split(".")[0])[3:]}.log")
-    container_name = f"VA_convert_{run_informations['run_name']}_{os.path.basename(input_file).split('.')[0]}"
+    logfile = osj(run_informations["tmp_analysis_folder"], f"VANNOT_convert_{os.path.basename(input_file.split(".")[0])[7:]}.log")
+    container_name = f"VANNOT_convert_{run_informations['run_name']}_{os.path.basename(input_file).split('.')[0]}"
     output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(input_file).split(".")[0]}.tsv")
 
     with open(logfile, "w") as f:
@@ -250,7 +250,7 @@ def cleaner(run_informations):
         shutil.move(results_file, run_informations["archives_results_folder"])
 
     with open(
-        osj(run_informations["archives_results_folder"], "VACopyComplete.txt"),
+        osj(run_informations["archives_results_folder"], "VANNOTCopyComplete.txt"),
         mode="a",
     ):
         pass
