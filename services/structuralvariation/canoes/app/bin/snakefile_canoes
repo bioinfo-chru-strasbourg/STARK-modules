@@ -613,6 +613,8 @@ rule canoes_calling:
 			hom = config["homdel"],
 			refbamlist=config['REF_BAM_LIST'],
 			refmulticovtsv='--readsrefs f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv"' if config['REF_BAM_LIST'] else ""
+
+			refmulticovtsv = f"--readsrefs {resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv" if config['REF_BAM_LIST'] else ""
 	output:
 			cnvcall = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv",
 			success = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.success",
