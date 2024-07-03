@@ -329,10 +329,13 @@ if config['addruns']:
 	print(sample_list)
 	print(dict(addrunDict))
 else:
-	sample_list_addruns = []
+	sample_list_addruns = None
 
-# We create a sample_list_tocopy to copy only originals sample's results 
-sample_list_to_copy = [x for x in sample_list if x not in sample_list_addruns]
+# We create a sample_list_tocopy to copy only original sample's results
+if sample_list_addruns is not None:
+    sample_list_to_copy = [x for x in sample_list if x not in sample_list_addruns]
+else:
+    sample_list_to_copy = sample_list.copy()  # Copy all items if sample_list_addruns is None
 
 # Set a filelist with all the files tag ; file format is sample.tag
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
@@ -767,10 +770,11 @@ onsuccess:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 
 	# Copy results to the main output directory, removing additional samples from the results
-	for sample in sample_list_addruns:
-		shell(f"rm -rf {resultDir}/{sample} || true")
+	if sample_list_addruns is not None:
+		for sample in sample_list_addruns:
+			shell(f"rm -rf {resultDir}/{sample} || true")
 	
-	if sample_list_addruns:
+	if sample_list_addruns is not None:
 		# We extract the samples that are present in the sample_list_addruns & the vcf
 		shell(f"bcftools query -l {resultDir}/{serviceName}.{date_time}.allsamples.Design.unfiltered.vcf.gz > vcf_samples.txt")
 		with open('final_sample_list.txt', 'w') as file:
@@ -816,7 +820,7 @@ onsuccess:
 	none_gender_samples = [sample for sample, data in runDict.items() if data.get('gender') == 'None']
 	print(none_gender_samples)
 	# Generate html report
-	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}_template.html" , f"{outputDir}/{serviceName}_{date_time}_report.html")
+	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}_template.html" , f"{outputDir}/{serviceName}_{date_time}_report.html", sample_list_added=sample_list_addruns, gender_list=gender_list, list_XX=list_XX, list_XY=list_XY, none_gender_samples=none_gender_samples)
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '_style.css', outputDir)
 
 onerror:
