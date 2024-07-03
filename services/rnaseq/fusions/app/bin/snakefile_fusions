@@ -222,7 +222,7 @@ if config['FILTER_SAMPLE']:
 	sample_list = list(config['FILTER_SAMPLE'])
 
 # For validation analyse bam will be sample.aligner.validation.bam, so we append .validation to all the aligner strings
-if config['VALIDATION_ONLY']:
+if config['VALIDATION_ONLY'] == True:
 	filter_files(files_list, filter_in='validation', extensions=config['PROCESS_FILE'])
 	append_aligner = '.validation'
 	aligner_list = [sub + append_aligner for sub in aligner_list]
