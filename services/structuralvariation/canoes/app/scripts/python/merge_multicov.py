@@ -24,7 +24,6 @@ def main():
 	data = pd.DataFrame(columns=["chrom", "start", "end"])
 	
 	for multicovfile in args.input:
-		sample_name = multicovfile.split("/")[-1].split(".")[2]
 		df = pd.read_csv(multicovfile, sep="\t")
 		data = pd.merge(data, df, on=["chrom", "start", "end"], how="outer", validate="one_to_one")
 	

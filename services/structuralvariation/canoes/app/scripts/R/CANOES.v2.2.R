@@ -132,12 +132,10 @@ if (!is.null(pdf_output)) {
   }
   dev.off()
 }
-  
-  #genotyping.S2 <- GenotypeCNVs(xcnvs, "S2", canoes.reads, p_value, Tnum, D, numrefs)
+  # genotyping.S2 <- GenotypeCNVs(xcnvs, "S2", canoes.reads, p_value, Tnum, D, numrefs)
   # Writing genotyping.S2 to a CSV file
-  #write.csv(genotyping.S2, file = genotyping_output)
+  # write.csv(genotyping.S2, file = genotyping_output)
 }
-
 
 # Constants
 NUM.ABNORMAL.STATES=2
@@ -186,7 +184,6 @@ PlotCNV <- function(counts, sample.name, targets, offset=1, refsample.names = NU
   if ((end.target + offset) %in% counts$target){
     end.target <- end.target + offset
   }
-  # TODO adapt to reference
 
 	if(length(refsample.names)==0){
 		ref.sample.names <-  setdiff(as.character(names(counts)[-seq(1,5)]), 
@@ -312,7 +309,6 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
     }
 
   #reference.samples <- setdiff(sample.names, sample.name)
-  
   covariances <- cov[sample.name, reference.samples]
   reference.samples <- names(sort(covariances, 
           decreasing=T)[1:min(numrefs, length(covariances))])

@@ -392,7 +392,7 @@ for panel in panel_list:
 	panel_list_trunc = [panel_trunc]
 
 if config['KMER']:
-	kmerisation(config['KMER'], config['BED_FILE'], deconbed_file)
+	kmerisation(config['KMER'], config['BED_FILE'], config['BED_FILE'])
 
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
 if not config['BED_FILE']:
@@ -713,7 +713,7 @@ rule correctvcf:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.vcf"
 	shell: 
 		""" 
-		sed -e '/^##INFO/s/[(\)]/_/g' -e '/^##INFO/s/\//_/g' -e "s/##INFO=<ID='SampleID'/##INFO=<ID=SampleID/" {input} > {output}
+		sed -e 's/[()]/_/g' -e 's/\//_/g' -e "s/##INFO=<ID='SampleID'/##INFO=<ID=SampleID/" {input} > {output}
 		"""
 
 rule sortvcf1:

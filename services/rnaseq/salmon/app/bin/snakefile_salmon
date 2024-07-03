@@ -374,7 +374,7 @@ rule fastp:
 	threads: workflow.cores
 	shell:	
 		"""
-		fastp --thread={threads} {params.miscs} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
+		fastp --thread={threads} {params.miscs} (params.trim} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
 		"""
 
 rule salmon:
@@ -431,7 +431,7 @@ onsuccess:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 	
 	# Copy results to the main output directory
-	shell(f"rm -f {resultDir}/tmp")
+	shell(f"rm -f {resultDir}/tmp || true")
 	shell("rsync -azvh --include={include} --exclude='*'  {resultDir}/ {outputDir}")
 
 	# Copy individual sample results to their respective directories

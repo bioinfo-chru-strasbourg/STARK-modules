@@ -742,32 +742,32 @@
 			"RE": {
 				"Type": "Integer",
 				"Number": "1",
-				"Description": "Reads Expected: the number of expected reads under the probabilistic model (Decon)"
+				"Description": "Reads Expected: the number of expected reads under the probabilistic model"
 			},
 			"RO": {
 				"Type": "Integer",
 				"Number": "1",
-				"Description": "Reads observed: the number of observed reads (Decon)"
+				"Description": "Reads observed: the number of observed reads"
 			},
 			"RR": {
 				"Type": "Float",
 				"Number": "1",
-				"Description": "Reads ratio: the ratio of observed to expected reads (Decon)"
+				"Description": "Reads ratio: the ratio of observed to expected reads"
 			},
 			"NC": {
 				"Type": "Integer",
 				"Number": "1",
-				"Description": "N.comp: the number of samples used as the reference set (Decon)"
+				"Description": "N.comp: the number of samples used as the reference set"
 			},
 			"CO": {
 				"Type": "Float",
 				"Number": "1",
-				"Description": "Correlation: the maximum correlation between the test sample and any other sample in the full set of BAM files (Decon)"
+				"Description": "Correlation: the maximum correlation between the test sample and any other sample in the full set of BAM files"
 			},
 			"BF": {
 				"Type": "Float",
 				"Number": "1",
-				"Description": "Bayes factor associated with the call (Decon)"
+				"Description": "Bayes factor associated with the call"
 			}
 		}
 	}
