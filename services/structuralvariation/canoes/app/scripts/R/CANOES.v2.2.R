@@ -47,7 +47,19 @@ multi_strsplit<-function(x,splits,y){
 }
 
 # Test function
-Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, pdf_output = NULL, rdata_output = NULL, refbams_file= NULL, ref_reds = NULL) {
+Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, rdata_output = NULL, refbams_file= NULL, ref_reads = NULL) {
+  
+  if(length(samples)>0){
+    samplesbams<-apply(read.table(paste(samples)),1,toString)
+    a<-length(strsplit(samplesbams[1],"/")[[1]])
+    sample.names_to_analyse<-sapply(samplesbams,multi_strsplit,c("/","."),c(a,1))
+    names(sample.names_to_analyse)<-NULL
+    sample.names_to_analyse <- unique(sample.names_to_analyse)
+}else{
+    message('ERROR: No samples to analyse')
+    quit()
+}
+  # GC percent
   datagc <- read.table(gc_file, header = TRUE)
   if (colnames(datagc)[4] == "GC_CONTENT") {
   gc <- datagc[[4]]
@@ -55,24 +67,14 @@ Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numr
   stop("The fourth column is not named GC_CONTENT")
   }
   names(gc) <- "gc" # column name is gc
-  
+   
+  # Reads
   canoes.reads_un <- read.table(reads_file,header=TRUE)
   data <- read.table(reads_file,header=TRUE)
   sample.names <- names(data)[4:length(names(data))]
   names(canoes.reads_un) <- c("chromosome", "start", "end", sample.names)
   target <- seq(1, nrow(canoes.reads_un))
   canoes.reads_un <- cbind(target, gc, canoes.reads_un)
-
-if(length(samples)>0){
-    samplesbams<-apply(read.table(paste(samples)),1,toString)
-    a<-length(strsplit(samplesbams[1],"/")[[1]])
-    sample.names_toanalyse<-sapply(samplesbams,multi_strsplit,c("/","."),c(a,1))
-    names(sample.names_toanalyse)<-NULL
-    sample.names_toanalyse <- unique(sample.names_toanalyse)
-}else{
-    message('ERROR: No samples to analyse')
-    quit()
-}
 
 refsample.names<-vector()
 if(length(refbams_file)>0){
@@ -83,10 +85,17 @@ if(length(refbams_file)>0){
     names(refsample.names)<-NULL
     message('INFO: We will use external references for the analysis')
     head(refsample.names)
+  sample.names_all <- c(sample.names_to_analyse, refsample.names)
+  canoes.reads_ref <- read.table(ref_reads,header=TRUE)
+  canoes.reads_ref <- canoes.reads_ref[,-(1:3)]
+  data_ref <- read.table(ref_reads,header=TRUE)
+  ref.sample.names <- names(data_ref)[4:length(names(data_ref))]
+  names(canoes.reads_ref) <- c(ref.sample.names)
+  canoes.reads_un <- cbind(canoes.reads_un, canoes.reads_ref)
 }
 
 # We filter out samples depending on the list for XX/XY analysis
-canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end", sample.names_toanalyse)]
+canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end", sample.names_all)]
 
  # We filter out chrX/Y depending on the type of analysis (A = Autosome only, XX/XY, sexual chr only)
  if (modechrom=="A"){
@@ -97,9 +106,9 @@ canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end"
     canoes.reads<-subset(canoes.reads, chromosome=="chrX")
  }
 
-  xcnv.list <- vector('list', length(sample.names_toanalyse))
-  for (i in 1:length(sample.names_toanalyse)) {
-    xcnv.list[[i]] <- CallCNVs(sample.names_toanalyse[i], canoes.reads, p_value, Tnum, D, numrefs, FALSE, homdel_mean, refsample.names) 
+  xcnv.list <- vector('list', length(sample.names_to_analyse))
+  for (i in 1:length(sample.names_to_analyse)) {
+    xcnv.list[[i]] <- CallCNVs(sample.names_to_analyse[i], canoes.reads, p_value, Tnum, D, numrefs, FALSE, homdel_mean, refsample.names) 
   }
   
   xcnvs <- do.call('rbind', xcnv.list)
@@ -117,13 +126,13 @@ canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end"
   xcnvs$End <- end
   xcnvs_final <- xcnvs[, c("Chrom", "Start", "End", "CNV", "SAMPLE", "INTERVAL", "KB", "MID_BP", "TARGETS", "NUM_TARG", "MLCN", "Q_SOME")]
   xcnvs_final$INTERVAL <- gsub("^(\\d+):", "chr\\1:", xcnvs_final$INTERVAL)
-  write.table(xcnvs_final, file = output_file, sep = "\t", quote = FALSE)
+  write.table(xcnvs_final, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
   
 # Identify all data frames in the environment & save to an Rdata file
 data_frames <- sapply(ls(), function(x) is.data.frame(get(x)))
 data_frame_names <- names(data_frames[data_frames])
 save(list = data_frame_names, file = rdata_output)
-  
+
 }
 
 # Constants
@@ -132,7 +141,6 @@ NUM.STATES=3
 DELETION=1
 NORMAL=2
 DUPLICATION=3
-
 
 # CallCNVs
 #     Calls CNVs in sample of interest
@@ -170,7 +178,7 @@ DUPLICATION=3
 #      NUM_TARG: how many targets are in the CNV
 #      Q_SOME: a Phred-scaled quality score for the CNV
 CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.mean, refsample.names = NULL){
-  #sample.name, counts, p=1e-08, Tnum=6, D=70000, numrefs=30, get.dfs=F, homdel.mean=0.2
+  #sample.name, canoes_reads, p=1e-08, Tnum=6, D=70000, numrefs=30, get.dfs=F, homdel.mean=0.2
   if (!sample.name %in% names(counts)){stop("No column for sample ", sample.name, " in counts matrix")}
   if (length(setdiff(names(counts)[1:5], c("target", "chromosome", "start", "end", "gc"))) > 0){
     stop("First five columns of counts matrix must be target, chromosome, start, end, gc")
@@ -198,6 +206,7 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
   if (numrefs <= 0){
     stop("parameter numrefs must be positive")
   }
+
   sample.names <- colnames(counts)[-seq(1,5)]
   # find mean coverage of probes
   mean.counts <- mean(apply(counts[, sample.names], 2, mean))
@@ -215,7 +224,7 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
        reference.samples <- refsample.names
     }
 
-  #reference.samples <- setdiff(sample.names, sample.name)
+
   covariances <- cov[sample.name, reference.samples]
   reference.samples <- names(sort(covariances, 
           decreasing=T)[1:min(numrefs, length(covariances))])
