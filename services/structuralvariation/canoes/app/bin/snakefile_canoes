@@ -476,6 +476,7 @@ if config['plots']:
 			expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
 			expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 			f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
+			expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv", aligner=aligner_list)
 else:
 	rule all:
 		""" Output a design vcf.gz with the bams and the bed provided """
@@ -483,6 +484,7 @@ else:
 			expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
 			expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
 			f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
+			expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv", aligner=aligner_list)
 
 rule help:
 	"""
@@ -565,6 +567,7 @@ rule bam_to_multicov_for_refbam:
 	output:	f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv"
 	params: pyscripts = config["pyscripts"],
 			bed = config['BED_FILE']
+	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.log"
 	shell:" python3 {params.pyscripts}/pybedtools.py --tsv {input} --bed {params.bed} -q 20 -o {output} 1> {log} "
 
 rule merge_multicov:
@@ -574,7 +577,6 @@ rule merge_multicov:
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.reads.log"
 	params: pyscripts = config["pyscripts"]
 	shell: " python3 {params.pyscripts}/merge_multicov.py {input} -o {output} "
-
 
 rule plot_coverage_stats:
 	""" Generate coverage calculation """
@@ -612,14 +614,11 @@ rule canoes_calling:
 			numreference = config["numref"],
 			hom = config["homdel"],
 			refbamlist=config['REF_BAM_LIST'],
-			refmulticovtsv='--readsrefs f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv"' if config['REF_BAM_LIST'] else ""
-
-			refmulticovtsv = f"--readsrefs {resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv" if config['REF_BAM_LIST'] else ""
+			refmulticovtsv = f" --readsrefs {resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv" if config['REF_BAM_LIST'] else ""
 	output:
 			cnvcall = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv",
 			success = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.success",
-			rdata = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOES.Rdata",
-			#pdf =  f"{resultDir}/{serviceName}/{serviceName}.{date_time}.{{aligner}}.{gender}.Genotyping.pdf"
+			rdata = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOES.Rdata"
 	log: 
 		log = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.log",
 		err = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.err"
@@ -695,7 +694,7 @@ rule AnnotSV:
 		mode=config['annotationMode'],
 		annotation=config['annotationdir'],
 		hpo=lambda wildcards: runDict[wildcards.sample]['hpo'],
-		samplevcf=lambda wildcards: runDict[wildcards.sample]['.final.vcf.gz'] # -snvIndelSamples to specify samples in the vcf
+		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in the vcf
 	shell: 
 		"""
 		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}

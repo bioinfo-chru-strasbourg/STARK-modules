@@ -761,7 +761,7 @@ rule AnnotSV:
 		mode=config['annotationMode'],
 		annotation=config['annotationdir'],
 		hpo=lambda wildcards: runDict[wildcards.sample]['hpo'],
-		samplevcf=lambda wildcards: runDict[wildcards.sample]['.final.vcf.gz'] # -snvIndelSamples to specify samples in the vcf
+		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in the vcf
 	shell: 
 		"""
 		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
