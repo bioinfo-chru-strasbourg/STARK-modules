@@ -13,7 +13,8 @@
 #   - fix GC content in column 4 with control, homdel variable not assigned
 #   - adapt script to chrX/Y
 #   - removing genotyping and plot
-#   - add reference samples should be a list of external samples in a list, with gender
+#   - add reference samples option, a list of external samples in a tsv
+#     TODO ! should be with gender
 ########################################################################################################
 
 suppressMessages(library(optparse))
@@ -323,7 +324,6 @@ EstimateVariance <- function(counts, ref.sample.names, sample.weights){
   # can't do gamma regression with negative 
   counts.subset$var[counts.subset$var==0] <- 0.1 
   fit <- gam(var ~ s(mean) + s(gc), family=Gamma(link=log), data=counts.subset)
-   
   
   #rsd <- residuals(fit)
   #qq.gam(fit,rep=100); plot(fitted(fit),rsd)
