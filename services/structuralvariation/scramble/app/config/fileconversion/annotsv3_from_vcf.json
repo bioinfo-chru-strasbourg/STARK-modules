@@ -217,7 +217,7 @@
 				"Number": ".",
 				"Description": "Alternate nucleotide sequence (extracted only from a VCF input file)"
 			},
-			"'SampleID'": {
+			"SampleID": {
 				"Type": "String",
 				"Number": ".",
 				"Description": "The sample ID column from a VCF file"

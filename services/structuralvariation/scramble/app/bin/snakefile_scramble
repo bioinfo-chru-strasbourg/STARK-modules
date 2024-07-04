@@ -351,21 +351,13 @@ sample_count = len(sample_list)
 
 ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
-if not config['BED_FILE']:
-	rule all:
-		"""	Rule will create an unfiltered vcf.gz and corresponding tsv	"""
-		input:
-			expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
-			f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.tsv"
-
-else:
-	rule all:
-		"""	Rule will create an unfiltered vcf.gz & design vcf.gz and corresponding tsv	"""
-		input:
-			expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz", sample=sample_list, aligner=aligner_list),
-			expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list),
-			f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.tsv",
-			f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
+rule all:
+    """Rule will create an unfiltered vcf.gz and corresponding tsv, with an optional design vcf.gz & tsv if a bed is provided"""
+    input:
+        expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz", sample=sample_list, aligner=aligner_list) +
+        [f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.tsv"] +
+        (expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list) if config['BED_FILE'] else []) +
+        ([f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"] if config['BED_FILE'] else [])
 
 rule help:
 	"""
@@ -531,17 +523,9 @@ rule variantconvert:
 		variantconvert convert -i {input} -o {output} -c {params.configjson} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
-rule correctvcfbis:
-	input: rules.variantconvert.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_fix.vcf"
-	shell:
-		""" 
-		sed -e '/^##INFO/s/[(\)]/_/g' -e '/^##INFO/s/\//_/g' -e "s/##INFO=<ID='SampleID'/##INFO=<ID=SampleID/" {input} > {output}
-		"""
-
 rule sortvcf:
 	""" Sort vcf """
-	input: rules.correctvcfbis.output
+	input: rules.variantconvert.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unfiltered.vcf")
 	params: dummypath=config['DUMMY_PATH']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "

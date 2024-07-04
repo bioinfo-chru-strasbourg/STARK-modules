@@ -177,6 +177,7 @@ DUPLICATION=3
 #      MID_BP: middle base pair of CNV
 #      TARGETS: target numbers of CNV in the form start..stop
 #      NUM_TARG: how many targets are in the CNV
+#      MLCN : Maximum likelihood copy number
 #      Q_SOME: a Phred-scaled quality score for the CNV
 CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.mean, refsample.names = NULL){
   #sample.name, canoes_reads, p=1e-08, Tnum=6, D=70000, numrefs=30, get.dfs=F, homdel.mean=0.2

@@ -333,9 +333,9 @@ else:
 
 # We create a sample_list_tocopy to copy only original sample's results
 if sample_list_addruns is not None:
-    sample_list_to_copy = [x for x in sample_list if x not in sample_list_addruns]
+	sample_list_to_copy = [x for x in sample_list if x not in sample_list_addruns]
 else:
-    sample_list_to_copy = sample_list.copy()  # Copy all items if sample_list_addruns is None
+	sample_list_to_copy = sample_list.copy()  # Copy all items if sample_list_addruns is None
 
 # Set a filelist with all the files tag ; file format is sample.tag
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
@@ -468,21 +468,17 @@ sample_count = len(sample_list)
 # Priority order
 ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
-if config['REF_BAM_LIST']:
-	rule all:
-		""" Output a design vcf.gz with the bams and the bed provided, using a reference set """
-		input:
-			expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
-			expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
-			f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
-			expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv", aligner=aligner_list)
-else:
-	rule all:
-		""" Output a design vcf.gz with the bams and the bed provided """
-		input:
-			expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", aligner=aligner_list, gender=gender_list),
-			expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
-			f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
+
+rule all:
+	"""Output a design vcf.gz with the bams and the bed provided, optionally using a reference set and generating plots if specified"""
+	input:
+		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", aligner=aligner_list, gender=gender_list) +
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list, sample=sample_list) +
+		[f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"] +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv", aligner=aligner_list) if config['REF_BAM_LIST'] else []) +
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.pdf", sample=sample_list, aligner=aligner_list) if config['plots'] == True else []) +
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.pdf", sample=sample_list, aligner=aligner_list) if config['plots'] == True else [])
+
 
 rule help:
 	"""
@@ -631,7 +627,7 @@ rule merge_makeCNVcalls:
 	""" Merge all CNV call results """
 	input: expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", gender=gender_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
-    shell: " (head -n 1 {input[0]} && tail -n +2 -q {input} | sort -u | sort -r) > {output} "
+	shell: " (head -n 1 {input[0]} && tail -n +2 -q {input} | sort -u | sort -r) > {output} "
 
 
 rule bedtovcf:
@@ -710,17 +706,9 @@ rule variantconvert:
 		variantconvert convert -i {input} -o {output} -c {params.configjson} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
-rule correctvcf:
-	input: rules.variantconvert.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.vcf"
-	shell: 
-		""" 
-		sed -e 's/[()]/_/g' -e 's/\//_/g' -e "s/##INFO=<ID='SampleID'/##INFO=<ID=SampleID/" {input} > {output}
-		"""
-
 rule sortvcf1:
 	""" Sort vcf """
-	input: rules.correctvcf.output
+	input: rules.variantconvert.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf"
 	params: dummypath=config['DUMMY_PATH']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
