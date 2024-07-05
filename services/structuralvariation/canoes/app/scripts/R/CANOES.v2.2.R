@@ -80,6 +80,21 @@ Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numr
 refsample.names<-vector()
 if(length(refbams_file)>0){
     rawrefbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
+    
+      if("gender" %in% colnames(rawrefbams)){
+    if (modechrom=="XX"){
+      refbams = subset(refbams, refbams$gender=='F')
+      }
+    if (modechrom=="XY"){
+      refbams = subset(refbams, refbams$gender=='M')
+      }
+    }else{
+        if (modechrom=="XX" || modechrom=="XY"){
+        message('ERROR: No gender specified in the reference bam list, calling of chrX is not possible')
+        quit()
+        }
+    }    
+     
     refbams<-apply(rawrefbams,1,toString)
     a<-length(strsplit(refbams[1],"/")[[1]])
     refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))

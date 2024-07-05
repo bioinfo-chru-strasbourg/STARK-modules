@@ -571,7 +571,6 @@ for item in log_items:
 print(dict(runDict))
 
 ################################################## RULES ##################################################
-
 # check the number of sample for copy or merge vcf rule
 sample_count = len(sample_list) 
 
@@ -779,9 +778,17 @@ rule variantconvert_annotsv:
 		variantconvert convert -i {input} -o {output} -c {params.configjson} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
+rule correctvcf:
+	input: rules.variantconvert_annotsv.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.vcf"
+	shell:
+		""" 
+		sed '/^##INFO/ s/[()]/_/g; /^##INFO/ s#/#_#g' {input} | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		"""
+
 rule sortvcf1:
 	""" Sort vcf """
-	input: rules.variantconvert_annotsv.output
+	input: rules.correctvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf"
 	params: dummypath=config['DUMMY_PATH']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "

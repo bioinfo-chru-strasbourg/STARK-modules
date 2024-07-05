@@ -687,32 +687,32 @@
 				"Number": ".",
 				"Description": "Phenotypic evidence from Fish model"
 			},
-			"Compound_htz(sample)": {
+			"Compound_htz_SAMPLENAME": "Compound_htz(sample)" {
 				"Type": "String",
 				"Number": ".",
 				"Description": "List of heterozygous SNV/indel (reported with 'chrom_position') presents in the gene overlapped by the annotated SV"
 			},
-			"Count_hom(sample)": {
+			"Count_hom_SAMPLENAME": "Count_hom(sample)" {
 				"Type": "Integer",
 				"Number": ".",
 				"Description": "Number of homozygous SNV/indel (extracted from VCF input file) in the individual 'sample' which are present: 1) in the deletion SV ('full' annotation) and 2) between intersectStart and intersectEnd ('split' annotation)"
 			},
-			"Count_htz(sample)": {
+			"Count_htz_SAMPLENAME": "Count_htz(sample)" {
 				"Type": "Integer",
 				"Number": ".",
 				"Description": "Number of heterozygous SNV/indel (extracted from VCF input file) in the individual 'sample' which are present: 1) in the SV ('full' annotation) and 2) between intersectStart and intersectEnd ('split' annotation)"
 			},
-			"Count_htz/allHom(sample)": {
+			"Count_htz_allHom_SAMPLENAME": "Count_htz/allHom(sample)" {
 				"Type": "Float",
 				"Number": ".",
 				"Description": "Ratio for QC filtering: #htz(sample)/#allHom(sample)"
 			},
-			"Count_htz/total(cohort)": {
+			"Count_htz_total_cohort": "Count_htz/total(cohort)" {
 				"Type": "Float",
 				"Number": ".",
 				"Description": "Ratio for QC filtering: #htz(sample)/#total(cohort)"
 			},
-			"Count_total(cohort)": {
+			"Count_total_cohort": "Count_total(cohort)" {
 				"Type": "Integer",
 				"Number": ".",
 				"Description": "Total count of SNV/indel called from all the samples of the cohort and present in the interval of the deletion"
