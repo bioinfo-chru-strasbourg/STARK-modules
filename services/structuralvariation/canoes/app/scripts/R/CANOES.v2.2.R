@@ -314,6 +314,133 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
   return(cnvs)
 }
 
+# GenotypeCNVs
+#     Genotype CNVs in sample of interest
+# Arguments:
+#   xcnv
+#     data frame with the following columns, and one row for each
+#     CNV to genotype
+#      INTERVAL: CNV coordinates in the form chr:start-stop
+#      TARGETS: target numbers of CNV in the form start..stop
+#               these should correspond to the target numbers in counts
+#   sample.name:
+#     sample to genotype CNVs in (should correspond to a column in counts)
+#   counts: 
+#     count matrix, first five columns should be 
+#       target: consecutive numbers for targets (integer)
+#       chromosome: chromosome number (integer-valued) 
+#         (support for sex chromosomes to come)
+#       start: start position of probe (integer)
+#       end: end position of probe (integer)
+#       gc: gc content (real between 0 and 1)
+#       subsequent columns should include counts for each probe for samples
+#   p:
+#     average rate of occurrence of CNVs (real) default is 1e-08
+#   D:
+#     expected distance between targets in a CNV (integer) default is 70,000
+#   Tnum:
+#     expected number of targets in a CNV (integer) default is 6
+#   numrefs
+#     maximum number of reference samples to use (integer) default is 30
+#     the weighted variance calculations will take a long time if too 
+#     many reference samples are used
+#   emission.probs and distances are for internal use only
+# Returns: 
+#   data frame with the following columns and one row for each genotyped CNV:
+#      INTERVAL: CNV coordinates in the form chr:start-stop
+#      NQDEL: a Phred-scaled quality score that sample.name has no deletion 
+#             in the interval
+#      SQDEL: a Phred-scaled quality score that sample.name has a deletion 
+#             in the interval
+#      NQDUP and SQDUP: same, but for a duplication
+GenotypeCNVs <- function(xcnvs, sample.name, counts, p, Tnum, 
+                    D, numrefs,
+                    emission.probs=NULL, 
+                    distances=NULL){
+  if (!sample.name %in% names(counts)){stop("No column for sample ", sample.name, " in counts matrix")}
+  if (length(setdiff(names(counts)[1:5], c("target", "chromosome", "start", "end", "gc"))) > 0){
+    stop("First five columns of counts matrix must be target, chromosome, start, end, gc")
+  }
+  if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0) {
+    # remove sex chromosomes
+    cat("Trying to remove sex chromosomes and 'chr' prefixes\n")
+    counts <- subset(counts, !chromosome %in% c("chrX", "chrY", "X", "Y"))
+    if (sum(grepl("chr", counts$chromosome))==length(counts$chromosome)){
+      counts$chromosome <- gsub("chr", "", counts$chromosome)
+    }
+    counts$chromosome <- as.numeric(counts$chromosome)
+    if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0) 
+      stop("chromosome must take value in range 1-22 (support for sex chromosomes to come)")
+  }
+  suppressMessages(library(plyr))
+  counts <- arrange(counts, chromosome, start)
+  if (p <= 0){
+    stop("parameter p must be positive")
+  }
+  if (Tnum <= 0){
+    stop("parameter Tnum must be positive")
+  }
+  if (D <= 0){
+    stop("parameter D must be positive")
+  }
+  if (numrefs <= 0){
+    stop("parameter numrefs must be positive")
+  }
+  num.cnvs <- nrow(xcnvs)
+  cnv.intervals <- as.character(xcnvs$INTERVAL)
+  # if no emission probs matrix is passed in, generate a new one
+  if (is.null(emission.probs)){
+    l <- CallCNVs(sample.name, counts, p, Tnum, D, numrefs, get.dfs=T)
+    emission.probs <- l[['emission.probs']]
+    distances <- l[['distances']]
+  }
+  forward.m <- GetForwardMatrix(emission.probs, distances, p, Tnum, D)
+  backward.m <- GetBackwardMatrix(emission.probs, distances, p, Tnum, D)
+  qualities <- matrix(0, nrow=num.cnvs, ncol=5, 
+                      dimnames=list(cnv.intervals, 
+                                    c("INTERVAL", "NQDel", "SQDel", "NQDup", "SQDup")))
+  for (i in 1:num.cnvs){
+    interval <- as.character(xcnvs[i, "INTERVAL"])
+    targets <- as.numeric(strsplit(as.character(xcnvs[i, "TARGETS"]), ".", fixed=T)[[1]][c(1,3)])
+    left.target <- targets[1]
+    right.target <- targets[2]
+    likelihoods <- GetModifiedLikelihood(forward.m, backward.m, 
+                                         emission.probs, distances, 
+                                         left.target, right.target, 
+                                         c(DUPLICATION, DELETION), p, Tnum, D)
+    modified.likelihood <- likelihoods[1]; 
+    unmodified.likelihood <- likelihoods[2]
+    Prob.All.Normal <- exp(modified.likelihood - unmodified.likelihood)
+    likelihoods <- GetModifiedLikelihood(forward.m, backward.m, 
+                                         emission.probs, distances, 
+                                         left.target, right.target, DELETION, p, Tnum, D)
+    modified.likelihood <- likelihoods[1]; 
+    unmodified.likelihood <- likelihoods[2]
+    Prob.No.Deletion <- exp(modified.likelihood - unmodified.likelihood)
+    likelihoods <- GetModifiedLikelihood(forward.m, backward.m, 
+                                         emission.probs, distances, 
+                                         left.target, right.target, DUPLICATION, p, Tnum, D)
+    modified.likelihood <- likelihoods[1]; 
+    unmodified.likelihood <- likelihoods[2]
+    Prob.No.Duplication <- exp(modified.likelihood - unmodified.likelihood)
+    # Check if probabilities greater than 1 are numerical error or bug
+    Phred <- function(prob){
+      return(round(min(99, -10 * log10(1 - prob))))
+    }
+    qualities[i, "NQDel"] <- Phred(Prob.No.Deletion)       
+    qualities[i, "SQDel"] <- Phred(Prob.No.Duplication - Prob.All.Normal)
+    qualities[i, "NQDup"] <- Phred(Prob.No.Duplication)       
+    qualities[i, "SQDup"] <- Phred(Prob.No.Deletion - Prob.All.Normal)
+    qualities[i, "INTERVAL"] <- interval
+  }
+  qualities <- as.data.frame(qualities, stringsAsFactors=F)
+  qualities$NQDel <- as.integer(qualities$NQDel)
+  qualities$NQDup <- as.integer(qualities$NQDup)
+  qualities$SQDel <- as.integer(qualities$SQDel)
+  qualities$SQDup <- as.integer(qualities$SQDup)
+  return(qualities)
+}
+
 # returns data frame with distance to each target from the previous target 
 # (0 in the case of the first target on chromosome 1, a very big number
 # for the first target on each other chromosome--this resets the HMM
@@ -328,6 +455,8 @@ GetDistances <- function(counts){
                                       chromosome[1:(num.nonzero.exons - 1)]))
   return(data.frame(target=counts[, "target"], distance=distances))
 }
+
+
 
 EstimateVariance <- function(counts, ref.sample.names, sample.weights){
   suppressMessages(library(Hmisc))
