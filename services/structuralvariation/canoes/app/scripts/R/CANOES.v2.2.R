@@ -7,14 +7,13 @@
 # Original R script from https://github.com/ShenLab/CANOES
 
 ########## Note ########################################################################################
-# DEV v1 11/03/2024
+# DEV v1 11/07/2024
 # Changelog
 #   - optparse script
-#   - fix GC content in column 4 with control, homdel variable not assigned
+#   - fix GC content in column 4 with control, homdel variable can be assigned
 #   - adapt script to chrX/Y
-#   - removing genotyping and plot
-#   - add reference samples option, a list of external samples in a tsv
-#     TODO ! should be with gender
+#   - removing plot
+#   - add reference samples option, a list of external samples in a tsv & control of gender presence
 ########################################################################################################
 
 suppressMessages(library(optparse))
@@ -83,10 +82,10 @@ if(length(refbams_file)>0){
     
       if("gender" %in% colnames(rawrefbams)){
     if (modechrom=="XX"){
-      refbams = subset(refbams, refbams$gender=='F')
+      rawrefbams = subset(rawrefbams, rawrefbams$gender=='F')
       }
     if (modechrom=="XY"){
-      refbams = subset(refbams, refbams$gender=='M')
+      rawrefbams = subset(rawrefbams, rawrefbams$gender=='M')
       }
     }else{
         if (modechrom=="XX" || modechrom=="XY"){

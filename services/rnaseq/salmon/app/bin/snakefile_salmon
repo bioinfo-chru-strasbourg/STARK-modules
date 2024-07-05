@@ -213,7 +213,9 @@ depotDir = config['DEPOT_DIR']
 if config['DEPOT_DIR'] == "depository":
 	depotDir = outputDir.replace("repository", "depository")
 
-directories = [resultDir, outputDir, depotDir]
+directories = [resultDir, outputDir]
+if depotDir:  # Ensure depotDir is not an empty string
+	directories.append(depotDir)
 for directory in directories:
 	os.makedirs(directory, exist_ok=True)
 
@@ -365,7 +367,7 @@ rule fastp:
 	threads: workflow.cores
 	shell:	
 		"""
-		fastp --thread={threads} {params.miscs} (params.trim} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
+		fastp --thread={threads} {params.miscs} {params.trim} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
 		"""
 
 rule salmon:

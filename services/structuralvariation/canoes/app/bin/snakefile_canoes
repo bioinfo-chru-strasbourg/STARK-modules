@@ -276,7 +276,10 @@ depotDir = config['DEPOT_DIR']
 if config['DEPOT_DIR'] == "depository":
 	depotDir = outputDir.replace("repository", "depository")
 
-directories = [resultDir, outputDir, depotDir]
+directories = [resultDir, outputDir]
+if depotDir:  # Ensure depotDir is not an empty string
+	directories.append(depotDir)
+
 for directory in directories:
 	os.makedirs(directory, exist_ok=True)
 
