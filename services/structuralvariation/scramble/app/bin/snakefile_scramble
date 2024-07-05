@@ -380,7 +380,7 @@ rule copy_bam:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam']
 	message: """ Copying {params.download_link} file """
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
+	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule copy_cram:
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.cram")
@@ -388,7 +388,7 @@ rule copy_cram:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
 	message: """ Copying {params.download_link} file """
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
+	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule cramtobam:
 	""" Extract bam from a cram file with samtools, need a reference genome """
@@ -398,7 +398,7 @@ rule cramtobam:
 	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
 
 rule indexing:
-	""" Indexing bam files with samtools or ls """
+	""" Indexing bam files with samtools or ln """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
 	params:
@@ -406,7 +406,7 @@ rule indexing:
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
 	threads: workflow.cores
 	message: """ Indexing {params.download_link} file """
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
+	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
 
 rule cluster_identifier:
 	"""

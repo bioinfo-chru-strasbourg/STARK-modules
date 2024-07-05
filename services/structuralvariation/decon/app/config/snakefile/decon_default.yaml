@@ -47,8 +47,8 @@ FILTER_SAMPLE: []
 EXT_INDEX_LIST: [".cram", ".cram.crai", ".transcripts", ".genes.bed", ".design.bed", ".bam", ".bam.bai", ".list.genes", ".tag", ".ped", ".final.vcf.gz"]
 # List of files extension to process
 PROCESS_FILE: ['.bam']
-# How to copy input files (bam, bai, cram) : ls or leave empty (it will rsync files or index for bai from bam)
-PROCESS_CMD: 'ls'
+# How to copy input files (bam, bai, cram) : ln or leave empty (it will rsync files or index for bai from bam)
+PROCESS_CMD: 'ln'
 # Append an aligner name if no empty (from sample.bam to sample.alignername.bam)
 ALIGNER_NAME:
 # Only analyse sample.validation.aligner.bam/cram files
@@ -87,11 +87,9 @@ KEEP_UNKNOWN: False
 EXON_SEP: False
 # Old Bed formating
 OLD_BED: True
-# Remove M or F or Autosome analysis
-# Default is autosome with all the patients ; chrX can be performed only for Male or Female patients, with a separate call by sex
-REMOVE_F: False
-REMOVE_M: False
-REMOVE_A: False
+# Remove M or F or Autosome analysis, ex ['XY', 'XX'] for autosome only
+REMOVE_GENDER: ""
+
 # Limit the analysis to a list of genes (remove from DECON BED)
 GENE_LIST_RESTRICT: []
 # List of chr to remove from DECON BED

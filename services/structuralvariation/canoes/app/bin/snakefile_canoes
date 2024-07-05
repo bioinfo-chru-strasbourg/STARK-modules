@@ -416,8 +416,8 @@ for aligner in aligner_list:
 		bamlist = f"{resultDir}/{serviceName}.{date_time}.{gender}.list.txt"
 		create_list(bamlist, globals()[f"files_list_{gender}"], config['PROCESS_FILE'], aligner)
 
-# Option to remove gender in the gender_list to force A, XX or XY analysis only ; the calling of Y for male subject is not done
-gender_list = [gender for gender in gender_list if not (config['REMOVE_M'] and gender == 'XY') and not (config['REMOVE_F'] and gender == 'XX') and not (config['REMOVE_A'] and gender == 'A')]
+# Option to remove gender in the gender_list
+gender_list = [gender for gender in gender_list if gender not in config['REMOVE_GENDER']]
 gender_list.sort()
 
 # Process .ped files 
@@ -500,14 +500,14 @@ rule copy_bam:
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam']
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
+	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule copy_cram:
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.cram")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
+	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule cramtobam:
 	""" Extract bam from a cram file with samtools, need a reference genome """
@@ -517,14 +517,14 @@ rule cramtobam:
 	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
 
 rule indexing:
-	""" Indexing bam files with samtools or ls """
+	""" Indexing bam files with samtools or ln """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
 	threads: workflow.cores
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
+	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
 
 rule gc_percent:
 	""" Compute GC percent from the reference genome and a bed file, removing header 

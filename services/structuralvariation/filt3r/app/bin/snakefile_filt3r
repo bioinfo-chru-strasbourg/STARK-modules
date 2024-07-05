@@ -251,7 +251,6 @@ for item in log_items:
 	log_file(logfile, item[0], "\n", items_list=item[1] if isinstance(item[1], list) else None, items=item[1] if not isinstance(item[1], list) else None)
 
 ################################################## RULES ##################################################
-
 # check the number of sample for merge vcf rule
 sample_count = len(sample_list) 
 
@@ -263,7 +262,6 @@ rule all:
 		f"{resultDir}/{serviceName}.{date_time}.allsamples.vcf.gz"
 
 rule copy_fastq:
-	""" Copy input files """
 	output:
 		fastqR1=temp(f"{resultDir}/{{sample}}.{{aligner}}.R1.fastq.gz"),
 		fastqR2=temp(f"{resultDir}/{{sample}}.{{aligner}}.R2.fastq.gz")
@@ -271,29 +269,22 @@ rule copy_fastq:
 		process = config['PROCESS_CMD'],
 		download_link1 = lambda wildcards: runDict[wildcards.sample]['.R1.fastq.gz'],
 		download_link2 = lambda wildcards: runDict[wildcards.sample]['.R2.fastq.gz']
-	shell:
-		"""
-		if [ "{params.process}" = "ls" ];
-		then
-		ln -sfn {params.download_link1} {output.fastqR1} && ln -sfn {params.download_link2} {output.fastqR2}
-		else
-		rsync -azvh {params.download_link1} {output.fastqR1} && rsync -azvh {params.download_link2} {output.fastqR2}
-		fi
-		"""
+	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link1} {output.fastqR1} && ln -sfn {params.download_link2} {output.fastqR2} || rsync -azvh {params.download_link1} {output.fastqR1} && rsync -azvh {params.download_link2} {output.fastqR2}"
+
 
 rule copy_bam:
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam']
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
+	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule copy_cram:
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.cram")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
+	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
 
 rule cramtobam:
 	""" Extract bam from a cram file with samtools, need a reference genome """
@@ -303,14 +294,14 @@ rule cramtobam:
 	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
 
 rule indexing:
-	""" Indexing bam files with samtools or ls """
+	""" Indexing bam files with samtools or ln """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
 	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
 	threads: workflow.cores
-	shell: "[ \"{params.process}\" = \"ls\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
+	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
 
 rule samtools_fastq:
 	""" Extract fastq from a bam file """

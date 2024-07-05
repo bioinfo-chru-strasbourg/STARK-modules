@@ -288,7 +288,6 @@ rule help:
 
 
 rule copy_fastq:
-	""" Copy input files """
 	output:
 		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
 		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
@@ -296,15 +295,8 @@ rule copy_fastq:
 		process = config['PROCESS_CMD'],
 		download_link1 = lambda wildcards: runDict[wildcards.sample]['.R1.fastq.gz'],
 		download_link2 = lambda wildcards: runDict[wildcards.sample]['.R2.fastq.gz']
-	shell:
-		"""
-		if [ "{params.process}" = "ls" ];
-		then
-		ln -sfn {params.download_link1} {output.fastqR1} && ln -sfn {params.download_link2} {output.fastqR2}
-		else
-		rsync -azvh {params.download_link1} {output.fastqR1} && rsync -azvh {params.download_link2} {output.fastqR2}
-		fi
-		"""
+	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link1} {output.fastqR1} && ln -sfn {params.download_link2} {output.fastqR2} || rsync -azvh {params.download_link1} {output.fastqR1} && rsync -azvh {params.download_link2} {output.fastqR2}"
+
 
 # indexing genome for STAR with the command :
 # STAR --runThreadN 8 --runMode genomeGenerate --genomeDir /STARK/databases/STAR/ --genomeFastaFiles /STARK/databases/STAR/hg19.fa --sjdbGTFfile /STARK/databases/gtf/current/gencode.v19.annotation.gtf_withproteinids --sjdbOverhang 99 --outFileNamePrefix /STARK/databases/STAR/log/ --genomeChrBinNbits 15
