@@ -384,6 +384,17 @@ onsuccess:
 	sample_list.insert(0,"allsamples")
 	resultDict= populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	print(dict(resultDict))
+
+	# Update resultDict with values from runDict
+	for sample, results in runDict.items():
+		if sample in resultDict:
+			for key, value in results.items():
+				if key in config['RESULT_EXT_LIST']:
+					if key not in resultDict[sample]:
+						resultDict[sample][key] = value
+					elif resultDict[sample][key] is None:
+						resultDict[sample][key] = value
+
 	# Generate html report (need to add the run results)
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}_template.html" , f"{outputDir}/{serviceName}_{date_time}_report.html")
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '_style.css', outputDir)

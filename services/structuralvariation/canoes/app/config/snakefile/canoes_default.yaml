@@ -60,7 +60,7 @@ scriptsconfig: "/app/config/fileconversion/"
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'Design.tsv', 'gender', 'HPO'] # add '.pdf' if you want graphs
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'Design.tsv', 'gender', 'hpo'] # add '.pdf' if you want graphs
 
 # kmerisation of CANOES bed (integer) (ex 250)
 KMER: ""

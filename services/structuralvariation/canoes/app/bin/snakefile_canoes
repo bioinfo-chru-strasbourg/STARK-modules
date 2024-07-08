@@ -821,6 +821,8 @@ onsuccess:
 				if key in config['RESULT_EXT_LIST']:
 					if key not in resultDict[sample]:
 						resultDict[sample][key] = value
+					elif resultDict[sample][key] is None:
+						resultDict[sample][key] = value
 	print(dict(resultDict))
 
 	list_XX = [os.path.basename(file).split('.')[0] for file in files_list_XX]
