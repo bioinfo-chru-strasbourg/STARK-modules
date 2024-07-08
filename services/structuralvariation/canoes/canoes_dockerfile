@@ -13,10 +13,6 @@
 
 # Ubuntu based (minimal focal)
 FROM condaforge/mambaforge
-LABEL maintainer="LAMOUCHE Jean-Baptiste <jbaptiste.lamouche@gmail.com>" \
-    Software="CANOES" \
-    Version="2.0" \
-    Description="CANOES"
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update --fix-missing && \
     apt-get install -y unzip vim rsync aria2 iproute2
@@ -29,7 +25,6 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     r-ggplot2~=3.4.3 r-optparse~=1.7.3  r-nnls~=1.5  r-hmisc~=5.1_1  r-dplyr~=1.1.4 \
     r-mgcv~=1.8_28  r-reshape2~=1.4.4  r-gtools~=3.9.5  r-stringr~=1.5.1  \
     && mamba clean -afy
-
 
 # Variant convert
 WORKDIR /usr/lib

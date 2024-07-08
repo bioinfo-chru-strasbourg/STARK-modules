@@ -423,6 +423,17 @@ for aligner in aligner_list:
 gender_list = [gender for gender in gender_list if gender not in config['REMOVE_GENDER']]
 gender_list.sort()
 
+# check the ref bam list and presence of gender
+if config['REF_BAM_LIST']:
+	df = pd.read_csv(config['REF_BAM_LIST'], sep='\t')
+	contains_f = df['gender'].str.contains('F').any()
+	contains_m = df['gender'].str.contains('M').any()
+	# Update the gender_list based on the presence of 'F' and 'M'
+	if not contains_f:
+		gender_list.remove('XX')
+	if not contains_m:
+		gender_list.remove('XY')
+
 # Process .ped files 
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
 # Add 'hpo' key with None value for all individuals
