@@ -7,6 +7,8 @@ import logging as log
 import shutil
 import json
 
+import howard_launcher
+
 
 def folder_initialisation(run_informations):
     input_files = glob.glob(
@@ -56,17 +58,11 @@ def folder_initialisation(run_informations):
             ]
         )
 
-    module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
-    with open(module_config, "r") as read_file:
-        data = json.load(read_file)
-        howard_image = data["howard_image"]
-    log.info(f"Using {howard_image}")
-
     vcf_file_to_analyse = glob.glob(
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
     for vcf_file in vcf_file_to_analyse:
-        howard_launcher(run_informations, vcf_file, howard_image)
+        howard_proc(run_informations, vcf_file)
         os.remove(vcf_file)
 
 def run_initialisation(run_informations):
@@ -93,23 +89,17 @@ def run_initialisation(run_informations):
     vcf_file_to_analyse = glob.glob(
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
-    
-    module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
-    with open(module_config, "r") as read_file:
-        data = json.load(read_file)
-        howard_image = data["howard_image"]
-    log.info(f"Using {howard_image}")
 
     for vcf_file in vcf_file_to_analyse:
-        howard_launcher(run_informations, vcf_file, howard_image)
+        howard_proc(run_informations, vcf_file)
         os.remove(vcf_file)
 
 
-def howard_launcher(run_informations, vcf_file, howard_image):
+def howard_proc(run_informations, vcf_file):
     log.info(f"Launching for {vcf_file}")
-    logfile = osj(
-        run_informations["tmp_analysis_folder"], f"VANNOT_annotate_{os.path.basename(vcf_file.split(".")[0])}.log"
-    )
+    # logfile = osj(
+    #     run_informations["tmp_analysis_folder"], f"VANNOT_annotate_{os.path.basename(vcf_file.split(".")[0])}.log"
+    # )
 
     if run_informations["output_format"] != None:
         output_file = osj(
@@ -133,47 +123,12 @@ def howard_launcher(run_informations, vcf_file, howard_image):
         log.error("param.default.json not found, please check your config directory")
 
     container_name = f"VANNOT_annotate_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+    launch_annotate_arguments = ["annotation", "--input", vcf_file, "--output", output_file, "--param", configfile, "--assembly", run_informations["assembly"]]
 
     log.info("Annotating input files with HOWARD")
     
-    with open(logfile, "w") as f:
-        subprocess.call(
-            [
-                "docker",
-                "run",
-                "--rm",
-                "--name",
-                container_name,
-                "--env",
-                f"http_proxy={os.environ["http_proxy"]}",
-                "--env",
-                f"ftp_proxy={os.environ["ftp_proxy"]}",
-                "--env",
-                f"https_proxy={os.environ["https_proxy"]}",
-                "-v",
-                f"{os.environ["HOST_TMP"]}:{os.environ["DOCKER_TMP"]}",
-                "-v",
-                f"{os.environ["HOST_DATABASES"]}:/databases/",
-                "-v",
-                f"{os.environ["HOST_CONFIG"]}:{os.environ["DOCKER_CONFIG"]}",
-                howard_image,
-                "annotation",
-                "--input",
-                vcf_file,
-                "--output",
-                output_file,
-                "--param",
-                configfile,
-                "--assembly",
-                run_informations["assembly"],
-            ],
-            stdout=f,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-        )
-    os.chmod(logfile, 0o777)
-
-    convert_to_final_tsv(run_informations, output_file, howard_image)
+    howard_launcher.launch(container_name, launch_annotate_arguments)
+    convert_to_final_tsv(run_informations, output_file)
 
 def merge_vcf_files(run_informations):
     log.info("Merging all vcfs into one")
@@ -192,46 +147,14 @@ def merge_vcf_files(run_informations):
         subprocess.call(cmd, stdout=f, stderr=subprocess.STDOUT, universal_newlines=True)
     
 
-def convert_to_final_tsv(run_informations, input_file, howard_image):
+def convert_to_final_tsv(run_informations, input_file):
     log.info("Converting output file into readable tsv")
-    logfile = osj(run_informations["tmp_analysis_folder"], f"VANNOT_convert_{os.path.basename(input_file.split(".")[0])[7:]}.log")
+    # logfile = osj(run_informations["tmp_analysis_folder"], f"VANNOT_convert_{os.path.basename(input_file.split(".")[0])[7:]}.log")
     container_name = f"VANNOT_convert_{run_informations['run_name']}_{os.path.basename(input_file).split('.')[0]}"
     output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(input_file).split(".")[0]}.tsv")
-
-    with open(logfile, "w") as f:
-        subprocess.call(
-            [
-                "docker",
-                "run",
-                "--rm",
-                "--name",
-                container_name,
-                "--env",
-                f"http_proxy={os.environ["http_proxy"]}",
-                "--env",
-                f"ftp_proxy={os.environ["ftp_proxy"]}",
-                "--env",
-                f"https_proxy={os.environ["https_proxy"]}",
-                "-v",
-                f"{os.environ["HOST_TMP"]}:{os.environ["DOCKER_TMP"]}",
-                "-v",
-                f"{os.environ["HOST_DATABASES"]}:/databases/",
-                "-v",
-                f"{os.environ["HOST_CONFIG"]}:{os.environ["DOCKER_CONFIG"]}",
-                howard_image,
-                "convert",
-                "--input",
-                input_file,
-                "--output",
-                output_file,
-                "--explode_infos",
-            ],
-            stdout=f,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-        )
     
-    os.chmod(logfile, 0o777)
+    launch_convert_arguments = ["convert", "--input", input_file, "--output", output_file, "--explode_infos"]
+    howard_launcher.launch(container_name, launch_convert_arguments)
 
 def cleaner(run_informations):
     log.info("Moving results from temporary folder")

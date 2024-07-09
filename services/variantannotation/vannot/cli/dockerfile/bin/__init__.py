@@ -6,6 +6,7 @@ __all__ = [
     "howard_run.py",
     "howard_processing.py",
     "synchronizer.py",
-    "results_provider",
-    "dejavu_processing",
+    "results_provider.py",
+    "dejavu_processing.py",
+    "howard_launcher.py",
 ]

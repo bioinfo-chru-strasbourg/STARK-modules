@@ -37,12 +37,14 @@ def launch_run(args):
         "archives_project_folder": osj(
             os.environ["DOCKER_SERVICES"],
             "Archives",
+            args.assembly,
             run_repository_list[-3],
             run_repository_list[-2],
         ),
         "archives_results_folder": osj(
             os.environ["DOCKER_SERVICES"],
             "Archives",
+            args.assembly,
             run_repository_list[-3],
             run_repository_list[-2],
             "results",
@@ -50,6 +52,7 @@ def launch_run(args):
         "archives_run_folder": osj(
             os.environ["DOCKER_SERVICES"],
             "Archives",
+            args.assembly,
             run_repository_list[-3],
             run_repository_list[-2],
             "VCF",
@@ -89,6 +92,20 @@ def launch_run(args):
             run_repository_list[-3],
             f"{run_repository_list[-2]}.parquet",
         ),
+        "parquet_db_howard_folder": osj(
+            "/",
+            "databases",
+            "dejavu",
+            "current",
+            args.assembly,
+            run_repository_list[-3],
+        ),
+        "parquet_db_folder": osj(
+            os.environ["DOCKER_DEJAVU_DATABASE"],
+            "current",
+            args.assembly,
+            run_repository_list[-3],
+        ),
         "tmp_analysis_folder": osj(
             os.environ["DOCKER_TMP"],
             f"tmp_{run_repository_list[-1]}/",
@@ -105,12 +122,12 @@ def launch_run(args):
     synchronizer.vcf_synchronizer(run_informations)
     dejavu_processing.convert_vcf_parquet(run_informations)
     dejavu_processing.calculate_dejavu(run_informations)
-    # howard_processing.run_initialisation(run_informations)
-    # howard_processing.merge_vcf_files(run_informations)
-    # howard_processing.cleaner(run_informations)
+    howard_processing.run_initialisation(run_informations)
+    howard_processing.merge_vcf_files(run_informations)
+    howard_processing.cleaner(run_informations)
 
     # non_redundant_generator.generate(run_informations)
-    # results_provider.distribute(run_informations)
+    results_provider.distribute(run_informations)
 
     lock_file = osj(run_repository, "VANNOTComplete.txt")
     with open(lock_file, "w") as write_file:
