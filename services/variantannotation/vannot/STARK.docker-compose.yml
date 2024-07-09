@@ -67,8 +67,9 @@ services:
             # Host environment variables
             - HOST_TMP=${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_TMP}
             - HOST_DATABASES=/home1/BAS/HOWARD/databases/
-            - HOST_CONFIG=${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}
+            - HOST_CONFIG=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}
             - HOST_DEJAVU_DATABASE=/home1/BAS/HOWARD/databases/dejavu/
+            - HOST_SERVICES=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_SERVICES}
         volumes:
             # Volumes for generating, deposing and archiving results
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:rw
