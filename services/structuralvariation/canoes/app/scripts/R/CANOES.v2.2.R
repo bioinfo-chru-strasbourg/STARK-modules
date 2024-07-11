@@ -16,9 +16,14 @@
 #   - add reference samples option, a list of external samples in a tsv & control of gender presence
 ########################################################################################################
 
-suppressMessages(library(optparse))
-suppressMessages(library(plyr))
-suppressMessages(library(dplyr))
+suppressPackageStartupMessages({
+  library(optparse)
+  library(plyr)
+  library(dplyr)
+  library(nnls)
+  library(Hmisc)
+  library(mgcv)
+})
 
 option_list <- list(
   make_option("--gcfile", type="character", default="gc.tsv", dest='gc', help="File containing the GC values in column 4"),
@@ -46,8 +51,8 @@ multi_strsplit<-function(x,splits,y){
 	return(X)
 }
 
-# Test function
-Test <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, rdata_output = NULL, refbams_file= NULL, ref_reads = NULL) {
+
+main <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, rdata_output = NULL, refbams_file= NULL, ref_reads = NULL) {
   
   if(length(samples)>0){
     samplesbams<-apply(read.table(paste(samples)),1,toString)
@@ -194,7 +199,7 @@ DUPLICATION=3
 #      MLCN : Maximum likelihood copy number
 #      Q_SOME: a Phred-scaled quality score for the CNV
 CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.mean, refsample.names = NULL){
-  #sample.name, canoes_reads, p=1e-08, Tnum=6, D=70000, numrefs=30, get.dfs=F, homdel.mean=0.2
+    #sample.name, canoes_reads, p=1e-08, Tnum=6, D=70000, numrefs=30, get.dfs=F, homdel.mean=0.2
   if (!sample.name %in% names(counts)){stop("No column for sample ", sample.name, " in counts matrix")}
   if (length(setdiff(names(counts)[1:5], c("target", "chromosome", "start", "end", "gc"))) > 0){
     stop("First five columns of counts matrix must be target, chromosome, start, end, gc")
@@ -208,7 +213,7 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
     }
     counts$chromosome <- as.numeric(counts$chromosome)
 
-  suppressMessages(library(plyr))
+
   counts <- arrange(counts, chromosome, start)
   if (p <= 0){
     stop("parameter p must be positive")
@@ -254,7 +259,7 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
   # select reference samples and weightings using non-negative least squares
   b <- counts[, sample.name]
   A <- as.matrix(counts[, reference.samples])
-  suppressMessages(library(nnls))
+
   all <- nnls(A, b)$x
   est <- matrix(0, nrow=50, ncol=length(reference.samples))
   set.seed(1)
@@ -264,7 +269,7 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
   }
   weights <- colMeans(est)
   sample.weights <- weights / sum(weights)
-  suppressMessages(library(Hmisc))
+
   # calculate weighted mean of read count
   # this is used to calculate emission probabilities
   counts$mean <- apply(counts[, reference.samples], 
@@ -356,6 +361,9 @@ GenotypeCNVs <- function(xcnvs, sample.name, counts, p, Tnum,
                     D, numrefs,
                     emission.probs=NULL, 
                     distances=NULL){
+  
+
+  
   if (!sample.name %in% names(counts)){stop("No column for sample ", sample.name, " in counts matrix")}
   if (length(setdiff(names(counts)[1:5], c("target", "chromosome", "start", "end", "gc"))) > 0){
     stop("First five columns of counts matrix must be target, chromosome, start, end, gc")
@@ -371,7 +379,7 @@ GenotypeCNVs <- function(xcnvs, sample.name, counts, p, Tnum,
     if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0) 
       stop("chromosome must take value in range 1-22 (support for sex chromosomes to come)")
   }
-  suppressMessages(library(plyr))
+
   counts <- arrange(counts, chromosome, start)
   if (p <= 0){
     stop("parameter p must be positive")
@@ -458,12 +466,11 @@ GetDistances <- function(counts){
 
 
 EstimateVariance <- function(counts, ref.sample.names, sample.weights){
-  suppressMessages(library(Hmisc))
+
+
   counts$var <- apply(counts[, ref.sample.names], 1, wtd.var, sample.weights, normwt=T)
   set.seed(1)
   counts.subset <- counts[sample(nrow(counts), min(36000, nrow(counts))), ]
-  suppressMessages(library(mgcv))
-  suppressMessages(library(ggplot2))
   
   # can't do gamma regression with negative 
   counts.subset$var[counts.subset$var==0] <- 0.1 
@@ -696,8 +703,7 @@ SummarizeCNVs <- function(cnv.targets, counts, sample.name, state){
                     cnv.midbp=cnv.midbp, cnv.targets=cnv.targets, num.targets=num.targets))
 }
 
-PrintCNVs <- function(test.sample.name, viterbi.state, 
-                      nonzero.counts){  
+PrintCNVs <- function(test.sample.name, viterbi.state, nonzero.counts){  
   consecutiveGroups <- function(sequence){
     num <- length(sequence)
     group <- 1
@@ -717,7 +723,7 @@ PrintCNVs <- function(test.sample.name, viterbi.state,
     cnv.targets <- which(viterbi.state$viterbi.state == state)
     if (!length(cnv.targets) == 0){
       groups <- consecutiveGroups(cnv.targets)
-      suppressMessages(library(plyr))
+
       cnvs.temp.df <- ddply(data.frame(target=cnv.targets, group=groups), 
                             "group", SummarizeCNVs, nonzero.counts, test.sample.name, 
                             state)
@@ -787,5 +793,5 @@ CalcCopyNumber <- function(data, cnvs, homdel.mean){
   return(cnvs)
 }
 
-# Call the Test function with parsed arguments
-Test(options$gc, options$reads, options$modechrom, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$outputrdata, options$refbams, options$readsrefs)
+# Call the main function with parsed arguments
+main(options$gc, options$reads, options$modechrom, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$outputrdata, options$refbams, options$readsrefs)

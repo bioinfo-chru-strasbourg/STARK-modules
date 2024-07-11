@@ -29,7 +29,7 @@ LIST_GENES: ""
 # Files to index into the dictionary depending on extension (endwith)
 EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".bam", ".bam.bai"]
 # List of files extension to process
-PROCESS_FILE: ['.bam']
+PROCESS_FILE: ['.bam', 'bam.bai']
 # How to copy input files (bam, bai, cram) : ln or leave empty (it will rsync files or index for bai from bam)
 PROCESS_CMD: 'ln'
 # Append an aligner name if no empty (from sample.bam to sample.alignername.bam)

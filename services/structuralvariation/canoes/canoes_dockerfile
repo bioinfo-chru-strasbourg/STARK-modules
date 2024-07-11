@@ -6,10 +6,10 @@
 # Description:          Dockerfile to build CANOES container image
 ##########################################################################
 
-# DEV version 3 : 07/09/2023
-	# switch to Mamba installer & Ubuntu OS
-	# add aria2
+# DEV version 3 : 07/07/2024
+	# switch to Mamba installer & Ubuntu OS, add aria2
 	# update AnnotSV 3.4 (vcf converter is included) and several dependencies (iproute2 for exomiser), version of each package is specified
+	# snakemake~=8.16
 
 # Ubuntu based (minimal focal)
 FROM condaforge/mambaforge
@@ -19,8 +19,9 @@ RUN apt-get update --fix-missing && \
 
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
-	annotsv~=3.4.2 samtools~=1.19.2 bcftools~=1.19.0 bedtools~=2.31.1 \
-	snakemake~=7.32.4  pandas~=2.2.1 vcf2tsvpy~=0.6.1 natsort~=8.3.1 \
+	python=3.12 \
+	annotsv~=3.4.2 samtools~=1.20 bcftools~=1.20 bedtools~=2.31.1 \
+	snakemake~=8.16  pandas~=2.2.2 vcf2tsvpy~=0.6.1 natsort~=8.3.1 \
 	pyfaidx~=0.8.1.1  pysam~=0.22.0 gatk4~=4.5.0.0  requests~=2.31.0  \
     r-ggplot2~=3.4.3 r-optparse~=1.7.3  r-nnls~=1.5  r-hmisc~=5.1_1  r-dplyr~=1.1.4 \
     r-mgcv~=1.8_28  r-reshape2~=1.4.4  r-gtools~=3.9.5  r-stringr~=1.5.1  \

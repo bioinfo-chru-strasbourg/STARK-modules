@@ -1,279 +1,230 @@
 ##########################################################################
-# DECON script          Version: 1
-# Description:          R script to call CNVs from coverage datas
+# DECON script          Version: 2
+# Description:          R script to call CNVs from coverage data
 ##########################################################################
 
 ################## Context ###############################################
 # Original R script from https://github.com/RahmanTeam/DECoN
 # DECON is an ExomeDepth wrapper 
-########## Note ########################################################################################
-# PROD v1 21/11/2023
+########## Note #########################################################
+# PROD v2 21/11/2023
 # Changelog
-#   - refactor code, remove install system, update ExomeDepth 1.16
-#   - optparse script, add a option to use a list of ref bam files for comparaison
-#   - detect bed file with a 5 column with exon numbers, remove custom exon options
-#   - mode to remove chrX or Y for calling
+#   - Refactored code, removed install system, updated ExomeDepth 1.16
+#   - optparse script, added option to use a list of ref bam files for comparison
+#   - Detect bed file with a 5th column with exon numbers, removed custom exon options
+#   - Mode to remove chrX or Y for calling
 ########################################################################################################
 
-print("BEGIN makeCNVCalls script")
-
-suppressMessages(library(R.utils))
-suppressMessages(library(optparse))
-suppressMessages(library(ExomeDepth))
+suppressPackageStartupMessages({
+  library(R.utils)
+  library(optparse)
+  library(ExomeDepth)
+})
 
 ###### Parsing input options and setting defaults ########
-option_list<-list(
-    make_option('--rdata',help='Input summary RData file containing coverage datas, bed file and GC content (required)',dest='data'),
-    make_option("--chromosome",default="A",help='Perform calling for autosomes or chr XX or chr XY ',dest='chromosome'),
-    make_option('--transProb',default=.01,help='Transition probability for the HMM statistical analysis, default=0.01',dest='transProb'),
-	make_option("--refbams",default=NULL,help="Text file containing the list of reference bam files for calling (full path) (optional)",dest='refbams'),
-    make_option("--samples",default=NULL,help="Text file containing the list of sample bams to analyse",dest='samples'),
-    make_option("--tsv",default="./CNVcalls.csv",help="Output tsv file, default: ./CNVcalls.csv",dest='tsv'),
-    make_option("--outrdata",default="./CNVcalls.Rdata",help="Output Rdata file, default: ./CNVcalls.Rdata",dest='outdata')
+option_list <- list(
+  make_option('--rdata', help='Input summary RData file containing coverage data, bed file, and GC content (required)', dest='data'),
+  make_option("--chromosome", default="A", help='Perform calling for autosomes or chr XX or chr XY', dest='chromosome'),
+  make_option('--transProb', default=0.01, help='Transition probability for the HMM statistical analysis, default=0.01', dest='transProb'),
+  make_option("--refbams", default=NULL, help="Text file containing the list of reference bam files for calling (full path) (optional)", dest='refbams'),
+  make_option("--samples", default=NULL, help="Text file containing the list of sample bams to analyse", dest='samples'),
+  make_option("--tsv", default="./CNVcalls.csv", help="Output tsv file, default: ./CNVcalls.csv", dest='tsv'),
+  make_option("--outrdata", default="./CNVcalls.Rdata", help="Output Rdata file, default: ./CNVcalls.Rdata", dest='outdata')
 )
-opt<-parse_args(OptionParser(option_list=option_list))
 
-# R workspace with the coverage data, the bedfile & ref genome fasta file saved in it
-count_data=opt$data
-if(count_data=="NULL"){count_data=NULL}
-if(is.null(count_data)){
-    print("ERROR: no RData summary file provided -- Execution halted")
-    quit()
-}
-load(count_data)
+opt_parser <- OptionParser(option_list=option_list)
+options <- parse_args(opt_parser)
 
-modechrom=opt$chromosome
-refbams_file=opt$refbams
-samples_file=opt$samples
-trans_prob=as.numeric(opt$transProb)
-output=opt$tsv
-output_rdata=opt$outdata
-
-if(!file.exists(dirname(output))){dir.create(dirname(output))}
-
-####### Make sure bed file is in chromosome order ################
-temp<-gsub('chr','',bed.file[,1])
-temp1<-order(as.numeric(temp))
-bed.file=bed.file[temp1,]
-
-# function which recursively splits x by an element of 'splits' then extracts the y element of the split vector
-multi_strsplit<-function(x,splits,y){
-	X<-x
-	for(i in 1:length(splits)){X=strsplit(X,splits[i], fixed = TRUE)[[1]][y[i]]}
-	return(X)
+# Function to stop execution if a required value is missing
+stop_if_missing <- function(val, message) {
+    if (is.null(val) || length(val) == 0) {
+        stop(message)
+    }
 }
 
-################# CNV CALLING #######################################
-# To call autosomes you need to use modechrom=="A" option
-# To call chrom X you need to use modechrom=="XX" or modechrom=="XY" options AND separate Male & Female samples 
-ExomeCount<-as(counts, 'data.frame')
-
-colnames(ExomeCount)[1:length(sample.names)+5]=sample.names
-# remove any chr letters, and coerce to a string
-ExomeCount$chromosome <- gsub(as.character(ExomeCount$chromosome),pattern = 'chr',replacement = '') 
-
-if (modechrom=="A"){
-    ExomeCount<-subset(ExomeCount, chromosome!="X" & chromosome!="Y")
-    bed.file<-subset(bed.file, chromosome!="chrX" & chromosome!="chrY")
-    counts<-subset(counts, chromosome!="chrX" & chromosome!="chrY")
+# Function to load data from RData file
+load_data <- function(rdata_file) {
+    stop_if_missing(rdata_file, "ERROR: no Rdata summary file provided -- Execution halted")
+    load(rdata_file)
+    return(list(counts = counts, bed.file = bed.file, sample.names = sample.names))
 }
 
-# we don't call chr Y
-if (modechrom=="XX" || modechrom=="XY"){
-    ExomeCount<-subset(ExomeCount, chromosome=="X")
-    bed.file<-subset(bed.file, chromosome=="chrX")
-    counts<-subset(counts, chromosome=="chrX")
+# Function to prepare bed file (sorting by chromosome)
+prepare_bed_file <- function(bed.file) {
+    bed.file <- bed.file[order(as.numeric(gsub('chr', '', bed.file$chromosome))), ]
+    return(bed.file)
 }
 
-cnv.calls = NULL
-refs<-list()
-models<-list()
-refsample.names<-vector()
-# for each sample :
-# extracts the sample to be tested, uses all other samples as the reference set, places coverage info for all samples in the reference set into a matrix 
-# from the reference set, selects correlated samples to be used.
-# places selected, correlated samples into a matrix, sums the selected samples across each exon
-# creates ExomeDepth object containing test data, reference data, and linear relationship between them. Automatically calculates likelihoods
-# fits a HMM with 3 states to read depth data; transition.probability - transition probability for HMM from normal to del/dup. Returns ExomeDepth object with CNVcalls
-# if refsample.names is not empty, the comparison will be made with those ref bams
-# filter sample.names removing refsample.names
+multi_strsplit <- function(x, splits, y) {
+  for (i in seq_along(splits)) {
+    x <- strsplit(x, splits[i], fixed = TRUE)[[1]][y[i]]
+  }
+  return(x)
+}
 
-# Read list of refbams to process
-if(length(refbams_file)>0){
-    rawrefbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
-    refbams<-apply(rawrefbams,1,toString)
-    a<-length(strsplit(refbams[1],"/")[[1]])
-    refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
-    names(refsample.names)<-NULL    
-    sample.names <- sample.names[!sample.names %in% refsample.names]
+process_refbams <- function(refbams.file, mode.chrom) {
+  refsample.names <- vector()
+  if (!is.null(refbams.file)) {
+    raw.refbams <- read.csv(refbams.file, header=TRUE, sep="\t")
+    refbams <- apply(raw.refbams, 1, toString)
+    a <- length(strsplit(refbams[1], "/")[[1]])
+    refsample.names <- sapply(refbams, multi_strsplit, c("/", "."), c(a, 1))
+    names(refsample.names) <- NULL
+    sample.names <- setdiff(sample.names, refsample.names)
+    if ("gender" %in% colnames(raw.refbams)) {
+      if (mode.chrom == "XX") {
+        refbams <- subset(refbams, raw.refbams$gender == 'F')
+      } else if (mode.chrom == "XY") {
+        refbams <- subset(refbams, raw.refbams$gender == 'M')
+      }
+    } else if (mode.chrom %in% c("XX", "XY")) {
+      stop('ERROR: No gender specified in the reference bam list, calling of chrX is not possible -- Execution halted')
+    }
+  }
+  return(refsample.names)
+}
+
+process_samplebams <- function(samples.file) {
+  if (!is.null(samples.file)) {
+    samples.bams <- apply(read.table(samples.file), 1, toString)
+    a <- length(strsplit(samples.bams[1], "/")[[1]])
+    sample.names <- sapply(samples.bams, multi_strsplit, c("/", "."), c(a, 1))
+    names(sample.names) <- NULL
+  } else {
+    stop('ERROR: No samples to analyse -- Execution halted')
+  }
+  return(sample.names)
+}
+
+filter_data_by_chromosome <- function(ExomeCount, bed.file, counts, mode.chrom) {
+  if (mode.chrom == "A") {
+    ExomeCount <- subset(ExomeCount, !chromosome %in% c("X", "Y"))
+    bed.file <- subset(bed.file, !chromosome %in% c("chrX", "chrY"))
+    counts <- subset(counts, !chromosome %in% c("chrX", "chrY"))
+  } else if (mode.chrom %in% c("XX", "XY")) {
+    ExomeCount <- subset(ExomeCount, chromosome == "X")
+    bed.file <- subset(bed.file, chromosome == "chrX")
+    counts <- subset(counts, chromosome == "chrX")
+  }
+  list(ExomeCount = ExomeCount, bed.file = bed.file, counts = counts)
+}
+
+perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans.prob) {
+  cnv.calls <- NULL
+  refs <- list()
+  models <- list()
   
-  if("gender" %in% colnames(rawrefbams)){
-    if (modechrom=="XX"){
-      refbams = subset(refbams, refbams$gender=='F')
-      }
-    if (modechrom=="XY"){
-      refbams = subset(refbams, refbams$gender=='M')
-      }
-    }else{
-        if (modechrom=="XX" || modechrom=="XY"){
-        message('ERROR: No gender specified in the reference bam list, calling of chrX is not possible')
-        quit()
-        }
-    }
-}
-
-if(length(samples_file)>0){
-    samplesbams<-apply(read.table(paste(samples_file)),1,toString)
-    a<-length(strsplit(samplesbams[1],"/")[[1]])
-    sample.names<-sapply(samplesbams,multi_strsplit,c("/","."),c(a,1))
-    names(sample.names)<-NULL
-}else{
-    message('ERROR: No samples to analyse')
-    quit()
-}
-
-for(i in 1:length(sample.names)){
-    print(paste("Processing sample: ",sample.names[i]," ", i,"/",length(sample.names),sep=""))
-    my.test <- ExomeCount[,sample.names[i]]
-	if(length(refsample.names)==0){
-		my.ref.samples <- sample.names[-i]
-    }else{
-        my.ref.samples <- refsample.names
-    }
-    my.reference.set <- as.matrix(ExomeCount[,my.ref.samples])
-    my.choice <- select.reference.set (test.counts = my.test,reference.counts = my.reference.set,bin.length = (ExomeCount$end - ExomeCount$start)/1000,n.bins.reduced = 10000)
-    my.matrix <- as.matrix( ExomeCount[, my.choice$reference.choice, drop = FALSE])
-    my.reference.selected <- apply(X = my.matrix,MAR = 1,FUN = sum)
+  for (i in seq_along(sample.names)) {
+    print(paste("Processing sample:", sample.names[i], i, "/", length(sample.names)))
+    my.test <- ExomeCount[, sample.names[i]]
+    my.ref.samples <- if (length(refsample.names) == 0) sample.names[-i] else refsample.names
+    my.reference.set <- as.matrix(ExomeCount[, my.ref.samples])
+    
+    my.choice <- select_reference_set(
+      test.counts = my.test,
+      reference.counts = my.reference.set,
+      bin.length = (ExomeCount$end - ExomeCount$start) / 1000,
+      n.bins.reduced = 10000
+    )
+    
+    my.matrix <- as.matrix(ExomeCount[, my.choice$reference.choice, drop = FALSE])
+    my.reference.selected <- rowSums(my.matrix)
+    
     all.exons <- new('ExomeDepth', test = my.test, reference = my.reference.selected, formula = 'cbind(test, reference) ~ 1')
-    all.exons <- CallCNVs(x = all.exons, transition.probability = trans_prob, chromosome = ExomeCount$chromosome, start = ExomeCount$start, end = ExomeCount$end, name = ExomeCount$gene)
-    my.ref.counts <- apply(my.matrix, MAR = 1, FUN = sum)
-    if(nrow(all.exons@CNV.calls)>0){
-        Comparator.name <- paste(my.choice$reference.choice, collapse = ",")
-        cnvs= cbind(sample.names[i],cor(my.test, my.ref.counts),length( my.choice[[1]] ),Comparator.name,all.exons@CNV.calls)
-        cnv.calls = rbind(cnv.calls,cnvs)
+    all.exons <- CallCNVs(
+      x = all.exons,
+      transition.probability = trans.prob,
+      chromosome = ExomeCount$chromosome,
+      start = ExomeCount$start,
+      end = ExomeCount$end,
+      name = ExomeCount$gene
+    )
+    
+    if (nrow(all.exons@CNV.calls) > 0) {
+      Comparator.name <- paste(my.choice$reference.choice, collapse = ",")
+      cnvs <- cbind(sample.names[i], cor(my.test, rowSums(my.matrix)), length(my.choice[[1]]), Comparator.name, all.exons@CNV.calls)
+      cnv.calls <- rbind(cnv.calls, cnvs)
     }
-    refs[[i]] = my.choice$reference.choice
-    models[[i]] = c(all.exons@expected[1],all.exons@phi[1])
+    
+    refs[[i]] <- my.choice$reference.choice
+    models[[i]] <- c(all.exons@expected[1], all.exons@phi[1])
+  }
+  
+  names(refs) <- sample.names
+  names(models) <- sample.names
+  
+  list(cnv.calls = cnv.calls, refs = refs, models = models)
 }
 
-names(refs) = sample.names
-names(models) = sample.names
-
-if(!is.null(cnv.calls)){
-    names(cnv.calls)[1] = "sample"
-    cnv.calls$sample = paste(cnv.calls$sample)
-    names(cnv.calls)[2] = "correlation"
-    names(cnv.calls)[3] = "N.comp"
-
-    ##################### CONFIDENCE CALCULATION ##############################
-    Confidence<-rep("HIGH",nrow(cnv.calls))
-
-    a<-which(cnv.calls$correlation<.985)
-    if(length(a)>0){Confidence[a]="LOW"}
-
-    a<-which(cnv.calls$reads.ratio<1.25 & cnv.calls$reads.ratio>.75)
-    if(length(a)>0){Confidence[a]="LOW"}
-
-    a<-which(cnv.calls$N.comp<=3)
-    if(length(a)>0){Confidence[a]="LOW"}
-
-    if(ncol(bed.file)>=4){
-        genes<-apply(cnv.calls,1,function(x)paste(unique(bed.file[x[5]:x[6],4]),collapse=", "))
-        a<-which(genes=="PMS2")
-        if(length(a)>0){Confidence[a]="LOW"}
-
-    cnv.calls<-cbind(cnv.calls,genes)
-    names(cnv.calls)[ncol(cnv.calls)]="Gene"
-
-    cnv.calls<-cbind(cnv.calls,Confidence)
-    names(cnv.calls)[ncol(cnv.calls)]="Confidence"
-
-    # replaces single calls involving multiple genes with multiple calls with a single call ID/gene
-    cnv.calls_ids=cbind(1:nrow(cnv.calls),cnv.calls)
-    names(cnv.calls_ids)[1]="ID"
-    trim <- function (x) gsub("^\\s+|\\s+$", "", x)
-
-    for(i in 1:nrow(cnv.calls_ids)){
-        genes=strsplit(paste(cnv.calls_ids[i,]$Gene),",")[[1]]
-        genes=trim(genes)
-        whole.index=cnv.calls_ids[i,]$start.p:cnv.calls_ids[i,]$end.p
-        if(length(genes)>1){
-            temp=cnv.calls_ids[rep(i,length(genes)),]
-            temp$Gene=genes
-            for(j in 1:length(genes)){
-                gene.index=which(bed.file[,4]==genes[j])
-                overlap=gene.index[gene.index%in%whole.index]
-                temp[j,]$start.p=min(overlap)
-                temp[j,]$end.p=max(overlap)
-            }
-            if(i==1){
-                cnv.calls_ids=rbind(temp,cnv.calls_ids[(i+1):nrow(cnv.calls_ids),])
-            }else if(i==nrow(cnv.calls_ids)){
-                cnv.calls_ids=rbind(cnv.calls_ids[1:(i-1),],temp)
-            }else{
-                cnv.calls_ids=rbind(cnv.calls_ids[1:(i-1),],temp,cnv.calls_ids[(i+1):nrow(cnv.calls_ids),])
-            }
-        }
-    }
-
-    cnv.calls_ids$Gene=trim(cnv.calls_ids$Gene)
-    Gene.index=vector()
-    genes_unique<-unique(bed.file[,4])
-
-    for(i in 1:length(genes_unique)){
-        Gene.index=c(Gene.index,1:sum(bed.file[,4]==genes_unique[i]))
-    }
-
-    start.b<-Gene.index[cnv.calls_ids$start.p]
-    end.b<-Gene.index[cnv.calls_ids$end.p]
-    cnv.calls_ids<-cbind(cnv.calls_ids,start.b,end.b)
-    }
-
-    ################# ADD Custom EXON NUMBERS #####################
-    if(colnames(counts)[5]=="exon"){
-        Custom.first = rep(NA,nrow(cnv.calls_ids))
-        Custom.last=rep(NA,nrow(cnv.calls_ids))
-        # exons<-read.table(exon_numbers,sep="\t",header=T)
-        exons <- bed.file
-        exonnumber<-sapply(cnv.calls_ids$Gene, '==',exons$Gene)
-        for(i in 1:nrow(exonnumber)){
-            for(j in 1:ncol(exonnumber)){
-                temp=cnv.calls_ids$start[j]<=exons$End[i] & cnv.calls_ids$end[j]>=exons$Start[i]
-                exonnumber[i,j]=exonnumber[i,j] & temp
-            }
-        }
-        exonlist<-which(colSums(exonnumber)!=0)
-        if(length(exonlist)>0){
-            a<-list(length=length(exonlist))
-            for(i in 1:length(exonlist)){a[[i]]=which(exonnumber[,exonlist[i]])}
-            # identifies the  first and last Custom exon in the deletion/duplication.
-            first_exon<-unlist(lapply(a,function(a,b)min(b[a,]$Custom),exons))		
-            last_exon<-unlist(lapply(a,function(a,b)max(b[a,]$Custom),exons))
-            Custom.first[exonlist] = first_exon
-            Custom.last[exonlist] = last_exon
-        }
-        cnv.calls_ids=cbind(cnv.calls_ids,Custom.first,Custom.last)
-    }
-
-    ##################### Output #######################
-    if(colnames(counts)[5]=="exon"){
-    cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$Comparator.name,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence,cnv.calls_ids$Custom.first,cnv.calls_ids$Custom.last)
-    names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Comparator.name","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence","Custom.first","Custom.last")
-    save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons,file=output_rdata)
-    custom_calls=cnv.calls_ids_out[!is.na(cnv.calls_ids$Custom.first),]
-    write.table(custom_calls,file=output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
-
-    }else{
-    cnv.calls_ids_out<-data.frame(cnv.calls_ids$ID,cnv.calls_ids$sample,cnv.calls_ids$correlation,cnv.calls_ids$N.comp,cnv.calls_ids$Comparator.name,cnv.calls_ids$start.p,cnv.calls_ids$end.p,cnv.calls_ids$type,cnv.calls_ids$nexons,cnv.calls_ids$start,cnv.calls_ids$end,cnv.calls_ids$chromosome,cnv.calls_ids$id,cnv.calls_ids$BF,cnv.calls_ids$reads.expected,cnv.calls_ids$reads.observed,cnv.calls_ids$reads.ratio,cnv.calls_ids$Gene,cnv.calls_ids$Confidence)
-    names(cnv.calls_ids_out)<-c("CNV.ID","Sample","Correlation","N.comp","Comparator.name","Start.b","End.b","CNV.type","N.exons","Start","End","Chromosome","Genomic.ID","BF","Reads.expected","Reads.observed","Reads.ratio","Gene","Confidence")
-    save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,file=output_rdata)
-    write.table(cnv.calls_ids_out,file=output,sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
-    }
-
-}else{
-print('No CNV detected')
-cnv.calls_ids=NULL
-save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,file=output_rdata)
+calculate_confidence <- function(cnv.calls, bed.file) {
+  Confidence <- rep("HIGH", nrow(cnv.calls))
+  Confidence[cnv.calls$correlation < 0.985] <- "LOW"
+  Confidence[cnv.calls$reads.ratio < 1.25 & cnv.calls$reads.ratio > 0.75] <- "LOW"
+  Confidence[cnv.calls$N.comp <= 3] <- "LOW"
+  
+  if (ncol(bed.file) >= 4) {
+    genes <- apply(cnv.calls, 1, function(x) paste(unique(bed.file[x[5]:x[6], 4]), collapse=", "))
+    Confidence[genes == "PMS2"] <- "LOW"
+  }
+  
+  return(Confidence)
 }
-warnings()
-print("END makeCNVCalls script")
+
+save_results <- function(cnv.calls, output, output.rdata, bed.file, counts) {
+  if (!is.null(cnv.calls)) {
+    colnames(cnv.calls)[1:3] <- c("sample", "correlation", "N.comp")
+    cnv.calls$sample <- as.character(cnv.calls$sample)
+    
+    cnv.calls <- cbind(cnv.calls, calculate_confidence(cnv.calls, bed.file))
+    colnames(cnv.calls)[ncol(cnv.calls)] <- "Confidence"
+    
+    # Handle exon numbers if present
+    if (colnames(counts)[5] == "ID") {
+      cnv.calls <- cnv.calls[, c(1:4, 14, 15, 5:13, 16)]
+    }
+    
+    write.csv(cnv.calls, output, row.names = FALSE, quote = FALSE)
+  }
+  
+  save.image(output.rdata)
+}
+
+main <- function(data_file, modechrom, samples, p_value, output_file, rdata_output = NULL, refbams_file = NULL) {
+  print("BEGIN makeCNVCalls script")
+  
+  if (!file.exists(dirname(output_file))) {
+    dir.create(dirname(output_file))
+  }
+  
+  load_data(data_file)
+
+ # Ensure bed.file is loaded from the data file
+  if (!exists("bed.file")) {
+    stop("ERROR: bed.file object not found in the loaded RData -- Execution halted")
+  }
+
+  bed.file <- prepare_bed_file(bed.file)
+  ExomeCount <- as.data.frame(counts)
+  colnames(ExomeCount)[1:length(sample.names) + 5] <- sample.names
+  ExomeCount$chromosome <- gsub('chr', '', as.character(ExomeCount$chromosome))
+  
+  filtered.data <- filter_data_by_chromosome(ExomeCount, bed.file, counts, modechrom)
+  ExomeCount <- filtered.data$ExomeCount
+  bed.file <- filtered.data$bed.file
+  counts <- filtered.data$counts
+  
+  refsample.names <- process_refbams(refbams_file, modechrom)
+  sample.names <- process_samplebams(samples)
+  
+  cnv.results <- perform_cnv_calling(ExomeCount, sample.names, refsample.names, p_value)
+  cnv.calls <- cnv.results$cnv.calls
+  refs <- cnv.results$refs
+  models <- cnv.results$models
+  
+  save_results(cnv.calls, output_file, rdata_output, bed.file, counts)
+  warnings()
+  print("END makeCNVCalls script")
+}
+
+# Parse command line arguments and call the main function
+main(data_file = options$data, modechrom = options$chromosome, samples = options$samples, p_value = as.numeric(options$transProb), output_file = options$tsv, rdata_output = options$outdata, refbams_file = options$refbams)

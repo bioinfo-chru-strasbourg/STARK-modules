@@ -15,12 +15,14 @@
 
 print("BEGIN DECONPlot script")
 
-suppressMessages(library(R.utils))
-suppressMessages(library(ExomeDepth))
-suppressMessages(library(optparse))
-suppressMessages(library(grid))
-suppressMessages(library(reshape))
-suppressMessages(library(ggplot2))
+suppressPackageStartupMessages({
+    library(R.utils)
+    library(ExomeDepth)
+    library(optparse)
+    library(grid)
+    library(reshape)
+    library(ggplot2)
+})
 
 ###### Parsing input options and setting defaults ########
 option_list<-list(

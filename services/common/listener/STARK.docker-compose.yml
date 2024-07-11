@@ -1,9 +1,4 @@
-#########
-# STARK #
-#########
-# Usage: docker-compose up
-
-version: '3'
+version: '3.9'
 
 services:
 

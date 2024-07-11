@@ -101,28 +101,14 @@ def populate_dictionary(samples_list, extensions_list, files_list, pattern_inclu
 
 
 def filter_files(files_list, filter_in=None, filter_out=None, extensions=None):
-	"""
-	Filters a list of file names based on inclusion and exclusion criteria,
-	only applied by the extensions specified.
-
-	:param files_list: List of file names to filter
-	:param filter_in: String that must be in the file name to include it (optional)
-	:param filter_out: String that must not be in the file name to exclude it (optional)
-	:param extensions: List of allowed file extensions (optional)
-	:return: Filtered list of file names
-	"""
 	filtered_files = []
 
 	for file_name in files_list:
-		if extensions and not any(file_name.endswith(ext) for ext in extensions):
-			continue
-		
-		if filter_in and filter_in not in file_name:
-			continue
-
-		if filter_out and filter_out in file_name:
-			continue
-
+		if extensions and any(file_name.endswith(ext) for ext in extensions):
+			if filter_out and filter_out in file_name:
+				continue  # Skip files with both the specified extension and substring
+			if filter_in and filter_in not in file_name:
+				continue  # Skip files that do not contain the specified substring
 		filtered_files.append(file_name)
 
 	return filtered_files
@@ -299,14 +285,14 @@ if config['FILTER_SAMPLE']:
 
 # For validation analyse bam will be sample.aligner.validation.bam, so we append .validation to all the aligner strings
 if config['VALIDATION_ONLY'] == True:
-	filter_files(files_list, filter_in='validation', extensions=config['PROCESS_FILE'])
+	filtered_files = filter_files(files_list, filter_in='validation', extensions=config['PROCESS_FILE'])
 	append_aligner = '.validation'
 	aligner_list = [sub + append_aligner for sub in aligner_list]
 else:
-	filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
+	filtered_files = filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
 
 # Populate dictionnary
-runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], files_list, None, ['analysis'])
+runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, ['analysis'])
 
 # Add other runs/samples to improve sensibility
 if config['addruns']:

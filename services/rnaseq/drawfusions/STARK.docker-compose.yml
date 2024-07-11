@@ -1,7 +1,7 @@
 #########################
 # Docker compose Drawfusions #
 #########################
-version: '3'
+version: '3.9'
 
 services:
 
@@ -39,7 +39,7 @@ services:
         volumes:
             - /home1/data/STARK/output/repository:/STARK/output/repository:rw
             - /home1/data/STARK/output/depository:/STARK/output/depository:rw
-            - /home1/data/STARK/services/rnaseq/drawfusions/cli:TARK/services/rnaseq/drawfusions/cli:rw
+            - /home1/data/STARK/services/rnaseq/drawfusions/cli:/STARK/services/rnaseq/drawfusions/cli:rw
             - /home1/data/STARK/config/rnaseq/drawfusions/cli:/STARK/config/rnaseq/drawfusions/cli:ro
             - /home1/data/STARK/databases:/STARK/databases:ro
         networks:

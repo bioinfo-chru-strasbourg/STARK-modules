@@ -1,4 +1,19 @@
-library(stringr)
+##########################################################################
+# SCRAMBLE Rscript         Version: 2.0
+# Description:             R script to make a vcf file from the scramble df
+##########################################################################
+
+################## Context ##################
+# Original R script from https://github.com/GeneDx/scramble
+
+########## Note ########################################################################################
+# DEV v1 11/07/2024
+# Changelog
+#   - refactor INFO fields, add all the values computed into the vcf (Number of supporting reads)
+#   - add VAF calculation for dels only
+########################################################################################################
+
+suppressPackageStartupMessages(library(stringr))
 
 ##############################
 # convert to VCF
@@ -63,6 +78,7 @@ make.vcf.header = function(fa, blastRef=None){
 						 '##INFO=<ID=INS_SEQ,Number=.,Type=Integer,Description="Inserted sequence (for two-end deletions only)">',
 						 '##INFO=<ID=RIGHT_CLIPPED_SEQ,Number=.,Type=Integer,Description="Clipped consensus sequence for right-clipped cluster">',
 						 '##INFO=<ID=LEFT_CLIPPED_SEQ,Number=.,Type=Integer,Description="Clipped consensus sequence for left-clipped cluster">',
+             '##INFO=<ID=VAF,Number=.,Type=Float,Description="Variant Allele Frequency">',
 						 '##ALT=<ID=INS:ME:ALU,Description="Insertion of ALU element">',
 						 '##ALT=<ID=INS:ME:L1,Description="Insertion of L1 element">',
 						 '##ALT=<ID=INS:ME:SVA,Description="Insertion of SVA element">'
@@ -86,6 +102,22 @@ write.scramble.vcf = function(winners, fa, meis=F){
                check.names = F)
         return(fixed)
     }
+
+    # Compute VAF for deletions
+    compute_del_vaf = function(right_counts, left_counts, total_depth) {
+        if (total_depth == 0) return(0)
+        return((right_counts + left_counts) / total_depth)
+    }
+
+    # Compute total depth of coverage
+    winners$total_depth = ifelse(!meis, winners$RIGHT_CLUSTER_COUNTS + winners$LEFT_CLUSTER_COUNTS)
+
+    # Compute VAF for del for each variant type
+  if (!meis) {
+      winners$VAF <- sapply(1:nrow(winners), function(i) {
+          compute_del_vaf(winners$RIGHT_CLUSTER_COUNTS[i], winners$LEFT_CLUSTER_COUNTS[i], winners$total_depth[i])
+      })
+  }
 
   #argument checks
   if (is.null(winners)) return(NULL)
@@ -114,7 +146,7 @@ write.scramble.vcf = function(winners, fa, meis=F){
                        polarity = ifelse(winners$Insertion_Direction == 'Plus', "+", "-"),
                        stringsAsFactors = F, check.names = F)
     fixed$start = fixed$POS
-    fixed$INFO = paste0('MEINFO=', paste(fixed$name, fixed$start, fixed$polarity, sep=','), ';', 'COUNTS=', winners$Clipped_Reads_In_Cluster, ';','ALIGNMENT_PERCENT_LENGHT=' , winners$Alignment_Percent_Length , ';', 'ALIGNMENT_PERCENT_IDENTITY=', winners$Alignment_Percent_Identity, ';','CLIPPED_SEQUENCE=', winners$Clipped_Sequence, ';', 'CLIPPED_SIDE=', winners$Clipped_Side, ';', 'Start_In_MEI=', winners$Start_In_MEI, ';',  'Stop_In_MEI=', winners$Stop_In_MEI, ';', 'polyA_Position=',  winners$polyA_Position, ';', 'polyA_Seq=', winners$polyA_Seq, ';', 'polyA_SupportingReads=', winners$polyA_SupportingReads, ';', 'TSD=', winners$TSD, ';' , 'TSD_length=', winners$TSD_length)
+    fixed$INFO = paste0('MEINFO=', paste(fixed$name, fixed$start, fixed$polarity, sep=','), ';', 'COUNTS=', winners$Clipped_Reads_In_Cluster, ';','ALIGNMENT_PERCENT_LENGHT=' , winners$Alignment_Percent_Length , ';', 'ALIGNMENT_PERCENT_IDENTITY=', winners$Alignment_Percent_Identity, ';','CLIPPED_SEQUENCE=', winners$Clipped_Sequence, ';', 'CLIPPED_SIDE=', winners$Clipped_Side, ';', 'Start_In_MEI=', winners$Start_In_MEI, ';',  'Stop_In_MEI=', winners$Stop_In_MEI, ';', 'polyA_Position=',  winners$polyA_Position, ';', 'polyA_Seq=', winners$polyA_Seq, ';', 'polyA_SupportingReads=', winners$polyA_SupportingReads, ';', 'TSD=', winners$TSD, ';' , 'TSD_length=', winners$TSD_length, ';', 'VAF=', winners$VAF)
     fixed$REF = sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i]))
   }   
 
