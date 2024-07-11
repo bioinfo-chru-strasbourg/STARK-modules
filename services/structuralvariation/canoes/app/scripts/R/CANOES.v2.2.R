@@ -112,10 +112,15 @@ if(length(refbams_file)>0){
   ref.sample.names <- names(data_ref)[4:length(names(data_ref))]
   names(canoes.reads_ref) <- c(ref.sample.names)
   canoes.reads_un <- cbind(canoes.reads_un, canoes.reads_ref)
+
 }
 
-# We filter out samples depending on the list for XX/XY analysis
-canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end", sample.names_all)]
+  # We filter out samples depending on the list for XX/XY analysis
+  if(length(refbams_file)>0){
+    canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end", sample.names_all)]
+  }else{
+    canoes.reads <- canoes.reads_un[, c("target", "gc", "chromosome", "start", "end", sample.names)]
+  }
 
  # We filter out chrX/Y depending on the type of analysis (A = Autosome only, XX/XY, sexual chr only)
  if (modechrom=="A"){

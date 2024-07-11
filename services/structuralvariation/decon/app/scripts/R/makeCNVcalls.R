@@ -28,7 +28,7 @@ option_list <- list(
   make_option('--transProb', default=0.01, help='Transition probability for the HMM statistical analysis, default=0.01', dest='transProb'),
   make_option("--refbams", default=NULL, help="Text file containing the list of reference bam files for calling (full path) (optional)", dest='refbams'),
   make_option("--samples", default=NULL, help="Text file containing the list of sample bams to analyse", dest='samples'),
-  make_option("--tsv", default="./CNVcalls.csv", help="Output tsv file, default: ./CNVcalls.csv", dest='tsv'),
+  make_option("--tsv", default="./CNVcalls.tsv", help="Output tsv file, default: ./CNVcalls.tsv", dest='tsv'),
   make_option("--outrdata", default="./CNVcalls.Rdata", help="Output Rdata file, default: ./CNVcalls.Rdata", dest='outdata')
 )
 
@@ -120,7 +120,7 @@ perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans
     my.ref.samples <- if (length(refsample.names) == 0) sample.names[-i] else refsample.names
     my.reference.set <- as.matrix(ExomeCount[, my.ref.samples])
     
-    my.choice <- select_reference_set(
+    my.choice <- select.reference.set(
       test.counts = my.test,
       reference.counts = my.reference.set,
       bin.length = (ExomeCount$end - ExomeCount$start) / 1000,
@@ -183,7 +183,7 @@ save_results <- function(cnv.calls, output, output.rdata, bed.file, counts) {
       cnv.calls <- cnv.calls[, c(1:4, 14, 15, 5:13, 16)]
     }
     
-    write.csv(cnv.calls, output, row.names = FALSE, quote = FALSE)
+   write.table(cnv.calls, file = output, sep = "\t", row.names = FALSE, quote = FALSE)
   }
   
   save.image(output.rdata)

@@ -107,20 +107,20 @@ write_metrics <- function(metrics, output_file, bed.file) {
     if ("Exon" %in% colnames(metrics) & any(metrics$Exon != "All")) {
         exons <- bed.file
         failed_calls <- bed.file[as.numeric(metrics$Exon), ]
-        exon_number <- with(exons, {
-            sapply(failed_calls$chr, `==`, chr) & 
-            sapply(failed_calls$start, `>=`, start) & 
-            sapply(failed_calls$end, `<=`, end) | 
-            sapply(failed_calls$chr, `==`, chr) & 
-            sapply(failed_calls$start, `<=`, start) & 
-            sapply(failed_calls$end, `>=`, start) | 
-            sapply(failed_calls$chr, `==`, chr) & 
-            sapply(failed_calls$start, `<=`, end) & 
-            sapply(failed_calls$end, `>=`, end)
+        exon_number <- apply(failed_calls, 1, function(row) {
+            which(exons$chromosome == row["chromosome"] & 
+                  ((exons$start <= row["start"] & exons$end >= row["start"]) |
+                   (exons$start >= row["start"] & exons$end <= row["end"]) |
+                   (exons$start <= row["end"] & exons$end >= row["end"])))
         })
-        exon_list <- which(colSums(exon_number) != 0)
         metrics$Custom_Numbering <- rep("NA", nrow(metrics))
-        metrics$Custom_Numbering[paste(metrics$Exon) %in% row.names(failed_calls[exon_list, ])] <- exons$Custom[apply(exon_number[, exon_list, drop = FALSE], 2, which)]
+        metrics$Custom_Numbering[!sapply(exon_number, is.null)] <- sapply(exon_number, function(indices) {
+            if (length(indices) > 0) {
+                return(exons$Custom[indices[1]])
+            } else {
+                return("NA")
+            }
+        })
         
         write.table(metrics[metrics$Custom_Numbering != "NA" | metrics$Types == "Whole sample", ], file = output_file, quote = FALSE, row.names = FALSE, sep = "\t")
     } else {
