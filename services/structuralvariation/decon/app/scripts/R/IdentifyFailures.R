@@ -104,29 +104,33 @@ calculate_metrics <- function(count, sample.names, min_corr, min_cov, bed.file) 
 
 # Function to write metrics to a file
 write_metrics <- function(metrics, output_file, bed.file) {
-    if ("Exon" %in% colnames(metrics) & any(metrics$Exon != "All")) {
+    if ("exon" %in% colnames(bed.file) & any(metrics$Exon != "All")) {
         exons <- bed.file
-        failed_calls <- bed.file[as.numeric(metrics$Exon), ]
-        exon_number <- apply(failed_calls, 1, function(row) {
-            which(exons$chromosome == row["chromosome"] & 
-                  ((exons$start <= row["start"] & exons$end >= row["start"]) |
-                   (exons$start >= row["start"] & exons$end <= row["end"]) |
-                   (exons$start <= row["end"] & exons$end >= row["end"])))
-        })
-        metrics$Custom_Numbering <- rep("NA", nrow(metrics))
-        metrics$Custom_Numbering[!sapply(exon_number, is.null)] <- sapply(exon_number, function(indices) {
-            if (length(indices) > 0) {
-                return(exons$Custom[indices[1]])
-            } else {
-                return("NA")
-            }
-        })
+        failed.calls <- bed.file[as.numeric(metrics$Exon[metrics$Exon != "All"]),]
         
-        write.table(metrics[metrics$Custom_Numbering != "NA" | metrics$Types == "Whole sample", ], file = output_file, quote = FALSE, row.names = FALSE, sep = "\t")
+        exonnumber <- sapply(failed.calls$chr, '==', exons$Chr) & 
+                      sapply(failed.calls$start, '>=', exons$Start) & 
+                      sapply(failed.calls$end, '<=', exons$End) |
+                      sapply(failed.calls$chr, '==', exons$Chr) & 
+                      sapply(failed.calls$start, '<=', exons$Start) & 
+                      sapply(failed.calls$end, '>=', exons$Start) |
+                      sapply(failed.calls$chr, '==', exons$Chr) & 
+                      sapply(failed.calls$start, '<=', exons$End) & 
+                      sapply(failed.calls$end, '>=', exons$End)
+        
+        exonlist <- which(colSums(exonnumber) != 0)
+        a <- apply(exonnumber[, exonlist, drop=F], 2, which)
+        Custom_Numbering <- rep("NA", nrow(metrics))
+        Custom_Numbering[as.character(metrics$Exon) %in% row.names(failed.calls[exonlist,])] <- exons$Custom[a]
+        Metrics <- data.frame(metrics, Custom_Numbering = Custom_Numbering)
+        names(Metrics) <- c("Sample", "Exon", "Type", "Gene", "Custom.numbering", "Info")
+        Metrics_custom <- Metrics[Metrics$Custom_Numbering != "NA" | Metrics$Types == "Whole sample",]
+        write.table(Metrics_custom, file = output_file, quote = F, row.names = F, sep = "\t")    
     } else {
         write.table(metrics, file = output_file, quote = FALSE, row.names = FALSE, sep = "\t")
     }
 }
+
 
 # Main function to orchestrate the process
 main <- function(rdata_file, min_corr, min_cov, output_file) {
