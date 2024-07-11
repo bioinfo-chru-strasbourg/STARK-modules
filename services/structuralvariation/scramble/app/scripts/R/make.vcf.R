@@ -110,7 +110,7 @@ write.scramble.vcf = function(winners, fa, meis=F){
     }
 
     # Compute total depth of coverage
-    winners$total_depth = ifelse(!meis, winners$RIGHT_CLUSTER_COUNTS + winners$LEFT_CLUSTER_COUNTS)
+    winners$total_depth = ifelse(!meis, winners$RIGHT_CLUSTER_COUNTS + winners$LEFT_CLUSTER_COUNTS, winners$total_depth)
 
     # Compute VAF for del for each variant type
   if (!meis) {
