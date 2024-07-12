@@ -103,21 +103,18 @@ write.scramble.vcf = function(winners, fa, meis=F){
         return(fixed)
     }
 
-    # Compute VAF for deletions
-    compute_del_vaf = function(right_counts, left_counts, total_depth) {
-        if (total_depth == 0) return(0)
-        return((right_counts + left_counts) / total_depth)
-    }
+# Define the compute_del_vaf function
+compute_del_vaf <- function(right_counts, left_counts, total_depth) {
+    if (total_depth == 0) return(0)
+    return((right_counts + left_counts) / total_depth)
+}
 
-    # Compute total depth of coverage
-    winners$total_depth = ifelse(!meis, winners$RIGHT_CLUSTER_COUNTS + winners$LEFT_CLUSTER_COUNTS, winners$total_depth)
-
-    # Compute VAF for del for each variant type
-  if (!meis) {
-      winners$VAF <- sapply(1:nrow(winners), function(i) {
-          compute_del_vaf(winners$RIGHT_CLUSTER_COUNTS[i], winners$LEFT_CLUSTER_COUNTS[i], winners$total_depth[i])
-      })
-  }
+# Compute total depth of coverage conditionally
+winners$total_depth <- ifelse(!meis, winners$RIGHT_CLUSTER_COUNTS + winners$LEFT_CLUSTER_COUNTS, winners$total_depth)
+winners$VAF <- NA
+winners$VAF[!meis] <- sapply(which(!meis), function(i) {
+    compute_del_vaf(winners$RIGHT_CLUSTER_COUNTS[i], winners$LEFT_CLUSTER_COUNTS[i], winners$total_depth[i])
+})
 
   #argument checks
   if (is.null(winners)) return(NULL)

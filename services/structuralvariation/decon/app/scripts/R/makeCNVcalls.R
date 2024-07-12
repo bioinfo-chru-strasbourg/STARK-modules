@@ -42,13 +42,6 @@ stop_if_missing <- function(val, message) {
     }
 }
 
-# Function to load data from RData file
-load_data <- function(rdata_file) {
-    stop_if_missing(rdata_file, "ERROR: no Rdata summary file provided -- Execution halted")
-    load(rdata_file)
-    return(list(counts = counts, bed.file = bed.file, sample.names = sample.names))
-}
-
 # Function to prepare bed file (sorting by chromosome)
 prepare_bed_file <- function(bed.file) {
     bed.file <- bed.file[order(as.numeric(gsub('chr', '', bed.file$chromosome))), ]
@@ -196,12 +189,12 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
     dir.create(dirname(output_file))
   }
   
-  load_data(data_file)
+  stop_if_missing(data_file, "ERROR: no Rdata summary file provided -- Execution halted")
+  load(data_file)
 
- # Ensure bed.file is loaded from the data file
-  if (!exists("bed.file")) {
-    stop("ERROR: bed.file object not found in the loaded RData -- Execution halted")
-  }
+  stop_if_missing(bed.file, "ERROR: bed.file object not found in the loaded RData -- Execution halted")
+  stop_if_missing(counts, "ERROR: counts object not found in the loaded RData -- Execution halted")
+  stop_if_missing(sample.names, "ERROR: sample.names object not found in the loaded RData -- Execution halted")
 
   bed.file <- prepare_bed_file(bed.file)
   ExomeCount <- as.data.frame(counts)
