@@ -163,7 +163,7 @@ calculate_confidence <- function(cnv.calls, bed.file) {
   return(Confidence)
 }
 
-save_results <- function(cnv.calls, output, output.rdata, bed.file, counts) {
+save_results <- function(cnv.calls, ExomeCount, output, sample.names, bams, output.rdata, refs, bed.file, models, counts) {
   if (!is.null(cnv.calls)) {
     colnames(cnv.calls)[1:3] <- c("sample", "correlation", "N.comp")
     cnv.calls$sample <- as.character(cnv.calls$sample)
@@ -214,7 +214,8 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
   refs <- cnv.results$refs
   models <- cnv.results$models
   
-  save_results(cnv.calls, output_file, rdata_output, bed.file, counts)
+  save_results(cnv.calls, ExomeCount, output_file, sample.names, bams, rdata_output, refs, bed.file, models, counts)
+
   warnings()
   print("END makeCNVCalls script")
 }
