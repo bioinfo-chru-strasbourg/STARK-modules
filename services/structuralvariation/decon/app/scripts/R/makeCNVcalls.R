@@ -102,7 +102,7 @@ filter_data_by_chromosome <- function(ExomeCount, bed.file, counts, mode.chrom) 
   list(ExomeCount = ExomeCount, bed.file = bed.file, counts = counts)
 }
 
-perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans.prob) {
+perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans.prob, bed.file) {
   cnv.calls <- NULL
   refs <- list()
   models <- list()
@@ -145,8 +145,22 @@ perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans
   
   names(refs) <- sample.names
   names(models) <- sample.names
-  
-  list(cnv.calls = cnv.calls, refs = refs, models = models)
+
+  if(!is.null(cnv.calls)){
+    names(cnv.calls)[1] = "sample"
+    cnv.calls$sample = paste(cnv.calls$sample)
+    names(cnv.calls)[2] = "correlation"
+    names(cnv.calls)[3] = "N.comp"
+        if(ncol(bed.file)>=4){
+        genes <- apply(cnv.calls, 1, function(x) {paste(unique(bed.file[x['start.p']:x['end.p'], 4]), collapse = ", ")})
+        cnv.calls<-cbind(cnv.calls,genes)
+        names(cnv.calls)[ncol(cnv.calls)]="Gene"
+        }
+  }else{
+    print('No CNV detected')
+    cnv.calls=NULL
+  }
+  return(list(cnv.calls, refs, models))
 }
 
 calculate_confidence <- function(cnv.calls, bed.file) {
@@ -154,12 +168,7 @@ calculate_confidence <- function(cnv.calls, bed.file) {
   Confidence[cnv.calls$correlation < 0.985] <- "LOW"
   Confidence[cnv.calls$reads.ratio < 1.25 & cnv.calls$reads.ratio > 0.75] <- "LOW"
   Confidence[cnv.calls$N.comp <= 3] <- "LOW"
-  
-  if (ncol(bed.file) >= 4) {
-    genes <- apply(cnv.calls, 1, function(x) paste(unique(bed.file[x[5]:x[6], 4]), collapse=", "))
-    Confidence[genes == "PMS2"] <- "LOW"
-  }
-  
+  Confidence[cnv.calls$genes == "PMS2"] <- "LOW"
   return(Confidence)
 }
 
@@ -251,10 +260,10 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
 }
 
 
-save_results <- function(cnv.calls_ids, ExomeCount, output, sample.names, bams, output.rdata, refs, bed.file, models, counts) {
+save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.names, bams, output.rdata,  bed.file, counts, refs, models) {
   if (!is.null(cnv.calls_ids)) {
     colnames(cnv.calls_ids)[1:3] <- c("sample", "correlation", "N.comp")
-    cnv.calls_idss$sample <- as.character(cnv.calls_ids$sample)
+    cnv.calls_ids$sample <- as.character(cnv.calls_ids$sample)
     
     cnv.calls_ids <- cbind(cnv.calls_ids, calculate_confidence(cnv.calls_ids, bed.file))
     colnames(cnv.calls_ids)[ncol(cnv.calls_ids)] <- "Confidence"
@@ -267,22 +276,22 @@ save_results <- function(cnv.calls_ids, ExomeCount, output, sample.names, bams, 
    write.table(cnv.calls_ids, file = output, sep = "\t", row.names = FALSE, quote = FALSE)
   }
   
-  save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls_ids,refs,models,file=output.rdata)
+  save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls_ids,cnv.calls, refs, models, file=output.rdata)
 }
 
 main <- function(data_file, modechrom, samples, p_value, output_file, rdata_output = NULL, refbams_file = NULL) {
   print("BEGIN makeCNVCalls script")
-  
-  if (!file.exists(dirname(output_file))) {
-    dir.create(dirname(output_file))
-  }
-  
+    
   stop_if_missing(data_file, "ERROR: no Rdata summary file provided -- Execution halted")
   load(data_file)
 
   stop_if_missing(bed.file, "ERROR: bed.file object not found in the loaded RData -- Execution halted")
   stop_if_missing(counts, "ERROR: counts object not found in the loaded RData -- Execution halted")
   stop_if_missing(sample.names, "ERROR: sample.names object not found in the loaded RData -- Execution halted")
+
+  if (!file.exists(dirname(output_file))) {
+    dir.create(dirname(output_file))
+  }
 
   bed.file <- prepare_bed_file(bed.file)
   ExomeCount <- as.data.frame(counts)
@@ -297,12 +306,12 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
   refsample.names <- process_refbams(refbams_file, modechrom)
   sample.names <- process_samplebams(samples)
   
-  cnv.call <- perform_cnv_calling(ExomeCount, sample.names, refsample.names, p_value)
+  cnv.calls <- perform_cnv_calling(ExomeCount, sample.names, refsample.names, p_value, bed.file)
   # Split multi-gene calls
-  cnv.calls_ids <- split_multi_gene_calls(cnv.calls, bed.file)
+  cnv.calls_ids <- split_multi_gene_calls(cnv.calls, bed.file, counts)
  
   
-  save_results(cnv.calls_ids, ExomeCount, output_file, sample.names, bams, rdata_output, refs, bed.file, models, counts)
+  save_results(cnv.calls, cnv.calls_ids, ExomeCount, output_file, sample.names, bams, rdata_output, bed.file, counts, refs, models)
 
   warnings()
   print("END makeCNVCalls script")
