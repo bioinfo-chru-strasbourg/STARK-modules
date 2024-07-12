@@ -163,23 +163,111 @@ calculate_confidence <- function(cnv.calls, bed.file) {
   return(Confidence)
 }
 
-save_results <- function(cnv.calls, ExomeCount, output, sample.names, bams, output.rdata, refs, bed.file, models, counts) {
-  if (!is.null(cnv.calls)) {
-    colnames(cnv.calls)[1:3] <- c("sample", "correlation", "N.comp")
-    cnv.calls$sample <- as.character(cnv.calls$sample)
+# Function to add custom exon numbers
+add_custom_exon_numbers <- function(cnv.calls_ids, bed.file, counts) {
+  if (colnames(counts)[5] == "exon") {
+    Custom.first <- rep(NA, nrow(cnv.calls_ids))
+    Custom.last <- rep(NA, nrow(cnv.calls_ids))
+    exons <- bed.file
+    exonnumber <- sapply(cnv.calls_ids$Gene, '==', exons$Gene)
     
-    cnv.calls <- cbind(cnv.calls, calculate_confidence(cnv.calls, bed.file))
-    colnames(cnv.calls)[ncol(cnv.calls)] <- "Confidence"
-    
-    # Handle exon numbers if present
-    if (colnames(counts)[5] == "ID") {
-      cnv.calls <- cnv.calls[, c(1:4, 14, 15, 5:13, 16)]
+    for (i in 1:nrow(exonnumber)) {
+      for (j in 1:ncol(exonnumber)) {
+        temp <- cnv.calls_ids$start[j] <= exons$End[i] & cnv.calls_ids$end[j] >= exons$Start[i]
+        exonnumber[i, j] <- exonnumber[i, j] & temp
+      }
     }
     
-   write.table(cnv.calls, file = output, sep = "\t", row.names = FALSE, quote = FALSE)
+    exonlist <- which(colSums(exonnumber) != 0)
+    
+    if (length(exonlist) > 0) {
+      a <- list(length = length(exonlist))
+      for (i in 1:length(exonlist)) {
+        a[[i]] <- which(exonnumber[, exonlist[i]])
+      }
+      
+      # identifies the first and last Custom exon in the deletion/duplication.
+      first_exon <- unlist(lapply(a, function(a, b) min(b[a,]$Custom), exons))
+      last_exon <- unlist(lapply(a, function(a, b) max(b[a,]$Custom), exons))
+      Custom.first[exonlist] <- first_exon
+      Custom.last[exonlist] <- last_exon
+    }
+    
+    cnv.calls_ids <- cbind(cnv.calls_ids, Custom.first, Custom.last)
   }
   
-  save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls,refs,models,file=output.rdata)
+  return(cnv.calls_ids)
+}
+
+# Replaces single calls involving multiple genes with multiple calls with a single call ID/gene
+split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
+  
+  cnv.calls_ids=cbind(1:nrow(cnv.calls),cnv.calls)
+  names(cnv.calls_ids)[1]="ID"
+  trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+    
+  for (i in 1:nrow(cnv.calls_ids)) {
+    if (length(grep(',', cnv.calls_ids$Gene[i])) > 0) {
+      temp <- cnv.calls_ids[i, ]
+      genes <- unlist(strsplit(cnv.calls_ids$Gene[i], split = ','))
+      temp <- temp[rep(seq_len(nrow(temp)), each = length(genes)), ]
+      temp$Gene <- genes
+      
+      gene.index <- which(bed.file[, 4] %in% genes)
+      whole.index <- which(bed.file[, 4] == genes[1])
+      
+      for (j in 1:length(genes)) {
+        gene.index <- which(bed.file[, 4] == genes[j])
+        overlap <- gene.index[gene.index %in% whole.index]
+        temp[j, ]$start.p <- min(overlap)
+        temp[j, ]$end.p <- max(overlap)
+      }
+      
+      if (i == 1) {
+        cnv.calls_ids <- rbind(temp, cnv.calls_ids[(i + 1):nrow(cnv.calls_ids), ])
+      } else if (i == nrow(cnv.calls_ids)) {
+        cnv.calls_ids <- rbind(cnv.calls_ids[1:(i - 1), ], temp)
+      } else {
+        cnv.calls_ids <- rbind(cnv.calls_ids[1:(i - 1), ], temp, cnv.calls_ids[(i + 1):nrow(cnv.calls_ids), ])
+      }
+    }
+  }
+  
+  cnv.calls_ids <- add_custom_exon_numbers(cnv.calls_ids, bed.file, counts)
+  
+  cnv.calls_ids$Gene <- trim(cnv.calls_ids$Gene)
+  Gene.index <- vector()
+  genes_unique <- unique(bed.file[, 4])
+  
+  for (i in 1:length(genes_unique)) {
+    Gene.index <- c(Gene.index, 1:sum(bed.file[, 4] == genes_unique[i]))
+  }
+  
+  start.b <- Gene.index[cnv.calls_ids$start.p]
+  end.b <- Gene.index[cnv.calls_ids$end.p]
+  cnv.calls_ids <- cbind(cnv.calls_ids, start.b, end.b)
+  
+  return(cnv.calls_ids)
+}
+
+
+save_results <- function(cnv.calls_ids, ExomeCount, output, sample.names, bams, output.rdata, refs, bed.file, models, counts) {
+  if (!is.null(cnv.calls_ids)) {
+    colnames(cnv.calls_ids)[1:3] <- c("sample", "correlation", "N.comp")
+    cnv.calls_idss$sample <- as.character(cnv.calls_ids$sample)
+    
+    cnv.calls_ids <- cbind(cnv.calls_ids, calculate_confidence(cnv.calls_ids, bed.file))
+    colnames(cnv.calls_ids)[ncol(cnv.calls_ids)] <- "Confidence"
+    
+    # Handle exon numbers if present
+    if (colnames(counts)[5] == "exon") {
+      cnv.calls_ids <- cnv.calls_ids[, c(1:4, 14, 15, 5:13, 16)]
+    }
+    
+   write.table(cnv.calls_ids, file = output, sep = "\t", row.names = FALSE, quote = FALSE)
+  }
+  
+  save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls_ids,refs,models,file=output.rdata)
 }
 
 main <- function(data_file, modechrom, samples, p_value, output_file, rdata_output = NULL, refbams_file = NULL) {
@@ -209,12 +297,12 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
   refsample.names <- process_refbams(refbams_file, modechrom)
   sample.names <- process_samplebams(samples)
   
-  cnv.results <- perform_cnv_calling(ExomeCount, sample.names, refsample.names, p_value)
-  cnv.calls <- cnv.results$cnv.calls
-  refs <- cnv.results$refs
-  models <- cnv.results$models
+  cnv.call <- perform_cnv_calling(ExomeCount, sample.names, refsample.names, p_value)
+  # Split multi-gene calls
+  cnv.calls_ids <- split_multi_gene_calls(cnv.calls, bed.file)
+ 
   
-  save_results(cnv.calls, ExomeCount, output_file, sample.names, bams, rdata_output, refs, bed.file, models, counts)
+  save_results(cnv.calls_ids, ExomeCount, output_file, sample.names, bams, rdata_output, refs, bed.file, models, counts)
 
   warnings()
   print("END makeCNVCalls script")

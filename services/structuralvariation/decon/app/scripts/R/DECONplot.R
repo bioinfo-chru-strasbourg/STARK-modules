@@ -32,7 +32,7 @@ option_list<-list(
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 
-# Load R workspace with all the results save
+# Load R workspace with all the results save : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
 count_data=opt$data
 if(count_data=="NULL"){count_data=NULL}
 if(is.null(count_data)){
@@ -43,7 +43,7 @@ message('Loading Rdata')
 load(count_data)
 message('Loading done')
 
-if (length(cnv.calls)==0){
+if (length(cnv.calls_ids)==0){
     message('No CNVcalls in the Rdata file. No plot to draw')
     quit()
 }
@@ -65,10 +65,10 @@ if(is.null(prefixfile)){
 #################### Plots ####################################
 message('Start generating plots')
 
-if ("Custom.first" %in% colnames(cnv.calls)){
-    cnv.calls_plot=cnv.calls[!is.na(cnv.calls$Custom.first),]
+if ("Custom.first" %in% colnames(cnv.calls_ids)){
+    cnv.calls_plot=cnv.calls_ids[!is.na(cnv.calls_ids$Custom.first),]
 }else{
-    cnv.calls_plot=cnv.calls
+    cnv.calls_plot=cnv.calls_ids
 }
 
 cnv.calls_plot$chr=paste('chr',cnv.calls_plot$chromosome,sep='')
