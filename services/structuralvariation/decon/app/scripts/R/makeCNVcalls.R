@@ -179,7 +179,7 @@ save_results <- function(cnv.calls, output, output.rdata, bed.file, counts) {
    write.table(cnv.calls, file = output, sep = "\t", row.names = FALSE, quote = FALSE)
   }
   
-  save.image(output.rdata)
+  save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls,refs,models,file=output.rdata)
 }
 
 main <- function(data_file, modechrom, samples, p_value, output_file, rdata_output = NULL, refbams_file = NULL) {
