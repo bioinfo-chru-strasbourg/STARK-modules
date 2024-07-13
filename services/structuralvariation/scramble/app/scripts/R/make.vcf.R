@@ -34,12 +34,9 @@ get_refs = function(fa, chrom, start, end){
 }
 
 compute_del_vaf <- function(right_counts, left_counts, total_depth) {
-  if (total_depth == 0) {
-    return(NULL)
-  } else {
-    return((right_counts + left_counts) / total_depth)
-  }
+  ifelse(total_depth == 0, NA, (right_counts + left_counts) / total_depth)
 }
+
 
 make.vcf.header = function(fa, blastRef=NULL){
   if (missing(fa)) return(NULL)
