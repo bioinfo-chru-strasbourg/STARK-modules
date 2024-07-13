@@ -5,7 +5,7 @@
 
 ################## Context ##################
 # Original R script from https://github.com/GeneDx/scramble
-
+# script is located in /opt/conda/share/scramble/bin/make.vcf.R
 ########## Note ########################################################################################
 # DEV v1 11/07/2024
 # Changelog
@@ -29,7 +29,7 @@ get_score = function(right_score, left_score){
 }
 
 ##############################
-make.vcf.header = function(fa, blastRef=None){
+make.vcf.header = function(fa, blastRef=NULL){
   if (missing(fa)) return(NULL)
   contigs = names(fa)
 	header = c('##fileformat=VCFv4.3',
@@ -84,7 +84,7 @@ write.scramble.vcf = function(winners, fa, meis = FALSE) {
   
  
   # Check if winners dataframe is empty
-  if (nrow(winners) == 0) or (is.null(winners)) {
+ if (nrow(winners) == 0) {
     fixed = data.frame('#CHROM' = character(),
                        POS = character(),
                        ID = character(),
@@ -96,6 +96,9 @@ write.scramble.vcf = function(winners, fa, meis = FALSE) {
                        stringsAsFactors = FALSE, check.names = FALSE)
     return(fixed)
   }
+
+#argument checks
+if (is.null(winners)) return(NULL)
 
   # Define functions (if not already defined in your script)
   compute_del_vaf <- function(right_counts, left_counts, total_depth) {

@@ -103,9 +103,9 @@ filter_data_by_chromosome <- function(ExomeCount, bed.file, counts, mode.chrom) 
 }
 
 perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans.prob, bed.file) {
-  #cnv.calls <- NULL
-  #refs <- list()
-  #models <- list()
+  cnv.calls <- NULL
+  refs <- list()
+  models <- list()
   
   for (i in seq_along(sample.names)) {
     print(paste("Processing sample:", sample.names[i], i, "/", length(sample.names)))
@@ -148,24 +148,23 @@ perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans
 
   if(!is.null(cnv.calls)){
     names(cnv.calls)[1] <- "Sample"
-    cnv.calls$sample <- paste(cnv.calls$sample)
+    cnv.calls$Sample = paste(cnv.calls$Sample)
     names(cnv.calls)[2] <- "Correlation"
     names(cnv.calls)[3] <- "N.comp"
-    names(cnv.calls)["start.p"] <- "Start.p"
-    names(cnv.calls)["end.p"] <- "End.p"
-    names(cnv.calls)["type"] <- "CNV.type"
-    names(cnv.calls)["nexons"] <- "N.exons"
-    names(cnv.calls)["start"] <- "Start"
-    names(cnv.calls)["end"] <- "End"
-    names(cnv.calls)["chromosome"] <- "Chromosome"
-    names(cnv.calls)["id"] <- "Genomic.ID"
-    names(cnv.calls)["reads.expected"] <- "Reads.expected"
-    names(cnv.calls)["reads.observed"] <- "Reads.observed"
-    names(cnv.calls)["start.b"] <- "Start.b"
-    names(cnv.calls)["end.b"] <- "End.b"
- 
+    colnames(cnv.calls)[colnames(cnv.calls) == "start.p"] <- "Start.p"
+    colnames(cnv.calls)[colnames(cnv.calls) == "end.p"] <- "End.p"
+    colnames(cnv.calls)[colnames(cnv.calls) == "type"] <- "CNV.type"
+    colnames(cnv.calls)[colnames(cnv.calls) == "nexons"] <- "N.exons"
+    colnames(cnv.calls)[colnames(cnv.calls) == "start"] <- "Start"
+    colnames(cnv.calls)[colnames(cnv.calls) == "end"] <- "End"
+    colnames(cnv.calls)[colnames(cnv.calls) == "chromosome"] <- "Chromosome"
+    colnames(cnv.calls)[colnames(cnv.calls) == "id"] <- "Genomic.ID"
+    colnames(cnv.calls)[colnames(cnv.calls) == "reads.expected"] <- "Reads.expected"
+    colnames(cnv.calls)[colnames(cnv.calls) == "reads.observed"] <- "Reads.observed"
+    colnames(cnv.calls)[colnames(cnv.calls) == "reads.ratio"] <- "Reads.ratio"
+     
         if(ncol(bed.file)>=4){
-        genes <- apply(cnv.calls, 1, function(x) {paste(unique(bed.file[x['start.p']:x['end.p'], 4]), collapse = ", ")})
+        genes <- apply(cnv.calls, 1, function(x) {paste(unique(bed.file[x['Start.p']:x['End.p'], 4]), collapse = ", ")})
         cnv.calls<-cbind(cnv.calls,genes)
         names(cnv.calls)[ncol(cnv.calls)] <- "Gene"
         }
@@ -244,8 +243,8 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
       for (j in 1:length(genes)) {
         gene.index <- which(bed.file[, 4] == genes[j])
         overlap <- gene.index[gene.index %in% whole.index]
-        temp[j, ]$start.p <- min(overlap)
-        temp[j, ]$end.p <- max(overlap)
+        temp[j, ]$Start.p <- min(overlap)
+        temp[j, ]$End.p <- max(overlap)
       }
       
       if (i == 1) {
@@ -261,16 +260,16 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   cnv.calls_ids <- add_custom_exon_numbers(cnv.calls_ids, bed.file, counts)
   
   cnv.calls_ids$Gene <- trim(cnv.calls_ids$Gene)
-  #Gene.index <- vector()
+  Gene.index <- vector()
   genes_unique <- unique(bed.file[, 4])
   
   for (i in 1:length(genes_unique)) {
     Gene.index <- c(Gene.index, 1:sum(bed.file[, 4] == genes_unique[i]))
   }
   
-  start.b <- Gene.index[cnv.calls_ids$start.p]
-  end.b <- Gene.index[cnv.calls_ids$end.p]
-  cnv.calls_ids <- cbind(cnv.calls_ids, start.b, end.b)
+  Start.b <- Gene.index[cnv.calls_ids$Start.p]
+  End.b <- Gene.index[cnv.calls_ids$End.p]
+  cnv.calls_ids <- cbind(cnv.calls_ids, Start.b, End.b)
   
   return(cnv.calls_ids)
 }
@@ -280,7 +279,7 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
 save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.names, bams, output.rdata,  bed.file, counts, refs, models, fasta) {
   if (!is.null(cnv.calls_ids)) {
    
-    cnv.calls_ids$sample <- as.character(cnv.calls_ids$sample)
+    cnv.calls_ids$Sample <- as.character(cnv.calls_ids$Sample)
     cnv.calls_ids <- cbind(cnv.calls_ids, calculate_confidence(cnv.calls_ids, bed.file))
     colnames(cnv.calls_ids)[ncol(cnv.calls_ids)] <- "Confidence"
     
