@@ -140,6 +140,7 @@
 				"Type": "Integer",
 				"Number": "1",
 				"Description": "The number of the last line in the call from the analyzed BED file"
+			}	
 		},
 		"FORMAT": {
 			"GT": {

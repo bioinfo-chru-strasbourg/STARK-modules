@@ -112,8 +112,8 @@ if (is.null(winners)) return(NULL)
 
   if(!meis){
 
-    winners$total_depth <- winners$RIGHT_CLUSTER_COUNTS + winners$LEFT_CLUSTER_COUNTS
-    winners$VAF <- compute_del_vaf(winners$RIGHT_CLUSTER_COUNTS, winners$LEFT_CLUSTER_COUNTS, winners$total_depth)
+    winners$total_depth <- winners$RIGHT.CLUSTER.COUNTS + winners$LEFT.CLUSTER.COUNTS
+    winners$VAF <- compute_del_vaf(winners$RIGHT.CLUSTER.COUNTS, winners$LEFT.CLUSTER.COUNTS, winners$total_depth)
 
     fixed = data.frame('#CHROM' = winners$CONTIG,
                        POS = winners$DEL.START,
