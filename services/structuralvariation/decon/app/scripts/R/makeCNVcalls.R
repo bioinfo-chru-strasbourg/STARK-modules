@@ -103,9 +103,9 @@ filter_data_by_chromosome <- function(ExomeCount, bed.file, counts, mode.chrom) 
 }
 
 perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans.prob, bed.file) {
-  cnv.calls <- NULL
-  refs <- list()
-  models <- list()
+  #cnv.calls <- NULL
+  #refs <- list()
+  #models <- list()
   
   for (i in seq_along(sample.names)) {
     print(paste("Processing sample:", sample.names[i], i, "/", length(sample.names)))
@@ -147,15 +147,30 @@ perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans
   names(models) <- sample.names
 
   if(!is.null(cnv.calls)){
-    names(cnv.calls)[1] = "sample"
-    cnv.calls$sample = paste(cnv.calls$sample)
-    names(cnv.calls)[2] = "correlation"
-    names(cnv.calls)[3] = "N.comp"
+    names(cnv.calls)[1] <- "Sample"
+    cnv.calls$sample <- paste(cnv.calls$sample)
+    names(cnv.calls)[2] <- "Correlation"
+    names(cnv.calls)[3] <- "N.comp"
+    names(cnv.calls)["start.p"] <- "Start.p"
+    names(cnv.calls)["end.p"] <- "End.p"
+    names(cnv.calls)["type"] <- "CNV.type"
+    names(cnv.calls)["nexons"] <- "N.exons"
+    names(cnv.calls)["start"] <- "Start"
+    names(cnv.calls)["end"] <- "End"
+    names(cnv.calls)["chromosome"] <- "Chromosome"
+    names(cnv.calls)["id"] <- "Genomic.ID"
+    names(cnv.calls)["reads.expected"] <- "Reads.expected"
+    names(cnv.calls)["reads.observed"] <- "Reads.observed"
+    names(cnv.calls)["start.b"] <- "Start.b"
+    names(cnv.calls)["end.b"] <- "End.b"
+ 
         if(ncol(bed.file)>=4){
         genes <- apply(cnv.calls, 1, function(x) {paste(unique(bed.file[x['start.p']:x['end.p'], 4]), collapse = ", ")})
         cnv.calls<-cbind(cnv.calls,genes)
-        names(cnv.calls)[ncol(cnv.calls)]="Gene"
+        names(cnv.calls)[ncol(cnv.calls)] <- "Gene"
         }
+  
+  
   }else{
     print('No CNV detected')
     cnv.calls=NULL
@@ -211,11 +226,8 @@ add_custom_exon_numbers <- function(cnv.calls_ids, bed.file, counts) {
 # Replaces single calls involving multiple genes with multiple calls with a single call ID/gene
 split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   
-  # Add a new column named "ID" with increasing numbers from 1 to the number of rows in cnv.calls
-  cnv.calls_ids <- cbind(ID = 1:nrow(cnv.calls), cnv.calls)
-  
-  # Ensure column names are unique
-  colnames(cnv.calls_ids) <- make.unique(colnames(cnv.calls_ids))
+  # Add a new column named "CNV.ID" with increasing numbers from 1 to the number of rows in cnv.calls
+  cnv.calls_ids <- cbind(CNV.ID = 1:nrow(cnv.calls), cnv.calls)
   
   trim <- function (x) gsub("^\\s+|\\s+$", "", x)
   
@@ -249,7 +261,7 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   cnv.calls_ids <- add_custom_exon_numbers(cnv.calls_ids, bed.file, counts)
   
   cnv.calls_ids$Gene <- trim(cnv.calls_ids$Gene)
-  Gene.index <- vector()
+  #Gene.index <- vector()
   genes_unique <- unique(bed.file[, 4])
   
   for (i in 1:length(genes_unique)) {
@@ -265,7 +277,7 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
 
 
 
-save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.names, bams, output.rdata,  bed.file, counts, refs, models) {
+save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.names, bams, output.rdata,  bed.file, counts, refs, models, fasta) {
   if (!is.null(cnv.calls_ids)) {
    
     cnv.calls_ids$sample <- as.character(cnv.calls_ids$sample)
@@ -280,7 +292,7 @@ save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.na
    write.table(cnv.calls_ids, file = output, sep = "\t", row.names = FALSE, quote = FALSE)
   }
   
-  save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls_ids,cnv.calls, refs, models, file=output.rdata)
+  save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls_ids,cnv.calls, refs, models, fasta, file=output.rdata)
 }
 
 main <- function(data_file, modechrom, samples, p_value, output_file, rdata_output = NULL, refbams_file = NULL) {
@@ -318,7 +330,7 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
   # Split multi-gene calls
   cnv.calls_ids <- split_multi_gene_calls(cnv.calls, bed.file, counts)
   
-  save_results(cnv.calls, cnv.calls_ids, ExomeCount, output_file, sample.names, bams, rdata_output, bed.file, counts, refs, models)
+  save_results(cnv.calls, cnv.calls_ids, ExomeCount, output_file, sample.names, bams, rdata_output, bed.file, counts, refs, models, fasta)
 
   warnings()
   print("END makeCNVCalls script")

@@ -55,7 +55,9 @@
 			"End.b": "End.b",
 			"Genomic.ID": "Genomic.ID",
 			"Confidence": "Confidence",
-			"Comparator.name": "Comparator.name"
+			"Comparator.name": "Comparator.name",
+			"Start.p": "Start.p",
+			"End.p": "End.p",
 		},
 		"FORMAT": {
 			"GT": "",
@@ -128,7 +130,16 @@
 				"Type": "String",
 				"Number": "1",
 				"Description": "Comparator name (from DECoN)"
-			}
+			},
+			"Start.p": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "The number of the first line in the call from the analyzed BED file"
+			},
+			"End.p": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "The number of the last line in the call from the analyzed BED file"
 		},
 		"FORMAT": {
 			"GT": {
