@@ -71,7 +71,9 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
     cnv.calls_plot=cnv.calls_ids
 }
 
-cnv.calls_plot$chr=paste('chr',cnv.calls_plot$chromosome,sep='')
+cnv.calls_plot$chr=paste('chr',cnv.calls_plot$Chromosome,sep='')
+
+
 Index=vector(length=nrow(bed.file))
 Index[1]=1
 for(i in 2:nrow(bed.file)){
@@ -90,13 +92,13 @@ if(colnames(counts)[5]=="exon"){
 }
 
 for(call_index in 1:nrow(cnv.calls_plot)){
-    Sample<-cnv.calls_plot[call_index,]$sample
+    Sample<-cnv.calls_plot[call_index,]$Sample
     Gene<-unlist(strsplit(cnv.calls_plot[call_index,]$Gene,split=", "))
     exonRange<-which(bed.file[,4]%in%Gene)
-    if((cnv.calls_plot[call_index,]$start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$start.p-5)>=1)){exonRange=(cnv.calls_plot[call_index,]$start.p-5):max(exonRange)}
-    if((cnv.calls_plot[call_index,]$start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$start.p-5)<=0)){exonRange=1:max(exonRange)}
-    if((cnv.calls_plot[call_index,]$end.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$end.p+5)<=nrow(bed.file))){exonRange=min(exonRange):(cnv.calls_plot[call_index,]$end.p+5)}
-    if((cnv.calls_plot[call_index,]$end.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$end.p+5)>nrow(bed.file))){exonRange=min(exonRange):nrow(bed.file)}
+    if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)>=1)){exonRange=(cnv.calls_plot[call_index,]$Start.p-5):max(exonRange)}
+    if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)<=0)){exonRange=1:max(exonRange)}
+    if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)<=nrow(bed.file))){exonRange=min(exonRange):(cnv.calls_plot[call_index,]$End.p+5)}
+    if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)>nrow(bed.file))){exonRange=min(exonRange):nrow(bed.file)}
     singlechr=length(unique(bed.file[exonRange,1]))==1
 
     if(!singlechr){
@@ -111,7 +113,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     }
 
     ###### Part of plot containing the coverage points ###############
-    VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$sample==Sample,]$start.p,cnv.calls[cnv.calls$sample==Sample,]$end.p))
+    VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$Sample==Sample,]$Start.p,cnv.calls[cnv.calls$Sample==Sample,]$End.p))
     refs_sample<-refs[[Sample]]
     Data<-cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
     Data[,-ncol(Data)]=log(Data[,-ncol(Data)])
@@ -194,12 +196,12 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     CIData<-data.frame(exonRange,ratio,mins,maxs)
     names(CIData)<-c("Exon","Ratio","Min","Max")
     CIPlot<-ggplot(CIData,aes(x=Exon,y=Ratio))+geom_ribbon(aes(ymin=Min,ymax=Max),fill="grey")+geom_point(col="blue",cex=3.5) + theme_bw() +xlab("")+ylab("Observed/Expected")
-temp = cnv.calls[cnv.calls$sample==Sample,]
-    if(sum(temp$start.p%in%exonRange |temp$end.p%in%exonRange)>0){
-        temp = temp[temp$start.p%in%exonRange|temp$end.p%in%exonRange,]
+temp = cnv.calls[cnv.calls$Sample==Sample,]
+    if(sum(temp$Start.p%in%exonRange |temp$End.p%in%exonRange)>0){
+        temp = temp[temp$Start.p%in%exonRange|temp$End.p%in%exonRange,]
         for(i in 1:nrow(temp)){
-            start.temp = temp[i,]$start.p
-            end.temp = temp[i,]$end.p
+            start.temp = temp[i,]$Start.p
+            end.temp = temp[i,]$End.p
             CIPlot<-CIPlot + geom_point(data=CIData[CIData$Exon%in%start.temp:end.temp,], aes(x=Exon,y=Ratio),color="red",cex=3.5)
         }
     }
@@ -210,11 +212,11 @@ temp = cnv.calls[cnv.calls$sample==Sample,]
     }else{CIPlot<-CIPlot + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
 
     ######### Save plot in pdf format ###########
-    cnv_genes_sample=cnv.calls_plot[cnv.calls_plot$sample==Sample,]$Gene
+    cnv_genes_sample=cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$Gene
     if(sum(cnv_genes_sample==Gene)==1){
         pdf(file=paste(plotFolder,"/DECON.",prefixfile,".",Sample,".",Gene,".pdf",sep=""),useDingbats=FALSE)
     }else{
-        cnv_genes_sample_index=which(cnv.calls_plot$sample==Sample & cnv.calls_plot$Gene==paste(Gene,collapse=", "))
+        cnv_genes_sample_index=which(cnv.calls_plot$Sample==Sample & cnv.calls_plot$Gene==paste(Gene,collapse=", "))
         pdf(file=paste(plotFolder,"/DECON.",prefixfile,".",Sample,".",paste(Gene,collapse="_"),"_",which(cnv_genes_sample_index==call_index),".pdf",sep=""),useDingbats=F)
     }
 
