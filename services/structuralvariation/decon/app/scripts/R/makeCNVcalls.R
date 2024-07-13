@@ -160,7 +160,7 @@ perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans
     print('No CNV detected')
     cnv.calls=NULL
   }
-  return(list(cnv.calls, refs, models))
+  list(cnv.calls = cnv.calls, refs = refs, models = models)
 }
 
 calculate_confidence <- function(cnv.calls, bed.file) {
@@ -211,7 +211,7 @@ add_custom_exon_numbers <- function(cnv.calls_ids, bed.file, counts) {
 # Replaces single calls involving multiple genes with multiple calls with a single call ID/gene
 split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   
-  cnv.calls_ids=cbind(1:nrow(cnv.calls),cnv.calls)
+  cnv.calls_ids = cbind(1:nrow(cnv.calls), cnv.calls)
   names(cnv.calls_ids)[1]="ID"
   trim <- function (x) gsub("^\\s+|\\s+$", "", x)
     
@@ -306,10 +306,13 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
   refsample.names <- process_refbams(refbams_file, modechrom)
   sample.names <- process_samplebams(samples)
   
-  cnv.calls <- perform_cnv_calling(ExomeCount, sample.names, refsample.names, p_value, bed.file)
+  result <- perform_cnv_calling(ExomeCount, sample.names, refsample.names, p_value, bed.file)
+  cnv.calls <- result$cnv.calls
+  refs <- result$refs
+  models <- result$models
+  
   # Split multi-gene calls
   cnv.calls_ids <- split_multi_gene_calls(cnv.calls, bed.file, counts)
- 
   
   save_results(cnv.calls, cnv.calls_ids, ExomeCount, output_file, sample.names, bams, rdata_output, bed.file, counts, refs, models)
 
