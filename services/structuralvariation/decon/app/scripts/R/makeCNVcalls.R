@@ -211,10 +211,14 @@ add_custom_exon_numbers <- function(cnv.calls_ids, bed.file, counts) {
 # Replaces single calls involving multiple genes with multiple calls with a single call ID/gene
 split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   
-  cnv.calls_ids = cbind(1:nrow(cnv.calls), cnv.calls)
-  names(cnv.calls_ids)[1]="ID"
+  # Add a new column named "ID" with increasing numbers from 1 to the number of rows in cnv.calls
+  cnv.calls_ids <- cbind(ID = 1:nrow(cnv.calls), cnv.calls)
+  
+  # Ensure column names are unique
+  colnames(cnv.calls_ids) <- make.unique(colnames(cnv.calls_ids))
+  
   trim <- function (x) gsub("^\\s+|\\s+$", "", x)
-    
+  
   for (i in 1:nrow(cnv.calls_ids)) {
     if (length(grep(',', cnv.calls_ids$Gene[i])) > 0) {
       temp <- cnv.calls_ids[i, ]
@@ -260,11 +264,11 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
 }
 
 
+
 save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.names, bams, output.rdata,  bed.file, counts, refs, models) {
   if (!is.null(cnv.calls_ids)) {
-    colnames(cnv.calls_ids)[1:3] <- c("sample", "correlation", "N.comp")
+   
     cnv.calls_ids$sample <- as.character(cnv.calls_ids$sample)
-    
     cnv.calls_ids <- cbind(cnv.calls_ids, calculate_confidence(cnv.calls_ids, bed.file))
     colnames(cnv.calls_ids)[ncol(cnv.calls_ids)] <- "Confidence"
     
