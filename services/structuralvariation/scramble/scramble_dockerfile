@@ -46,7 +46,7 @@ COPY ./app /app
 COPY ./STARK.docker-compose.yml /app/config/module/
 
 # Modify make.vcf.R script to improve vcf datas
-COPY ./app/scripts/R/make.vcf.R /opt/conda/share/scramble/bin/
+COPY ./app/scripts/R/*.R /opt/conda/share/scramble/bin/
 
 WORKDIR "/app"
 ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
