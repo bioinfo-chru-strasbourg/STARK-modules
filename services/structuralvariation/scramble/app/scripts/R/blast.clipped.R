@@ -1,6 +1,20 @@
 blast.clipped = function(df, indelScore = 80, pctAlign = 90, blastRef){
   library(rBLAST)
   
+##########################################################################
+# SCRAMBLE Rscript         Version: 2.0
+# Description:             R script to blast sequence
+##########################################################################
+
+################## Context ##################
+# Original R script from https://github.com/GeneDx/scramble
+# script is located in /opt/conda/share/scramble/bin/make.vcf.R
+########## Note ########################################################################################
+# DEV v1 11/07/2024
+# Changelog
+#   - fix Na's crashing the script
+########################################################################################################
+  
   # Align clipped sequences to reference
   bl = blast(db = blastRef)
   
