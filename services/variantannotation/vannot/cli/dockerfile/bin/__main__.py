@@ -5,7 +5,7 @@
 """
 ##################################
 ##							    ##
-##  VANNOT ANALYSIS  ##
+##  vAnnot ANALYSIS  ##
 ##    Author : Mateusz RAUCH    ##
 ##							    ##
 ##################################
@@ -51,7 +51,7 @@ def main(args):
 def parse_args():
 
     # Main parser
-    main_parser = argparse.ArgumentParser(prog="vannot")
+    main_parser = argparse.ArgumentParser(prog="vAnnot")
 
     # Secondary parsers with global arguments
     verbosity_parser = argparse.ArgumentParser(add_help=False)
@@ -153,7 +153,7 @@ def parse_args():
         "--run",
         required=True,
         type=checker.absolute_run_path,
-        help="absolute path to STARK run for which you want to launch vannot analysis",
+        help="absolute path to STARK run for which you want to launch vAnnot analysis",
     )
 
     args = main_parser.parse_args()

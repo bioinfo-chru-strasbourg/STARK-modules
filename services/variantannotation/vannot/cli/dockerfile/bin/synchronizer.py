@@ -6,48 +6,57 @@ import os
 import commons
 import subprocess
 import re
+import json
 
+def find_samplesheet(run_informations):
+    samples = glob.glob(osj(run_informations["run_repository"], "*", ""))
+    samplesheet = glob.glob(osj(samples[0], "STARK", "*.SampleSheet.csv"))
+    return samplesheet[0]
+    
+def find_controls(samplesheet):
+    word = "CQI#"
+    controls_samples = []
+    with open(samplesheet, "r") as read_file:
+        for line in read_file:
+            line = line.strip()
+            if word in line:
+                line = line.split(",")
+                controls_samples.append(line[0])
+            
+    return controls_samples
 
-def vcf_synchronizer(run_informations):
+def design_vcf_synchronizer(run_informations):
     run_repository = run_informations["run_repository"]
     pattern = run_informations["vcf_pattern"]
-    for i in pattern:
-        log.info(f"[VANNOT] Syncronizing vcf files according to pattern {i}")
+    
+    module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        ignored_samples = data["ignored_samples"]
+    samplesheet = find_samplesheet(run_informations)
+    control_samples = find_controls(samplesheet)
+    ignored_samples = ignored_samples + control_samples
 
     if not os.path.isdir(run_informations["archives_run_folder"]):
         os.makedirs(run_informations["archives_run_folder"])
         os.chmod(run_informations["archives_run_folder"], 0o777)
 
-    for element in pattern:
+    kept_vcf = []
+    treated_samples = []
+    for element in reversed(pattern):
         vcf_files = glob.glob(osj(run_repository, element))
-        if element == commons.get_default_pattern():
-            for stark_vcf_file in vcf_files:
-                if re.match(
-                    run_repository
-                    + "\\/.+\\/STARK\\/.+\\.reports\\/[^.]+.final.vcf.gz",
-                    stark_vcf_file,
-                ):
-                    log.info(
-                        f'[VANNOT] Synchronizing {os.path.basename(stark_vcf_file)} from "{element}" pattern'
-                    )
-                    subprocess.run(
-                        [
-                            "rsync",
-                            "-rp",
-                            stark_vcf_file,
-                            run_informations["archives_run_folder"],
-                        ]
-                    )
-        else:
-            for pattern_vcf_file in vcf_files:
-                subprocess.run(
-                    [
-                        "rsync",
-                        "-rp",
-                        pattern_vcf_file,
-                        run_informations["archives_run_folder"],
-                    ]
-                )
-                log.info(
-                    f'[VANNOT] Overwriting {os.path.basename(pattern_vcf_file)} with vcf from "{element}" pattern'
-                )
+        for vcf_file in vcf_files:
+            sample = vcf_file.split("/")[-1].split(".")[0]
+            dated_stark_vcf = run_repository + "/" + sample + "\\/STARK\\/" + sample + ".reports\\/" + sample + ".\\d{8}-\\d{6}.final.vcf.gz"
+            if not re.match(dated_stark_vcf, vcf_file) and sample not in treated_samples and sample not in ignored_samples:
+                kept_vcf.append(vcf_file)
+
+            if element != commons.get_default_pattern():
+                log.info(f"[vAnnot] Keeping the sample vcf with {pattern} pattern")
+                treated_samples.append(sample)
+
+
+    for vcf_file in kept_vcf:
+        log.info(f"[vAnnot] Synchronizing {vcf_file}")
+        print(vcf_file)
+        # subprocess.run(["rsync", "-rp", vcf_file, run_informations["archives_run_folder"]])
