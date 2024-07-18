@@ -114,6 +114,7 @@ def launch_run(args):
     }
     checker.depository_checker(run_informations)
     checker.pattern_checker(run_informations)
+    checker.panel_checker(run_informations)
     variantannotation_running_log = osj(run_repository, "VANNOTRunning.txt")
 
     with open(variantannotation_running_log, "w") as write_file:

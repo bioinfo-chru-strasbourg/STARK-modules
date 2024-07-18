@@ -39,7 +39,7 @@ def design_vcf_synchronizer(run_informations):
 
     if not os.path.isdir(run_informations["archives_run_folder"]):
         os.makedirs(run_informations["archives_run_folder"])
-        os.chmod(run_informations["archives_run_folder"], 0o777)
+        os.chmod(run_informations["archives_run_folder"], 0o777)      
 
     kept_vcf = []
     treated_samples = []
@@ -55,8 +55,11 @@ def design_vcf_synchronizer(run_informations):
                 log.info(f"[vAnnot] Keeping the sample vcf with {pattern} pattern")
                 treated_samples.append(sample)
 
+    for ignored_sample in ignored_samples:
+            for sample_vcf in kept_vcf:
+                if ignored_sample in sample_vcf:
+                    kept_vcf.remove(sample_vcf)
 
     for vcf_file in kept_vcf:
         log.info(f"[vAnnot] Synchronizing {vcf_file}")
-        print(vcf_file)
-        # subprocess.run(["rsync", "-rp", vcf_file, run_informations["archives_run_folder"]])
+        subprocess.run(["rsync", "-rp", vcf_file, run_informations["archives_run_folder"]])
