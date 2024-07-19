@@ -818,7 +818,6 @@ rule convert_vcf:
 	""" vcf to tsv conversion """
 	input: rules.merge_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
-	log: log2=f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf2tsv_converter.log"
 	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep -v '^#' > {output}"
 
 use rule convert_vcf as convertvcdesign with:
@@ -833,7 +832,7 @@ rule filter_vcf:
 	shell:"bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
 
 use rule convert_vcf as convert_vcf_panel with:
-	input: rules.vcf2gzdesign.output
+	input: rules.filter_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.tsv"
 
 

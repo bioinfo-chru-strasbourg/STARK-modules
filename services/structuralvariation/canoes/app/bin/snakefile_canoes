@@ -681,7 +681,7 @@ rule AnnotSV:
 	- txtFile: path to a file containing a list of preferred genes transcripts for annotation
 	- genomeBuild must be specified if not hg38
 	"""
-	input: rules.splitvcf.output
+	input: rules.split_vcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.log"
 	params:
