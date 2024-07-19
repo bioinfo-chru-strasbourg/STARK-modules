@@ -41,6 +41,7 @@ from datetime import datetime
 from itertools import product
 from collections import defaultdict
 from jinja2 import Environment, FileSystemLoader
+import logging
 
 ################## Configuration file ##################
 configfile: "/app/config/snakefile/decon_default.yaml"
@@ -493,9 +494,8 @@ else:
 		df = df.drop_duplicates()
 		df.to_csv(deconbed_file, sep='\t', index=False, header=False) # for decon.bed no header
 
-logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
 if not config['BED_FILE']:
-	log_file(logfile, 'No bed found, DECON cannot continue, exiting', "\n")
+	print('No bed found, DECON cannot continue, exiting')
 	exit()
 
 # Create file_list of bam by gender with the runDict, depending on the gender_list
@@ -549,14 +549,13 @@ if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 		if individual_id in sample_list:
 			runDict[individual_id]['hpo'] = hpo_list
 
+logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
+logging.basicConfig(filename=logfile, level=logging.INFO, format='%(asctime)s %(message)s')
+
 log_items = [
 	('Start of the analysis:', date_time),
 	('Analysing run:', runName),
 	('List of all samples:', sample_list),
-	('List of gender from tags:', gender_list),
-	('Input files for autosomes analysis:', files_list_A),
-	('Input files for ChrX analysis, Female only:', files_list_XX),
-	('Input files for ChrX analysis, Male only:', files_list_XY),
 	('Aligner list from files:', aligner_list),
 	('Design bed file:', config['BED_FILE']),
 	('Panel bed file:', config['GENES_FILE']),
@@ -565,7 +564,10 @@ log_items = [
 ]
 
 for item in log_items:
-	log_file(logfile, item[0], "\n", items_list=item[1] if isinstance(item[1], list) else None, items=item[1] if not isinstance(item[1], list) else None)
+	if isinstance(item[1], list):
+		logging.info(f"{item[0]}\n{'\n'.join(map(str, item[1]))}")
+	else:
+		logging.info(f"{item[0]} {item[1]}")
 
 print(dict(runDict))
 

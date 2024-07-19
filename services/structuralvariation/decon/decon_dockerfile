@@ -30,7 +30,7 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     vcf2tsvpy~=0.6.1 pyfasta~=0.5.2 fasta~=36.3.8e \
     natsort~=8.3.1 pyfaidx~=0.8.1.1 pypdf~=4.1.0 \
     r-exomedepth~=1.1.16 r-r.utils~=2.12.3 r-optparse~=1.7.4 r-reshape~=0.8.6 \
-    r-ggplot2~=3.5.0 r-doparallel~=1.0.17 r-foreach~=1.5.2  && \
+    r-ggplot2~=3.5.0 r-doparallel~=1.0.17 r-foreach~=1.5.2 r-reshape2~=1.4.4 && \
     mamba clean -afy
 
 # Clone and install variantconvert

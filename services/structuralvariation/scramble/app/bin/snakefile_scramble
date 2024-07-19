@@ -33,6 +33,7 @@ from datetime import datetime
 from itertools import product
 from collections import defaultdict
 from jinja2 import Environment, FileSystemLoader
+import logging
 
 ################## Configuration file ##################
 configfile: "/app/config/snakefile/scramble_default.yaml"
@@ -316,6 +317,9 @@ else:
 	else:
 		print('[INFO] No gender found for the samples')
 
+logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
+logging.basicConfig(filename=logfile, level=logging.INFO, format='%(asctime)s %(message)s')
+
 log_items = [
 	('Start of the analysis:', date_time),
 	('Analysing run:', runName),
@@ -328,8 +332,11 @@ log_items = [
 ]
 
 for item in log_items:
-	logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
-	log_file(logfile, item[0], "\n", items_list=item[1] if isinstance(item[1], list) else None, items=item[1] if not isinstance(item[1], list) else None)
+	if isinstance(item[1], list):
+		logging.info(f"{item[0]}\n{'\n'.join(map(str, item[1]))}")
+	else:
+		logging.info(f"{item[0]} {item[1]}")
+
 
 print(dict(runDict))
 
