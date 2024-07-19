@@ -757,7 +757,7 @@ rule filter_vcf:
 	"""	Filter vcf with a bed file """
 	input: rules.merge_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.vcf.gz"
-	params: f"{resultDir}/{{panel}}"
+	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	shell:"bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
 
 use rule convert_vcf as convert_vcf_panel with:

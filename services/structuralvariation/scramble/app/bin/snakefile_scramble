@@ -301,7 +301,7 @@ for file in panel_list:
 	# Create a new list for expand, names are filenames without sample and .genes.bed ext
 	panel_list_trunc = [panel_trunc]
 	print(panel_list_trunc)
-	
+
 # Set a filelist with all the files tag ; file format is sample.tag
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
 for individual_id in runDict:
@@ -588,7 +588,7 @@ use rule vcf2tsv as vcf2tsv_design with:
 use rule filter_vcf as filter_vcf_panel with:
 	input: rules.cp_vcf_design.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.vcf.gz"
-	params: f"{resultDir}/{{panel}}"
+	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 
 use rule vcf2tsv as vcf2tsv_panel with:
 	input: rules.filter_vcf_panel.output

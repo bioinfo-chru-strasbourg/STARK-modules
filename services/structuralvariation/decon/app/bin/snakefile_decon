@@ -386,7 +386,7 @@ for file in panel_list:
 	# Create a new list for expand, names are filenames without sample and .genes.bed ext
 	panel_list_trunc = [panel_trunc]
 	print(panel_list_trunc)
-	
+
 ### DECON bed ###
 # DECON need a 4 columns bed for the ReadInBams rule, if bed is not set correctly ReadInBams will crash
 # Chromosome Start End Gene but no header, bed format (tsv)
@@ -829,7 +829,7 @@ rule filter_vcf:
 	"""	Filter vcf with a bed file """
 	input: rules.merge_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.vcf.gz"
-	params: f"{resultDir}/{{panel}}
+	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	shell:"bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
 
 use rule convert_vcf as convert_vcf_panel with:
