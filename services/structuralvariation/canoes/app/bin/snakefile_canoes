@@ -375,14 +375,15 @@ if config['LIST_GENES']:
 elif config['GENES_FILE'] and not config['LIST_GENES']:
 	panel_list.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
 # cp files from panel_list to resultDir and rename them
-for panel in panel_list:
-	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{panel}.bed"# panel_list don't have the bed extension, need that for the copy
+for file in panel_list:
+	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{file}.bed"# panel_list don't have the bed extension, need that for the copy
 	# cut sample. and .genes from file name so files will have the same name as the truncated name list
-	panel_trunc = panel.split(".", 1)[1].split(".genes",1)[0]
+	panel_trunc = file.split(".", 1)[1].split(".genes",1)[0]
 	outputfile = f"{resultDir}/{panel_trunc}"
 	copy2(inputfile, outputfile)
 	# Create a new list for expand, names are filenames without sample and .genes.bed ext
 	panel_list_trunc = [panel_trunc]
+	print(panel_list_trunc)
 
 if config['KMER']:
 	kmerisation(config['KMER'], config['BED_FILE'], config['BED_FILE'])
@@ -659,7 +660,7 @@ rule vcf2gz:
 	shell: " bgzip -c {input} > {output} ; tabix {output} "
 
 
-rule splitvcf:
+rule split_vcf:
 	"""
 	Split vcf into each individual sample with bcftools
 	-s {sample}: comma-separated list of samples to include
@@ -732,7 +733,7 @@ rule sortvcf_sample:
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 use rule vcf2gz as vcf2gz_design with:
-	input: rules.sortvcf1.output
+	input: rules.sortvcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 
 rule merge_vcf:
@@ -760,17 +761,16 @@ rule filter_vcf:
 	shell:"bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
 
 use rule convert_vcf as convert_vcf_panel with:
-	input: rules.vcf2gzdesign.output
+	input: rules.filter_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.tsv"
 
 
-rule split_vcf:
+use rule split_vcf as split_vcf_panel with:
 	input: rules.merge_vcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.{{panel}}.vcf.gz"
-	shell: "bcftools view -s {wildcards.sample} {input} -O z -o {output}"
 
 use rule convert_vcf as convert_vcf_panel_sample with:
-	input: rules.split_vcf.output
+	input: rules.split_vcf_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.{{panel}}.tsv"
 
 

@@ -1,3 +1,14 @@
+##########################################################################
+# plot_coverage_stats.py       	Version: 2.0
+# Description:                  Python script to generate stats for CANOES plots
+##########################################################################
+
+########## Note ########################################################################################
+# DEV v1 27/06/2024
+# Changelog
+#   - clean & simplify code, add option to input a tsv file with bam path
+########################################################################################################
+
 import argparse
 
 def createplotstats(coverage):

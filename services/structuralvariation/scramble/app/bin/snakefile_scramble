@@ -292,15 +292,16 @@ if config['LIST_GENES']:
 elif config['GENES_FILE'] and not config['LIST_GENES']:
 	panel_list.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
 # cp files from panel_list to resultDir and rename them
-for panel in panel_list:
-	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{panel}.bed"# panel_list don't have the bed extension, need that for the copy
+for file in panel_list:
+	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{file}.bed"# panel_list don't have the bed extension, need that for the copy
 	# cut sample. and .genes from file name so files will have the same name as the truncated name list
-	panel_trunc = panel.split(".", 1)[1].split(".genes",1)[0]
+	panel_trunc = file.split(".", 1)[1].split(".genes",1)[0]
 	outputfile = f"{resultDir}/{panel_trunc}"
 	copy2(inputfile, outputfile)
 	# Create a new list for expand, names are filenames without sample and .genes.bed ext
 	panel_list_trunc = [panel_trunc]
-
+	print(panel_list_trunc)
+	
 # Set a filelist with all the files tag ; file format is sample.tag
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
 for individual_id in runDict:
@@ -592,16 +593,18 @@ use rule filter_vcf as filter_vcf_panel with:
 use rule vcf2tsv as vcf2tsv_panel with:
 	input: rules.filter_vcf_panel.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.tsv"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.vcf2tsv_converter.log"
 
 rule split_vcf:
 	input: rules.filter_vcf_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.{{panel}}.vcf.gz"
-	shell: "bcftools view -s {wildcards.sample} {input} -O z -o {output}"
+	params: dummypath=config['DUMMY_PATH']
+	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 
-use rule convert_vcf as convert_vcf_panel_sample with:
+use rule vcf2tsv as vcf2tsv_panel_sample with:
 	input: rules.split_vcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.{{panel}}.tsv"
-
+	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.{{panel}}.vcf2tsv_converter.log"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
