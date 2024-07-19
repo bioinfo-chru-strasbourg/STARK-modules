@@ -581,11 +581,14 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams list and the bed provided """
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai", aligner=aligner_list, sample=sample_list),
-		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv", aligner=aligner_list),
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list, sample=sample_list),
-		f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv",
-		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess", aligner=aligner_list, gender=gender_list)
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai", aligner=aligner_list, sample=sample_list) +
+		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv", aligner=aligner_list) +
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list, sample=sample_list) +
+		[f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"] +
+		expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess", aligner=aligner_list, gender=gender_list) +
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panel_list_trunc) if config['GENES_FILE'] else []) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.tsv", panel=panel_list_trunc) if config['GENES_FILE'] else [])
+
 
 rule help:
 	"""
@@ -794,34 +797,53 @@ rule correctvcf:
 		sed 's/SAMPLENAME/{wildcards.sample}/g' {input} > {output}
 		"""
 
-rule sortvcf1:
-	""" Sort vcf """
+rule sortvcf_sample:
 	input: rules.correctvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf"
 	params: dummypath=config['DUMMY_PATH']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
-use rule vcf2gz as vcf2gz1 with:
-	input: rules.sortvcf1.output
+use rule vcf2gz as vcf2gzdesign with:
+	input: rules.sortvcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 
-rule mergedesign:
+rule merge_vcf:
 	""" Copy or merge multiple vcfs using bcftools """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
 
-rule convertvcf:
+rule convert_vcf:
 	""" vcf to tsv conversion """
-	input: rules.mergedesign.output
+	input: rules.merge_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
 	log: log2=f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf2tsv_converter.log"
 	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep -v '^#' > {output}"
 
-rule convertvcfbis:
-	input: rules.vcf2gz1.output
+use rule convertvcf as convertvcdesign with:
+	input: rules.vcf2gzdesign.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
-	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep -v '^#' > {output}"
+
+rule filter_vcf:
+	"""	Filter vcf with a bed file """
+	input: rules.merge_vcf.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.vcf.gz"
+	params: f"{resultDir}/{{panel}}
+	shell:"bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
+
+use rule convert_vcf as convert_vcf_panel with:
+	input: rules.vcf2gzdesign.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.tsv"
+
+
+rule split_vcf:
+	input: rules.merge_vcf.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.{{panel}}.vcf.gz"
+	shell: "bcftools view -s {wildcards.sample} {input} -O z -o {output}"
+
+use rule convert_vcf as convert_vcf_panel_sample with:
+	input: rules.split_vcf.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.{{panel}}.tsv"
 
 
 rule plot:

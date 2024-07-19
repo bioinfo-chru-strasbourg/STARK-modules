@@ -1,4 +1,4 @@
 # WIP not working yet
 # Name of the module = {serviceName} from listener.py/launcher.py
-serviceName: "DECON"
 ANNOTSV_VERSION: "3.4"
+GENEHANCER_VERSION: "GeneHancer_hg19_v5.9.zip"
