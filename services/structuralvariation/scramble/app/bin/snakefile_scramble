@@ -293,7 +293,7 @@ elif config['GENES_FILE'] and not config['LIST_GENES']:
 	panels.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
 # cp files from panel_list to resultDir and rename them
 panels_list = []
-for file in panel_list:
+for file in panels:
 	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{file}.bed"# panel_list don't have the bed extension, need that for the copy
 	# cut sample. and .genes from file name so files will have the same name as the truncated name list
 	panel_trunc = file.split(".", 1)[1].split(".genes",1)[0]
