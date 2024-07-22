@@ -312,13 +312,16 @@ for individual_id in runDict:
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
 if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 	pedigree_into_dict(ped_file, sample_list, runDict, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex')
+	print('[INFO] Gender found in the pedigree file')
 else:
 	tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
-	for tagfile in tagfile_list:
-		for sample in sample_list:
-			runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
-	else:
+	if not tagfile_list:
 		print('[INFO] No gender found for the samples')
+	else:
+		for tagfile in tagfile_list:
+			for sample in sample_list:
+				runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
+		print('[INFO] Gender found in the tag files')
 
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
 logging.basicConfig(filename=logfile, level=logging.INFO, format='%(asctime)s %(message)s')

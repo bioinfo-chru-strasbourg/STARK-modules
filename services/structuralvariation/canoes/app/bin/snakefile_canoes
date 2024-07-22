@@ -338,10 +338,13 @@ if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 	print('[INFO] Gender found in the pedigree file')
 else:
 	tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
-	for tagfile in tagfile_list:
-		for sample in sample_list:
-			runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
-	print('[INFO] Gender found in the tag files')
+	if not tagfile_list:
+		print('[INFO] No gender found for the samples')
+	else:
+		for tagfile in tagfile_list:
+			for sample in sample_list:
+				runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
+		print('[INFO] Gender found in the tag files')
 
 # Extract the gender_list from dictionary with the key gender
 gender_list = ['A'] + ['XX' if runDict[sample]['gender'] == 'F' else 'XY' for sample in sample_list if sample in runDict and 'gender' in runDict[sample]]
