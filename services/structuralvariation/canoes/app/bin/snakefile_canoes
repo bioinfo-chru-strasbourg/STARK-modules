@@ -368,13 +368,14 @@ else:
 config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
-panel_list = []
+panels = []
 if config['LIST_GENES']:
 	with open(config['LIST_GENES']) as f:
-		panel_list = f.read().splitlines()
+		panels = f.read().splitlines()
 elif config['GENES_FILE'] and not config['LIST_GENES']:
-	panel_list.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
+	panels.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
 # cp files from panel_list to resultDir and rename them
+panels_list = []
 for file in panel_list:
 	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{file}.bed"# panel_list don't have the bed extension, need that for the copy
 	# cut sample. and .genes from file name so files will have the same name as the truncated name list
@@ -382,8 +383,8 @@ for file in panel_list:
 	outputfile = f"{resultDir}/{panel_trunc}"
 	copy2(inputfile, outputfile)
 	# Create a new list for expand, names are filenames without sample and .genes.bed ext
-	panel_list_trunc = [panel_trunc]
-	print(panel_list_trunc)
+	panels_list.append(panel_trunc)
+print(panels_list)
 
 if config['KMER']:
 	kmerisation(config['KMER'], config['BED_FILE'], config['BED_FILE'])
@@ -480,8 +481,8 @@ rule all:
 		(expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv", aligner=aligner_list) if config['REF_BAM_LIST'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.pdf", sample=sample_list, aligner=aligner_list) if config['plots'] == True else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.pdf", sample=sample_list, aligner=aligner_list) if config['plots'] == True else []) +
-		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panel_list_trunc) if config['GENES_FILE'] else []) +
-		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv", panel=panel_list_trunc) if config['GENES_FILE'] else [])
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv", panel=panels_list) if config['GENES_FILE'] else [])
 
 
 rule help:

@@ -285,13 +285,14 @@ else:
 		f.write("No NM found")
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
-panel_list = []
+panels = []
 if config['LIST_GENES']:
 	with open(config['LIST_GENES']) as f:
-		panel_list = f.read().splitlines()
+		panels = f.read().splitlines()
 elif config['GENES_FILE'] and not config['LIST_GENES']:
-	panel_list.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
+	panels.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
 # cp files from panel_list to resultDir and rename them
+panels_list = []
 for file in panel_list:
 	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{file}.bed"# panel_list don't have the bed extension, need that for the copy
 	# cut sample. and .genes from file name so files will have the same name as the truncated name list
@@ -299,8 +300,9 @@ for file in panel_list:
 	outputfile = f"{resultDir}/{panel_trunc}"
 	copy2(inputfile, outputfile)
 	# Create a new list for expand, names are filenames without sample and .genes.bed ext
-	panels_list = [panel_trunc]
-	print(panels_list)
+	panels_list.append(panel_trunc)
+print(panels_list)
+
 
 # Set a filelist with all the files tag ; file format is sample.tag
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
