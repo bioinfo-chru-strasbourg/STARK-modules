@@ -480,8 +480,8 @@ rule all:
 		(expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv", aligner=aligner_list) if config['REF_BAM_LIST'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.pdf", sample=sample_list, aligner=aligner_list) if config['plots'] == True else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.pdf", sample=sample_list, aligner=aligner_list) if config['plots'] == True else []) +
-		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panel_list_trunc) if config['GENES_FILE'] else []) +
-		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.tsv", panel=panel_list_trunc) if config['GENES_FILE'] else [])
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panel_list_trunc) if config['GENES_FILE'] else []) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv", panel=panel_list_trunc) if config['GENES_FILE'] else [])
 
 
 rule help:
@@ -755,23 +755,23 @@ use rule convert_vcf as convertvcf_sample with:
 
 rule filter_vcf:
 	"""	Filter vcf with a bed file """
-	input: rules.merge_vcf.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.vcf.gz"
+	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	shell:"bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
 
 use rule convert_vcf as convert_vcf_panel with:
 	input: rules.filter_vcf.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.{{panel}}.tsv"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv"
 
 
 use rule split_vcf as split_vcf_panel with:
-	input: rules.merge_vcf.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.{{panel}}.vcf.gz"
+	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 
 use rule convert_vcf as convert_vcf_panel_sample with:
 	input: rules.split_vcf_panel.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.{{panel}}.tsv"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
 
 
