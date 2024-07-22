@@ -710,7 +710,7 @@ rule variantconvert:
 		scriptsconfig=config['SCRIPTS_CONFIG'],
 		dummypath=config['DUMMY_PATH']
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.variantconvert.log"
-	shell: "variantconvert convert -i {input} -o {output} -c {params.scriptsconfig}/config_decon.json 2> {log} "
+	shell: "variantconvert convert -i {input} -o {output} -c {params.scriptsconfig}/config_decon.json 2> {log}"
 
 
 rule sortvcf:
@@ -718,7 +718,7 @@ rule sortvcf:
 	input: rules.variantconvert.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf")
 	params: dummypath=config['DUMMY_PATH']
-	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
+	shell: "{{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output}"
 
 
 rule vcf2gz:
@@ -835,11 +835,9 @@ use rule convert_vcf as convert_vcf_panel with:
 	input: rules.filter_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv"
 
-
 use rule filter_vcf as filter_vcf_panel with:
 	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
-	shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
 
 use rule convert_vcf as convert_vcf_panel_sample with:
 	input: rules.filter_vcf_panel.output
