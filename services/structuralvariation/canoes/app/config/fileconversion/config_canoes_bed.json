@@ -84,12 +84,12 @@
 				"Description": "Second breakpoint of the SV, for SVs given in a single record"
 			},
 			"INTERVAL": {
-				"Type": "Integer",
-				"Number": "1",
+				"Type": "String",
+				"Number": ".",
 				"Description": "CNV coordinates in the form chr:start-stop"
 			},
 			"KB": {
-				"Type": "Integer",
+				"Type": "Float",
 				"Number": "1",
 				"Description": "Length of CNV in kilobases"
 			},
@@ -99,7 +99,7 @@
 				"Description": "Middle base pair of CNV"
 			},
 			"TARGETS": {
-				"Type": "Integer",
+				"Type": "String",
 				"Number": "1",
 				"Description": "Target numbers of CNV in the form start..stop"
 			},
@@ -114,7 +114,7 @@
 				"Description": "Maximum likelihood copy number"
 			},
 			"Q_SOME": {
-				"Type": "Integer",
+				"Type": "Float",
 				"Number": "1",
 				"Description": "Phred-scaled quality score for the CNV"
 			}

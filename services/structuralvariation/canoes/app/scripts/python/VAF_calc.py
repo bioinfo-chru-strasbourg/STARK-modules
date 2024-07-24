@@ -1,6 +1,6 @@
 ##########################################################################
-# calculate_cnv_allele_depth_genotype_vaf.py       	Version: 1.0
-# Description:          							Python script to add AD, VAF and GT to a vcf
+# calculate_cnv_allele_depth_genotype_vaf.py        Version: 1.0
+# Description:                                       Python script to add AD, VAF and GT to a vcf
 ##########################################################################
 
 ########## Note ########################################################################################
@@ -10,11 +10,19 @@
 
 import pysam
 import argparse
+import gzip
+import os
+import subprocess
 
 def calculate_cnv_allele_depth_genotype_vaf(bamfile, vcffile, output_vcf, hom_threshold=0.2, het_threshold=0.8):
 	bam = pysam.AlignmentFile(bamfile, "rb")
-	vcf = pysam.VariantFile(vcffile, "r")
 	
+	# Detect if the VCF file is gzipped
+	if vcffile.endswith('.gz'):
+		vcf = pysam.VariantFile(vcffile, "r")
+	else:
+		vcf = pysam.VariantFile(vcffile, "r")
+
 	# Add VAF to the VCF header
 	if 'VAF' not in vcf.header.formats:
 		vcf.header.formats.add("VAF", "1", "Float", "Variant Allele Frequency")
@@ -71,11 +79,14 @@ def calculate_cnv_allele_depth_genotype_vaf(bamfile, vcffile, output_vcf, hom_th
 	vcf.close()
 	output.close()
 
+	# Compress the output VCF with bgzip
+	subprocess.run(['bgzip', '-f', output_vcf])
+
 def main():
 	parser = argparse.ArgumentParser(description='Calculate AD, GT, and VAF for CNVs in a VCF file.')
 	parser.add_argument('-b', '--bamfile', required=True, help='Input BAM file')
-	parser.add_argument('-v', '--vcffile', required=True, help='Input VCF file')
-	parser.add_argument('-o', '--output_vcf', required=True, help='Output VCF file with updated AD, GT, and VAF fields')
+	parser.add_argument('-v', '--vcffile', required=True, help='Input VCF file, gz is autodetected')
+	parser.add_argument('-o', '--output_vcfgz', required=True, help='Output VCF gz file with updated AD, GT, and VAF fields')
 	parser.add_argument('--hom_threshold', type=float, default=0.2, help='Threshold for homozygous reference (default: 0.2)')
 	parser.add_argument('--het_threshold', type=float, default=0.8, help='Threshold for homozygous alternate (default: 0.8)')
 	

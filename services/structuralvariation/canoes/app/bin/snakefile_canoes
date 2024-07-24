@@ -561,7 +561,7 @@ rule bam_to_multicov:
 	params: pyscripts = config["pyscripts"],
 			bed = config['BED_FILE']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"
-	shell:" python3 {params.pyscripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 1> {log} "
+	shell:" python {params.pyscripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 1> {log} "
 
 rule bam_to_multicov_for_refbam:
 	""" From a tsv list of bams generate a coverage file filtered with the bed provided, including the header """
@@ -570,7 +570,7 @@ rule bam_to_multicov_for_refbam:
 	params: pyscripts = config["pyscripts"],
 			bed = config['BED_FILE']
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.log"
-	shell:" python3 {params.pyscripts}/pybedtools.py --tsv {input} --bed {params.bed} -q 20 -o {output} 1> {log} "
+	shell:" python {params.pyscripts}/pybedtools.py --tsv {input} --bed {params.bed} -q 20 -o {output} 1> {log} "
 
 rule merge_multicov:
 	""" Merge all coverage files and add header """
@@ -578,14 +578,14 @@ rule merge_multicov:
 	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.reads.tsv"
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.reads.log"
 	params: pyscripts = config["pyscripts"]
-	shell: " python3 {params.pyscripts}/merge_multicov.py {input} -o {output} "
+	shell: " python {params.pyscripts}/merge_multicov.py {input} -o {output} "
 
 rule plot_coverage_stats:
 	""" Generate coverage calculation """
 	input:  rules.merge_multicov.output
 	output:	f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.stats.tsv"
-	params: pyscripts = config["pyscripts"]
-	shell: " python3 {params.pyscripts}/plot_coverage_stats.py {input} {output} "
+	params: config["pyscripts"]
+	shell: " python {params}/plot_coverage_stats.py {input} {output} "
 
 rule plot_coverage:
 	""" Generate coverage plots per sample in pdf """
@@ -643,8 +643,8 @@ rule bedtovcf:
 	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
-	params:	scriptsconfig = config["scriptsconfig"]
-	shell: "variantconvert convert -i {input} -o {output} -c {params.scriptsconfig}/config_canoes_bed.json 2> {log} "
+	params:	config["scriptsconfig"]
+	shell: "variantconvert convert -i {input} -o {output} -c {params}/config_canoes_bed.json 2> {log} "
 
 rule sortvcf:
 	""" Sort vcf """
@@ -705,10 +705,7 @@ rule AnnotSV:
 rule correct_tsv:
 	input: rules.AnnotSV.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.tsv"
-	shell: 
-		""" 
-		sed '1s/[()/\\]/_/g' {input} > {output}
-		"""
+	shell: "sed '1s/[()/\\]/_/g' {input} > {output}"
 
 rule variantconvert:
 	input: rules.correct_tsv.output
@@ -725,10 +722,7 @@ rule variantconvert:
 rule correctvcf:
 	input: rules.variantconvert.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.vcf"
-	shell: 
-		""" 
-		sed 's/SAMPLENAME/{wildcards.sample}/g' {input} > {output}
-		"""
+	shell: " sed 's/SAMPLENAME/{wildcards.sample}/g' {input} > {output} "
 
 rule sortvcf_sample:
 	input: rules.correctvcf.output
@@ -738,7 +732,15 @@ rule sortvcf_sample:
 
 use rule vcf2gz as vcf2gz_design with:
 	input: rules.sortvcf_sample.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.uncorr.vcf.gz"
+
+
+rule fix_svlen:
+	input: rules.vcf2gz_design.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
+	params:	config["pyscripts"]
+	shell: " python {params}/del_svlen_corr.py {input} {output} "
+
 
 rule merge_vcf:
 	""" Copy or merge multiple vcfs using bcftools """
@@ -753,7 +755,7 @@ rule convert_vcf:
 	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep -v '^#' > {output}"
 
 use rule convert_vcf as convertvcf_sample with:
-	input: rules.vcf2gz_design.output
+	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
 
 
@@ -762,7 +764,8 @@ rule filter_vcf:
 	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
-	shell:"bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
+	#shell:"bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
+	shell:"bedtools intersect -a {input} -b {params} | bgzip > {output} && tabix {output}"
 
 use rule convert_vcf as convert_vcf_panel with:
 	input: rules.filter_vcf.output
