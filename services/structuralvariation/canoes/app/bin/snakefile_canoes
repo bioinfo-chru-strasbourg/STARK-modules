@@ -512,7 +512,7 @@ rule copy_bam:
 
 rule copy_cram:
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.cram")
-	params:vcf2gz"
+	params:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
 	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
@@ -521,8 +521,8 @@ rule cramtobam:
 	""" Extract bam from a cram file with samtools, need a reference genome """
 	input: rules.copy_cram.output
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
-	params: refgenome=config['REFGENEFA_PATH']
-	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
+	params: config['REFGENEFA_PATH']
+	shell: "samtools view -b -T {params} -o {output} {input}"
 
 rule indexing:
 	""" Indexing bam files with samtools or ln """
@@ -538,7 +538,7 @@ rule gc_percent:
 	""" Compute GC percent from the reference genome and a bed file, removing header 
 		Output a tsv with 4 columns : chromosome start stop gc	
 	"""
-	input: config["REFGENEFA_PATH"]
+	input: config['REFGENEFA_PATH']
 	output: 
 			gc_percent_header=temp(f"{resultDir}/GCpercent_header.tsv"),
 			gc_percent = f"{resultDir}/GCpercent.tsv"
@@ -558,16 +558,16 @@ rule bam_to_multicov:
 		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
 		bai = f"{resultDir}/{{sample}}.{{aligner}}.bam.bai"
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv"
-	params: pyscripts = config["pyscripts"],
+	params: pyscripts = config['pyscripts'],
 			bed = config['BED_FILE']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"
 	shell:" python {params.pyscripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 1> {log} "
 
 rule bam_to_multicov_for_refbam:
 	""" From a tsv list of bams generate a coverage file filtered with the bed provided, including the header """
-	input: refbamlist=config['REF_BAM_LIST']
+	input: config['REF_BAM_LIST']
 	output:	f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv"
-	params: pyscripts = config["pyscripts"],
+	params: pyscripts = config['pyscripts'],
 			bed = config['BED_FILE']
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.log"
 	shell:" python {params.pyscripts}/pybedtools.py --tsv {input} --bed {params.bed} -q 20 -o {output} 1> {log} "
@@ -577,14 +577,14 @@ rule merge_multicov:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.reads.tsv"
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.reads.log"
-	params: config["pyscripts"]
+	params: config['pyscripts']
 	shell: " python {params}/merge_multicov.py {input} -o {output} "
 
 rule plot_coverage_stats:
 	""" Generate coverage calculation """
 	input:  rules.merge_multicov.output
 	output:	f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.stats.tsv"
-	params: config["pyscripts"]
+	params: config['pyscripts']
 	shell: " python {params}/plot_coverage_stats.py {input} {output} "
 
 rule plot_coverage:
@@ -607,14 +607,14 @@ rule canoes_calling:
 			read = rules.merge_multicov.output,
 			gc = rules.gc_percent.output.gc_percent
 	params:
-			Rscripts = config["Rscripts"],
+			Rscripts = config['Rscripts'],
 			chromosome= "{gender}",
 			bamlist= f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
-			pvalue = config["pval"],
-			distance = config["dist"],
-			tnumeric = config["tnum"],
-			numreference = config["numref"],
-			hom = config["homdel"],
+			pvalue = config['pval'],
+			distance = config['dist'],
+			tnumeric = config['tnum'],
+			numreference = config['numref'],
+			hom = config['homdel'],
 			refbamlist= "--refbams {}".format(config['REF_BAM_LIST']) if config['REF_BAM_LIST'] else "",
 			refmulticovtsv = f" --readsrefs {resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv" if config['REF_BAM_LIST'] else ""
 	output:
@@ -643,30 +643,21 @@ rule bedtovcf:
 	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
-	params:	config["scriptsconfig"]
+	params:	config['scriptsconfig']
 	shell: " variantconvert convert -i {input} -o {output} -c {params}/config_canoes_bed.json 2> {log} "
 
 rule sortvcf:
 	""" Sort vcf """
 	input: rules.bedtovcf.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.uncorr.vcf")
-	params: dummypath=config['DUMMY_PATH']
-	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
+	shell: " {{ grep '^#' {input} && grep -v '^#' {input} | sort -k1,1V -k2,2g; }} > {output} "
+
 
 rule fix_svlen:
 	input: rules.sortvcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-	params:	config["pyscripts"]
-	shell: " python {params}/del_svlen_corr.py {input} {output} ; tabix {output}"
-
-#rule vcf2gz:
-#	""" Compress vcf with bgzip 
-#		use -c to keep input file
-#	"""
-#	input: rules.fix_svlen.output
-#	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-#	params: dummypath=config['DUMMY_PATH']
-#	shell: " bgzip -c {input} > {output} ; tabix {output} "
+	params:	config['pyscripts']
+	shell: " python {params}/del_svlen_corr.py {input} {output} ; tabix {output} "
 
 
 rule split_vcf:
@@ -678,8 +669,8 @@ rule split_vcf:
 	"""
 	input: rules.fix_svlen.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.Noannotation.vcf.gz"
-	params: dummypath=config['DUMMY_PATH']
-	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
+	params: config['DUMMY_PATH']
+	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 
 
 rule AnnotSV:
@@ -732,24 +723,21 @@ rule correctvcf:
 rule sortvcf_sample:
 	input: rules.correctvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf"
-	params: dummypath=config['DUMMY_PATH']
-	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
+	params: config['DUMMY_PATH']
+	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
-use rule vcf2gz as vcf2gz_design with:
+rule vcf2gz:
 	input: rules.sortvcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
-
-# check if necessary
-#use rule fix_svlen as fix_svlen_sample :
-#	input: rules.vcf2gz_design.output
-#	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
+	params: config['DUMMY_PATH']
+	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf.gz > {output} ; tabix {output}"
 
 
 rule merge_vcf:
 	""" Copy or merge multiple vcfs using bcftools """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
-	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}} ; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
+	shell: "if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}} ; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
 
 rule convert_vcf:
 	""" vcf to tsv conversion """
