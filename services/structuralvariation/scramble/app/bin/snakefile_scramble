@@ -552,7 +552,7 @@ rule sortvcf:
 
 
 rule fix_svlen:
-	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unfiltered_uncorr.vcf"
+	input: rules.sortvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unfiltered.vcf"
 	params:	config["pyscripts"]
 	shell: " python {params}/del_svlen_corr.py {input} {output} "
@@ -560,7 +560,7 @@ rule fix_svlen:
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
-	input: rules.sortvcf.output
+	input: rules.fix_svlen.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
@@ -584,7 +584,7 @@ use rule cp_vcf_full as cp_vcf_design with:
 
 rule vcf2tsv:
 	""" vcf to tsv conversion """
-	input: rules.filter_vcf.output
+	input: rules.cp_vcf_design.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
 	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep -v '^#' > {output}"
 

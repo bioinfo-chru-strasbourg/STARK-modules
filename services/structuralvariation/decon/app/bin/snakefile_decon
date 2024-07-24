@@ -725,7 +725,7 @@ rule sortvcf:
 	shell: "{{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output}"
 
 rule fix_svlen:
-	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.uncorr.vcf"
+	input: rules.sortvcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf
 	params:	config["pyscripts"]
 	shell: " python {params}/del_svlen_corr.py {input} {output} "
@@ -733,7 +733,7 @@ rule fix_svlen:
 
 rule vcf2gz:
 	""" Compress vcf with bgzip """
-	input: rules.sortvcf.output
+	input: rules.fix_svlen.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf.gz"
 	params: dummypath=config['DUMMY_PATH']
 	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf.gz > {output} ; tabix {output}"
