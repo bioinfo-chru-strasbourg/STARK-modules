@@ -512,7 +512,7 @@ rule copy_bam:
 
 rule copy_cram:
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.cram")
-	params:
+	params:vcf2gz"
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
 	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
@@ -577,8 +577,8 @@ rule merge_multicov:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.reads.tsv"
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.reads.log"
-	params: pyscripts = config["pyscripts"]
-	shell: " python {params.pyscripts}/merge_multicov.py {input} -o {output} "
+	params: config["pyscripts"]
+	shell: " python {params}/merge_multicov.py {input} -o {output} "
 
 rule plot_coverage_stats:
 	""" Generate coverage calculation """
@@ -644,15 +644,20 @@ rule bedtovcf:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
 	params:	config["scriptsconfig"]
-	shell: "variantconvert convert -i {input} -o {output} -c {params}/config_canoes_bed.json 2> {log} "
+	shell: " variantconvert convert -i {input} -o {output} -c {params}/config_canoes_bed.json 2> {log} "
 
 rule sortvcf:
 	""" Sort vcf """
 	input: rules.bedtovcf.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf")
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.uncorr.vcf")
 	params: dummypath=config['DUMMY_PATH']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
+rule fix_svlen:
+	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.uncorr.vcf"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf"
+	params:	config["pyscripts"]
+	shell: " python {params}/del_svlen_corr.py {input} {output} "
 
 rule vcf2gz:
 	""" Compress vcf with bgzip 
@@ -732,14 +737,12 @@ rule sortvcf_sample:
 
 use rule vcf2gz as vcf2gz_design with:
 	input: rules.sortvcf_sample.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.uncorr.vcf.gz"
-
-
-rule fix_svlen:
-	input: rules.vcf2gz_design.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
-	params:	config["pyscripts"]
-	shell: " python {params}/del_svlen_corr.py {input} {output} "
+
+# check if necessary
+#use rule fix_svlen as fix_svlen_sample :
+#	input: rules.vcf2gz_design.output
+#	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 
 
 rule merge_vcf:

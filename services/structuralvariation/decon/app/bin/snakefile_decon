@@ -720,9 +720,15 @@ rule variantconvert:
 rule sortvcf:
 	""" Sort vcf """
 	input: rules.variantconvert.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf")
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.uncorr.vcf")
 	params: dummypath=config['DUMMY_PATH']
 	shell: "{{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output}"
+
+rule fix_svlen:
+	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.uncorr.vcf"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf
+	params:	config["pyscripts"]
+	shell: " python {params}/del_svlen_corr.py {input} {output} "
 
 
 rule vcf2gz:
