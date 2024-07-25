@@ -19,8 +19,9 @@ def correct_svlen(vcf_file, output_file):
 				fields = line.strip().split('\t')
 				info_field = fields[7]
 
-				# Ensure there are no extra spaces in the INFO field
-				info_field = info_field.replace(" ", "")
+				# Remove all types of whitespace characters
+				info_field = re.sub(r'\s+', '', info_field)
+				info_field = info_field.replace('\xa0', '')  # Remove non-breaking spaces
 
 				if 'SVTYPE=DEL' in info_field:
 					match = re.search(r'END=(\d+)', info_field)
@@ -34,9 +35,6 @@ def correct_svlen(vcf_file, output_file):
 						else:
 							info_field += f';SVLEN={svlen}'
 						fields[7] = info_field
-				
-				# Ensure the INFO field is properly formatted
-				fields[7] = re.sub(r'\s+', '', fields[7])
 				
 				outfile.write('\t'.join(fields) + '\n')
 	
