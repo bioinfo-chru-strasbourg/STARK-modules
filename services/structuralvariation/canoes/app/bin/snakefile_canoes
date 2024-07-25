@@ -763,7 +763,7 @@ rule filter_vcf:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	#shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output} || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output}"
-	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} && tabix {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output} "
+	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} && tabix {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output} && tabix {output}"
 
 use rule convert_vcf as convert_vcf_panel with:
 	input: rules.filter_vcf.output
