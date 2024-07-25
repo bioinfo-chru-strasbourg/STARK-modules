@@ -452,7 +452,7 @@ rule scramble:
 		polyadist = config['poly-a-dist'],
 		mode = config['scramble_mode'],
 		refgene = config['REFGENEFA_PATH'],
-		dummypath = config['DUMMY_PATH'],
+		dummypath = config['DUMMY_FILES'],
 		output = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.raw"
 	output:
 		f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.raw.vcf"
@@ -477,7 +477,7 @@ rule correctvcf:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.corr.vcf"
 	params:
 		mode = config['scramble_mode'],
-		dummypath = config['DUMMY_PATH']
+		dummypath = config['DUMMY_FILES']
 	shell:
 		"""
 		(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
@@ -527,12 +527,12 @@ rule variantconvert:
 	input: rules.correct_tsv.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unfix.vcf"
 	params:
-			configjson="/app/config/fileconversion/annotsv3_from_vcf.json",
-			dummypath=config['DUMMY_PATH']
+			VARIANT_CONVERT_CONFIG=config['VARIANT_CONVERT_CONFIG'],
+			dummypath=config['DUMMY_FILES']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.varianconvert.log"
 	shell:
 		"""
-		variantconvert convert -i {input} -o {output} -c {params.configjson} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		variantconvert convert -i {input} -o {output} -c {params.VARIANT_CONVERT_CONFIG}/annotsv3_from_vcf.json 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
 rule correctvcfbis:
@@ -547,14 +547,14 @@ rule sortvcf:
 	""" Sort vcf """
 	input: rules.correctvcfbis.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_uncorr.vcf")
-	params: config['DUMMY_PATH']
+	params: config['DUMMY_FILES']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 
 rule fix_space_vcf:
 	input: rules.sortvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
-	params:	config["pyscripts"]
+	params:	config['PY_SCRIPTS']
 	shell: " python {params}/vcf_space_corr.py {input} {output} ; tabix {output}"
 
 
@@ -602,7 +602,7 @@ use rule vcf2tsv as vcf2tsv_panel with:
 rule split_vcf:
 	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
-	params: config['DUMMY_PATH']
+	params: config['DUMMY_FILES']
 	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 
 use rule vcf2tsv as vcf2tsv_panel_sample with:

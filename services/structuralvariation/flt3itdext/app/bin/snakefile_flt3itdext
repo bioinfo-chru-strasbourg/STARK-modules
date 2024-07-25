@@ -322,14 +322,13 @@ rule bcftools_filter:
 	"""	Filter with bcftools """
 	input: rules.correctvcf.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.filter.vcf")
-	params:	bcf_filter = config['BCFTOOLS_FILTER']
-	shell: " bcftools view {params.bcf_filter} {input} -o {output} "
+	params:	config['BCFTOOLS_FILTER']
+	shell: " bcftools view {params} {input} -o {output} "
 
 rule sortvcf:
 	"""	Bash script to sort a vcf """
 	input: rules.bcftools_filter.output
 	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.sort.vcf")
-	params: dummypath = config['DUMMY_PATH']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
 rule vcf2gz:

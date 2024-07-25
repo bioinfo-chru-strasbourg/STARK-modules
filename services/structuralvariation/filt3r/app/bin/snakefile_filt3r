@@ -284,8 +284,8 @@ rule cramtobam:
 	""" Extract bam from a cram file with samtools, need a reference genome """
 	input: rules.copy_cram.output
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
-	params: refgenome=config['REFGENEFA_PATH']
-	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
+	params: config['REFGENEFA_PATH']
+	shell: "samtools view -b -T {params} -o {output} {input}"
 
 rule indexing:
 	""" Indexing bam files with samtools or ln """
@@ -325,7 +325,6 @@ rule filt3r:
 		{params.filterpath}/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --ignore-short-indels {params.shortindels} --vcf;
 		"""
 
-# sed 's/old-text/new-text/g' input > output
 rule vcf_infofix:
 	""" Fix VAF type (Float) """
 	input: rules.filt3r.output
@@ -348,15 +347,14 @@ rule bcftools_filter:
 	"""	Filter with bcftools """
 	input: rules.correctvcf.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.filter.vcf")
-	params:	bcf_filter = config['BCFTOOLS_FILTER']
-	shell: "bcftools view {params.bcf_filter} {input} -o {output}"
+	params:	config['BCFTOOLS_FILTER']
+	shell: "bcftools view {params} {input} -o {output}"
 
 
 rule sortvcf:
 	"""	Bash script to sort a vcf """
 	input: rules.bcftools_filter.output
 	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.sort.vcf")
-	params: dummypath = config['DUMMY_PATH']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
 

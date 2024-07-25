@@ -25,12 +25,12 @@ RUN apt-get update --fix-missing && \
 # Install bioinformatics tools using mamba
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     python=3.12 \
-    annotsv~=3.4.2 samtools~=1.20 bcftools~=1.20 vcf-validator~=0.9.6 \
-    bedtools~=2.31.1 snakemake~=8.16 pandas~=2.2.2 \
-    vcf2tsvpy~=0.6.1 pyfasta~=0.5.2 fasta~=36.3.8e \
-    natsort~=8.3.1 pyfaidx~=0.8.1.1 pypdf~=4.1.0 \
-    r-exomedepth~=1.1.16 r-r.utils~=2.12.3 r-optparse~=1.7.4 r-reshape~=0.8.6 \
-    r-ggplot2~=3.5.0 r-doparallel~=1.0.17 r-foreach~=1.5.2 r-reshape2~=1.4.4 && \
+    annotsv~=3.4.2 samtools~=1.20 bcftools~=1.20 vcf-validator~=0.9 \
+    bedtools~=2.31 snakemake~=8.16 pandas~=2.2 \
+    vcf2tsvpy~=0.6 pyfasta~=0.5 fasta~=36.3 \
+    natsort~=8.3 pyfaidx~=0.8.1 pypdf~=4.1 \
+    r-exomedepth~=1.1.16 r-r.utils~=2.12 r-optparse~=1.7 r-reshape~=0.8 \
+    r-ggplot2~=3.5 r-doparallel~=1.0 r-foreach~=1.5 r-reshape2~=1.4 && \
     mamba clean -afy
 
 # Clone and install variantconvert

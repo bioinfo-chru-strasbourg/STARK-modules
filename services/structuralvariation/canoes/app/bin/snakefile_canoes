@@ -558,7 +558,7 @@ rule bam_to_multicov:
 		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
 		bai = f"{resultDir}/{{sample}}.{{aligner}}.bam.bai"
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv"
-	params: pyscripts = config['pyscripts'],
+	params: pyscripts = config['PY_SCRIPTS'],
 			bed = config['BED_FILE']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"
 	shell:" python {params.pyscripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 1> {log} "
@@ -567,7 +567,7 @@ rule bam_to_multicov_for_refbam:
 	""" From a tsv list of bams generate a coverage file filtered with the bed provided, including the header """
 	input: config['REF_BAM_LIST']
 	output:	f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv"
-	params: pyscripts = config['pyscripts'],
+	params: pyscripts = config['PY_SCRIPTS'],
 			bed = config['BED_FILE']
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.log"
 	shell:" python {params.pyscripts}/pybedtools.py --tsv {input} --bed {params.bed} -q 20 -o {output} 1> {log} "
@@ -577,14 +577,14 @@ rule merge_multicov:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.reads.tsv"
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.reads.log"
-	params: config['pyscripts']
+	params: config['PY_SCRIPTS']
 	shell: " python {params}/merge_multicov.py {input} -o {output} "
 
 rule plot_coverage_stats:
 	""" Generate coverage calculation """
 	input:  rules.merge_multicov.output
 	output:	f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.allsamples.multicoverage.stats.tsv"
-	params: config['pyscripts']
+	params: config['PY_SCRIPTS']
 	shell: " python {params}/plot_coverage_stats.py {input} {output} "
 
 rule plot_coverage:
@@ -594,7 +594,7 @@ rule plot_coverage:
 			barplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.pdf",
 			boxplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.pdf"
 	params: 
-		Rscripts = config['Rscripts'],
+		Rscripts = config['R_SCRIPTS'],
 		samplefile = f"{resultDir}/{serviceName}.{date_time}.A.list.txt"
 	log:
 		log=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.log",
@@ -607,7 +607,7 @@ rule canoes_calling:
 			read = rules.merge_multicov.output,
 			gc = rules.gc_percent.output.gc_percent
 	params:
-			Rscripts = config['Rscripts'],
+			Rscripts = config['R_SCRIPTS'],
 			chromosome= "{gender}",
 			bamlist= f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
 			pvalue = config['pval'],
@@ -643,7 +643,7 @@ rule bedtovcf:
 	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
-	params:	config['scriptsconfig']
+	params:	config['VARIANT_CONVERT_CONFIG']
 	shell: " variantconvert convert -i {input} -o {output} -c {params}/config_canoes_bed.json 2> {log} "
 
 rule sortvcf:
@@ -656,7 +656,7 @@ rule sortvcf:
 rule fix_svlen:
 	input: rules.sortvcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-	params:	config['pyscripts']
+	params:	config['PY_SCRIPTS']
 	shell: " python {params}/del_svlen_corr.py {input} {output} ; tabix {output} "
 
 
@@ -669,7 +669,7 @@ rule split_vcf:
 	"""
 	input: rules.fix_svlen.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.Noannotation.vcf.gz"
-	params: config['DUMMY_PATH']
+	params: config['DUMMY_FILES']
 	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 
 
@@ -685,7 +685,7 @@ rule AnnotSV:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.log"
 	params:
-		dummypath=config['DUMMY_PATH'],
+		dummypath=config['DUMMY_FILES'],
 		outputfile=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design",
 		genome=config['genomeBuild'],
 		overlap=config['overlap'],
@@ -707,12 +707,12 @@ rule variantconvert:
 	input: rules.correct_tsv.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unfix.vcf"
 	params: 
-			configjson="/app/config/fileconversion/annotsv3_from_vcf.json",
-			dummypath=config['DUMMY_PATH']
+			variantconvertconfig=config['VARIANT_CONVERT_CONFIG'],
+			dummypath=config['DUMMY_FILES']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.varianconvert.log"
 	shell:
 		"""
-		variantconvert convert -i {input} -o {output} -c {params.configjson} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		variantconvert convert -i {input} -o {output} -c {params.variantconvertconfig}/annotsv3_from_vcf.json 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
 rule correctvcf:
@@ -723,14 +723,14 @@ rule correctvcf:
 rule sortvcf_sample:
 	input: rules.correctvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf"
-	params: config['DUMMY_PATH']
+	params: config['DUMMY_FILES']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
-rule fix_space_vcf:
+rule fix_del_vcf:
 	input: rules.sortvcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
-	params:	config["pyscripts"]
-	shell: " python {params}/vcf_space_corr.py {input} {output} ; tabix {output}"
+	params:	config['PY_SCRIPTS']
+	shell: " python {params}/del_svlen_corr.py {input} {output} ; tabix {output}"
 
 
 rule merge_vcf:

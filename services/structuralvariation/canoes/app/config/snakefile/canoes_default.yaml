@@ -49,13 +49,13 @@ RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: ["/*/STARK/*", "/*/*"]
 
 # Path of the dummy vcf
-DUMMY_PATH: "/app/scripts/dummy"
+DUMMY_FILES: "/app/scripts/dummy"
 # R scripts
-Rscripts: "/app/scripts/R"
+R_SCRIPTS: "/app/scripts/R"
 # Python scripts
-pyscripts: "/app/scripts/python"
+PY_SCRIPTS: "/app/scripts/python"
 # Path of the fileconversion json
-scriptsconfig: "/app/config/fileconversion/"
+VARIANT_CONVERT_CONFIG: "/app/config/fileconversion/"
 
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"

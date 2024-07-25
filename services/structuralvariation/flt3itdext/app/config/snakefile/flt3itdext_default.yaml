@@ -59,10 +59,11 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
-DUMMY_PATH: "/app/scripts/dummy"
-REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+DUMMY_FILES: "/app/scripts/dummy"
 # Script path
 SCRIPT_PATH: "/app/scripts"
+
+REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/RAF>=0.01'"
 BCFTOOLS_FILTER: "-i 'INFO/RAF>=0.01'"

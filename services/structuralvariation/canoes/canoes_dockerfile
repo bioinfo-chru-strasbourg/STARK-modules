@@ -17,14 +17,13 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update --fix-missing && \
     apt-get install -y unzip vim rsync aria2 iproute2
 
-# Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
 	python=3.12 \
-	annotsv~=3.4.2 samtools~=1.20 bcftools~=1.20 bedtools~=2.31.1 vcf-validator~=0.9.6 \
-	snakemake~=8.16  pandas~=2.2.2 vcf2tsvpy~=0.6.1 natsort~=8.3.1 \
-	pyfaidx~=0.8.1.1  pysam~=0.22.0 gatk4~=4.5.0.0  requests~=2.31.0  \
-    r-ggplot2~=3.4.3 r-optparse~=1.7.3  r-nnls~=1.5  r-hmisc~=5.1_1  r-dplyr~=1.1.4 \
-    r-mgcv~=1.8_28  r-reshape2~=1.4.4  r-gtools~=3.9.5  r-stringr~=1.5.1  \
+	annotsv~=3.4.2 samtools~=1.20 bcftools~=1.20 bedtools~=2.31 vcf-validator~=0.9 \
+	snakemake~=8.16  pandas~=2.2 vcf2tsvpy~=0.6 natsort~=8.3 \
+	pyfaidx~=0.8.1  pysam~=0.22 gatk4~=4.5  requests~=2.31  \
+    r-ggplot2~=3.4 r-optparse~=1.7  r-nnls~=1.5  r-hmisc~=5.1_1  r-dplyr~=1.1 \
+    r-mgcv~=1.8_28  r-reshape2~=1.4  r-gtools~=3.9  r-stringr~=1.5  \
     && mamba clean -afy
 
 # Variant convert

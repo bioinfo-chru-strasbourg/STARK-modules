@@ -650,7 +650,7 @@ rule ReadInBams:
 		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.ReadInBams.RData"
 	params:
 		refbamlist=config['REF_BAM_LIST'],
-		decondir=config['DECON_PATH'],
+		decondir=config['R_SCRIPTS'],
 		refgene=config['REFGENEFA_PATH'],
 		mcores=config['MCORES']
 	log:
@@ -668,7 +668,7 @@ rule IdentifyFailures:
 		mincorr=config['mincorr'],
 		mincov=config['mincov'],
 		analysisfailure=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.MetricsFailed",
-		decondir=config['DECON_PATH']
+		decondir=config['R_SCRIPTS']
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv"
 	log:
 		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.Metrics.log",
@@ -711,23 +711,23 @@ rule variantconvert:
 	input: rules.merge_makeCNVcalls.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.unsort.vcf")
 	params:
-		scriptsconfig=config['SCRIPTS_CONFIG'],
-		dummypath=config['DUMMY_PATH']
+		variantconvertconfig=config['VARIANT_CONVERT_CONFIG'],
+		dummypath=config['DUMMY_FILES']
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.variantconvert.log"
-	shell: "variantconvert convert -i {input} -o {output} -c {params.scriptsconfig}/config_decon.json 2> {log}"
+	shell: "variantconvert convert -i {input} -o {output} -c {params.variantconvertconfig}/config_decon.json 2> {log}"
 
 
 rule sortvcf:
 	""" Sort vcf """
 	input: rules.variantconvert.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.uncorr.vcf")
-	params: dummypath=config['DUMMY_PATH']
+	params: dummypath=config['DUMMY_FILES']
 	shell: "{{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output}"
 
 rule fix_svlen:
 	input: rules.sortvcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf.gz"
-	params:	config["pyscripts"]
+	params:	config['PY_SCRIPTS']
 	shell: " python {params}/del_svlen_corr.py {input} {output} ; tabix {output} "
 
 
@@ -742,8 +742,8 @@ rule splitvcf:
 	"""
 	input: rules.fix_svlen.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.Noannotation.vcf.gz"
-	params: dummypath=config['DUMMY_PATH']
-	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
+	params: config['DUMMY_FILES']
+	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 
 
 rule AnnotSV:
@@ -758,7 +758,7 @@ rule AnnotSV:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.log"
 	params:
-		dummypath=config['DUMMY_PATH'],
+		dummypath=config['DUMMY_FILES'],
 		outputfile=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design",
 		genome=config['genomeBuild'],
 		overlap=config['overlap'],
@@ -785,12 +785,12 @@ rule variantconvert_annotsv:
 	input: rules.correct_tsv.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unfix.vcf"
 	params:
-			configjson="/app/config/fileconversion/annotsv3_from_vcf.json",
-			dummypath=config['DUMMY_PATH']
+			variantconvertconfig=config['VARIANT_CONVERT_CONFIG'],
+			dummypath=config['DUMMY_FILES']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.varianconvert.log"
 	shell:
 		"""
-		variantconvert convert -i {input} -o {output} -c {params.configjson} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		variantconvert convert -i {input} -o {output} -c {params.variantconvertconfig}/annotsv3_from_vcf.json 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
 rule correctvcf:
@@ -804,14 +804,14 @@ rule correctvcf:
 rule sortvcf_sample:
 	input: rules.correctvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf"
-	params: dummypath=config['DUMMY_PATH']
-	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
+	params: config['DUMMY_FILES']
+	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
- rule vcf2gz:
+rule vcf2gz:
 	input: rules.sortvcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
-	params: dummypath=config['DUMMY_PATH']
-	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf.gz > {output} ; tabix {output}"
+	params: config['DUMMY_FILES']
+	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf.gz > {output} ; tabix {output}"
 
 
 rule merge_vcf:
@@ -857,7 +857,7 @@ rule plot:
 		rules.makeCNVcalls.output.rdata
 	params:
 		folder=f"{resultDir}/pdfs/",
-		decondir=config['DECON_PATH']
+		decondir=config['R_SCRIPTS']
 	output:
 		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess"
 	log:

@@ -19,8 +19,8 @@ RUN apt-get update --fix-missing && \
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     python=3.12 \
-	samtools~=1.20 bcftools~=1.20 bedtools~=2.31.1  \
-	snakemake~=8.16 pandas~=2.2.2 vcf2tsvpy~=0.6.1  \ 
+	samtools~=1.20 bcftools~=1.20 bedtools~=2.31  \
+	snakemake~=8.16 pandas~=2.2 vcf2tsvpy~=0.6  \ 
 	arriba~=2.4.0 star~=2.7.11a && mamba clean -afy
 
 # Variantconvert

@@ -127,9 +127,17 @@ CHR_LIST_RESTRICT: []
 customexon: FALSE
 # kmerisation of DECON bed (integer) (ex 250)
 KMER: ""
-# Path to Decon R directory
-DECON_PATH: "/app/scripts/R"
 
+# Path of the dummy vcf
+DUMMY_FILES: "/app/scripts/dummy"
+# R scripts
+R_SCRIPTS: "/app/scripts/R"
+# Python scripts
+PY_SCRIPTS: "/app/scripts/python"
+# Path of the fileconversion json
+VARIANT_CONVERT_CONFIG: "/app/config/fileconversion"
+
+# Plots for DECON True/False
 DECON_PLOT: True
 ############# ReadInbams params ##############
 # path to the tsv file containing 2 columns : bam for the list of reference bams for CNV calling (full path of bams), and gender (F/M)
