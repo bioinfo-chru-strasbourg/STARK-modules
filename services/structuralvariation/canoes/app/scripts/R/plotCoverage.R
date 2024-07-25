@@ -9,16 +9,19 @@
 # DEV v1 11/03/2024
 # Changelog
 #   - optparse script, bugfixes & update code
-#   - change png to pdf to avoid size limitation
+#   - change png to pdf to avoid some size limitation
 ########################################################################################################
 
-suppressMessages(library(ggplot2))
-suppressMessages(library(reshape)2)
-suppressMessages(library(dplyr))
-suppressMessages(library(gtools))
-suppressMessages(library(optparse))
+suppressPackageStartupMessages({
+	library(ggplot2)
+	library(reshape)
+	library(reshape2)
+	library(dplyr)
+	library(gtools)
+	library(optparse)
+})
 
-# Define the option parser
+
 option_list <- list(
   make_option(c("-s", "--samplefile"), type="character", help="Samples name in a tsv file", dest='samplefile'),
   make_option(c("-i", "--input"), type="character", help="Input coverage file", dest='input'),
@@ -26,7 +29,6 @@ option_list <- list(
   make_option(c("-p", "--output2"), type="character", help="Output pdf barplot", dest='output2')
 )
 
-# Parse command line arguments
 opt_parser <- OptionParser(option_list=option_list)
 options <- parse_args(opt_parser)
 

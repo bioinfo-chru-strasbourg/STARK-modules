@@ -731,13 +731,6 @@ rule fix_svlen:
 	shell: " python {params}/del_svlen_corr.py {input} {output} ; tabix {output} "
 
 
-#rule vcf2gz:
-#	""" Compress vcf with bgzip """
-#	input: rules.fix_svlen.output
-#	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf.gz"
-#	params: dummypath=config['DUMMY_PATH']
-#	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf.gz > {output} ; tabix {output}"
-
 # --force-samples will output a vcf file with all annotations but without a sample name if the sample did not exist;
 # so we output a dummy vcf.gz
 rule splitvcf:
@@ -842,8 +835,8 @@ rule filter_vcf:
 	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
-	#shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
-	shell:"bedtools intersect -a {input} -b {params} | bgzip > {output} && tabix {output}"
+	#shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output} || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output}"
+	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} && tabix {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output} "
 
 use rule convert_vcf as convert_vcf_panel with:
 	input: rules.filter_vcf.output

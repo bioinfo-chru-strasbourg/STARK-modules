@@ -111,7 +111,9 @@ if (is.null(winners)) return(NULL)
                        svtype = 'DEL',
                        stringsAsFactors = F, check.names = F)
     fixed$ALT = '<DEL>'
-    fixed$svlen = nchar(sapply(1:nrow(winners), function(i) get_refs(fa, winners$CONTIG[i], winners$DEL.START[i], winners$DEL.END[i] + 1)))
+    fixed$svlen = -nchar(sapply(1:nrow(winners), function(i) {
+            get_refs(fa, winners$CONTIG[i], winners$DEL.START[i], winners$DEL.END[i] + 1)
+            }))
     fixed$end = fixed$POS + fixed$svlen
     fixed$INFO = paste0('SVTYPE=', fixed$svtype, ';', 'SVLEN=', fixed$svlen, ';', 'END=', fixed$end, ';', 'DEL_LENGHT=', winners$DEL.LENGTH, ';', 'REF_ANCHOR_BASE=', winners$REF.ANCHOR.BASE, ';', 'RIGHT_CLUSTER=', winners$RIGHT.CLUSTER, ';', 'RIGHT_CLUSTER_COUNTS=', winners$RIGHT.CLUSTER.COUNTS, ';', 'LEFT_CLUSTER=', winners$LEFT.CLUSTER, ';', 'LEFT_CLUSTER_COUNTS=', winners$LEFT.CLUSTER.COUNTS, ';', 'LEN_RIGHT_ALIGNMENT=', winners$LEN.RIGHT.ALIGNMENT, ';', 'SCORE_RIGHT_ALIGNMENT=', winners$SCORE.RIGHT.ALIGNMENT, ';', 'PCT_COV_RIGHT_ALIGNMENT=', winners$PCT.COV.RIGHT.ALIGNMENT, ';', 'PCT_IDENTITY_RIGHT_ALIGNMENT=', winners$PCT.IDENTITY.RIGHT.ALIGNMENT, ';', 'LEN_LEFT_ALIGNMENT=', winners$LEN.LEFT.ALIGNMENT, ';', 'SCORE_LEFT_ALIGNMENT=', winners$SCORE.LEFT.ALIGNMENT, ';', 'PCT_COV_LEFT_ALIGNMENT=', winners$PCT.COV.LEFT.ALIGNMENT, ';', 'PCT_IDENTITY_LEFT_ALIGNMENT=', winners$PCT.IDENTITY.LEFT.ALIGNMENT, ';', 'INS_SIZE=', winners$INS.SIZE, ';', 'RIGHT_CLIPPED_SEQ=', winners$RIGHT.CLIPPED.SEQ, ';', 'LEFT_CLIPPED_SEQ=', winners$LEFT.CLIPPED.SEQ)
     fixed$REF = sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i]))

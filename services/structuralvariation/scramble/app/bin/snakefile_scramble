@@ -551,18 +551,12 @@ rule sortvcf:
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 
-rule fix_svlen:
+rule fix_space_vcf:
 	input: rules.sortvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
 	params:	config["pyscripts"]
-	shell: " python {params}/del_svlen_corr.py {input} {output} ; tabix {output}"
+	shell: " python {params}/vcf_space_corr.py {input} {output} ; tabix {output}"
 
-
-#rule vcf2gz:
-#	"""	Compress vcf with bgzip	"""
-#	input: rules.fix_svlen.output
-#	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
-#	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
 rule cp_vcf_full:
 	"""	Copy or merge vcfs with bcftools """
@@ -575,8 +569,8 @@ rule filter_vcf:
 	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	params:	config['BED_FILE']
-	#shell:"bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
-	shell:"bedtools intersect -a {input} -b {params} | bgzip > {output} && tabix {output}"
+	#shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output} || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output}"
+	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} && tabix {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output} "
 
 use rule cp_vcf_full as cp_vcf_design with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)

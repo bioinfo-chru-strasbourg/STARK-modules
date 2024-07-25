@@ -540,8 +540,8 @@ rule gc_percent:
 	"""
 	input: config['REFGENEFA_PATH']
 	output: 
-			gc_percent_header=temp(f"{resultDir}/GCpercent_header.tsv"),
-			gc_percent = f"{resultDir}/GCpercent.tsv"
+		gc_percent_header=temp(f"{resultDir}/GCpercent_header.tsv"),
+		gc_percent = f"{resultDir}/GCpercent.tsv"
 	params: 
 		bedfile = config['BED_FILE'],
 		java_option = config['JAVA_OPTION']
@@ -726,11 +726,11 @@ rule sortvcf_sample:
 	params: config['DUMMY_PATH']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
-rule vcf2gz:
+rule fix_space_vcf:
 	input: rules.sortvcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
-	params: config['DUMMY_PATH']
-	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf.gz > {output} ; tabix {output}"
+	params:	config["pyscripts"]
+	shell: " python {params}/vcf_space_corr.py {input} {output} ; tabix {output}"
 
 
 rule merge_vcf:
@@ -755,8 +755,8 @@ rule filter_vcf:
 	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
-	#shell:"bcftools view {input} -R {params} -O z -o {output} && tabix {output}"
-	shell:"bedtools intersect -a {input} -b {params} | bgzip > {output} && tabix {output}"
+	#shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output} || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output}"
+	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} && tabix {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output} "
 
 use rule convert_vcf as convert_vcf_panel with:
 	input: rules.filter_vcf.output

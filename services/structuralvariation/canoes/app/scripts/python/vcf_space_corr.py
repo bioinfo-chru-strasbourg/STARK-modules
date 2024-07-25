@@ -4,7 +4,7 @@ import re
 import os
 import subprocess
 
-def correct_svlen(vcf_file, output_file):
+def remove_whitespace(vcf_file, output_file):
 	# Detect if the input file is gzipped
 	is_gzipped = vcf_file.endswith('.gz')
 	
@@ -19,37 +19,25 @@ def correct_svlen(vcf_file, output_file):
 				fields = line.strip().split('\t')
 				info_field = fields[7]
 
-				# Remove all types of whitespace characters
+				# Remove all types of whitespace characters, including non-breaking spaces
 				info_field = re.sub(r'\s+', '', info_field)
 				info_field = info_field.replace('\xa0', '')  # Remove non-breaking spaces
-
-				if 'SVTYPE=DEL' in info_field:
-					match = re.search(r'END=(\d+)', info_field)
-					if match:
-						end_pos = int(match.group(1))
-						start_pos = int(fields[1])
-						svlen = start_pos - end_pos  # Calculate the negative length
-						# If SVLEN exists, replace it; otherwise, add it
-						if 'SVLEN=' in info_field:
-							info_field = re.sub(r'SVLEN=[^;]+', f'SVLEN={svlen}', info_field)
-						else:
-							info_field += f';SVLEN={svlen}'
-						fields[7] = info_field
 				
+				fields[7] = info_field
 				outfile.write('\t'.join(fields) + '\n')
 	
 	# Compress the output file using bgzip
 	subprocess.run(['bgzip', '-f', output_file])
 
 def main():
-	parser = argparse.ArgumentParser(description='Correct SVLEN for deletions in a VCF file (plain or gzipped).')
+	parser = argparse.ArgumentParser(description='Remove whitespace in the INFO field of a VCF file (plain or gzipped).')
 	parser.add_argument('input_vcf', help='Input VCF file (.vcf or .vcf.gz)')
-	parser.add_argument('output_vcf', help='Output VCF file with corrected SVLEN (will be bgzipped)')
+	parser.add_argument('output_vcf', help='Output VCF file with removed whitespace (will be bgzipped)')
 	
 	args = parser.parse_args()
 	
 	output_vcf_temp = args.output_vcf.rstrip('.gz')
-	correct_svlen(args.input_vcf, output_vcf_temp)
+	remove_whitespace(args.input_vcf, output_vcf_temp)
 	
 	# Rename the temp output file to the desired output file name
 	os.rename(output_vcf_temp + '.gz', args.output_vcf)
