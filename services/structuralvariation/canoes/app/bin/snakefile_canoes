@@ -730,7 +730,14 @@ rule fix_del_vcf:
 	input: rules.sortvcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	params:	config['PY_SCRIPTS']
-	shell: " python {params}/del_svlen_corr.py {input} {output} ; tabix {output}"
+	shell: " python {params}/del_svlen_corr.py {input} {output}"
+
+
+rule fix_dup_vcf:
+	input: rules.fix_del_vcf.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
+	params:	config['PY_SCRIPTS']
+	shell: " python {params}/remove_duplicate_vcf.py {input} {output} ; tabix {output}"
 
 
 rule merge_vcf:
