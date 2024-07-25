@@ -688,7 +688,7 @@ rule makeCNVcalls:
 		bamlist=f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
 		chromosome="{gender}",
 		refbamlist=config['REF_BAM_LIST'],
-		decondir=config['DECON_PATH']
+		decondir=config['R_SCRIPTS']
 	output:
 		calltsv=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design_results_all.tsv",
 		rdata=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVcalls.RData"
