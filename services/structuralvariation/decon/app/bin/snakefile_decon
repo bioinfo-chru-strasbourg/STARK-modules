@@ -835,8 +835,8 @@ rule vcf2tsv:
 				grep -v '^#' {output}.tmp > {output}
 			else
 				echo -e "No data rows found after filtering" > {output}
-			fi
-		fi
+			fi ;
+		fi ;
 		"""
 
 use rule vcf2tsv as vcf2tsv_design with:
@@ -851,7 +851,7 @@ rule filter_vcf:
 			dummy=config['DUMMY_FILES']
 	shell:"	bedtools intersect -a {input} -b {params.bed} | bgzip > {output}; tabix {output} "
 
-use rule vcf2tsv as vcf2tsv_panel:
+use rule vcf2tsv as vcf2tsv_panel with:
 	input: rules.filter_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv"
 

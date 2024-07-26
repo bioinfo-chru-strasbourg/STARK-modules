@@ -588,19 +588,8 @@ rule vcf2tsv:
 	""" vcf to tsv conversion """
 	input: rules.cp_vcf_design.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
-	shell: 	
-		"""
-		if [ $(gzip -l {input} | awk 'NR==2 {{print $2}}') -eq 0 ]; then
-			echo -e "No data available in the input file" > {output}
-		else
-			vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp
-			if grep -q -v '^#' {output}.tmp; then
-				grep -v '^#' {output}.tmp > {output}
-			else
-				echo -e "No data rows found after filtering" > {output}
-			fi
-		fi
-		"""
+	shell: " if [ $(gzip -l {input} | awk 'NR==2 {{print $2}}') -eq 0 ]; then echo -e "No data available in the input file" > {output}; else vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp; if grep -q -v '^#' {output}.tmp; then grep -v '^#' {output}.tmp > {output}; else echo -e "No data rows found after filtering" > {output}; fi; fi "
+
 use rule vcf2tsv as vcf2tsv_full with:
 	input: rules.cp_vcf_full.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.tsv"
@@ -615,7 +604,7 @@ rule filter_vcf_panel:
 	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} ; tabix {output} "
 
-use rule vcf2tsv as vcf2tsv_panel:
+use rule vcf2tsv as vcf2tsv_panel with:
 	input: rules.filter_vcf_panel.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv"
 
