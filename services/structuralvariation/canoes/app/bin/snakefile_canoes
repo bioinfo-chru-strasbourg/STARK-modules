@@ -758,7 +758,7 @@ rule filter_vcf:
 	#shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} && ([[ -s {output} ]] || (cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output})) ; tabix {output} "
 	shell:
 		"""
-		bedtools intersect -a {input.bed} -b {params.bed} | bgzip > {output} ;
+		bedtools intersect -a {input} -b {params.bed} | bgzip > {output} ;
 		if [ $(gzip -l {output} | awk 'NR==2 {{print $2}}') -eq 0 ]; then
 			cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output}
 		fi ;
