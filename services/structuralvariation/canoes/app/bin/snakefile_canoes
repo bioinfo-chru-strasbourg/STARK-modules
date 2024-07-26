@@ -755,12 +755,11 @@ rule filter_vcf:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
 			dummy=config['DUMMY_FILES']
-	#shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} && ([[ -s {output} ]] || (cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output})) ; tabix {output} "
 	shell:
 		"""
 		bedtools intersect -a {input} -b {params.bed} | bgzip > {output} ;
 		if [ $(gzip -l {output} | awk 'NR==2 {{print $2}}') -eq 0 ]; then
-			cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output}
+			cat {params.dummy}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output}
 		fi ;
 		tabix {output}
 		"""
