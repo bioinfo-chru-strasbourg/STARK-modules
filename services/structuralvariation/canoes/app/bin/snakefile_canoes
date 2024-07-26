@@ -730,7 +730,7 @@ rule fix_vcf:
 	input: rules.sortvcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	params:	config['PY_SCRIPTS']
-	shell: " python {params}/multifix_vcf.py -i {input} -o {output} -z"
+	shell: " python {params}/multifix_vcf.py -i {input} -o {output} -z ; tabix {output}"
 
 rule merge_vcf:
 	""" Copy or merge multiple vcfs using bcftools """
