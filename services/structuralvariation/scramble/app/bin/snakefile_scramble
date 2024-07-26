@@ -551,11 +551,11 @@ rule sortvcf:
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 
-rule fix_space_vcf:
+rule fix_vcf:
 	input: rules.sortvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
 	params:	config['PY_SCRIPTS']
-	shell: " python {params}/vcf_space_corr.py {input} {output} ; tabix {output}"
+	shell: " python {params}/multifix_vcf.py -i {input} -o {output} -z ; tabix {output}"
 
 
 rule cp_vcf_full:
@@ -568,9 +568,12 @@ rule filter_vcf:
 	"""	Filter vcf with a bed file """
 	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
-	params:	config['BED_FILE']
+	params:	
+			bed=config['BED_FILE']
+			dummy=config['DUMMY_FILES']
 	#shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output} || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output}"
-	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} && tabix {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output} && tabix {output}"
+    shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} && ([[ -s {output} ]] || (cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output})) ; tabix {output} "
+
 
 use rule cp_vcf_full as cp_vcf_design with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)

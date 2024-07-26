@@ -720,15 +720,15 @@ rule variantconvert:
 rule sortvcf:
 	""" Sort vcf """
 	input: rules.variantconvert.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.uncorr.vcf")
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.uncorr.vcf")
 	params: dummypath=config['DUMMY_FILES']
 	shell: "{{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output}"
 
-rule fix_svlen:
+rule vcf2gz:
 	input: rules.sortvcf.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Noannotation.vcf.gz"
-	params:	config['PY_SCRIPTS']
-	shell: " python {params}/del_svlen_corr.py {input} {output} ; tabix {output} "
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.Noannotation.vcf.gz"
+	params: config['DUMMY_FILES']
+	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf.gz > {output} ; tabix {output}"
 
 
 # --force-samples will output a vcf file with all annotations but without a sample name if the sample did not exist;
@@ -740,7 +740,7 @@ rule splitvcf:
 	-Oz: output vcf compressed
 	-c1: minimum allele count (INFO/AC) of sites to be printed
 	"""
-	input: rules.fix_svlen.output
+	input: rules.vcf2gz.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.Noannotation.vcf.gz"
 	params: config['DUMMY_FILES']
 	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
@@ -803,15 +803,16 @@ rule correctvcf:
 
 rule sortvcf_sample:
 	input: rules.correctvcf.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_uncorr.vcf"
 	params: config['DUMMY_FILES']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
-rule vcf2gz:
+
+rule fix_vcf:
 	input: rules.sortvcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
-	params: config['DUMMY_FILES']
-	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf.gz > {output} ; tabix {output}"
+	params:	config['PY_SCRIPTS']
+	shell: " python {params}/multifix_vcf.py -i {input} -o {output} -z ; tabix {output} "
 
 
 rule merge_vcf:
@@ -836,7 +837,7 @@ rule filter_vcf:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	#shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output} || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output}"
-	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} && tabix {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output} && tabix {output}"
+	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output} ; tabix {output}"
 
 use rule convert_vcf as convert_vcf_panel with:
 	input: rules.filter_vcf.output
