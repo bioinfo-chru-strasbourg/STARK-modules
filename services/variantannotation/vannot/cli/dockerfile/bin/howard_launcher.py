@@ -31,9 +31,11 @@ def launch(container_name, launch_arguments):
         f"{os.environ["HOST_DATABASES"]}:/databases/",
         "-v",
         f"{os.environ["HOST_SERVICES"]}:{os.environ["DOCKER_SERVICES"]}",
+        "-v",
+        f"{os.environ["HOST_CONFIG"]}:{os.environ["DOCKER_CONFIG"]}",
         howard_image
         ]
     
     command_list = command_list + launch_arguments
-    print(command_list)
+    print(" ".join(command_list))
     subprocess.call(command_list, universal_newlines=True)

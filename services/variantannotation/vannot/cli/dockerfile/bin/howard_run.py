@@ -114,7 +114,7 @@ def launch_run(args):
     }
     checker.depository_checker(run_informations)
     checker.pattern_checker(run_informations)
-    checker.panel_checker(run_informations)
+    run_informations = checker.panel_checker(run_informations)
     variantannotation_running_log = osj(run_repository, "VANNOTRunning.txt")
 
     with open(variantannotation_running_log, "w") as write_file:
@@ -123,12 +123,12 @@ def launch_run(args):
     synchronizer.design_vcf_synchronizer(run_informations)
     # dejavu_processing.convert_vcf_parquet(run_informations)
     # dejavu_processing.calculate_dejavu(run_informations)
-    # howard_processing.run_initialisation(run_informations)
-    # howard_processing.merge_vcf_files(run_informations)
-    # howard_processing.cleaner(run_informations)
+    howard_processing.run_initialisation(run_informations)
+    howard_processing.merge_vcf_files(run_informations)
+    howard_processing.cleaner(run_informations)
 
     # non_redundant_generator.generate(run_informations)
-    # results_provider.distribute(run_informations)
+    results_provider.distribute(run_informations)
 
     lock_file = osj(run_repository, "VANNOTComplete.txt")
     with open(lock_file, "w") as write_file:

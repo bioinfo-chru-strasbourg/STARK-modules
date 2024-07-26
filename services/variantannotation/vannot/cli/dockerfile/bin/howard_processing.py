@@ -6,6 +6,7 @@ import subprocess
 import logging as log
 import shutil
 import json
+import re
 
 import howard_launcher
 
@@ -89,11 +90,52 @@ def run_initialisation(run_informations):
     vcf_file_to_analyse = glob.glob(
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
+    
+    module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        annotations_to_keep = data["keep_vcf_info"][run_informations["run_platform_application"]]
 
     for vcf_file in vcf_file_to_analyse:
-        howard_proc(run_informations, vcf_file)
-        os.remove(vcf_file)
+        cleaned_vcf = cleaning_annotations(vcf_file, annotations_to_keep)
+        howard_proc(run_informations, cleaned_vcf)
+        os.remove(cleaned_vcf)
 
+def cleaning_annotations(vcf_file, annotations_to_keep):
+    actual_info_fields = subprocess.run(["zgrep", "##INFO", vcf_file], capture_output=True, text=True)
+    actual_info_fields = actual_info_fields.stdout.strip().split("##")
+    if not vcf_file.endswith(".vcf.gz"):
+        subprocess.call(["/tools/bin/bgzip", vcf_file])
+        vcf_file = vcf_file + ".gz"
+
+    cleaned_vcf = osj(os.path.dirname(vcf_file), "cleaned_" + os.path.basename(vcf_file)[:-3])
+    info_to_keep = []
+    for i in annotations_to_keep:
+        for j in actual_info_fields:
+            if re.search(i, j):
+                info_to_keep.append("INFO/" + j.split(",")[0].split("=")[-1])
+
+    if len(info_to_keep) == 0:
+        log.info("No annotations to keep were found, deleting all annotations")
+        info_to_keep = "INFO"
+    else:
+        log.info(f"Keeping following annotations: {' '.join(info_to_keep)} for sample {os.path.basename(vcf_file)}")
+        info_to_keep = "^" + ",".join(info_to_keep)
+
+    cmd = ["/tools/bin/bcftools", "annotate", "-x"]
+    cmd.append(info_to_keep)
+    cmd.append(vcf_file)
+
+    with open(cleaned_vcf, "w") as output:
+        subprocess.call(cmd, stdout=output, universal_newlines=True)
+    os.remove(vcf_file)
+        
+    subprocess.call(["/tools/bin/bgzip", cleaned_vcf], universal_newlines=True)
+    renamed_clean = osj(os.path.dirname(cleaned_vcf), os.path.basename(cleaned_vcf).replace("cleaned_", "") + ".gz")
+    cleaned_vcf = cleaned_vcf + ".gz"
+    os.rename(cleaned_vcf, renamed_clean)
+
+    return renamed_clean
 
 def howard_proc(run_informations, vcf_file):
     log.info(f"Launching for {vcf_file}")

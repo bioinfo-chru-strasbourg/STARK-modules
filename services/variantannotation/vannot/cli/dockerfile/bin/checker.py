@@ -76,5 +76,22 @@ def pattern_checker(run_informations):
             raise ValueError(element)
 
 
+def panel_checker(run_informations):
+    panels = find_panel(run_informations)
+    run_informations.update({"run_panels": panels})
+    return run_informations
+
+
+def find_panel(run_informations):
+    samples = glob.glob(osj(run_informations["run_repository"], "*", ""))
+    panels = glob.glob(osj(samples[0], "STARK", "*.manifest.genes"))
+    count = 0
+    for panel_name in panels:
+        cleaned_panel_name = panel_name.split(".")[1] + ".manifest.genes"
+        panels[count] = cleaned_panel_name
+        count += 1
+    return panels
+
+
 if __name__ == "__main__":
     pass
