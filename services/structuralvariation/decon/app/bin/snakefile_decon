@@ -781,7 +781,7 @@ rule correct_tsv:
 		"""
 
 
-rule variantconvert:
+rule variantconvert_annotsv:
 	input: rules.correct_tsv.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unfix.vcf"
 	params:
@@ -794,7 +794,7 @@ rule variantconvert:
 		"""
 
 rule correctvcf:
-	input: rules.variantconvert.output
+	input: rules.variantconvert_annotsv.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.vcf"
 	shell:
 		""" 
