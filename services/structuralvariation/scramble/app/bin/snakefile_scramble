@@ -571,9 +571,15 @@ rule filter_vcf:
 	params:	
 			bed=config['BED_FILE'],
 			dummy=config['DUMMY_FILES']
-	#shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output} || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output}"
-	shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} && ([[ -s {output} ]] || (cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output})) ; tabix {output} "
-
+	#shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} && ([[ -s {output} ]] || (cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output})) ; tabix {output} "
+	shell:
+		"""
+		bedtools intersect -a {input.bed} -b {params.bed} | bgzip > {output} ;
+		if [ $(gzip -l {output} | awk 'NR==2 {{print $2}}') -eq 0 ]; then
+			cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output}
+		fi ;
+		tabix {output}
+		"""
 
 use rule cp_vcf_full as cp_vcf_design with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
