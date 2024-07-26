@@ -835,9 +835,11 @@ rule filter_vcf:
 	"""	Filter vcfs with bed files """
 	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
-	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
+	params: bed = lambda wildcards: f"{resultDir}/{wildcards.panel}"
+			dummy=config['DUMMY_FILES']
 	#shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output} || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output}"
-	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output} ; tabix {output}"
+	shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} && ([[ -s {output} ]] || (cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output})) ; tabix {output} "
+
 
 use rule convert_vcf as convert_vcf_panel with:
 	input: rules.filter_vcf.output

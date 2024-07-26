@@ -572,7 +572,7 @@ rule filter_vcf:
 			bed=config['BED_FILE']
 			dummy=config['DUMMY_FILES']
 	#shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output} || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output}"
-    shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} && ([[ -s {output} ]] || (cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output})) ; tabix {output} "
+	shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} && ([[ -s {output} ]] || (cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output})) ; tabix {output} "
 
 
 use rule cp_vcf_full as cp_vcf_design with:
@@ -596,7 +596,7 @@ use rule vcf2tsv as vcf2tsv_design with:
 use rule filter_vcf as filter_vcf_panel with:
 	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
-	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
+	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}"
 
 use rule vcf2tsv as vcf2tsv_panel with:
 	input: rules.filter_vcf_panel.output
