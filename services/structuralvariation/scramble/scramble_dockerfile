@@ -29,7 +29,7 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     python=3.12 \
 	annotsv~=3.4.2 samtools~=1.20 bcftools~=1.20 bedtools~=2.31 vcf-validator~=0.9 \
 	snakemake~=8.16 pandas~=2.2 vcf2tsvpy~=0.6 natsort~=8.3 \
-	pyfaidx~=0.8 blast~=2.14 scramble~=1.0 graphviz && mamba clean -afy
+	pyfaidx~=0.8 blast~=2.14 scramble~=1.0 graphviz r-dplyr~=1.1 && mamba clean -afy
 
 # Variant convert
 WORKDIR /usr/lib
