@@ -835,8 +835,8 @@ rule vcf2tsv:
 				grep -v '^#' {output}.tmp > {output}
 			else
 				echo -e "No data rows found after filtering" > {output}
-			fi ;
-		fi ;
+			fi
+		fi
 		"""
 
 use rule vcf2tsv as vcf2tsv_design with:
