@@ -26,6 +26,11 @@ def correct_svlen(info, fields):
 			end_pos = int(match.group(1))
 			start_pos = int(fields[1])
 			svlen = start_pos - end_pos  # Calculate the negative length
+
+			# Check if SVLEN is negative, and if so, do not change it
+			if svlen < 0:
+				return info
+
 			# If SVLEN exists, replace it; otherwise, add it
 			if 'SVLEN=' in info:
 				info = re.sub(r'SVLEN=[^;]+', f'SVLEN={svlen}', info)

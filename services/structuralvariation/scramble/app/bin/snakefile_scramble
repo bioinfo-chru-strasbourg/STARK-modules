@@ -569,7 +569,7 @@ rule filter_vcf:
 	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	params:	
-			bed=config['BED_FILE']
+			bed=config['BED_FILE'],
 			dummy=config['DUMMY_FILES']
 	#shell: "bcftools view {input} -R {params} -O z -o {output} && tabix {output} || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | gzip > {output}"
 	shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} && ([[ -s {output} ]] || (cat {params.dummy} | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output})) ; tabix {output} "
