@@ -598,11 +598,11 @@ use rule vcf2tsv as vcf2tsv_design with:
 	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
 
-use rule filter_vcf as filter_vcf_panel with:
+rule filter_vcf_panel:
 	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
-	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
-			dummy=config['DUMMY_FILES']
+	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}"
+	shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} ; tabix {output} "
 
 use rule vcf2tsv as vcf2tsv_panel with:
 	input: rules.filter_vcf_panel.output

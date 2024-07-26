@@ -837,6 +837,18 @@ rule filter_vcf:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
 			dummy=config['DUMMY_FILES']
+	shell:"	bedtools intersect -a {input} -b {params.bed} | bgzip > {output}; tabix {output} "
+
+use rule convert_vcf as convert_vcf_panel with:
+	input: rules.filter_vcf.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv"
+
+rule filter_vcf_panel:
+	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
+	params:	
+			bed=config['BED_FILE'],
+			dummy=config['DUMMY_FILES']
 	shell:
 		"""
 		bedtools intersect -a {input} -b {params.bed} | bgzip > {output} ;
@@ -845,14 +857,6 @@ rule filter_vcf:
 		fi ;
 		tabix {output}
 		"""
-
-use rule convert_vcf as convert_vcf_panel with:
-	input: rules.filter_vcf.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv"
-
-use rule filter_vcf as filter_vcf_panel with:
-	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 
 use rule convert_vcf as convert_vcf_panel_sample with:
 	input: rules.filter_vcf_panel.output

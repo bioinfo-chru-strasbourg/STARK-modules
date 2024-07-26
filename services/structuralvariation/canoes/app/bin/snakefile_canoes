@@ -730,7 +730,7 @@ rule fix_vcf:
 	input: rules.sortvcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	params:	config['PY_SCRIPTS']
-	shell: " python {params}/multifix_vcf -i {input} -o {output} -z"
+	shell: " python {params}/multifix_vcf.py -i {input} -o {output} -z"
 
 rule merge_vcf:
 	""" Copy or merge multiple vcfs using bcftools """
@@ -748,21 +748,13 @@ use rule convert_vcf as convertvcf_sample with:
 	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
 
-
 rule filter_vcf:
 	"""	Filter vcf with a bed file """
 	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
 			dummy=config['DUMMY_FILES']
-	shell:
-		"""
-		bedtools intersect -a {input} -b {params.bed} | bgzip > {output} ;
-		if [ $(gzip -l {output} | awk 'NR==2 {{print $2}}') -eq 0 ]; then
-			cat {params.dummy}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output}
-		fi ;
-		tabix {output}
-		"""
+	shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output}; tabix {output} "
 
 use rule convert_vcf as convert_vcf_panel with:
 	input: rules.filter_vcf.output
