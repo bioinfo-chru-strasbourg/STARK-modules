@@ -605,7 +605,7 @@ use rule vcf2tsv as vcf2tsv_panel with:
 
 use rule vcf2tsv as vcf2tsv_full_sample with:
 	input: rules.fix_vcf_full.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.tsv
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.tsv"
 
 rule split_vcf_design:
 	input: rules.filter_vcf_design.output
