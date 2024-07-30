@@ -515,7 +515,7 @@ rule AnnotSV:
 		dummypath = config['DUMMY_FILES'],
 		annotation=config['annotationdir'],
 		hpo=lambda wildcards: runDict[wildcards.sample]['hpo'],
-		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in the vcf
+		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in a multisample vcf
 	shell: 
 		"""
 		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
@@ -566,7 +566,7 @@ rule merge_vcf_full:
 	input: rules.fix_vcf_full.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.bcftoolsmerge.log"
-	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2 > {log}; fi; tabix {output}"
+	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
 
 rule filter_vcf_design:
 	input: rules.merge_vcf_full.output
