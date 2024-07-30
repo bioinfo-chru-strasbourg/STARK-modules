@@ -792,7 +792,7 @@ rule variantconvert_annotsv:
 		variantconvert convert -i {input} -o {output} -c {params.variantconvertconfig}/annotsv3_from_vcf.json 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
-rule correctvcf:
+rule correct_vcf:
 	input: rules.variantconvert_annotsv.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.vcf")
 	shell:
@@ -801,7 +801,7 @@ rule correctvcf:
 		"""
 
 rule sortvcf_sample:
-	input: rules.correctvcf.output
+	input: rules.correct_vcf.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_sort.vcf")
 	params: config['DUMMY_FILES']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
@@ -834,19 +834,19 @@ rule vcf2tsv:
 		"""
 
 use rule vcf2tsv as vcf2tsv_sample with:
-	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
+	input: rules.fix_vcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
 
 rule filter_vcf:
 	"""	Filter vcfs with bed files """
-	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
+	input: rules.merge_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
 			dummy=config['DUMMY_FILES']
 	shell:
 		"""
 		bedtools intersect -a {input} -b {params.bed} | bgzip > {output} ;
-		if [ $(gzip -l {output} | awk 'NR==2 {{print $2}}') -eq 0 ]; then
+		if [ $(gunzip -c {output} | wc -c) -eq 0 ]; then
 			cat {params.dummy}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output}
 		fi ;
 		tabix {output}
@@ -857,16 +857,18 @@ use rule vcf2tsv as vcf2tsv_panel with:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv"
 
 use rule split_vcf as split_vcf_panel with:
-	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
+	input: rules.fix_vcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 
 use rule vcf2tsv as vcf2tsv_panel_sample with:
 	input: rules.split_vcf_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
-use rule filter_vcf as filter_vcf_noannot_design with:
-	input: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
+rule filter_vcf_design:
+	input: rules.vcf2gz.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
+	shell:"	bedtools intersect -a {input} -b {params} | bgzip > {output} ; tabix {output} "
 
 
 rule plot:
