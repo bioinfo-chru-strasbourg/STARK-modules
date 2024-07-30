@@ -81,7 +81,7 @@ def getSampleInfos(samplesheet_path, exclude_samples):
 	return result_dict
 
 def populate_dictionary(samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None, split_index=0):
-	
+
 	dictionary = defaultdict(dict)
 
 	for sample in samples_list:
@@ -727,7 +727,7 @@ rule sortvcf:
 
 rule vcf2gz:
 	input: rules.sortvcf.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.Noannotation.vcf.gz"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	params: config['DUMMY_FILES']
 	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf.gz > {output} ; tabix {output}"
 
@@ -861,7 +861,7 @@ use rule split_vcf as split_vcf_panel with:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 
 use rule vcf2tsv as vcf2tsv_panel_sample with:
-	input: rules.filter_vcf_panel.output
+	input: rules.split_vcf_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
 use rule filter_vcf as filter_vcf_noannot_design with:

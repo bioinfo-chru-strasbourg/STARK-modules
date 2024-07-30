@@ -266,6 +266,25 @@ else:
 # Populate dictionnary
 runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, ['analysis'])
 
+# Set a filelist with all the files tag ; file format is sample.tag
+# tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
+for individual_id in runDict:
+	runDict[individual_id]['hpo'] = None
+	runDict[individual_id]['gender'] = None
+ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
+if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
+	pedigree_into_dict(ped_file, sample_list, runDict, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex')
+	print('[INFO] Gender found in the pedigree file')
+else:
+	tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
+	if not tagfile_list:
+		print('[INFO] No gender found for the samples')
+	else:
+		for tagfile in tagfile_list:
+			for sample in sample_list:
+				runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
+		print('[INFO] Gender found in the tag files')
+
 # Find bed file (Design)
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
@@ -303,25 +322,6 @@ for file in panels:
 	panels_list.append(panel_trunc)
 print(panels_list)
 
-
-# Set a filelist with all the files tag ; file format is sample.tag
-# tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
-for individual_id in runDict:
-	runDict[individual_id]['hpo'] = None
-	runDict[individual_id]['gender'] = None
-ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
-if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
-	pedigree_into_dict(ped_file, sample_list, runDict, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex')
-	print('[INFO] Gender found in the pedigree file')
-else:
-	tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
-	if not tagfile_list:
-		print('[INFO] No gender found for the samples')
-	else:
-		for tagfile in tagfile_list:
-			for sample in sample_list:
-				runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
-		print('[INFO] Gender found in the tag files')
 
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
 logging.basicConfig(filename=logfile, level=logging.INFO, format='%(asctime)s %(message)s')
@@ -485,7 +485,7 @@ rule correctvcf:
 
 rule vcf2gz:
 	input: rules.correctvcf.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Unfiltered.vcf.gz")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.unfiltered.vcf.gz")
 	params: config['DUMMY_FILES']
 	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf.gz > {output} ; tabix {output}"
 
@@ -573,7 +573,7 @@ rule merge_vcf:
 
 rule filter_vcf:
 	"""	Filter vcf with a bed file """
-	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
+	input: rules.fix_vcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	params:	
 			bed=config['BED_FILE'],
@@ -593,7 +593,7 @@ use rule merge_vcf as merge_vcf_design with:
 
 rule vcf2tsv:
 	""" vcf to tsv conversion """
-	input: rules.cp_vcf_design.output
+	input: rules.merge_vcf_design.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
 	shell:
 		"""
@@ -607,7 +607,7 @@ rule vcf2tsv:
 		"""
 
 use rule vcf2tsv as vcf2tsv_full with:
-	input: rules.cp_vcf_full.output
+	input: rules.merge_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.tsv"
 
 rule filter_vcf_panel:

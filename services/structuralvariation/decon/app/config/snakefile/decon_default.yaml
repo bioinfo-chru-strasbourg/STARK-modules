@@ -137,6 +137,8 @@ PY_SCRIPTS: "/app/scripts/python"
 # Path of the fileconversion json
 VARIANT_CONVERT_CONFIG: "/app/config/fileconversion"
 
+
+### DECON ###
 # Plots for DECON True/False
 DECON_PLOT: True
 ############# ReadInbams params ##############
