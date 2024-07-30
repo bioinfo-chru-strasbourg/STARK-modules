@@ -485,7 +485,7 @@ rule correct_vcf:
 
 rule vcf2gz:
 	input: rules.correct_vcf.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.unfiltered.vcf.gz")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz")
 	params: config['DUMMY_FILES']
 	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf.gz > {output} ; tabix {output}"
 
@@ -494,7 +494,7 @@ rule bcftools_filter:
 	input: rules.vcf2gz.output	
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz"
 	params: config['BCFTOOLS_FILTER']
-	shell: "bcftools view {params} {input} -o {output}" 
+	shell: "bcftools view {params} {input} -o -z {output}" 
 
 rule AnnotSV:
 	"""
@@ -543,14 +543,13 @@ rule variantconvert:
 
 rule correct_vcf_bis:
 	input: rules.variantconvert.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_fixcorrect.vcf")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_correct.vcf")
 	shell:
 		""" 
 		sed 's/SAMPLENAME/{wildcards.sample}/g' {input} > {output}
 		"""
 
 rule sort_vcf:
-	""" Sort vcf """
 	input: rules.correct_vcf_bis.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_sort.vcf")
 	params: config['DUMMY_FILES']
@@ -564,9 +563,9 @@ rule fix_vcf_full:
 
 rule merge_vcf_full:
 	"""	Copy or merge vcfs with bcftools """
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
+	input: rules.fix_vcf_full.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.vcf.gz"
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.bcftoolsmerge.log"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.bcftoolsmerge.log"
 	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2 > {log}; fi; tabix {output}"
 
 rule filter_vcf_design:
@@ -626,7 +625,7 @@ use rule vcf2tsv as vcf2tsv_panel_sample with:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
 use rule merge_vcf_full as merge_vcf_full_noannot with:
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz", sample=sample_list, aligner=aligner_list)
+	input: rules.bcftools_filter.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Full.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Full.bcftoolsmerge.log"
 
