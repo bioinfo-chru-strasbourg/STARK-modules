@@ -351,12 +351,13 @@ print(dict(runDict))
 # check the number of sample for copy or merge vcf rule
 sample_count = len(sample_list) 
 
-ruleorder: copy_bam > copy_cram > cramtobam > indexing
+ruleorder: copy_bam > copy_cram > cramtobam > indexing #> fix_vcf_full > bcftools_filter
 
 rule all:
 	"""Rule will create an unfiltered vcf.gz and corresponding tsv, with an optional design/panel vcf.gz & tsv if a bed/gene file is provided"""
 	input:
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz", sample=sample_list, aligner=aligner_list) +
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz", sample=sample_list, aligner=aligner_list) +
 		[f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.tsv"] +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list) if config['BED_FILE'] else []) +
 		([f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"] if config['BED_FILE'] else []) +
@@ -563,7 +564,7 @@ rule fix_vcf_full:
 
 rule merge_vcf_full:
 	"""	Copy or merge vcfs with bcftools """
-	input: rules.fix_vcf_full.output
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.bcftoolsmerge.log"
 	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"

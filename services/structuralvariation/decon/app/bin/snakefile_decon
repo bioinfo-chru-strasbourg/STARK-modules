@@ -841,16 +841,8 @@ rule filter_vcf:
 	"""	Filter vcfs with bed files """
 	input: rules.merge_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
-	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
-			dummy=config['DUMMY_FILES']
-	shell:
-		"""
-		bedtools intersect -a {input} -b {params.bed} | bgzip > {output} ;
-		if [ $(gunzip -c {output} | wc -c) -eq 0 ]; then
-			cat {params.dummy}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output}
-		fi ;
-		tabix {output}
-		"""
+	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
+	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} ;	tabix {output} "
 
 use rule vcf2tsv as vcf2tsv_panel with:
 	input: rules.filter_vcf.output
