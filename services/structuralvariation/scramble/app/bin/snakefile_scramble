@@ -493,8 +493,9 @@ rule bcftools_filter:
 	"""	Filter with bcftools """
 	input: rules.vcf2gz.output	
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz"
-	params: config['BCFTOOLS_FILTER']
-	shell: "bcftools view {params} {input} -o -z {output}  && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} " 
+	params: bed=config['BCFTOOLS_FILTER'],
+			dummy=config['DUMMY_FILES']
+	shell: "bcftools view {params.bed} {input} -o -z {output}  && [[ -s {output} ]] || cat {params.dummy}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} " 
 
 rule AnnotSV:
 	"""

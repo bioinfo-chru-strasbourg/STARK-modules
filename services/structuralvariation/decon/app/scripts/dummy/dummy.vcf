@@ -1,5 +1,4 @@
 ##fileformat=VCFv4.3
-##fileDate=04/04/2022
 ##contig=<ID=1,length=249250621,assembly=hg19>
 ##contig=<ID=2,length=243199373,assembly=hg19>
 ##contig=<ID=3,length=198022430,assembly=hg19>
@@ -25,6 +24,5 @@
 ##contig=<ID=M,length=16571,assembly=hg19>
 ##contig=<ID=X,length=155270560,assembly=hg19>
 ##contig=<ID=Y,length=59373566,assembly=hg19>
-##reference=file:///STARK/databases/genomes/current/hg19.fa
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	DUMMY
 chr1	30000000	INS:ME	T	<INS:ME:ALU>	10	PASS	.	GT	0/1
