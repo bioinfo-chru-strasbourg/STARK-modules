@@ -474,7 +474,7 @@ rule scramble:
 rule correctvcf:
 	"""	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification """
 	input: rules.scramble.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.corr.vcf"
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.corr.vcf")
 	params:
 		mode = config['scramble_mode'],
 		dummypath = config['DUMMY_FILES']
@@ -483,10 +483,16 @@ rule correctvcf:
 		(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
 		"""
 
+rule vcf2gz:
+	input: rules.correctvcf.output
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Unfiltered.vcf.gz")
+	params: config['DUMMY_FILES']
+	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf.gz > {output} ; tabix {output}"
+
 rule bcftools_filter:
 	"""	Filter with bcftools """
-	input: rules.correctvcf.output	
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf"
+	input: rules.vcf2gz.output	
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz"
 	params: config['BCFTOOLS_FILTER']
 	shell: "bcftools view {params} {input} -o {output}" 
 
@@ -517,7 +523,7 @@ rule AnnotSV:
 
 rule correct_tsv:
 	input: rules.AnnotSV.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_fix.tsv"
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_fix.tsv")
 	shell: 
 		""" 
 		sed '1s/[()/\\]/_/g' {input} > {output}
@@ -525,7 +531,7 @@ rule correct_tsv:
 
 rule variantconvert:
 	input: rules.correct_tsv.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unfix.vcf"
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unfix.vcf")
 	params:
 			VARIANT_CONVERT_CONFIG=config['VARIANT_CONVERT_CONFIG'],
 			dummypath=config['DUMMY_FILES']
@@ -537,7 +543,7 @@ rule variantconvert:
 
 rule correctvcfbis:
 	input: rules.variantconvert.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_fix.vcf"
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_fix.vcf")
 	shell:
 		""" 
 		sed 's/SAMPLENAME/{wildcards.sample}/g' {input} > {output}
@@ -546,7 +552,7 @@ rule correctvcfbis:
 rule sortvcf:
 	""" Sort vcf """
 	input: rules.correctvcfbis.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_uncorr.vcf")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_sort.vcf")
 	params: config['DUMMY_FILES']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
@@ -558,11 +564,12 @@ rule fix_vcf:
 	shell: " python {params}/multifix_vcf.py -i {input} -o {output} -z ; tabix {output}"
 
 
-rule cp_vcf_full:
+rule merge_vcf:
 	"""	Copy or merge vcfs with bcftools """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.vcf.gz"
-	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output} && tabix {output}; else bcftools merge {input} -O z -o {output} && tabix {output}; fi"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.bcftoolsmerge.log"
+	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2 > {log}; fi; tabix {output}"
 
 rule filter_vcf:
 	"""	Filter vcf with a bed file """
@@ -580,7 +587,7 @@ rule filter_vcf:
 		tabix {output}
 		"""
 
-use rule cp_vcf_full as cp_vcf_design with:
+use rule merge_vcf as merge_vcf_design with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output:	f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 
@@ -594,8 +601,7 @@ rule vcf2tsv:
 			echo -e "No data available in the input file" > {output}
 		else
 			vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp
-			if grep -v '^#' {output}.tmp; then
-				grep -v '^#' {output}.tmp > {output}
+			grep -v '^#' {output}.tmp > {output}
 			fi
 		fi
 		"""

@@ -25,17 +25,21 @@ def correct_svlen(info, fields):
 		if match:
 			end_pos = int(match.group(1))
 			start_pos = int(fields[1])
-			svlen = start_pos - end_pos  # Calculate the negative length
+			svlen = start_pos - end_pos  # Calculate the length, should be negative for deletions
 
-			# Check if SVLEN is negative, and if so, do not change it
-			if svlen < 0:
-				return info
-
-			# If SVLEN exists, replace it; otherwise, add it
-			if 'SVLEN=' in info:
-				info = re.sub(r'SVLEN=[^;]+', f'SVLEN={svlen}', info)
+			# Extract the existing SVLEN value if it exists
+			svlen_match = re.search(r'SVLEN=(-?\d+)', info)
+			if svlen_match:
+				existing_svlen = int(svlen_match.group(1))
+				if existing_svlen < 0:
+					# If the existing SVLEN is negative, do not change it
+					return info
 			else:
-				info += f';SVLEN={svlen}'
+				# If SVLEN does not exist, or is positive, update it
+				if 'SVLEN=' in info:
+					info = re.sub(r'SVLEN=[^;]+', f'SVLEN={svlen}', info)
+				else:
+					info += f';SVLEN={svlen}'
 	return info
 
 def process_vcf(input_file, output_file, is_gz, compress_output):

@@ -111,8 +111,8 @@ DUMMY_PATH: "/app/scripts/dummy"
 BED_PROCESS: "STANDARD"
 # Keep intergenic region when exon regen is done
 KEEP_UNKNOWN: False
-# Patch for some gene name
-EXON_SEP: False
+# Remove separator in the DECON bed for gene name (TP53_ex for ex)
+EXON_SEP: "_ex"
 # Old Bed formating (True if bed got 4 columns only; False if bed got 13 columns with th 13th containing exon numbers)
 OLD_BED: True
 
