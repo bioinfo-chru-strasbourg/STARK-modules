@@ -729,7 +729,7 @@ rule vcf2gz:
 	input: rules.sortvcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	params: config['DUMMY_FILES']
-	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf.gz > {output} ; tabix {output}"
+	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
 
 # --force-samples will output a vcf file with all annotations but without a sample name if the sample did not exist;

@@ -487,7 +487,7 @@ rule vcf2gz:
 	input: rules.correct_vcf.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz")
 	params: config['DUMMY_FILES']
-	shell: "bgzip -c {input} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf.gz > {output} ; tabix {output}"
+	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
 rule bcftools_filter:
 	"""	Filter with bcftools """
