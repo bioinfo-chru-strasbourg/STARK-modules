@@ -494,7 +494,7 @@ rule bcftools_filter:
 	input: rules.vcf2gz.output	
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz"
 	params: config['BCFTOOLS_FILTER']
-	shell: "bcftools view {params} {input} -o -z {output}" 
+	shell: "bcftools view {params} {input} -o -z {output}  && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} " 
 
 rule AnnotSV:
 	"""
