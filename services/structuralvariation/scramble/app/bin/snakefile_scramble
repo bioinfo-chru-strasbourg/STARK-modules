@@ -630,14 +630,12 @@ use rule merge_vcf_full as merge_vcf_full_noannot with:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Full.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Full.bcftoolsmerge.log"
 
-rule filter_vcf_design:
+use rule filter_vcf_design as filter_vcf_design_noannot with:
 	input: rules.merge_vcf_full_noannot.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-	params: config['BED_FILE']
-	shell:"	bedtools intersect -a {input} -b {params} | bgzip > {output} ; tabix {output} "
 
 use rule filter_vcf_design as filter_vcf_panel_noannot with:
-	input: rules.vcf2gz.output
+	input: rules.filter_vcf_design_noannot.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 
