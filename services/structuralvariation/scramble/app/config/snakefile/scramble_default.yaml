@@ -64,7 +64,7 @@ TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 # Option to filter vcf with bcftools
-# ex "-i 'FORMAT/DP>=30 && FORMAT/VAF>=0.01'" or "-e 'SVLEN>=1000'" -e exclude -i include
+# ex "-i 'FORMAT/DP>=30 && FORMAT/VAF>=0.01'" or "-e 'SVLEN>=1000'" -e exclude -i include "-e 'SVLEN<=-1000'"
 BCFTOOLS_FILTER: "-e 'SVLEN<=-1000'"
 ################## Tools specific parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)

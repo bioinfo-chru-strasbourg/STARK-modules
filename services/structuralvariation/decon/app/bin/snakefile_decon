@@ -707,29 +707,28 @@ rule merge_makeCNVcalls:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_uncorr.tsv"
 	shell: "cat {input} | sort -u | sort -r >> {output}"
 
-rule correct_decontsv:
-	input: rules.merge_makeCNVcalls.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.tsv"
-	shell: 
-		""" 
-		sed -e 's/deletion/DEL/g' -e 's/duplication/DUP/g' {input} > {output}
-		"""
-
 rule variantconvert:
 	""" Convert tsv to a vcf """
-	input: rules.correct_decontsv.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.unsort.vcf")
+	input: rules.merge_makeCNVcalls.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_convert.vcf")
 	params:
 		variantconvertconfig=config['VARIANT_CONVERT_CONFIG'],
 		dummypath=config['DUMMY_FILES']
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.variantconvert.log"
 	shell: "variantconvert convert -i {input} -o {output} -c {params.variantconvertconfig}/config_decon.json 2> {log}"
 
+rule correct_vcf_svtype:
+	input: rules.variantconvert.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_svtype.vcf")
+	shell: 
+		""" 
+		sed -e 's/SVTYPE=deletion/SVTYPE=DEL/g' -e 's/SVTYPE=duplication/SVTYPE=DUP/g' {input} > {output}
+		"""
 
 rule sortvcf:
 	""" Sort vcf """
-	input: rules.variantconvert.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.uncorr.vcf")
+	input: rules.correct_vcf_svtype.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_sort.vcf")
 	params: dummypath=config['DUMMY_FILES']
 	shell: "{{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output}"
 
