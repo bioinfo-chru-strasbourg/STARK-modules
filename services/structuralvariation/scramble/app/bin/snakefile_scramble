@@ -635,7 +635,7 @@ use rule merge_vcf_full as merge_vcf_full_noannot with:
 use rule filter_vcf_design as filter_vcf_design_noannot with:
 	input: rules.merge_vcf_full_noannot.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-	params: bed=config['BED'],
+	params: bed=config['BED_FILE'],
 			dummypath=config['DUMMY_FILES']
 
 use rule filter_vcf_design as filter_vcf_panel_noannot with:
