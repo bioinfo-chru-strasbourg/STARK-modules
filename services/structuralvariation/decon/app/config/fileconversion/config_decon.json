@@ -128,7 +128,7 @@
 			},
 			"Comparator.name": {
 				"Type": "String",
-				"Number": "1",
+				"Number": ".",
 				"Description": "Comparator name (from DECoN)"
 			},
 			"Start.p": {
