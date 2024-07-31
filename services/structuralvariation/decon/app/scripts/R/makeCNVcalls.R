@@ -270,8 +270,8 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   cnv.calls_ids$Start.p <- as.integer(cnv.calls_ids$Start.p)
   cnv.calls_ids$End.p <- as.integer(cnv.calls_ids$End.p)
 
-  Start.b <- as.integer(Gene.index[cnv.calls_ids$Start.p])
-  End.b <- as.integer(Gene.index[cnv.calls_ids$End.p])
+  Start.b <- Gene.index[cnv.calls_ids$Start.p]
+  End.b <- Gene.index[cnv.calls_ids$End.p]
   cnv.calls_ids <- cbind(cnv.calls_ids, Start.b, End.b)
   
   return(cnv.calls_ids)

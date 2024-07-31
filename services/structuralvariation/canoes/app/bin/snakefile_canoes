@@ -353,6 +353,9 @@ gender_list = list(set(gender_list))
 
 # Find bed file (Design)
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
+if not config['BED_FILE']:
+	print('No bed found, CANOES cannot continue, exiting')
+	exit()
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
 config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes.bed', '.list.genes')
 # Find transcripts files (NM)
@@ -389,12 +392,12 @@ for file in panels:
 	panels_list.append(panel_trunc)
 print(panels_list)
 
-if config['KMER']:
-	kmerisation(config['KMER'], config['BED_FILE'], config['BED_FILE'])
+canoesbed_file = f"{resultDir}/{serviceName}.{date_time}.bed"
 
-if not config['BED_FILE']:
-	print('No bed found, CANOES cannot continue, exiting')
-	exit()
+if config['KMER']:
+	kmerisation(config['KMER'], config['BED_FILE'], canoesbed_file)
+else
+	copy2(config['BED_FILE'], canoesbed_file)
 
 # Create file_list of bam by gender with the runDict, depending on the gender_list
 # A = all ; XX = Female only ; XY = Male only
@@ -544,12 +547,11 @@ rule gc_percent:
 		gc_percent_header=temp(f"{resultDir}/GCpercent_header.tsv"),
 		gc_percent = f"{resultDir}/GCpercent.tsv"
 	params: 
-		bedfile = config['BED_FILE'],
 		java_option = config['JAVA_OPTION']
 	log: f"{resultDir}/GCpercent.log"
 	shell: 
 		"""
-			gatk --java-options {params.java_option} AnnotateIntervals -L {params.bedfile} -R {input} -imr OVERLAPPING_ONLY -O {output.gc_percent_header} 2> {log}
+			gatk --java-options {params.java_option} AnnotateIntervals -L {canoesbed_file} -R {input} -imr OVERLAPPING_ONLY -O {output.gc_percent_header} 2> {log}
 			grep -v '^@' {output.gc_percent_header} > {output.gc_percent}
 	 	"""
 
@@ -559,19 +561,17 @@ rule bam_to_multicov:
 		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
 		bai = f"{resultDir}/{{sample}}.{{aligner}}.bam.bai"
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv"
-	params: pyscripts = config['PY_SCRIPTS'],
-			bed = config['BED_FILE']
+	params: pyscripts = config['PY_SCRIPTS']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"
-	shell:" python {params.pyscripts}/pybedtools.py --bam {input.bam} --bed {params.bed} -q 20 -o {output} 1> {log} "
+	shell:" python {params.pyscripts}/pybedtools.py --bam {input.bam} --bed {canoesbed_file} -q 20 -o {output} 1> {log} "
 
 rule bam_to_multicov_for_refbam:
 	""" From a tsv list of bams generate a coverage file filtered with the bed provided, including the header """
 	input: config['REF_BAM_LIST']
 	output:	f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv"
-	params: pyscripts = config['PY_SCRIPTS'],
-			bed = config['BED_FILE']
+	params: pyscripts = config['PY_SCRIPTS']
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.log"
-	shell:" python {params.pyscripts}/pybedtools.py --tsv {input} --bed {params.bed} -q 20 -o {output} 1> {log} "
+	shell:" python {params.pyscripts}/pybedtools.py --tsv {input} --bed {canoesbed_file} -q 20 -o {output} 1> {log} "
 
 rule merge_multicov:
 	""" Merge all coverage files and add header """
