@@ -573,7 +573,7 @@ rule filter_vcf_design:
 	input: rules.merge_vcf_full.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 	params: config['BED_FILE']
-	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} ; tabix {output} "
+	shell: " bedtools intersect -a {input} -b {params}  && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | bgzip > {output} ; tabix {output} "
 
 use rule filter_vcf_design as filter_vcf_panel with:
 	input: rules.filter_vcf_design.output

@@ -869,12 +869,9 @@ use rule vcf2tsv as vcf2tsv_panel_sample with:
 	input: rules.split_vcf_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
-rule filter_vcf_design:
+use rule filter_vcf as filter_vcf_design with:
 	input: rules.vcf2gz.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
-	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
-	shell:"	bedtools intersect -a {input} -b {params} | bgzip > {output} ; tabix {output} "
-
 
 rule plot:
 	""" This step inputs the CNVcall.Rdata file to output the plot files in pdf format """
