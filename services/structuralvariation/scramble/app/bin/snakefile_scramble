@@ -593,7 +593,6 @@ rule vcf2tsv:
 		else
 			vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp
 			grep -v '^#' {output}.tmp > {output}
-			fi
 		fi
 		"""
 

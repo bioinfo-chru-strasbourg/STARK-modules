@@ -162,7 +162,16 @@
 			"ExAC_pLI": "ExAC_pLI",
 			"AnnotSV_ranking_score": "AnnotSV_ranking_score",
 			"AnnotSV_ranking_criteria": "AnnotSV_ranking_criteria",
-			"ACMG_class": "ACMG_class"
+			"ACMG_class": "ACMG_class",
+			"CNV.ID": "CNV.ID",
+			"N.exons": "N.exons",
+			"Start.b": "Start.b",
+			"End.b": "End.b",
+			"Genomic.ID": "Genomic.ID",
+			"Confidence": "Confidence",
+			"Comparator.name": "Comparator.name",
+			"Start.p": "Start.p",
+			"End.p": "End.p"
 		},
 		"FORMAT": "FORMAT",
 		"SAMPLE": "Samples_ID"
@@ -743,6 +752,56 @@
 				"Type": "String",
 				"Number": ".",
 				"Description": "SV ranking class into 1 of 5: class 1 (benign), class 2 (likely benign), class 3 (variant of unknown significance), class 4 (likely pathogenic), class 5 (pathogenic)"
+			},
+			"CNV.ID": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "Decon's unique identifier of the CNV call. This ID is searchable in the GUI"
+			},
+			"N.exons": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "The number of exons encompassed by the call"
+			},
+			"Start.b": {
+				"Type": "Float",
+				"Number": "1",
+				"Description": "The number of the first exon in the call from the analyzed BED file"
+			},
+			"End.b": {
+				"Type": "Float",
+				"Number": "1",
+				"Description": "The number of the last exon in the call from the analyzed BED file"
+			},
+			"Genomic.ID": {
+				"Type": "String",
+				"Number": "1",
+				"Description": "DECoN genomic identifier"
+			},
+			"Genes": {
+				"Type": "String",
+				"Number": "1",
+				"Description": "The affected genes from the analyzed bed file (from DECoN)"
+			},
+			"Confidence": {
+				"Type": "String",
+				"Number": "1",
+				"Description": "Confidence score (from DECoN)"
+			},
+			"Comparator.name": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Comparator name (from DECoN)"
+			},
+			"Start.p": {
+				"Type": "Float",
+				"Number": "1",
+				"Description": "The number of the first line in the call from the analyzed BED file"
+			},
+			"End.p": {
+				"Type": "Float",
+				"Number": "1",
+				"Description": "The number of the last line in the call from the analyzed BED file"
 			}
 		},
 		"FORMAT": {
