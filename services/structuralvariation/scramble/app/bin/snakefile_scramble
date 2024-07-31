@@ -579,7 +579,8 @@ rule filter_vcf_design:
 use rule filter_vcf_design as filter_vcf_panel with:
 	input: rules.filter_vcf_design.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
-	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
+	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
+			dummypath=config['DUMMY_FILES']
 
 rule vcf2tsv:
 	""" vcf to tsv conversion """
@@ -634,12 +635,14 @@ use rule merge_vcf_full as merge_vcf_full_noannot with:
 use rule filter_vcf_design as filter_vcf_design_noannot with:
 	input: rules.merge_vcf_full_noannot.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
+	params: bed=config['BED'],
+			dummypath=config['DUMMY_FILES']
 
 use rule filter_vcf_design as filter_vcf_panel_noannot with:
 	input: rules.filter_vcf_design_noannot.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
-	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
-
+	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}"
+			dummypath=config['DUMMY_FILES']
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
