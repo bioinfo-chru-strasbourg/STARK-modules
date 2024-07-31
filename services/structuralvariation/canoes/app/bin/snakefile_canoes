@@ -396,7 +396,7 @@ canoesbed_file = f"{resultDir}/{serviceName}.{date_time}.bed"
 
 if config['KMER']:
 	kmerisation(config['KMER'], config['BED_FILE'], canoesbed_file)
-else
+else:
 	copy2(config['BED_FILE'], canoesbed_file)
 
 # Create file_list of bam by gender with the runDict, depending on the gender_list

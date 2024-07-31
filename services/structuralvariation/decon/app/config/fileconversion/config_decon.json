@@ -102,12 +102,12 @@
 				"Description": "The number of exons encompassed by the call"
 			},
 			"Start.b": {
-				"Type": "Integer",
+				"Type": "Float",
 				"Number": "1",
 				"Description": "The number of the first exon in the call from the analyzed BED file"
 			},
 			"End.b": {
-				"Type": "Integer",
+				"Type": "Float",
 				"Number": "1",
 				"Description": "The number of the last exon in the call from the analyzed BED file"
 			},
@@ -132,12 +132,12 @@
 				"Description": "Comparator name (from DECoN)"
 			},
 			"Start.p": {
-				"Type": "Integer",
+				"Type": "Float",
 				"Number": "1",
 				"Description": "The number of the first line in the call from the analyzed BED file"
 			},
 			"End.p": {
-				"Type": "Integer",
+				"Type": "Float",
 				"Number": "1",
 				"Description": "The number of the last line in the call from the analyzed BED file"
 			}	
