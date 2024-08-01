@@ -474,7 +474,7 @@ rule scramble:
 rule correct_vcf:
 	"""	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification """
 	input: rules.scramble.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.corr.vcf")
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.corr.vcf"
 	params:
 		mode = config['scramble_mode'],
 		dummypath = config['DUMMY_FILES']
@@ -485,7 +485,7 @@ rule correct_vcf:
 
 rule vcf2gz:
 	input: rules.correct_vcf.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz")
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz"
 	params: config['DUMMY_FILES']
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
@@ -640,7 +640,7 @@ use rule filter_vcf_design as filter_vcf_design_noannot with:
 use rule filter_vcf_design as filter_vcf_panel_noannot with:
 	input: rules.filter_vcf_design_noannot.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
-	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}"
+	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
 			dummypath=config['DUMMY_FILES']
 
 onstart:
