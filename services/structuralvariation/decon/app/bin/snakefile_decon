@@ -855,7 +855,8 @@ rule filter_vcf:
 	input: rules.merge_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
-	shell: " bedtools intersect -a {input} -b {params} | bgzip > {output} ;	tabix {output} "
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.bedtoolsfilter.log"
+	shell: " bedtools intersect -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output} "
 
 use rule vcf2tsv as vcf2tsv_panel with:
 	input: rules.filter_vcf.output
@@ -872,6 +873,7 @@ use rule vcf2tsv as vcf2tsv_panel_sample with:
 use rule filter_vcf as filter_vcf_design with:
 	input: rules.vcf2gz.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bedtoolsfilter.log"
 
 rule plot:
 	""" This step inputs the CNVcall.Rdata file to output the plot files in pdf format """
