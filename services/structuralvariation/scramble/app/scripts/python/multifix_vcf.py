@@ -5,6 +5,10 @@ import shutil
 import os
 import tempfile
 import subprocess
+from unidecode import unidecode
+
+def remove_special_characters(text):
+	return unidecode(text)
 
 def clean_info_field(info):
 	fields = info.split(';')
@@ -14,6 +18,9 @@ def clean_info_field(info):
 		key_value = field.split('=')
 		if len(key_value) == 2:
 			key, value = key_value
+			# Remove special characters from both key and value
+			key = remove_special_characters(key)
+			value = remove_special_characters(value)
 			unique_fields[key] = value
 
 	cleaned_info = ';'.join([f"{key}={value}" for key, value in unique_fields.items()])
