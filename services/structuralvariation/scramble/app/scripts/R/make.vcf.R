@@ -32,48 +32,62 @@ get_refs = function(fa, chrom, start, end){
   return(as.vector(seq))
 }
 
+generate_contig_headers <- function(fa, assembly=NULL) {
+  if (missing(fa) || length(names(fa)) == 0) return(NULL)
+  
+  contigs <- names(fa)
+  contig_lengths <- width(fa)
+  
+  contig_headers <- sapply(seq_along(contigs), function(i) {
+    paste('##contig=<ID=', contigs[i], ',length=', contig_lengths[i], 
+          if (!is.null(assembly)) paste(',assembly=', assembly, sep='') else '',
+          '>', sep="")
+  })
+  
+  return(contig_headers)
+}
+
 make.vcf.header = function(fa, blastRef=NULL){
   if (missing(fa)) return(NULL)
-  contigs = names(fa)
-	header = c('##fileformat=VCFv4.3',
+  contig_headers <- generate_contig_headers(fa, assembly)
+	header <- c('##fileformat=VCFv4.3',
 						 paste('##reference=', blastRef, sep=''),
-						 paste('##contig=<ID=', contigs, '>', sep=""),
+						 contig_headers,
 						 '##FILTER=<ID=PASS,Description="All filters passed">',
 						 '##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">',
 						 '##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">',
-						 '##INFO=<ID=END,Number=.,Type=Integer,Description="End position for structural variants">',
-						 '##INFO=<ID=MEINFO,Number=3,Type=String,Description="Mobile element info of the form NAME,START,POLARITY">',
+						 '##INFO=<ID=END,Number=1,Type=Integer,Description="End position for structural variants">',
+						 '##INFO=<ID=MEINFO,Number=3,Type=String,Description="Mobile element info of the form CHR:NAME,START,POLARITY">',
              '##INFO=<ID=COUNTS,Number=.,Type=Integer,Description="Number of supporting reads for the MEI">',
-						 '##INFO=<ID=CLIPPED_READS_IN_CLUSTER,Number=.,Type=Integer,Description="Number of supporting reads in cluster">',
-						 '##INFO=<ID=ALIGNMENT_PERCENT_LENGHT,Number=.,Type=Integer,Description="Percent of clipped read consensus sequence involved in alignment to MEI reference sequence">',
-						 '##INFO=<ID=ALIGNMENT_PERCENT_IDENTITY,Number=.,Type=Integer,Description="Percent identify of alignment of clipped read consensus sequence with MEI reference sequence">',
-						 '##INFO=<ID=CLIPPED_SEQUENCE,Number=.,Type=Integer,Description="Clipped cluster consensus sequences">',
-						 '##INFO=<ID=CLIPPED_SIDE,Number=.,Type=Integer,Description="Left or right, side of read where soft-clipping ocurred">',
+						 '##INFO=<ID=CLIPPED_READS_IN_CLUSTER,Number=.,Type=String,Description="Number of supporting reads in cluster">',
+						 '##INFO=<ID=ALIGNMENT_PERCENT_LENGHT,Number=.,Type=Float,Description="Percent of clipped read consensus sequence involved in alignment to MEI reference sequence">',
+						 '##INFO=<ID=ALIGNMENT_PERCENT_IDENTITY,Number=.,Type=Float,Description="Percent identify of alignment of clipped read consensus sequence with MEI reference sequence">',
+						 '##INFO=<ID=CLIPPED_SEQUENCE,Number=.,Type=String,Description="Clipped cluster consensus sequences">',
+						 '##INFO=<ID=CLIPPED_SIDE,Number=.,Type=String,Description="Left or right, side of read where soft-clipping ocurred">',
 						 '##INFO=<ID=Start_In_MEI,Number=.,Type=Integer,Description="Left-most position of alignment to MEI reference sequence">',
 						 '##INFO=<ID=Stop_In_MEI,Number=.,Type=Integer,Description="Right-most position of alignment to MEI reference sequence">',
-						 '##INFO=<ID=polyA_Position,Number=.,Type=Integer,Description="Position of polyA clipped read cluster if found">',
-						 '##INFO=<ID=polyA_Seq,Number=.,Type=Integer,Description="Clipped cluster consensus sequences of polyA clipped read cluster if found">',
-						 '##INFO=<ID=polyA_SupportingReads,Number=.,Type=Integer,Description="Number of supporting reads in polyA clipped read cluster if found">',
-						 '##INFO=<ID=TSD,Number=.,Type=Integer,Description="Target site duplication sequence if polyA clipped read cluster found">',
-						 '##INFO=<ID=TSD_length,Number=.,Type=Integer,Description="Length of target site duplication if polyA clipped read cluster found">',
+						 '##INFO=<ID=polyA_Position,Number=.,Type=String,Description="Position of polyA clipped read cluster if found">',
+						 '##INFO=<ID=polyA_Seq,Number=.,Type=String,Description="Clipped cluster consensus sequences of polyA clipped read cluster if found">',
+						 '##INFO=<ID=polyA_SupportingReads,Number=.,Type=String,Description="Number of supporting reads in polyA clipped read cluster if found">',
+						 '##INFO=<ID=TSD,Number=.,Type=String,Description="Target site duplication sequence if polyA clipped read cluster found">',
+						 '##INFO=<ID=TSD_length,Number=.,Type=String,Description="Length of target site duplication if polyA clipped read cluster found">',
 						 '##INFO=<ID=REF_ANCHOR_BASE,Number=.,Type=Integer,Description="Reference based at deletion start">',
-						 '##INFO=<ID=DEL_LENGHT,Number=.,Type=Integer,Description="Deletion length">',
 						 '##INFO=<ID=RIGHT_CLUSTER,Number=.,Type=Integer,Description="Name of right cluster">',
 						 '##INFO=<ID=RIGHT_CLUSTER_COUNTS,Number=.,Type=Integer,Description="Number of supporting reads in right cluster">',
 						 '##INFO=<ID=LEFT_CLUSTER,Number=.,Type=Integer,Description="Name of left cluster">',
 						 '##INFO=<ID=LEFT_CLUSTER_COUNTS,Number=.,Type=Integer,Description="Number of supporting reads in left cluster">',
 						 '##INFO=<ID=LEN_RIGHT_ALIGNMENT,Number=.,Type=Integer,Description="Length of right-clipped consensus sequence involved in alignment">',
-						 '##INFO=<ID=SCORE_RIGHT_ALIGNMENT,Number=.,Type=Integer,Description="BLAST alignment bitscore for right-clipped consensus">',
-						 '##INFO=<ID=PCT_COV_RIGHT_ALIGNMENT,Number=.,Type=Integer,Description="Percent length of right-clipped consensus involved in alignment">',
-						 '##INFO=<ID=PCT_IDENTITY_RIGHT_ALIGNMENT,Number=.,Type=Integer,Description="Percent identity of right-clipped consensus in alignment">',
+						 '##INFO=<ID=SCORE_RIGHT_ALIGNMENT,Number=.,Type=Float,Description="BLAST alignment bitscore for right-clipped consensus">',
+						 '##INFO=<ID=PCT_COV_RIGHT_ALIGNMENT,Number=.,Type=Float,Description="Percent length of right-clipped consensus involved in alignment">',
+						 '##INFO=<ID=PCT_IDENTITY_RIGHT_ALIGNMENT,Number=.,Type=Float,Description="Percent identity of right-clipped consensus in alignment">',
 						 '##INFO=<ID=LEN_LEFT_ALIGNMENT,Number=.,Type=Integer,Description="Length of left-clipped consensus sequence involved in alignment">',
-						 '##INFO=<ID=SCORE_LEFT_ALIGNMENT,Number=.,Type=Integer,Description="BLAST alignment bitscore for left-clipped consensus">',
-						 '##INFO=<ID=PCT_COV_LEFT_ALIGNMENT,Number=.,Type=Integer,Description="Percent length of left-clipped consensus involved in alignment">',
-						 '##INFO=<ID=PCT_IDENTITY_LEFT_ALIGNMENT,Number=.,Type=Integer,Description="Percent identity of right-clipped consensus in alignment">',
+						 '##INFO=<ID=SCORE_LEFT_ALIGNMENT,Number=.,Type=Float,Description="BLAST alignment bitscore for left-clipped consensus">',
+						 '##INFO=<ID=PCT_COV_LEFT_ALIGNMENT,Number=.,Type=Float,Description="Percent length of left-clipped consensus involved in alignment">',
+						 '##INFO=<ID=PCT_IDENTITY_LEFT_ALIGNMENT,Number=.,Type=Float,Description="Percent identity of right-clipped consensus in alignment">',
 						 '##INFO=<ID=INS_SIZE,Number=.,Type=Integer,Description="Length of insert within deleted sequence (for two-end deletions only)">',
-						 '##INFO=<ID=INS_SEQ,Number=.,Type=Integer,Description="Inserted sequence (for two-end deletions only)">',
-						 '##INFO=<ID=RIGHT_CLIPPED_SEQ,Number=.,Type=Integer,Description="Clipped consensus sequence for right-clipped cluster">',
-						 '##INFO=<ID=LEFT_CLIPPED_SEQ,Number=.,Type=Integer,Description="Clipped consensus sequence for left-clipped cluster">',
+						 '##INFO=<ID=INS_SEQ,Number=.,Type=String,Description="Inserted sequence (for two-end deletions only)">',
+						 '##INFO=<ID=RIGHT_CLIPPED_SEQ,Number=.,Type=String,Description="Clipped consensus sequence for right-clipped cluster">',
+						 '##INFO=<ID=LEFT_CLIPPED_SEQ,Number=.,Type=String,Description="Clipped consensus sequence for left-clipped cluster">',
              '##INFO=<ID=VAF,Number=.,Type=Float,Description="Variant Allele Frequency">',
 						 '##ALT=<ID=INS:ME:ALU,Description="Insertion of ALU element">',
 						 '##ALT=<ID=INS:ME:L1,Description="Insertion of L1 element">',
@@ -115,7 +129,7 @@ if (is.null(winners)) return(NULL)
             get_refs(fa, winners$CONTIG[i], winners$DEL.START[i], winners$DEL.END[i] + 1)
             }))
     fixed$end = fixed$POS + fixed$svlen
-    fixed$INFO = paste0('SVTYPE=', fixed$svtype, ';', 'SVLEN=', fixed$svlen, ';', 'END=', fixed$end, ';', 'DEL_LENGHT=', winners$DEL.LENGTH, ';', 'REF_ANCHOR_BASE=', winners$REF.ANCHOR.BASE, ';', 'RIGHT_CLUSTER=', winners$RIGHT.CLUSTER, ';', 'RIGHT_CLUSTER_COUNTS=', winners$RIGHT.CLUSTER.COUNTS, ';', 'LEFT_CLUSTER=', winners$LEFT.CLUSTER, ';', 'LEFT_CLUSTER_COUNTS=', winners$LEFT.CLUSTER.COUNTS, ';', 'LEN_RIGHT_ALIGNMENT=', winners$LEN.RIGHT.ALIGNMENT, ';', 'SCORE_RIGHT_ALIGNMENT=', winners$SCORE.RIGHT.ALIGNMENT, ';', 'PCT_COV_RIGHT_ALIGNMENT=', winners$PCT.COV.RIGHT.ALIGNMENT, ';', 'PCT_IDENTITY_RIGHT_ALIGNMENT=', winners$PCT.IDENTITY.RIGHT.ALIGNMENT, ';', 'LEN_LEFT_ALIGNMENT=', winners$LEN.LEFT.ALIGNMENT, ';', 'SCORE_LEFT_ALIGNMENT=', winners$SCORE.LEFT.ALIGNMENT, ';', 'PCT_COV_LEFT_ALIGNMENT=', winners$PCT.COV.LEFT.ALIGNMENT, ';', 'PCT_IDENTITY_LEFT_ALIGNMENT=', winners$PCT.IDENTITY.LEFT.ALIGNMENT, ';', 'INS_SIZE=', winners$INS.SIZE, ';', 'RIGHT_CLIPPED_SEQ=', winners$RIGHT.CLIPPED.SEQ, ';', 'LEFT_CLIPPED_SEQ=', winners$LEFT.CLIPPED.SEQ)
+    fixed$INFO = paste0('SVTYPE=', fixed$svtype, ';', 'SVLEN=', fixed$svlen, ';', 'END=', fixed$end, ';', 'REF_ANCHOR_BASE=', winners$REF.ANCHOR.BASE, ';', 'RIGHT_CLUSTER=', winners$RIGHT.CLUSTER, ';', 'RIGHT_CLUSTER_COUNTS=', winners$RIGHT.CLUSTER.COUNTS, ';', 'LEFT_CLUSTER=', winners$LEFT.CLUSTER, ';', 'LEFT_CLUSTER_COUNTS=', winners$LEFT.CLUSTER.COUNTS, ';', 'LEN_RIGHT_ALIGNMENT=', winners$LEN.RIGHT.ALIGNMENT, ';', 'SCORE_RIGHT_ALIGNMENT=', winners$SCORE.RIGHT.ALIGNMENT, ';', 'PCT_COV_RIGHT_ALIGNMENT=', winners$PCT.COV.RIGHT.ALIGNMENT, ';', 'PCT_IDENTITY_RIGHT_ALIGNMENT=', winners$PCT.IDENTITY.RIGHT.ALIGNMENT, ';', 'LEN_LEFT_ALIGNMENT=', winners$LEN.LEFT.ALIGNMENT, ';', 'SCORE_LEFT_ALIGNMENT=', winners$SCORE.LEFT.ALIGNMENT, ';', 'PCT_COV_LEFT_ALIGNMENT=', winners$PCT.COV.LEFT.ALIGNMENT, ';', 'PCT_IDENTITY_LEFT_ALIGNMENT=', winners$PCT.IDENTITY.LEFT.ALIGNMENT, ';', 'INS_SIZE=', winners$INS.SIZE, ';', 'RIGHT_CLIPPED_SEQ=', winners$RIGHT.CLIPPED.SEQ, ';', 'LEFT_CLIPPED_SEQ=', winners$LEFT.CLIPPED.SEQ)
     fixed$REF = sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i]))
   } else {
     fixed = data.frame('#CHROM' =  gsub("(.*):(\\d*)$", "\\1", winners$Insertion),

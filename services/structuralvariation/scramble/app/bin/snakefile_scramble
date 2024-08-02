@@ -662,7 +662,8 @@ onsuccess:
 	# Clear existing output directories
 	for sample in sample_list:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-	
+		#shell(f"find {outputDir}/{sample}/{serviceName} -type f -exec rm -f {{}} +")
+
 	# Copy results to the main output directory
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 

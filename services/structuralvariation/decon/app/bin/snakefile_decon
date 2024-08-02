@@ -932,7 +932,8 @@ onsuccess:
 	# Clear existing output directories
 	for sample in sample_list:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-
+		#shell(f"find {outputDir}/{sample}/{serviceName} -type f -exec rm -f {{}} +")
+		
 	# Copy results to the main output directory
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 
@@ -973,4 +974,5 @@ onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
 	shell(f"touch {outputDir}/{serviceName}Failed.txt")
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
+	shell(f"rm -rf {resultDir}/pdfs")
 	shell("rsync -azvh --include={include_log} --exclude='*' {resultDir}/ {outputDir}")
