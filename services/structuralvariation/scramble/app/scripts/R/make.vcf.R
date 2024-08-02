@@ -47,7 +47,7 @@ generate_contig_headers <- function(fa, assembly=NULL) {
   return(contig_headers)
 }
 
-make.vcf.header = function(fa, blastRef=NULL){
+make.vcf.header = function(fa, blastRef=NULL, assembly='hg19'){
   if (missing(fa)) return(NULL)
   contig_headers <- generate_contig_headers(fa, assembly)
 	header <- c('##fileformat=VCFv4.3',
