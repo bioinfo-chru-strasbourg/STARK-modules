@@ -32,24 +32,22 @@ get_refs = function(fa, chrom, start, end){
   return(as.vector(seq))
 }
 
-generate_contig_headers <- function(fa, assembly=NULL) {
+generate_contig_headers <- function(fa) {
   if (missing(fa) || length(names(fa)) == 0) return(NULL)
   
   contigs <- names(fa)
   contig_lengths <- width(fa)
   
   contig_headers <- sapply(seq_along(contigs), function(i) {
-    paste('##contig=<ID=', contigs[i], ',length=', contig_lengths[i], 
-          if (!is.null(assembly)) paste(',assembly=', assembly, sep='') else '',
-          '>', sep="")
+    paste('##contig=<ID=', contigs[i], ',length=', contig_lengths[i], '>', sep="")
   })
   
   return(contig_headers)
 }
 
-make.vcf.header = function(fa, blastRef=NULL, assembly='hg19'){
+make.vcf.header = function(fa, blastRef=NULL){
   if (missing(fa)) return(NULL)
-  contig_headers <- generate_contig_headers(fa, assembly)
+  contig_headers <- generate_contig_headers(fa)
 	header <- c('##fileformat=VCFv4.3',
 						 paste('##reference=', blastRef, sep=''),
 						 contig_headers,
