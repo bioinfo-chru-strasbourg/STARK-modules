@@ -578,7 +578,7 @@ rule filter_vcf_design:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
 	params: bed=config['BED_FILE'],
 			dummypath=config['DUMMY_FILES']
-	shell: " bedtools intersect -a {input} -b {params.bed} | bgzip > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | bgzip > {output} ; tabix {output} "
+	shell: " bedtools intersect -header -a {input} -b {params.bed} | bgzip > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | bgzip > {output} ; tabix {output} "
 
 use rule filter_vcf_design as filter_vcf_panel with:
 	input: rules.filter_vcf_design.output

@@ -65,7 +65,7 @@ TEMPLATE_DIR: "/app/template"
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/VAF>=0.01'" or "-e 'ABS(SVLEN) >= 10000'" -e exclude -i include
-BCFTOOLS_FILTER: "-e 'SVTYPE=DEL && ABS(SVLEN) >= 10000'"
+BCFTOOLS_FILTER: "-e 'SVTYPE='DEL' && ABS(SVLEN) >= 10000'"
 ################## Tools specific parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"

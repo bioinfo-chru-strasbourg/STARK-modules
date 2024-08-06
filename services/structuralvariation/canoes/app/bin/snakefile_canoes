@@ -779,7 +779,7 @@ rule filter_vcf:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.bedtoolsfilter.log"
-	shell: " bedtools intersect -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output} "
+	shell: " bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output} "
 
 use rule vcf2tsv as vcf2tsv_panel with:
 	input: rules.filter_vcf.output
