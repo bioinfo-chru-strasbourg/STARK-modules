@@ -710,7 +710,7 @@ rule merge_makeCNVcalls:
 rule fix_makeCNVcalls:
 	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.tsv"
-	shell: "sed -e '1s/^Chromosome/&/; 2,$ s/^\([^\t]*\)/chr\1/' {input} > {output}"
+	shell: """ sed -e '1s/^Chrom\t/&/' -e '2,$s/^\([^\t]*\)/chr\1/' {input} > {output} """
 
 rule variantconvert:
 	""" Convert tsv to a vcf """

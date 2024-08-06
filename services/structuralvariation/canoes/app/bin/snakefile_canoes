@@ -641,7 +641,7 @@ rule merge_makeCNVcalls:
 rule fix_makeCNVcalls:
 	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
-	shell: "sed -e '1s/^Chrom/&/; 2,$ s/^\([^\t]*\)/chr\1/' {input} > {output}"
+	shell: """ sed -e '1s/^Chrom\t/&/' -e '2,$s/^\([^\t]*\)/chr\1/' {input} > {output} """
 
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
