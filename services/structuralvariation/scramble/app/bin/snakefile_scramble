@@ -143,17 +143,6 @@ def searchfiles(directory, search_args, recursive_arg):
 		results.extend(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
 	return sorted(results)
 
-def log_file(logfile, text, sep, items_list=None, items=None):
-	""" Function to log a variable value or a list of values into a log file """
-	os.makedirs(os.path.dirname(logfile), exist_ok=True)
-	with open(logfile, 'a+') as f:
-		f.write(f"{text}{sep}")
-		if items_list:
-			for item in items_list:
-				f.write(f"{str(item) if item != '' else 'None'}{sep}")
-		else:
-			f.write(f"{str(items) if items != '' else 'None'}{sep}")
-
 def extractlistfromfiles(file_list, ext_list, sep, position):
 	""" Function for creating list from a file list, with a specific extension, a separator and the position of the string we want to extract """
 	return list(set(os.path.basename(files).split(sep)[position] for files in file_list if any(files.endswith(ext) for ext in ext_list)))
@@ -530,8 +519,22 @@ rule correct_tsv:
 		sed '1s/[()/\\]/_/g' {input} > {output}
 		"""
 
+# AnnotSV drop chr from input 
+# we need to re-add chr to the SV_chrom column (column number 2)
+rule correct_chr:
+	"""
+	Add chr to the SV_chrom column
+	"""
+	input: rule.correct_tsv.ouput
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_chrfix.tsv")
+	shell:
+		"""
+		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input} > {output}
+		"""
+
+
 rule variantconvert:
-	input: rules.correct_tsv.output
+	input: rules.correct_chr.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_fix.vcf")
 	params:
 			VARIANT_CONVERT_CONFIG=config['VARIANT_CONVERT_CONFIG'],
@@ -653,7 +656,7 @@ onstart:
 
 onsuccess:
 	include = config['INCLUDE_RSYNC']
-	shell(f"touch {outputDir}/{serviceName}Running.txt")
+	shell(f"touch {outputDir}/{serviceName}Complete.txt")
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:

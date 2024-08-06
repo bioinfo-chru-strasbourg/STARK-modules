@@ -39,7 +39,7 @@ generate_contig_headers <- function(fa) {
   contig_lengths <- width(fa)
   
   contig_headers <- sapply(seq_along(contigs), function(i) {
-    paste('##contig=<ID=', contigs[i], ',length=', contig_lengths[i], '>', sep="")
+    paste('##contig=<ID=chr', contigs[i], ',length=', contig_lengths[i], '>', sep="")
   })
   
   return(contig_headers)

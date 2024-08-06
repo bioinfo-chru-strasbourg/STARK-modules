@@ -793,8 +793,20 @@ rule correct_tsv:
 		sed '1s/[()/\\]/_/g' {input} > {output}
 		"""
 
+rule correct_chr:
+	"""
+	Add chr to the SV_chrom column
+	"""
+	input: rule.correct_tsv.ouput
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_chrfix.tsv")
+	shell:
+		"""
+		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input} > {output}
+		"""
+
+
 rule variantconvert_annotsv:
-	input: rules.correct_tsv.output
+	input: rules.correct_chr.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unfix.vcf")
 	params:
 			variantconvertconfig=config['VARIANT_CONVERT_CONFIG'],
