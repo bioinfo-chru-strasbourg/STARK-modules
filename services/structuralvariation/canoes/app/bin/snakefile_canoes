@@ -635,13 +635,17 @@ rule canoes_calling:
 rule merge_makeCNVcalls:
 	""" Merge all CNV call results """
 	input: expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", gender=gender_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall_chr.tsv")
 	shell: " (head -n 1 {input[0]} && tail -n +2 -q {input} | sort -u | sort -r) > {output} "
 
+rule fix_makeCNVcalls:
+	input: rules.merge_makeCNVcalls.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
+	shell: "sed -e '1s/^Chrom/&/; 2,$ s/^\([^\t]*\)/chr\1/' {input} > {output}"
 
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
-	input: rules.merge_makeCNVcalls.output
+	input: rules.fix_makeCNVcalls.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf")
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
 	params:	config['VARIANT_CONVERT_CONFIG']

@@ -707,9 +707,14 @@ rule merge_makeCNVcalls:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_uncorr.tsv"
 	shell: "cat {input} | sort -u | sort -r >> {output}"
 
+rule fix_makeCNVcalls:
+	input: rules.merge_makeCNVcalls.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.tsv"
+	shell: "sed -e '1s/^Chromosome/&/; 2,$ s/^\([^\t]*\)/chr\1/' {input} > {output}"
+
 rule variantconvert:
 	""" Convert tsv to a vcf """
-	input: rules.merge_makeCNVcalls.output
+	input: rules.fix_makeCNVcalls.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_convert.vcf")
 	params:
 		variantconvertconfig=config['VARIANT_CONVERT_CONFIG'],
