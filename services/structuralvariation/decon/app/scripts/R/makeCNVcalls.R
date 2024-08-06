@@ -267,8 +267,14 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
     Gene.index <- c(Gene.index, 1:sum(bed.file[, 4] == genes_unique[i]))
   }
   
+# Check if Start.p or End.p is empty
+if (length(cnv.calls_ids$Start.p) == 0 || length(cnv.calls_ids$End.p) == 0) {
+  Start.b <- NULL
+  End.b <- NULL
+} else {
   Start.b <- Gene.index[cnv.calls_ids$Start.p]
   End.b <- Gene.index[cnv.calls_ids$End.p]
+}
   cnv.calls_ids <- cbind(cnv.calls_ids, Start.b, End.b)
   
   return(cnv.calls_ids)

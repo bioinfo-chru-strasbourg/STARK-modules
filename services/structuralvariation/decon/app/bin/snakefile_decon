@@ -797,7 +797,7 @@ rule correct_chr:
 	"""
 	Add chr to the SV_chrom column
 	"""
-	input: rule.correct_tsv.ouput
+	input: rules.correct_tsv.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_chrfix.tsv")
 	shell:
 		"""
