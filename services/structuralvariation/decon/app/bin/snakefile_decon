@@ -710,7 +710,7 @@ rule merge_makeCNVcalls:
 rule fix_makeCNVcalls:
 	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.tsv"
-	shell: """ sed -e '1s/^Chromosome\t/&/' -e '2,$s/^\([^\t]*\)/chr\1/' {input} > {output} """
+	shell: "awk -F'\\t' -v OFS='\\t' 'NR == 1 {{print; next}} {{ $12 = \"chr\" $12; print }}' {input} > {output}"
 
 rule variantconvert:
 	""" Convert tsv to a vcf """
@@ -888,7 +888,7 @@ use rule vcf2tsv as vcf2tsv_panel_sample with:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
 use rule filter_vcf as filter_vcf_design with:
-	input: rules.vcf2gz.output
+	input: rules.fix_svlen.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bedtoolsfilter.log"
 

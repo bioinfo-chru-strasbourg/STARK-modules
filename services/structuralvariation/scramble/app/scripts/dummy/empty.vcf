@@ -24,4 +24,5 @@
 ##contig=<ID=M,length=16571,assembly=hg19>
 ##contig=<ID=X,length=155270560,assembly=hg19>
 ##contig=<ID=Y,length=59373566,assembly=hg19>
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLENAME

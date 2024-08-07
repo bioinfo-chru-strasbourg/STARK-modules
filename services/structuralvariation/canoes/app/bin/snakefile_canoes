@@ -638,14 +638,14 @@ rule merge_makeCNVcalls:
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall_chr.tsv")
 	shell: " (head -n 1 {input[0]} && tail -n +2 -q {input} | sort -u | sort -r) > {output} "
 
-rule fix_makeCNVcalls:
-	input: rules.merge_makeCNVcalls.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
-	shell: """ sed -e '1s/^Chrom\t/&/' -e '2,$s/^\([^\t]*\)/chr\1/' {input} > {output} """
-
+#rule fix_makeCNVcalls:
+#	input: rules.merge_makeCNVcalls.output
+#	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
+#	shell: "awk -F'\\t' -v OFS='\\t' 'NR == 1 {{print; next}} {{ $1 = \"chr\" $1; print }}' {input} > {output}"
+	
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
-	input: rules.fix_makeCNVcalls.output
+	input: rules.merge_makeCNVcalls.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf")
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
 	params:	config['VARIANT_CONVERT_CONFIG']
