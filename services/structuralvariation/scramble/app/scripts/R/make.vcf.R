@@ -108,7 +108,7 @@ if (is.null(winners) || nrow(winners) == 0) {
     return(fixed)
   }
 
-  if(meis) {
+  if(deletions) {
 
     fixed = data.frame('#CHROM' = winners$CONTIG,
                        POS = winners$DEL.START,
@@ -126,14 +126,14 @@ if (is.null(winners) || nrow(winners) == 0) {
     fixed$REF = sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i]))
   } 
   
-  if (dels) {
+  if (meis) {
     fixed = data.frame('#CHROM' =  gsub("(.*):(\\d*)$", "\\1", winners$Insertion),
                        POS = as.integer(gsub("(.*):(\\d*)$", "\\2", winners$Insertion)),
                        ID = 'INS:ME',
                        FILTER = 'PASS',
                        ALT = paste('<INS:ME:', toupper(winners$MEI_Family), '>', sep=''),
                        QUAL = winners$Alignment_Score,
-                       name = paste(gsub(":", "_", winners$Insertion), toupper(winners$MEI_Family), winners$Insertion_Direction, sep="_"),
+                       name = paste(winners$Insertion, toupper(winners$MEI_Family), winners$Insertion_Direction, sep="_"),
                        polarity = ifelse(winners$Insertion_Direction == 'Plus', "+", "-"),
                        stringsAsFactors = F, check.names = F)
     fixed$start = fixed$POS

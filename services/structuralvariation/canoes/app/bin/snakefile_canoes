@@ -635,14 +635,10 @@ rule canoes_calling:
 rule merge_makeCNVcalls:
 	""" Merge all CNV call results """
 	input: expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", gender=gender_list, aligner=aligner_list)
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall_chr.tsv")
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
 	shell: " (head -n 1 {input[0]} && tail -n +2 -q {input} | sort -u | sort -r) > {output} "
 
-#rule fix_makeCNVcalls:
-#	input: rules.merge_makeCNVcalls.output
-#	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
-#	shell: "awk -F'\\t' -v OFS='\\t' 'NR == 1 {{print; next}} {{ $1 = \"chr\" $1; print }}' {input} > {output}"
-	
+
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
 	input: rules.merge_makeCNVcalls.output
@@ -673,7 +669,7 @@ rule split_vcf:
 	-c1: minimum allele count (INFO/AC) of sites to be printed
 	"""
 	input: rules.fix_svlen.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.Noannotation.vcf.gz"
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.Noannotation.vcf.gz")
 	params: config['DUMMY_FILES']
 	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 

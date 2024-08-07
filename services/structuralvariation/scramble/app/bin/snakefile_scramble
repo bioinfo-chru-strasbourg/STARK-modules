@@ -463,7 +463,7 @@ rule scramble:
 rule correct_vcf:
 	"""	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification """
 	input: rules.scramble.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.corr.vcf"
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.corr.vcf")
 	params:
 		mode = config['scramble_mode'],
 		dummypath = config['DUMMY_FILES']
@@ -474,7 +474,7 @@ rule correct_vcf:
 
 rule vcf2gz:
 	input: rules.correct_vcf.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz"
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz")
 	params: config['DUMMY_FILES']
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
