@@ -182,12 +182,12 @@
 			},
 			"AC": {
 				"Type": "Integer",
-				"Number": "1",
+				"Number": "A",
 				"Description": "Allele count in genotypes for each ALT allele, in the same order as listed"
 			},
 			"AN": {
 				"Type": "Integer",
-				"Number": "A",
+				"Number": "1",
 				"Description": "The total number of alleles in called genotypes"
 			},		
 			"AnnotSV_ID": {
