@@ -163,7 +163,8 @@
 			"AnnotSV_ranking_score": "AnnotSV_ranking_score",
 			"AnnotSV_ranking_criteria": "AnnotSV_ranking_criteria",
 			"ACMG_class": "ACMG_class",
-			"MEINFO": "MEINFO"
+			"MEINFO": "MEINFO",
+			"STRAND": "STRAND"
 		},
 		"FORMAT": "FORMAT",
 		"SAMPLE": "Samples_ID"
@@ -177,8 +178,13 @@
 		"INFO": {
 			"MEINFO": {
 				"Type": "String",
-				"Number": "3",
-				"Description": "Mobile element info of the form CHR:NAME,START,POLARITY"
+				"Number": ".",
+				"Description": "Mobile element info of the form CHR:NAME_START_DIRECTION"
+			},
+			"STRAND": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Strand of the mobile element insertion, can be + or -"
 			},
 			"AC": {
 				"Type": "Integer",
