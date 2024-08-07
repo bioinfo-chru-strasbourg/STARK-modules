@@ -162,7 +162,8 @@
 			"ExAC_pLI": "ExAC_pLI",
 			"AnnotSV_ranking_score": "AnnotSV_ranking_score",
 			"AnnotSV_ranking_criteria": "AnnotSV_ranking_criteria",
-			"ACMG_class": "ACMG_class"
+			"ACMG_class": "ACMG_class",
+			"MEINFO": "MEINFO"
 		},
 		"FORMAT": "FORMAT",
 		"SAMPLE": "Samples_ID"
@@ -174,6 +175,11 @@
 			"DEL": "Deletion"
 		},
 		"INFO": {
+			"MEINFO": {
+				"Type": "String",
+				"Number": "3",
+				"Description": "Mobile element info of the form CHR:NAME,START,POLARITY"
+			},
 			"AC": {
 				"Type": "Integer",
 				"Number": "1",

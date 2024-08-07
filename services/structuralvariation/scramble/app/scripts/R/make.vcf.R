@@ -136,7 +136,7 @@ if (is.null(winners)) return(NULL)
                        FILTER = 'PASS',
                        ALT = paste('<INS:ME:', toupper(winners$MEI_Family), '>', sep=''),
                        QUAL = winners$Alignment_Score,
-                       name = paste(winners$Insertion, toupper(winners$MEI_Family), winners$Insertion_Direction, sep="_"),
+                       name = paste(gsub(":", "_", winners$Insertion), toupper(winners$MEI_Family), winners$Insertion_Direction, sep="_"),
                        polarity = ifelse(winners$Insertion_Direction == 'Plus', "+", "-"),
                        stringsAsFactors = F, check.names = F)
     fixed$start = fixed$POS
