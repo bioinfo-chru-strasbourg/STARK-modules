@@ -55,8 +55,7 @@ make.vcf.header = function(fa, blastRef=NULL){
 						 '##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">',
 						 '##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">',
 						 '##INFO=<ID=END,Number=1,Type=Integer,Description="End position for structural variants">',
-						 '##INFO=<ID=MEINFO,Number=.,Type=String,Description="Mobile element info of the form CHR:NAME_START_DIRECTION">',
-             '##INFO=<ID=STRAND,Number=.,Type=String,Description="Strand of the mobile element insertion; can be + or -">',
+						 '##INFO=<ID=MEINFO,Number=.,Type=String,Description="Mobile element info of the form NAME,START,END,POLARITY">',
              '##INFO=<ID=COUNTS,Number=.,Type=Integer,Description="Number of supporting reads for the MEI">',
 						 '##INFO=<ID=CLIPPED_READS_IN_CLUSTER,Number=.,Type=String,Description="Number of supporting reads in cluster">',
 						 '##INFO=<ID=ALIGNMENT_PERCENT_LENGHT,Number=.,Type=Float,Description="Percent of clipped read consensus sequence involved in alignment to MEI reference sequence">',
@@ -134,11 +133,10 @@ if (is.null(winners) || nrow(winners) == 0) {
                        FILTER = 'PASS',
                        ALT = paste('<INS:ME:', toupper(winners$MEI_Family), '>', sep=''),
                        QUAL = winners$Alignment_Score,
-                       name = paste(winners$Insertion, toupper(winners$MEI_Family), winners$Insertion_Direction, sep="_"),
                        polarity = ifelse(winners$Insertion_Direction == 'Plus', "+", "-"),
+                       MEINFO = paste(winners$MEI_Family, fixed$POS, fixed$POS+1, fixed$polarity, sep=","),
                        stringsAsFactors = F, check.names = F)
-    fixed$start = fixed$POS
-    fixed$INFO = paste0('MEINFO=', fixed$name, ';' , 'STRAND=', fixed$polarity, ';', 'COUNTS=', winners$Clipped_Reads_In_Cluster, ';','ALIGNMENT_PERCENT_LENGHT=' , winners$Alignment_Percent_Length , ';', 'ALIGNMENT_PERCENT_IDENTITY=', winners$Alignment_Percent_Identity, ';','CLIPPED_SEQUENCE=', winners$Clipped_Sequence, ';', 'CLIPPED_SIDE=', winners$Clipped_Side, ';', 'Start_In_MEI=', winners$Start_In_MEI, ';',  'Stop_In_MEI=', winners$Stop_In_MEI, ';', 'polyA_Position=',  winners$polyA_Position, ';', 'polyA_Seq=', winners$polyA_Seq, ';', 'polyA_SupportingReads=', winners$polyA_SupportingReads, ';', 'TSD=', winners$TSD, ';' , 'TSD_length=', winners$TSD_length)
+    fixed$INFO = paste0('MEINFO=', fixed$MEINFO, ';' , 'COUNTS=', winners$Clipped_Reads_In_Cluster, ';','ALIGNMENT_PERCENT_LENGHT=' , winners$Alignment_Percent_Length , ';', 'ALIGNMENT_PERCENT_IDENTITY=', winners$Alignment_Percent_Identity, ';','CLIPPED_SEQUENCE=', winners$Clipped_Sequence, ';', 'CLIPPED_SIDE=', winners$Clipped_Side, ';', 'Start_In_MEI=', winners$Start_In_MEI, ';',  'Stop_In_MEI=', winners$Stop_In_MEI, ';', 'polyA_Position=',  winners$polyA_Position, ';', 'polyA_Seq=', winners$polyA_Seq, ';', 'polyA_SupportingReads=', winners$polyA_SupportingReads, ';', 'TSD=', winners$TSD, ';' , 'TSD_length=', winners$TSD_length)
     fixed$REF = sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i]))
   }   
 
