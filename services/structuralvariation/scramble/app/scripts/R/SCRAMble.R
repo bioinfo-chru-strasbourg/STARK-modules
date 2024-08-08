@@ -9,7 +9,7 @@
 ########## Note ########################################################################################
 # DEV v1 11/07/2024
 # Changelog
-#   - add core option (default 1)
+#   - add core option (default 1) for parallelization
 ########################################################################################################
 
 suppressPackageStartupMessages({

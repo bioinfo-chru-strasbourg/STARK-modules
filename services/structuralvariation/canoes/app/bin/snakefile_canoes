@@ -657,7 +657,7 @@ rule sortvcf:
 rule add_chr_to_vcf:
 	input: rules.sortvcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.chr.vcf"
-	shell: "awk '/^##/ {{print}} /^#CHROM/ {{print}} /^[^#]/ {{$1 = \"chr\" $1; print}}' {input} > {output}"
+	shell: "awk -F '\\t' 'BEGIN {OFS=FS} /^##/ {print} /^#CHROM/ {print} /^[^#]/ {$1 = \"chr\" $1; print}' {input} > {output}"
 
 
 rule fix_svlen:

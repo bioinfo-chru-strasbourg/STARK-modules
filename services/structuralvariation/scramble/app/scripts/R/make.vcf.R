@@ -9,7 +9,8 @@
 ########## Note ########################################################################################
 # DEV v1 11/07/2024
 # Changelog
-#   - refactor INFO fields, add all the values computed into the vcf (Number of supporting reads)
+#   - refactor INFO fields, add all the values computed into the vcf (Number of supporting reads), some bugfixes
+#   - conformity to vcf standard check with vcf_validator
 ########################################################################################################
 
 suppressPackageStartupMessages(library(stringr))
@@ -138,7 +139,7 @@ if (is.null(winners) || nrow(winners) == 0) {
                        name = winners$MEI_Family,
                        stringsAsFactors = F, check.names = F)
     fixed$start = fixed$POS
-    fixed$end = fixed$POS+1
+    fixed$end = '.'
     fixed$INFO = paste0('MEINFO=', paste(fixed$name, fixed$start, fixed$end, fixed$polarity, sep=","), ';' , 'COUNTS=', winners$Clipped_Reads_In_Cluster, ';','ALIGNMENT_PERCENT_LENGHT=' , winners$Alignment_Percent_Length , ';', 'ALIGNMENT_PERCENT_IDENTITY=', winners$Alignment_Percent_Identity, ';','CLIPPED_SEQUENCE=', winners$Clipped_Sequence, ';', 'CLIPPED_SIDE=', winners$Clipped_Side, ';', 'Start_In_MEI=', winners$Start_In_MEI, ';',  'Stop_In_MEI=', winners$Stop_In_MEI, ';', 'polyA_Position=',  winners$polyA_Position, ';', 'polyA_Seq=', winners$polyA_Seq, ';', 'polyA_SupportingReads=', winners$polyA_SupportingReads, ';', 'TSD=', winners$TSD, ';' , 'TSD_length=', winners$TSD_length)
     fixed$REF = sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i]))
   }   
