@@ -654,8 +654,14 @@ rule sortvcf:
 	shell: " {{ grep '^#' {input} && grep -v '^#' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
 
-rule fix_svlen:
+rule add_chr_to_vcf:
 	input: rules.sortvcf.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.chr.vcf"
+	shell: "awk '/^##/ {{print}} /^#CHROM/ {{print}} /^[^#]/ {{$1 = \"chr\" $1; print}}' {input} > {output}"
+
+
+rule fix_svlen:
+	input: rules.add_chr_to_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	params:	config['PY_SCRIPTS']
 	shell: " python {params}/multifix_vcf.py -i {input} -o {output} -z ; tabix {output} "
