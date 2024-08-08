@@ -60,7 +60,7 @@ make.vcf.header <- function(fa, blastRef=NULL){
 						 '##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">',
 						 '##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">',
 						 '##INFO=<ID=END,Number=1,Type=Integer,Description="End position for structural variants">',
-						 '##INFO=<ID=MEINFO,Number=4,Type=String,Description="Mobile element info of the form NAME,START,END,POLARITY; if END is not accurate, it is computed as START + 1">',
+						 '##INFO=<ID=MEINFO,Number=4,Type=String,Description="Mobile element info of the form NAME,START,END,POLARITY">',
              '##INFO=<ID=COUNTS,Number=.,Type=Integer,Description="Number of supporting reads for the MEI">',
 						 '##INFO=<ID=CLIPPED_READS_IN_CLUSTER,Number=.,Type=String,Description="Number of supporting reads in cluster">',
 						 '##INFO=<ID=ALIGNMENT_PERCENT_LENGHT,Number=.,Type=Float,Description="Percent of clipped read consensus sequence involved in alignment to MEI reference sequence">',
