@@ -14,17 +14,21 @@
 
 suppressPackageStartupMessages(library(stringr))
 
-get_score = function(right_score, left_score){
-  if(is.na(right_score)){
+get_score <- function(right_score, left_score){
+  if(length(right_score) == 0 || is.null(right_score)){
     return(left_score)
-  }else if(is.na(left_score)){
+  } else if(length(left_score) == 0 || is.null(left_score)){
     return(right_score)
-  }else{
+  } else if(is.na(right_score)){
+    return(left_score)
+  } else if(is.na(left_score)){
+    return(right_score)
+  } else {
     return(mean(c(left_score, right_score)))
   }
 }
 
-get_refs = function(fa, chrom, start, end){
+get_refs <- function(fa, chrom, start, end){
   if (missing(fa) | missing(chrom) | missing(start) | missing(end)) return('N')
   if (! chrom %in% names(fa)) return('N')
   fa = fa[chrom]
@@ -45,7 +49,7 @@ generate_contig_headers <- function(fa) {
   return(contig_headers)
 }
 
-make.vcf.header = function(fa, blastRef=NULL){
+make.vcf.header <- function(fa, blastRef=NULL){
   if (missing(fa)) return(NULL)
   contig_headers <- generate_contig_headers(fa)
 	header <- c('##fileformat=VCFv4.3',
@@ -55,7 +59,7 @@ make.vcf.header = function(fa, blastRef=NULL){
 						 '##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">',
 						 '##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">',
 						 '##INFO=<ID=END,Number=1,Type=Integer,Description="End position for structural variants">',
-						 '##INFO=<ID=MEINFO,Number=4,Type=String,Description="Mobile element info of the form NAME,START,END,POLARITY">',
+						 '##INFO=<ID=MEINFO,Number=4,Type=String,Description="Mobile element info of the form NAME,START,END,POLARITY; if END is not accurate, it is computed as START + 1">',
              '##INFO=<ID=COUNTS,Number=.,Type=Integer,Description="Number of supporting reads for the MEI">',
 						 '##INFO=<ID=CLIPPED_READS_IN_CLUSTER,Number=.,Type=String,Description="Number of supporting reads in cluster">',
 						 '##INFO=<ID=ALIGNMENT_PERCENT_LENGHT,Number=.,Type=Float,Description="Percent of clipped read consensus sequence involved in alignment to MEI reference sequence">',
@@ -94,7 +98,7 @@ make.vcf.header = function(fa, blastRef=NULL){
 	return(header)
 }
 
-write.scramble.vcf = function(winners, fa, meis = FALSE) {
+write.scramble.vcf <- function(winners, fa, meis = FALSE) {
 if (is.null(winners) || nrow(winners) == 0) {
     fixed = data.frame('#CHROM' = character(),
                        POS = character(),
@@ -108,8 +112,7 @@ if (is.null(winners) || nrow(winners) == 0) {
     return(fixed)
   }
 
-  if(deletions) {
-
+  if(!meis) {
     fixed = data.frame('#CHROM' = winners$CONTIG,
                        POS = winners$DEL.START,
                        ID = 'DEL',
@@ -124,9 +127,7 @@ if (is.null(winners) || nrow(winners) == 0) {
     fixed$end = fixed$POS + fixed$svlen
     fixed$INFO = paste0('SVTYPE=', fixed$svtype, ';', 'SVLEN=', -fixed$svlen, ';', 'END=', fixed$end, ';', 'REF_ANCHOR_BASE=', winners$REF.ANCHOR.BASE, ';', 'RIGHT_CLUSTER=', winners$RIGHT.CLUSTER, ';', 'RIGHT_CLUSTER_COUNTS=', winners$RIGHT.CLUSTER.COUNTS, ';', 'LEFT_CLUSTER=', winners$LEFT.CLUSTER, ';', 'LEFT_CLUSTER_COUNTS=', winners$LEFT.CLUSTER.COUNTS, ';', 'LEN_RIGHT_ALIGNMENT=', winners$LEN.RIGHT.ALIGNMENT, ';', 'SCORE_RIGHT_ALIGNMENT=', winners$SCORE.RIGHT.ALIGNMENT, ';', 'PCT_COV_RIGHT_ALIGNMENT=', winners$PCT.COV.RIGHT.ALIGNMENT, ';', 'PCT_IDENTITY_RIGHT_ALIGNMENT=', winners$PCT.IDENTITY.RIGHT.ALIGNMENT, ';', 'LEN_LEFT_ALIGNMENT=', winners$LEN.LEFT.ALIGNMENT, ';', 'SCORE_LEFT_ALIGNMENT=', winners$SCORE.LEFT.ALIGNMENT, ';', 'PCT_COV_LEFT_ALIGNMENT=', winners$PCT.COV.LEFT.ALIGNMENT, ';', 'PCT_IDENTITY_LEFT_ALIGNMENT=', winners$PCT.IDENTITY.LEFT.ALIGNMENT, ';', 'INS_SIZE=', winners$INS.SIZE, ';', 'RIGHT_CLIPPED_SEQ=', winners$RIGHT.CLIPPED.SEQ, ';', 'LEFT_CLIPPED_SEQ=', winners$LEFT.CLIPPED.SEQ)
     fixed$REF = sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i]))
-  } 
-  
-  if (meis) {
+  }else{
     fixed = data.frame('#CHROM' =  gsub("(.*):(\\d*)$", "\\1", winners$Insertion),
                        POS = as.integer(gsub("(.*):(\\d*)$", "\\2", winners$Insertion)),
                        ID = 'INS:ME',

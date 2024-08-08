@@ -178,7 +178,7 @@
 			"MEINFO": {
 				"Type": "String",
 				"Number": "4",
-				"Description": "Mobile element info of the form NAME,START,END,POLARITY"
+				"Description": "Mobile element info of the form NAME,START,END,POLARITY; if END is not accurate, it is computed as START + 1"
 			},
 			"AC": {
 				"Type": "Integer",
