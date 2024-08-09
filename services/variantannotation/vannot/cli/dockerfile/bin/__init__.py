@@ -9,4 +9,5 @@ __all__ = [
     "results_provider.py",
     "dejavu_processing.py",
     "howard_launcher.py",
+    "non_redondant.py",
 ]

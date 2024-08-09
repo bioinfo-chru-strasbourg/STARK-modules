@@ -79,17 +79,13 @@ def pattern_checker(run_informations):
 def panel_checker(run_informations):
     panels = find_panel(run_informations)
     run_informations.update({"run_panels": panels})
+    log.info(f"Found {len(run_informations["run_panels"])} panels in your run, using them to filter results at the end of the process")
     return run_informations
 
 
 def find_panel(run_informations):
     samples = glob.glob(osj(run_informations["run_repository"], "*", ""))
     panels = glob.glob(osj(samples[0], "STARK", "*.manifest.genes"))
-    count = 0
-    for panel_name in panels:
-        cleaned_panel_name = panel_name.split(".")[1] + ".manifest.genes"
-        panels[count] = cleaned_panel_name
-        count += 1
     return panels
 
 

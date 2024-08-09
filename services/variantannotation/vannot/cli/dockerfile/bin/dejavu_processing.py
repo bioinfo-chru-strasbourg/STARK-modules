@@ -9,6 +9,7 @@ import howard_launcher
 
 
 def convert_vcf_parquet(run_informations):
+    log.info(f"Generating new dejavu database for {run_informations["run_platform_application"]}")
     if not os.path.isdir(run_informations["parquet_db_run_folder"]):
         os.makedirs(run_informations["parquet_db_run_folder"], 0o775)
     else:
@@ -29,7 +30,9 @@ def convert_vcf_parquet(run_informations):
         
         launch_minimalize_arguments = ["minimalize", "--input", vcf_file, "--output", vcf_minimalize, "--minimalize_info", "--minimalize_samples"]
         launch_parquet_arguments = ["process", "--input", vcf_minimalize, "--output", output_parquet, "--calculations=BARCODE", "--explode_infos", '--explode_infos_fields=barcode', '--query=SELECT \"#CHROM\", POS, ID, REF, ALT, QUAL, FILTER, INFO, barcode FROM variants']
+        log.info("Minimalizing vcfs")
         howard_launcher.launch(container_name, launch_minimalize_arguments)
+        log.info("Converting to parquet format")
         howard_launcher.launch(container_name, launch_parquet_arguments)
 
     shutil.rmtree(run_informations["tmp_analysis_folder"])
@@ -56,5 +59,6 @@ def calculate_dejavu(run_informations):
 
     sample_count = len(glob.glob(osj(run_informations["parquet_db_project_folder"], "*", "*.parquet")))
     
+    log.info("Calculating new frequencies")
     launch_query_arguments = ["query", "--input", parquet_db_project, "--query", f"SELECT \"#CHROM\", POS, REF, ALT, count(barcode)/({sample_count}*2) AS FREQ FROM variants GROUP BY \"#CHROM\", POS, REF, ALT", "--output", inner_dejavu_output_parquet]
     howard_launcher.launch(container_name, launch_query_arguments)

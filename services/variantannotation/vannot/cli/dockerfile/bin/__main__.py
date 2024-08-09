@@ -5,7 +5,7 @@
 """
 ##################################
 ##							    ##
-##  vAnnot ANALYSIS  ##
+##       vAnnot ANALYSIS        ##
 ##    Author : Mateusz RAUCH    ##
 ##							    ##
 ##################################

@@ -25,7 +25,7 @@ def find_controls(samplesheet):
             
     return controls_samples
 
-def design_vcf_synchronizer(run_informations):
+def vcf_synchronizer(run_informations):
     run_repository = run_informations["run_repository"]
     pattern = run_informations["vcf_pattern"]
     
@@ -36,6 +36,7 @@ def design_vcf_synchronizer(run_informations):
     samplesheet = find_samplesheet(run_informations)
     control_samples = find_controls(samplesheet)
     ignored_samples = ignored_samples + control_samples
+    log.info("Ignoring following sample patterns for the analysis and dejavu generation : " + ", ".join(ignored_samples))
 
     if not os.path.isdir(run_informations["archives_run_folder"]):
         os.makedirs(run_informations["archives_run_folder"])
@@ -52,7 +53,7 @@ def design_vcf_synchronizer(run_informations):
                 kept_vcf.append(vcf_file)
 
             if element != commons.get_default_pattern():
-                log.info(f"[vAnnot] Keeping the sample vcf with {pattern} pattern")
+                log.info(f"Keeping the sample vcf with {pattern} pattern")
                 treated_samples.append(sample)
 
     for ignored_sample in ignored_samples:
@@ -61,5 +62,5 @@ def design_vcf_synchronizer(run_informations):
                     kept_vcf.remove(sample_vcf)
 
     for vcf_file in kept_vcf:
-        log.info(f"[vAnnot] Synchronizing {vcf_file}")
+        log.info(f"Synchronizing {vcf_file}")
         subprocess.run(["rsync", "-rp", vcf_file, run_informations["archives_run_folder"]])

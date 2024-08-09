@@ -6,9 +6,11 @@ from threading import local
 import sys
 import time
 
+
 def get_default_pattern():
     default_pattern = "*/STARK/*.reports/*.final.vcf.gz"
     return default_pattern
+
 
 def set_logger_info_run(args):
     mylog = log.getLogger()
@@ -47,7 +49,7 @@ Time run: {delta}"""
 
 def logger_header_run(log_file):
     logging = f"""#########################
-#   Howard annotations  #
+#         vAnnot        #
 # Author: Mateusz Rauch #
 #########################
 
@@ -75,14 +77,7 @@ def set_log_level_run(args):
     local_time = time.localtime(time_seconds)
     actual_time = time.strftime("%Y%m%d_%H%M%S", local_time)
 
-    if mode == "manual":
-        log_file = (
-            f"{actual_time}_{run_platform}_{run_application}_{run_name}_{mode}.log"
-        )
-    elif mode == "listener":
-        log_file = (
-            f"{actual_time}_{run_platform}_{run_application}_{run_name}_{mode}.log"
-        )
+    log_file = f"{actual_time}_{run_platform}_{run_application}_{run_name}_{mode}.log"
 
     log_file = osj(
         os.environ["DOCKER_SERVICES"],
@@ -111,7 +106,7 @@ def set_log_level_run(args):
         filename=log_file,
         force=True,
         filemode="a",
-        format="%(asctime)s [%(levelname)s] %(message)s",
+        format="vAnnot %(asctime)s [%(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
         level=configs[verbosity],
     )

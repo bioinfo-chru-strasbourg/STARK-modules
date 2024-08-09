@@ -55,8 +55,16 @@ def distribute(run_informations):
             )
         )
 
-        merged_vcf = osj(run_informations["archives_results_folder"], f"merged_VANNOT_{run_informations["run_name"]}.vcf.gz",)
-        renamed_merged_vcf = f"VANNOT.{date}.vcf.gz"
+        merged_vcfs = glob.glob(osj(run_informations["archives_results_folder"], f"merged_VANNOT_{run_informations["run_name"]}*.vcf.gz"))
+        for merged_vcf in merged_vcfs:
+            if os.path.basename(merged_vcf).split(".")[1] != "vcf":
+                renamed_merged_vcf = f"VANNOT.{date}.{os.path.basename(merged_vcf).split(".")[1]}.vcf.gz"
+            else:
+                renamed_merged_vcf = f"VANNOT.{date}.vcf.gz"
+            for output_folder in output_folders:
+                    subprocess.run(["rsync", "-rp", merged_vcf, osj(output_folder, renamed_merged_vcf)])
+                    log.info(f"Copied {renamed_merged_vcf} into {output_folder}")
+        
 
         for results_file in results_files:
             for output_folder in output_folders:
@@ -114,10 +122,6 @@ def distribute(run_informations):
             ]
         )
         log.info(f"Copied {renamed_wrapper_log_file} into {output_folder}")
-        subprocess.run(
-            ["rsync", "-rp", merged_vcf, osj(output_folder, renamed_merged_vcf)]
-        )
-        log.info(f"Copied {renamed_merged_vcf} into {output_folder}")
 
     if os.path.isfile(osj(run_informations["run_repository"], "VANNOTRunning.txt")):
         os.remove(osj(run_informations["run_repository"], "VANNOTRunning.txt"))

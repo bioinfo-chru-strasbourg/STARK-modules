@@ -77,6 +77,7 @@ def run_initialisation(run_informations):
     else:
         os.mkdir(run_informations["tmp_analysis_folder"])
 
+    log.info("Copying vcf files to temporary folder")
     for processed_vcf_file in vcf_file_list:
         subprocess.run(
             [
@@ -90,18 +91,21 @@ def run_initialisation(run_informations):
     vcf_file_to_analyse = glob.glob(
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
-    
+
+    for vcf_file in vcf_file_to_analyse:
+        cleaned_vcf = cleaning_annotations(vcf_file, run_informations)
+        howard_proc(run_informations, cleaned_vcf)
+        os.remove(cleaned_vcf)
+
+def cleaning_annotations(vcf_file, run_informations):
     module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
     with open(module_config, "r") as read_file:
         data = json.load(read_file)
         annotations_to_keep = data["keep_vcf_info"][run_informations["run_platform_application"]]
-
-    for vcf_file in vcf_file_to_analyse:
-        cleaned_vcf = cleaning_annotations(vcf_file, annotations_to_keep)
-        howard_proc(run_informations, cleaned_vcf)
-        os.remove(cleaned_vcf)
-
-def cleaning_annotations(vcf_file, annotations_to_keep):
+        
+    log.info("Cleaning INFO column in the provided vcfs")
+    log.info(f"Kept informations : {", ".join(annotations_to_keep)}")
+    
     actual_info_fields = subprocess.run(["zgrep", "##INFO", vcf_file], capture_output=True, text=True)
     actual_info_fields = actual_info_fields.stdout.strip().split("##")
     if not vcf_file.endswith(".vcf.gz"):
@@ -114,7 +118,7 @@ def cleaning_annotations(vcf_file, annotations_to_keep):
         for j in actual_info_fields:
             if re.search(i, j):
                 info_to_keep.append("INFO/" + j.split(",")[0].split("=")[-1])
-
+                
     if len(info_to_keep) == 0:
         log.info("No annotations to keep were found, deleting all annotations")
         info_to_keep = "INFO"
@@ -138,10 +142,7 @@ def cleaning_annotations(vcf_file, annotations_to_keep):
     return renamed_clean
 
 def howard_proc(run_informations, vcf_file):
-    log.info(f"Launching for {vcf_file}")
-    # logfile = osj(
-    #     run_informations["tmp_analysis_folder"], f"VANNOT_annotate_{os.path.basename(vcf_file.split(".")[0])}.log"
-    # )
+    log.info(f"Launching HOWARD analysis for {vcf_file}")
 
     if run_informations["output_format"] != None:
         output_file = osj(
@@ -163,6 +164,7 @@ def howard_proc(run_informations, vcf_file):
     log.info(f"Using {configfile} as parameter for HOWARD analysis")
     if not os.path.isfile(configfile):
         log.error("param.default.json not found, please check your config directory")
+        raise ValueError(configfile)
 
     container_name = f"VANNOT_annotate_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
     launch_annotate_arguments = ["annotation", "--input", vcf_file, "--output", output_file, "--param", configfile, "--assembly", run_informations["assembly"]]
@@ -173,25 +175,22 @@ def howard_proc(run_informations, vcf_file):
     convert_to_final_tsv(run_informations, output_file)
 
 def merge_vcf_files(run_informations):
-    log.info("Merging all vcfs into one")
+    log.info("Merging all vcfs into one for CuteVariant analysis")
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
-    logfile = osj(run_informations["tmp_analysis_folder"], f"VANNOT_merged_{run_informations["run_name"]}.log")
     output_file = osj(run_informations["tmp_analysis_folder"], f"merged_VANNOT_{run_informations["run_name"]}.vcf.gz")
     
     for vcf_file in vcf_files:
-        with open(logfile, "a") as f:
-            subprocess.call(["/tools/bin/tabix", vcf_file], stdout=f, stderr=subprocess.STDOUT, universal_newlines=True)
+        subprocess.call(["/tools/bin/tabix", vcf_file], universal_newlines=True)
 
     cmd = ["/tools/bin/bcftools", "merge", "-o", output_file, "-O", "z"]
     for vcf_file in vcf_files:
         cmd.append(vcf_file)
-    with open(logfile, "a") as f:
-        subprocess.call(cmd, stdout=f, stderr=subprocess.STDOUT, universal_newlines=True)
+
+    subprocess.call(cmd, universal_newlines=True)
     
 
 def convert_to_final_tsv(run_informations, input_file):
     log.info("Converting output file into readable tsv")
-    # logfile = osj(run_informations["tmp_analysis_folder"], f"VANNOT_convert_{os.path.basename(input_file.split(".")[0])[7:]}.log")
     container_name = f"VANNOT_convert_{run_informations['run_name']}_{os.path.basename(input_file).split('.')[0]}"
     output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(input_file).split(".")[0]}.tsv")
     
@@ -200,7 +199,7 @@ def convert_to_final_tsv(run_informations, input_file):
 
 def cleaner(run_informations):
     log.info("Moving results from temporary folder")
-    results_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*tsv")) + glob.glob(osj(run_informations["tmp_analysis_folder"], "*log")) + glob.glob(osj(run_informations["tmp_analysis_folder"], "*vcf.gz"))
+    results_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*tsv")) + glob.glob(osj(run_informations["tmp_analysis_folder"], "*vcf.gz"))
 
     if os.path.isdir(run_informations["archives_results_folder"]):
         log.info("Removing old results folder in archives")
@@ -222,7 +221,36 @@ def cleaner(run_informations):
 
     shutil.rmtree(run_informations["tmp_analysis_folder"])
     log.info("Deleted temporary analysis folder")
-
+    
+def panel_filtering(run_informations):
+    tmp_vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*VANNOT_*vcf.gz"))
+    panels = run_informations["run_panels"]
+    
+    for panel in panels:
+        is_empty = True
+        subprocess.call(["rsync", "-rvt", panel, run_informations["tmp_analysis_folder"]], universal_newlines=True)
+        panel = os.path.join(run_informations["tmp_analysis_folder"], os.path.basename(panel))
+        panel_name = os.path.basename(panel).split(".")[1]
+        for tmp_vcf_file in tmp_vcf_files:
+            sample_name = tmp_vcf_file.split(".")[0]
+            filtered_vcf = osj(run_informations["tmp_analysis_folder"], sample_name + "." + panel_name + ".vcf")
+            command_list = ["/tools/bedtools2/bin/intersectBed", "-a", tmp_vcf_file, "-b", panel,"-header"]
+            log.info(" ".join(command_list))
+            with open(filtered_vcf, "a") as f : 
+                subprocess.call(command_list, stdout=f, stderr=subprocess.STDOUT, universal_newlines=True)
+            with open(filtered_vcf, "r") as readfile :
+                lines = readfile.readlines()
+                for line in lines:
+                    if line.startswith("chr"):
+                        is_empty = False
+            
+            if is_empty is True:
+                log.info("Filtered VCF is empty, please check your .gene file, conversion to tsv is aborted")
+                
+            subprocess.call(["/tools/bin/bgzip", filtered_vcf])
+            filtered_vcf = filtered_vcf + ".gz"
+            if is_empty is False:
+                convert_to_final_tsv(run_informations, filtered_vcf)
 
 if __name__ == "__main__":
     pass
