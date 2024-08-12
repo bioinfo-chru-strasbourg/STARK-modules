@@ -179,21 +179,9 @@
 			"ALT": "ALT",
 			"DUP": "Duplication",
 			"DEL": "Deletion",
-			"INS:ME:ALU": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Insertion of ALU element"
-			},
-			"INS:ME:L1": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Insertion of L1 element"
-			},
-			"INS:ME:SVA": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Insertion of SVA element"
-			}
+			"INS:ME:ALU": "Insertion of ALU element",
+			"INS:ME:L1":  "Insertion of L1 element",
+			"INS:ME:SVA": "Insertion of SVA element"
 		},
 		"INFO": {
 			"MEINFO": {
