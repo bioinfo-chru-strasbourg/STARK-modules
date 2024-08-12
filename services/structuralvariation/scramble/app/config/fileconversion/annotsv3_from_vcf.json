@@ -60,12 +60,7 @@
 			"SV_chrom",
 			"POS"
 		],
-		"ALT": {
-			"ALT": "ALT",
-			"INS:ME:ALU" : "INS:ME:ALU",
-			"INS:ME:L1" : "INS:ME:L1",
-			"INS:ME:SVA" : "INS:ME:SVA"
-		},
+		"ALT": "ALT",
 		"QUAL": "QUAL",
 		"FILTER": "FILTER",
 		"INFO": {
@@ -176,7 +171,6 @@
 	"COLUMNS_DESCRIPTION": {
 		"REF": {},
 		"ALT": {
-			"ALT": "ALT",
 			"DUP": "Duplication",
 			"DEL": "Deletion",
 			"INS:ME:ALU": "Insertion of ALU element",
