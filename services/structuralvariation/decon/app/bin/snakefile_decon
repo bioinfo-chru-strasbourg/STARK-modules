@@ -868,15 +868,20 @@ use rule vcf2tsv as vcf2tsv_sample with:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
 
 rule filter_vcf:
-	"""	Filter vcfs with bed files """
+	"""	Filter vcf with a bed file """
 	input: rules.merge_vcf.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel_unnorm.{{panel}}.vcf.gz")
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.bedtoolsfilter.log"
 	shell: " bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output} "
 
-use rule vcf2tsv as vcf2tsv_panel with:
+rule vcf_normalisation:
 	input: rules.filter_vcf.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
+	shell: "bcftools norm -d all -o {output} -Oz {input}"
+
+use rule vcf2tsv as vcf2tsv_panel with:
+	input: rules.vcf_normalisation.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv"
 
 use rule split_vcf as split_vcf_panel with:
@@ -887,10 +892,15 @@ use rule vcf2tsv as vcf2tsv_panel_sample with:
 	input: rules.split_vcf_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
-use rule filter_vcf as filter_vcf_design with:
+use rule filter_vcf as filter_vcf_panel with:
 	input: rules.fix_svlen.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bedtoolsfilter.log"
+
+use vcf_normalisation as vcf_normalisation_all with:
+	input: rules.filter_vcf_panel.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+
 
 rule plot:
 	""" This step inputs the CNVcall.Rdata file to output the plot files in pdf format """

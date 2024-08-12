@@ -520,8 +520,7 @@ rule correct_tsv:
 		sed '1s/[()/\\]/_/g' {input} > {output}
 		"""
 
-# AnnotSV drop chr from input 
-# we need to re-add chr to the SV_chrom column (column number 2)
+# AnnotSV drop chr from input, so we need to re-add chr to the SV_chrom column (column number 2)
 rule correct_chr:
 	"""
 	Add chr to the SV_chrom column
@@ -582,9 +581,14 @@ rule filter_vcf_design:
 
 use rule filter_vcf_design as filter_vcf_panel with:
 	input: rules.filter_vcf_design.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel_unnorm.{{panel}}.vcf.gz")
 	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
 			dummypath=config['DUMMY_FILES']
+
+rule vcf_normalisation_panel:
+	input: rules.filter_vcf_panel.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
+	shell: "bcftools norm -d all -o {output} -Oz {input}"
 
 rule vcf2tsv:
 	""" vcf to tsv conversion """
@@ -605,7 +609,7 @@ use rule vcf2tsv as vcf2tsv_full with:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
 
 use rule vcf2tsv as vcf2tsv_panel with:
-	input: rules.filter_vcf_panel.output
+	input: rules.vcf_normalisation_panel.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv"
 
 use rule vcf2tsv as vcf2tsv_full_sample with:
@@ -624,10 +628,14 @@ use rule vcf2tsv as vcf2tsv_design_sample with:
 
 use rule split_vcf_design as split_vcf_panel with:
 	input: rules.split_vcf_design.output
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_unnorm.{{panel}}.vcf.gz")
+
+use rule vcf_normalisation_panel as vcf_normalisation_panel_sample with:
+	input: rules.split_vcf_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 
 use rule vcf2tsv as vcf2tsv_panel_sample with:
-	input: rules.split_vcf_panel.output
+	input: rules.vcf_normalisation_panel_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
 use rule merge_vcf_full as merge_vcf_full_noannot with:
@@ -643,9 +651,13 @@ use rule filter_vcf_design as filter_vcf_design_noannot with:
 
 use rule filter_vcf_design as filter_vcf_panel_noannot with:
 	input: rules.filter_vcf_design_noannot.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
 	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
 			dummypath=config['DUMMY_FILES']
+
+use rule vcf_normalisation_panel as vcf_normalisation_panel_all_noannot with:
+	input: rules.filter_vcf_panel_noannot.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
