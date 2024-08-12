@@ -897,7 +897,7 @@ use rule filter_vcf as filter_vcf_panel with:
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bedtoolsfilter.log"
 
-use vcf_normalisation as vcf_normalisation_all with:
+use rule vcf_normalisation as vcf_normalisation_all with:
 	input: rules.filter_vcf_panel.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 

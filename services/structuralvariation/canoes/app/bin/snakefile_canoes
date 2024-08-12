@@ -657,7 +657,7 @@ rule sortvcf:
 rule add_chr_to_vcf:
 	input: rules.sortvcf.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.chr.vcf")
-	 shell: "awk -F '\\t' 'BEGIN {{OFS=\"\\t\"}} /^##/ {{print}} /^#CHROM/ {{print}} /^[^#]/ {{$1 = \"chr\" $1; print}}' {input} > {output}"
+	shell: "awk -F '\\t' 'BEGIN {{OFS=\"\\t\"}} /^##/ {{print}} /^#CHROM/ {{print}} /^[^#]/ {{$1 = \"chr\" $1; print}}' {input} > {output}"
 
 
 rule fix_svlen:
@@ -789,7 +789,7 @@ rule vcf_normalisation:
 	shell: "bcftools norm -d all -o {output} -Oz {input}"
 
 use rule vcf2tsv as vcf2tsv_panel with:
-	input: rules.filtvcf_normalisationer_vcf.output
+	input: rules.vcf_normalisation.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv"
 
 use rule split_vcf as split_vcf_panel with:
@@ -805,7 +805,7 @@ use rule filter_vcf as filter_vcf_panel with:
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bedtoolsfilter.log"
 
-use vcf_normalisation as vcf_normalisation_all with:
+use rule vcf_normalisation as vcf_normalisation_all with:
 	input: rules.filter_vcf_panel.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 
