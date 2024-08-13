@@ -7,9 +7,7 @@ import synchronizer
 import howard_processing
 import results_provider
 import dejavu_processing
-
-# import non_redundant_generator
-
+import non_redundant
 
 def launch_run(args):
     run_repository = args.run
@@ -126,10 +124,9 @@ def launch_run(args):
     howard_processing.merge_vcf_files(run_informations)
     if run_informations["run_panels"] != "":
         howard_processing.panel_filtering(run_informations)
+    non_redundant.generate(run_informations)
 
     howard_processing.cleaner(run_informations)
-    
-    # non_redundant_generator.generate(run_informations)
     results_provider.distribute(run_informations)
 
     lock_file = osj(run_repository, "VANNOTComplete.txt")

@@ -64,6 +64,13 @@ def distribute(run_informations):
             for output_folder in output_folders:
                     subprocess.run(["rsync", "-rp", merged_vcf, osj(output_folder, renamed_merged_vcf)])
                     log.info(f"Copied {renamed_merged_vcf} into {output_folder}")
+                    
+        non_redundants = glob.glob(osj(run_informations["archives_results_folder"], "Non_redondant_*.tsv"))
+        for non_redundant in non_redundants:
+            renamed_non_redundant = f"VANNOT.{date}.Non_Redondant.{os.path.basename(non_redundant).split(".")[1]}.vcf.gz"
+            for output_folder in output_folders:
+                subprocess.run(["rsync", "-rp", non_redundant, osj(output_folder, renamed_non_redundant)])
+                log.info(f"Copied {renamed_non_redundant} into {output_folder}")
         
 
         for results_file in results_files:
