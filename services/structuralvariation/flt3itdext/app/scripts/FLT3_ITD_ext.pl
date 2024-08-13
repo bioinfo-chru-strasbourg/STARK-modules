@@ -152,15 +152,17 @@ my %intronhash = (
 
 my $offrna = 1600; my $offaa = 534;
 
-my $vcfheader = "##fileformat=VCFv4.2\n" .
-    "##INFO=<ID=GENE,Number=1,Type=String,Description=\"Gene name\">\n" .
+my $vcfheader = "##fileformat=VCFv4.3\n" .
+    "##reference=file://STARK/databases/genomes/current/hg19.fa\n" .
+	"##contig=<ID=chr13,length=115169878,assembly=hg19>\n" .
+	"##INFO=<ID=GENE,Number=1,Type=String,Description=\"Gene name\">\n" .
     "##INFO=<ID=STRAND,Number=1,Type=String,Description=\"Gene strand\">\n" .
     "##INFO=<ID=SVLEN,Number=.,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">\n" .
     "##INFO=<ID=CDS,Number=1,Type=String,Description=\"CDS annotation (modified)\">\n" .
     "##INFO=<ID=AA,Number=1,Type=String,Description=\"Peptide annotation (modified)\">\n" .
     "##INFO=<ID=AR,Number=1,Type=Float,Description=\"Allelic Ratio\">\n" .
-    "##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency\">\n" .
-    "##INFO=<ID=DP,Number=1,Type=Float,Description=\"Total Depth\">\n" .
+    "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency\">\n" .
+    "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total Depth\">\n" .
     "##INFO=<ID=VD,Number=1,Type=Float,Description=\"Variant Depth\">\n" .
     "##INFO=<ID=AAR,Number=1,Type=Float,Description=\"Adjusted Allelic Ratio (Max Estimate)\">\n" .
     "##INFO=<ID=AAF,Number=1,Type=Float,Description=\"Adjusted Allele Frequency (Max Estimate)\">\n" .

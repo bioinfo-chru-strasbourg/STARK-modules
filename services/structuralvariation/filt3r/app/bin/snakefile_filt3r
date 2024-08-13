@@ -242,7 +242,8 @@ for item in log_items:
 	if isinstance(item[1], list):
 		logging.info(f"{item[0]}\n{'\n'.join(map(str, item[1]))}")
 	else:
-		logging.info(f"{item[0]} {item[1]}")if isinstance(item[1], list) else None, items=item[1] if not isinstance(item[1], list) else None)
+		logging.info(f"{item[0]} {item[1]}")
+
 
 ################################################## RULES ##################################################
 # check the number of sample for merge vcf rule
@@ -331,7 +332,7 @@ rule vcf_infofix:
 	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixfloat.vcf")
 	shell:
 		"""
-		sed 's/##INFO=<ID=VAF,Number=.,Type=String,Description="Variant Allele Frequency (ratio)">/##INFO=<ID=VAF,Number=.,Type=Float,Description="Variant Allele Frequency (ratio)">/g' {input} > {output}
+		sed "/^#CHROM/i ##ALT=<ID=DUP,Description="Duplication">" {input} | sed 's/##INFO=<ID=VAF,Number=.,Type=String,Description="Variant Allele Frequency (ratio)">/##INFO=<ID=VAF,Number=.,Type=Float,Description="Variant Allele Frequency (ratio)">/g' | sed 's/##fileformat=VCFv4.4/##fileformat=VCFv4.3/' > {output}
 		"""
 
 rule correctvcf:
