@@ -311,16 +311,27 @@ rule flt3_itd_ext:
 		perl {params.scriptfolder}/FLT3_ITD_ext.pl -b {input.bam} -mr {params.mr} -g {params.assembly} --ngstype {params.ngstype} -i {params.index} -o {params.output}; mv {params.outputfile} {output}
 		"""
 
-rule correctvcf:
+rule correct_vcf:
 	"""	Correction of vcf output, add genotype to be consistent with the vcf format specification """
 	input: rules.flt3_itd_ext.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixGT.vcf")
 	shell: """ (grep "^##" {input} && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0}}' && grep -v "^#" {input} | awk '{{print $0"\tGT\t0/1"}}') > {output} """
 
+rule correct_chr:
+	"""
+	Add chr to the #CHROM column values
+	"""
+	input: rules.correct_vcf.output
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixchr.vcf")
+	shell:
+		"""
+		awk 'BEGIN {{ OFS="\\t" }} {{ if ($1 ~ /^[0-9XY]+$/) $1 = "chr"$1; print }}' {input} > {output}
+		"""
+
 
 rule bcftools_filter:
 	"""	Filter with bcftools """
-	input: rules.correctvcf.output
+	input: rules.correct_chr.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.filter.vcf")
 	params:	config['BCFTOOLS_FILTER']
 	shell: " bcftools view {params} {input} -o {output} "
