@@ -753,7 +753,7 @@ rule fix_svlen:
 rule vcf_normalization:
 	input: rules.fix_svlen.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-	shell: "bcftools norm -d all -o {output} -Oz {input}"
+	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
 
 # --force-samples will output a vcf file with all annotations but without a sample name if the sample did not exist;
 # so we output a dummy vcf.gz
@@ -813,7 +813,6 @@ rule correct_chr:
 		"""
 		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input} > {output}
 		"""
-
 
 rule variantconvert_annotsv:
 	input: rules.correct_chr.output
@@ -878,7 +877,7 @@ rule filter_vcf:
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel_unnorm.{{panel}}.vcf.gz")
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.bedtoolsfilter.log"
-	shell: " bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output} "
+	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output}"
 
 use rule vcf_normalization as vcf_normalisation_annot with:
 	input: rules.filter_vcf.output

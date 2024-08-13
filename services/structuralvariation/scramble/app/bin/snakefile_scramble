@@ -532,7 +532,6 @@ rule correct_chr:
 		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input} > {output}
 		"""
 
-
 rule variantconvert:
 	input: rules.correct_chr.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_fix.vcf")
@@ -588,7 +587,7 @@ use rule filter_vcf_design as filter_vcf_panel with:
 rule vcf_normalisation_panel:
 	input: rules.filter_vcf_panel.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
-	shell: "bcftools norm -d all -o {output} -Oz {input}"
+	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
 
 rule vcf2tsv:
 	""" vcf to tsv conversion """
