@@ -109,12 +109,12 @@
 		"INFO": {
 			"Fusion_Gene1": {
 				"Type": "String",
-				"Number": "1",
+				"Number": ".",
 				"Description": "Fusion gene 1"
 			},
 			"Fusion_Gene2": {
 				"Type": "String",
-				"Number": "1",
+				"Number": ".",
 				"Description": "Fusion gene 2"
 			},
 			"Fusion_Site1": {
@@ -169,12 +169,12 @@
 			},
 			"Arriba_tags": {
 				"Type": "String",
-				"Number": "1",
+				"Number": ".",
 				"Description": "User-defined list of tags provided to Arriba via the parameter -t, this column is populated with the provided tag whenever a fusion matches the coordinates specified for the respective tag"
 			},
 			"Retained_Protein_Domains": {
 				"Type": "String",
-				"Number": "1",
+				"Number": ".",
 				"Description": " If Arriba is provided with protein domain annotation using the parameter -p, then this column is populated with protein domains retained in the fusion. Redundant protein domains are only listed once. After every domain the fraction that is retained is stated as a percentage value in parentheses. The protein domains of the 5' and 3' genes are separated by a pipe symbol (|)."
 			},
 			"Closest_Genomic_Breakpoint1": {
@@ -219,7 +219,7 @@
 			},
 			"Arriba_Filters": {
 				"Type": "String",
-				"Number": "1",
+				"Number": ".",
 				"Description": "Lists the filters which removed one or more of the supporting reads. https://arriba.readthedocs.io/en/latest/internal-algorithm/ describes all filters in detail. The number of filtered reads is given in parentheses after the name of the filter. The total number of supporting reads can be obtained by summing up the reads given in the columns split_reads1, split_reads2, discordant_mates, and filters. If a filter discarded the event as a whole (all reads), the number of filtered reads is not stated."
 			}
 		},
