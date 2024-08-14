@@ -388,7 +388,8 @@ rule mergevcf:
 	"""	Copy or merge vcfs with bcftools """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.vcf.gz", sample=sample_list, fusion=fusion_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.vcf.gz"
-	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.bcftoolsmerge.log"
+	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
 
 rule vcf2tsv:
 	""" vcf to tsv conversion """
