@@ -69,6 +69,8 @@ RESULT_EXT_LIST: ['.tsv','.bam','.vcf.gz']
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # GTF file (Gencode)
 REFGTFGENCODE_PATH: "/STARK/databases/gencode/current/gencode.v19.annotation.gtf_withproteinids"
+# which caller to use
+FUSION_CALLER: ["arriba", "starfusion"]
 ########## STAR ##########
 # STAR option to junction file
 JUNCTION_FILE: "Junctions WithinBAM"
@@ -81,3 +83,4 @@ BLACKLIST_PATH: "/STARK/databases/arriba/current/blacklist_hg19_hs37d5_GRCh37_v2
 REFFUSION_PATH: "/STARK/databases/arriba/current/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
 ########## STAR FUSION ##########
 CTAT_LIB_GENCODE: "/STARK/databases/CTAT_LIB/current/"
+ARRIBA_SCRIPTS: "app/config/scripts"

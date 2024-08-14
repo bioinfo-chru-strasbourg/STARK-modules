@@ -181,6 +181,7 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, templ
 
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
+fusion_list=config['FUSION_CALLER']
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 runName = os.path.basename(os.path.normpath(config['run']))
 resultDir = f"/app/res/{runName}/{date_time}"
@@ -259,11 +260,9 @@ rule all:
 	Rule will create a vcf for arriba and starfusion
 	"""
 	input:
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.vcf.gz",sample=sample_list),
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf.gz",sample=sample_list),
-		f"{resultDir}/{serviceName}.{date_time}.allsamples.arriba.tsv",
-		f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.tsv",
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam.bai",sample=sample_list)
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.vcf.gz", sample=sample_list, fusion=fusion_list),
+		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.tsv", fusion=fusion_list),
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam.bai", sample=sample_list)
 
 rule help:
 	"""
@@ -348,15 +347,6 @@ rule Arriba:
 		arriba -x {input} -o {output} -a {params.refgenome} -g {params.refgtfgencode} -b {params.blacklist} -k {params.reffusion} -t {params.fusion} -p {params.refprot} -f isoforms
 		"""
 
-rule variantconvert:
-	input: rules.Arriba.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf"
-	params: "/app/config/fileconversion/arriba.json"
-	shell:
-		"""
-		variantconvert convert -i {input} -o {output} -c {params}
-		"""
-
 # Settings for STAR used by Starfusion
 # STAR  --chimSegmentMin 12  --chimJunctionOverhangMin 12 --chimOutJunctionFormat 1 --alignSJDBoverhangMin 10 --alignMatesGapMax 100000 --alignIntronMax 100000 --chimMultimapScoreRange 3 --chimScoreJunctionNonGTAG -4 --chimMultimapNmax 20 --chimNonchimScoreDropMin 10 --peOverlapNbasesMin 12 --peOverlapMMp 0.1 
 rule STARFusion:
@@ -379,43 +369,49 @@ rule rename_tsv:
 		mv {input} {output} ; rm -rf {resultDir}/{{sample}}/tmp/
 		"""
 
-use rule variantconvert as variantconvert_starfusion with:
-	input: rules.rename_tsv.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.vcf"
-	params: "/app/config/fileconversion/starfusion.json"
+rule variantconvert:
+	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.tsv"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.vcf"
+	params: lambda wildcards: "/app/config/fileconversion/" + wildcards.fusion + ".json"
+	shell:
+		"""
+		variantconvert convert -i {input} -o {output} -c {params}
+		"""
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
 	input: rules.variantconvert.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf.gz"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.vcf.gz"
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
-
-use rule vcf2gz as vcf2gz_starfusion with:
-	input: rules.variantconvert_starfusion.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.vcf.gz"
 
 rule mergevcf:
 	"""	Copy or merge vcfs with bcftools """
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.vcf.gz", sample=sample_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.arriba.vcf.gz"
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.vcf.gz", sample=sample_list, fusion=fusion_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.vcf.gz"
 	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
-
-use rule mergevcf as mergevcf_starfusion with:
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.starfusion.vcf.gz", sample=sample_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.vcf.gz"
 
 rule vcf2tsv:
 	""" vcf to tsv conversion """
 	input: rules.mergevcf.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.arriba.tsv"
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.arriba.vcf2tsv_converter.log"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.tsv"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.vcf2tsv_converter.log"
 	shell: "vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp && cat {output}.tmp | grep -v '^#' > {output}"
 
-use rule vcf2tsv as vcf2tsv_starfusion with:
-	input: rules.mergevcf_starfusion.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.tsv"
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.starfusion.vcf2tsv_converter.log"
-
+rule DrawR:
+	input:
+		bam=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam",
+		bai=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam.bai",
+		fusiontsv=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.vcf.gz"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.pdf"
+	params:
+		refgtfgencode=config['REFGTFGENCODE_PATH'],
+		refprot=config['REFPROTDOMAIN_PATH'],
+		cytoband=config['REFCYTOBAND_PATH'],
+		arriba_scripts=config['ARRIBA_SCRIPTS']
+	shell:
+		"""
+		Rscript {params.arriba_scripts}/draw_fusions.R --annotation={params.refgtfgencode} --fusions={input.fusiontsv} --output={output} --alignments={input.bam} --cytobands={params.cytoband} --proteinDomains={params.refprot}
+		"""
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
