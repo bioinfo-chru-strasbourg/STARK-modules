@@ -262,7 +262,8 @@ rule all:
 	input:
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.vcf.gz", sample=sample_list, fusion=fusion_list),
 		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.tsv", fusion=fusion_list),
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam.bai", sample=sample_list)
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam.bai", sample=sample_list),
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.pdf", sample=sample_list, fusion=fusion_list)
 
 rule help:
 	"""
@@ -373,10 +374,7 @@ rule variantconvert:
 	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.tsv"
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.vcf"
 	params: lambda wildcards: "/app/config/fileconversion/" + wildcards.fusion + ".json"
-	shell:
-		"""
-		variantconvert convert -i {input} -o {output} -c {params}
-		"""
+	shell: "variantconvert convert -i {input} -o {output} -c {params}"
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
@@ -386,7 +384,11 @@ rule vcf2gz:
 
 rule mergevcf:
 	"""	Copy or merge vcfs with bcftools """
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.vcf.gz", sample=sample_list, fusion=fusion_list)
+	input:
+		lambda wildcards: expand(
+			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{wildcards.fusion}.vcf.gz", 
+			sample=sample_list, 
+			fusion=[wildcards.fusion])
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.bcftoolsmerge.log"
 	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
@@ -402,7 +404,7 @@ rule DrawR:
 	input:
 		bam=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam",
 		bai=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.STAR.bam.bai",
-		fusiontsv=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.vcf.gz"
+		fusiontsv=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.tsv"
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.pdf"
 	params:
 		refgtfgencode=config['REFGTFGENCODE_PATH'],

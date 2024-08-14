@@ -75,4 +75,4 @@ REFGTFGENCODE_PATH: "/STARK/databases/gencode/current/gencode.v19.annotation.gtf
 # Arriba specifics databases (default is /opt/conda/var/lib/arriba)
 REFPROTDOMAIN_PATH: "/STARK/databases/arriba/current/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
 REFCYTOBAND_PATH: "/STARK/databases/arriba/current/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
-ARRIBA_SCRIPTS: "app/config/scripts"
+ARRIBA_SCRIPTS: "/app/scripts"

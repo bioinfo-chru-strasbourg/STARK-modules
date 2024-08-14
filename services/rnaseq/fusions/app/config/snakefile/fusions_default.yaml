@@ -51,7 +51,7 @@ FILTER_SAMPLE: []
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*arriba.tsv','*STAR.bam','*arriba.vcf.gz','*starfusion.tsv','*starfusion.vcf.gz','*/'}"
+INCLUDE_RSYNC: "{'*arriba.tsv','*STAR.bam','*arriba.vcf.gz','*arriba.vcf.gz.tbi','*starfusion.tsv','*starfusion.vcf.gz','*starfusion.vcf.gz.tbi','*.pdf','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
@@ -62,14 +62,14 @@ SEARCH_ARGUMENT: ["/*/STARK/*"]
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
-RESULT_EXT_LIST: ['.tsv','.bam','.vcf.gz']
+RESULT_EXT_LIST: ['.tsv','.bam','.pdf','.vcf.gz','.vcf.gz.tbi']
 
 ############## Tools specific parameters ##############
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # GTF file (Gencode)
 REFGTFGENCODE_PATH: "/STARK/databases/gencode/current/gencode.v19.annotation.gtf_withproteinids"
-# which caller to use
+# Which caller to use fir fusion
 FUSION_CALLER: ["arriba", "starfusion"]
 ########## STAR ##########
 # STAR option to junction file
@@ -83,4 +83,4 @@ BLACKLIST_PATH: "/STARK/databases/arriba/current/blacklist_hg19_hs37d5_GRCh37_v2
 REFFUSION_PATH: "/STARK/databases/arriba/current/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
 ########## STAR FUSION ##########
 CTAT_LIB_GENCODE: "/STARK/databases/CTAT_LIB/current/"
-ARRIBA_SCRIPTS: "app/config/scripts"
+ARRIBA_SCRIPTS: "/app/scripts"
