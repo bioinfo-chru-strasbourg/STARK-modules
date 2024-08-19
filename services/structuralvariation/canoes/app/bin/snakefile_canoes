@@ -635,7 +635,7 @@ rule canoes_calling:
 rule merge_makeCNVcalls:
 	""" Merge all CNV call results """
 	input: expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv", gender=gender_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall_Obased.tsv"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
 	shell: " (head -n 1 {input[0]} && tail -n +2 -q {input} | sort -u | sort -r) > {output} "
 
 
