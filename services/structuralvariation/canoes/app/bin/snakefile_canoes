@@ -639,17 +639,17 @@ rule merge_makeCNVcalls:
 	shell: " (head -n 1 {input[0]} && tail -n +2 -q {input} | sort -u | sort -r) > {output} "
 
 
-rule correct_1based:
-	input: rules.merge_makeCNVcalls.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
-	shell:
-		"""
-		awk 'BEGIN {{FS=OFS="\\t"}} NR==1 {{print $0}} NR>1 {{split($6,a,":|-"); $2=$2+1; $6=a[1]":"a[2]+1"-"a[3]; print $0}}' {input} > {output}
-		"""
+#rule correct_1based:
+#	input: rules.merge_makeCNVcalls.output
+#	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.CNVCall.tsv"
+#	shell:
+#		"""
+#		awk 'BEGIN {{FS=OFS="\\t"}} NR==1 {{print $0}} NR>1 {{split($6,a,":|-"); $2=$2+1; $6=a[1]":"a[2]+1"-"a[3]; print $0}}' {input} > {output}
+#		"""
 
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
-	input: rules.correct_1based.output
+	input: rules.merge_makeCNVcalls.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf")
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
 	params:	config['VARIANT_CONVERT_CONFIG']
