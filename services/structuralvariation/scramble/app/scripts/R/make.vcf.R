@@ -10,7 +10,7 @@
 # DEV v1 11/07/2024
 # Changelog
 #   - refactor INFO fields, add all the values computed into the vcf (Number of supporting reads), some bugfixes
-#   - conformity to vcf standard check with vcf_validator
+#   - conformity to vcf standard check with vcf_validator ; vcf is 1 based
 ########################################################################################################
 
 suppressPackageStartupMessages(library(stringr))
@@ -115,7 +115,7 @@ if (is.null(winners) || nrow(winners) == 0) {
 
   if(!meis) {
     fixed = data.frame('#CHROM' = winners$CONTIG,
-                       POS = winners$DEL.START,
+                       POS = winners$DEL.START + 1, # +1 for DEL to make it 1-based
                        ID = 'DEL',
                        QUAL = sapply(1:nrow(winners), function(i) get_score(winners$SCORE.RIGHT.ALIGNMENT[i], winners$SCORE.LEFT.ALIGNMENT[i])),
                        FILTER = 'PASS',
@@ -139,7 +139,7 @@ if (is.null(winners) || nrow(winners) == 0) {
                        name = winners$MEI_Family,
                        stringsAsFactors = F, check.names = F)
     fixed$start = fixed$POS
-    fixed$end = '.'
+    fixed$end = '.' # we don't calculate end POS because it's not accurate
     fixed$INFO = paste0('MEINFO=', paste(fixed$name, fixed$start, fixed$end, fixed$polarity, sep=","), ';' , 'COUNTS=', winners$Clipped_Reads_In_Cluster, ';','ALIGNMENT_PERCENT_LENGHT=' , winners$Alignment_Percent_Length , ';', 'ALIGNMENT_PERCENT_IDENTITY=', winners$Alignment_Percent_Identity, ';','CLIPPED_SEQUENCE=', winners$Clipped_Sequence, ';', 'CLIPPED_SIDE=', winners$Clipped_Side, ';', 'Start_In_MEI=', winners$Start_In_MEI, ';',  'Stop_In_MEI=', winners$Stop_In_MEI, ';', 'polyA_Position=',  winners$polyA_Position, ';', 'polyA_Seq=', winners$polyA_Seq, ';', 'polyA_SupportingReads=', winners$polyA_SupportingReads, ';', 'TSD=', winners$TSD, ';' , 'TSD_length=', winners$TSD_length)
     fixed$REF = sapply(1:nrow(fixed), function(i) get_refs(fa, fixed[i, '#CHROM'], fixed$POS[i], fixed$POS[i]))
   }   
