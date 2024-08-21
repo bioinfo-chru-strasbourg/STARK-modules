@@ -35,13 +35,14 @@ import glob
 import pandas as pd
 import json
 import csv
+import tempfile
+import logging
 from pypdf import PdfWriter
 from shutil import copy2
 from datetime import datetime
 from itertools import product
 from collections import defaultdict
 from jinja2 import Environment, FileSystemLoader
-import logging
 
 ################## Configuration file ##################
 configfile: "/app/config/snakefile/decon_default.yaml"
@@ -150,16 +151,6 @@ def searchfiles(directory, search_args, recursive_arg):
 		results.extend(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
 	return sorted(results)
 
-def log_file(logfile, text, sep, items_list=None, items=None):
-	""" Function to log a variable value or a list of values into a log file """
-	with open(logfile, 'a+') as f:
-		f.write(f"{text}{sep}")
-		if items_list:
-			for item in items_list:
-				f.write(f"{str(item) if item != '' else 'None'}{sep}")
-		else:
-			f.write(f"{str(items) if items != '' else 'None'}{sep}")
-
 def extractlistfromfiles(file_list, ext_list, sep, position):
 	""" Function for creating list from a file list, with a specific extension, a separator and the position of the string we want to extract """
 	return list(set(os.path.basename(files).split(sep)[position] for files in file_list if any(files.endswith(ext) for ext in ext_list)))
@@ -175,15 +166,11 @@ def create_list(txtlistoutput, file_list, ext_list, pattern):
 	with open(txtlistoutput, 'a+') as f:
 		f.writelines(f"{files}\n" for files in file_list if any(files.endswith(ext) and pattern in files for ext in ext_list))
 
-def intersectbed(inputbed, refbed, outputbed):
-	""" Function to intersect a bed with a ref bed using bedtools """
-	shell(f"intersectBed -a {inputbed} -b {refbed} -loj > {outputbed}")
-
 def concatenatelist(inputlist, outputfile):
 	""" Function to concatenate lines tab separated in a file """
 	shell(f"xargs --delimiter='\\n' cat <{inputlist} >> {outputfile}")
 
-def keep_unknown(columnname, pattern, prefix):
+def keep_unknown(df, columnname, pattern, prefix):
 	""" Function to rename gene """
 	for i, gene in enumerate(df[columnname]):
 		if gene == pattern:
@@ -195,37 +182,54 @@ def extract_tag(tagfile, tag, tagsep, sep):
 	output_tag = next((items.split(sep)[-1] for items in row if tag in items and sep in items), "")
 	return output_tag
 
-def kmerisation(kmerSize, bedFile, kmerBedFile):
-	""" Bed kmerisation """
-	print(f"{kmerSize} kmerisation of your bed {bedFile} in progress")
+def kmerisation(kmerSize, df=None, bedFile=None, kmerBedFile=None):
+	""" Bed kmerisation using either DataFrame or file input """
+	print(f"{kmerSize} kmerisation in progress")
 	
-	with open(bedFile, 'r') as readBed, open(kmerBedFile, 'w+') as writeKbed:
-		for line in readBed:
-			if line.startswith('#'):
-				continue
-			
-			chr, start, end, gene = line.split()[:4]
-			diff = int(end) - int(start)
-			
-			while diff >= kmerSize:
-				newEnd = int(start) + kmerSize - 1
-				writeKbed.write(f"{chr}\t{start}\t{newEnd}\t{gene}\n")
-				start, diff = newEnd + 1, diff - kmerSize
-			
-			if diff > 0:
-				writeKbed.write(f"{chr}\t{start}\t{end}\t{gene}\n")
+	if df is not None:
+		source = df.iterrows()
+		source_type = 'DataFrame'
+	elif bedFile is not None:
+		source = open(bedFile, 'r')
+		source_type = 'file'
+	else:
+		raise ValueError("Either df or bedFile must be provided")
+
+	with open(kmerBedFile, 'w+') as writeKbed:
+		if source_type == 'file':
+			for line in source:
+				if line.startswith('#'):
+					continue
+				chr, start, end, gene = line.split()[:4]
+				start, end = int(start), int(end)
+				write_kmers(writeKbed, chr, start, end, gene, kmerSize)
+			source.close()
+		else:
+			for _, row in source:
+				chr, start, end, gene = row["Chr"], int(row["Start"]), int(row["End"]), row["Gene"]
+				write_kmers(writeKbed, chr, start, end, gene, kmerSize)
 	
 	print('Kmerisation done')
+
+def write_kmers(writeKbed, chr, start, end, gene, kmerSize):
+	""" Helper function to write kmerized intervals """
+	diff = end - start
+	
+	while diff >= kmerSize:
+		newEnd = start + kmerSize - 1
+		writeKbed.write(f"{chr}\t{start}\t{newEnd}\t{gene}\n")
+		start, diff = newEnd + 1, diff - kmerSize
+	
+	if diff > 0:
+		writeKbed.write(f"{chr}\t{start}\t{end}\t{gene}\n")
 
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
 def generate_html_report(result_dict, run_name, service_name, sample_list, template_name, output_file='report.html'):
-	# Set up Jinja2 environment
 	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
 	template = env.get_template(template_name)
 
-	# Render the template with the provided data
 	rendered_html = template.render(
 		runDict=result_dict,
 		runName=run_name,
@@ -233,7 +237,6 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, templ
 		sample_list=sample_list
 	)
 
-	# Save the rendered HTML to the output file
 	with open(output_file, 'w') as f:
 		f.write(rendered_html)
 
@@ -274,7 +277,6 @@ def pedigree_into_dict(ped_file, sample_list, dictionary, individual_id_column='
 			hpo_list = str(hpo_list)
 		hpo_list = hpo_list.replace(" ", "")
 
-		# Convert Sex to M/F/None
 		if gender == '1':
 			gender = 'M'
 		elif gender == '2':
@@ -285,6 +287,126 @@ def pedigree_into_dict(ped_file, sample_list, dictionary, individual_id_column='
 		if individual_id in sample_list:
 			dictionary.setdefault(individual_id, {})['hpo'] = hpo_list
 			dictionary.setdefault(individual_id, {})['gender'] = gender
+
+
+def intersectbed(input_df, ref_df):
+	""" Function to intersect two DataFrames using bedtools and return the result as a DataFrame. """
+	
+	with tempfile.NamedTemporaryFile(delete=False, mode='w', newline='', suffix='.bed') as input_file, \
+		tempfile.NamedTemporaryFile(delete=False, mode='w', newline='', suffix='.bed') as ref_file, \
+		tempfile.NamedTemporaryFile(delete=False, mode='w', newline='', suffix='.bed') as output_file:
+		input_path = input_file.name
+		ref_path = ref_file.name
+		output_path = output_file.name
+
+		input_df.to_csv(input_path, sep='\t', index=False, header=False)
+		ref_df.to_csv(ref_path, sep='\t', index=False, header=False)
+
+		try:
+			shell(f"intersectBed -a {input_path} -b {ref_path} -loj > {output_path}")
+			result_df = pd.read_csv(output_path, sep='\t', header=None)
+			print("Intersection complete.")
+			return result_df
+
+		except Exception as e:
+			print(f"An error occurred: {e}")
+			raise
+			
+		finally:
+				os.remove(input_path)
+				os.remove(ref_path)
+				os.remove(output_path)
+
+def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None, transcripts_file=None, unknown=False, gene_list_restrict=None, chr_list_restrict=None, old_bed=False, exon_sep=None, kmer=None, customexon=False, list_genes=None, genes_file=None):
+	
+	if not inputbed_file:
+		print('No bed found, DECON cannot continue, exiting')
+		exit()
+
+	# Case: REGEN - Generate custom exon file and intersect with refseqgene
+	if bed_process == 'REGEN':
+		df = pd.read_csv(inputbed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
+		ref_df = pd.read_csv(refseqgene_path, sep='\t')  # Adjust as needed based on refseqgene file format
+		intersected_df = intersectbed(df, ref_df)
+		intersected_df['Custom.Exon'] = intersected_df['Tosplit'].str.split(',').str[-1].str.replace('exon', '')
+
+		if transcripts_file and os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
+			NM_list = pd.read_csv(transcripts_file, header=None).squeeze().tolist()
+			intersected_df['NM'] = intersected_df['Tosplit'].str.split(',').str[0]
+			intersected_df = intersected_df[intersected_df['NM'].isin(NM_list)].drop(columns=['NM'])
+
+		if not unknown:
+			intersected_df = intersected_df[intersected_df.Gene != '-1']
+		else:
+			keep_unknown(intersected_df, 'Gene', '-1', 'Unknown')
+		if gene_list_restrict:
+			intersected_df = intersected_df[intersected_df['Gene'].isin(gene_list_restrict)]
+		if chr_list_restrict:
+			intersected_df = intersected_df[~intersected_df['Chr'].isin(chr_list_restrict)]
+
+		df = intersected_df.drop(columns=['4', '5', '6', 'Tosplit', '9']).drop_duplicates()
+
+	# Case: STANDARD - Intersect bed design with panel
+	elif bed_process == 'STANDARD':
+		if config['LIST_GENES']:
+			basepath = os. path. dirname(config['LIST_GENES'])
+			cat_panels_bed = f"/tmp/catpanel.bed"
+			cat_list_genes = f"/tmp/catlist.genes"
+			with open(config['LIST_GENES']) as f:
+				cat_panel_list = f.read().splitlines()
+				cat_panel_list = [basepath + "/" + s for s in cat_panel_list]
+			with open(cat_list_genes, 'w+') as f:
+				f.write('\t'.join(cat_panel_list))
+			shell(f"xargs --delimiter='\\t' cat < {cat_list_genes} >> {cat_panels_bed}")
+		else:
+			shell(f"xargs --delimiter='\\t' cat < {config['GENES_FILE']} >> {cat_panels_bed}")
+		concatenated_df = pd.read_csv(cat_panels_bed,  sep='\t')
+		concatenated_df = concatenated_df.drop_duplicates()
+		input_df = pd.read_csv(inputbed_file, sep='\t',header=None)
+		intersected_df = intersectbed(input_df, concatenated_df)
+		
+		if not old_bed:
+			headers = ["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "13", "14", "15", "16", "17", "18", "Custom.Exon"]
+			columns_to_drop = ['4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '15', '16', '17', '18']
+		else:
+			headers = ["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12"]
+			columns_to_drop = ['4', '5', '6', '7', '8', '9', '11', '12']
+
+		intersected_df.columns = headers
+		df = intersected_df.drop(columns=columns_to_drop)
+
+		if not unknown:
+			df = df[df.Gene != '.']
+		else:
+			keep_unknown(df, 'Gene', '.', 'Unknown')
+		if exon_sep:
+			df['Gene'] = df['Gene'].str.split(exon_sep).str[0]
+		if gene_list_restrict:
+			df = df[df['Gene'].isin(gene_list_restrict)]
+		if chr_list_restrict:
+			df = df[~df['Chr'].isin(chr_list_restrict)]
+
+		df = df.drop_duplicates()
+
+	# Case: NO - Directly convert bed file
+	elif bed_process == 'NO':
+		df = pd.read_csv(inputbed_file, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+
+	# Final Processing: KMER or CustomExon or direct save
+	if customexon:
+		df.to_csv(bed_file, sep='\t', index=False, header=False)
+	elif kmer:
+		kmerisation(kmer, df, bed_file)
+	else:
+		df.to_csv(bed_file, sep='\t', index=False, header=False)
+
+def process_gene_list(file, source_dir, dest_dir,panels_list):
+	inputfile = os.path.join(source_dir, f"{file}.bed") 
+	panel_trunc = file.split(".", 1)[1].split(".genes", 1)[0] if "." in file else file  # Handle truncation
+	outputfile = os.path.join(dest_dir, panel_trunc) 
+	copy2(inputfile, outputfile) 
+	panels_list.append(panel_trunc)
+	return panels_list
 
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
@@ -373,23 +495,15 @@ else:
 config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
-panels = []
+panels_list = []
 if config['LIST_GENES']:
 	with open(config['LIST_GENES']) as f:
-		panels = f.read().splitlines()
+		for file in f.read().splitlines():
+			panels_list = process_gene_list(file, os.path.dirname(config['LIST_GENES']), resultDir, panels_list)
+
 elif config['GENES_FILE'] and not config['LIST_GENES']:
-	panels.append(os.path.basename(config['GENES_FILE']).split(".bed",1)[0]) # we split the .bed ext because list don't have .bed but genes_file does
-# cp files from panel_list to resultDir and rename them
-panels_list = []
-for file in panels:
-	inputfile = f"{os.path.dirname(config['LIST_GENES'])}/{file}.bed"# panel_list don't have the bed extension, need that for the copy
-	# cut sample. and .genes from file name so files will have the same name as the truncated name list
-	panel_trunc = file.split(".", 1)[1].split(".genes",1)[0]
-	outputfile = f"{resultDir}/{panel_trunc}"
-	copy2(inputfile, outputfile)
-	# Create a new list for expand, names are filenames without sample and .genes.bed ext
-	panels_list.append(panel_trunc)
-print(panels_list)
+	file = os.path.splitext(os.path.basename(config['GENES_FILE']))[0]
+	panels_list = process_gene_list(file, os.path.dirname(config['GENES_FILE']), resultDir, panels_list)
 
 ### DECON bed ###
 # DECON need a 4 columns bed for the ReadInBams rule, if bed is not set correctly ReadInBams will crash
@@ -398,110 +512,8 @@ print(panels_list)
 # ex	:	chr17	4511	4889	BCRA1
 # DECON can also use a bed with the exons number for an accurate formating of pdfs graph (makeCNVcalls) and the IdentifyFailures metrics
 # ex	:	chr17	4511	4889	BCRA1	26
-
-inputbed = f"{resultDir}/{serviceName}.input.bed"
-cat_panels_bed = f"{resultDir}/{serviceName}.concatenatepanels.bed"
-cat_list_genes = f"{resultDir}/{serviceName}.fullpath.genes.list"
-cat_noduplicate_panels_bed = f"{resultDir}/{serviceName}.concatenatepanelsnoduplicate.bed"
-outputbed = f"{resultDir}/{serviceName}.output.bed"
-intermediatebed = f"{resultDir}/{serviceName}.intermediate.bed"
-deconbed_file = f"{resultDir}/{serviceName}.{date_time}.bed"
-
-# Case if genes file bed don't have gene name & exon number
-# We always create a custom exon file from the design bed and intersectBed with a refseqgene database to get the exon number
-# Warning the refseqgene database must be generated before
-if config['BED_FILE'] and config['BED_PROCESS'] == 'REGEN':
-	# Generating the custom.exon file from scratch (intersectBed with refseqgene file)
-	df = pd.read_csv(config['BED_FILE'], sep='\t', names=["Chr", "Start", "End"], index_col=False)
-	df.to_csv(inputbed, sep='\t', index=False, header=False)
-	####### Intersect bed with refseqgene using bedtools #######
-	intersectbed(inputbed, config['REFSEQGENE_PATH'], outputbed)
-	df = pd.read_csv(outputbed, sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "Tosplit", "Gene", "9"])
-	df['Custom.Exon'] = df['Tosplit'].str.split(',').str[-1]
-	df['Custom.Exon'] = df['Custom.Exon'].str.replace('exon','')
-	# Filter with NM_list if NM_list is not empty (avoid multiple NM/exons for the graphs)
-	# Specific for config['BED_PROCESS'] == 'REGEN'
-	if os.path.exists(config['TRANSCRIPTS_FILE']) and os.path.getsize(config['TRANSCRIPTS_FILE']) != 0:
-		df['NM'] = df['Tosplit'].str.split(',').str[0]
-		df = df[df['NM'].isin(NM_list)]
-		df = df.drop(columns=['NM'])
-	# Formating unknown gene name: intersect will output -1 if no gene name exist, replace with "Unknown"
-	if config['KEEP_UNKNOWN']:
-		keep_unknown('Gene', '-1', 'Unknown')
-	else:
-		df = df[df.Gene != '-1']
-	if config['GENE_LIST_RESTRICT']:
-		df = df[df['Gene'].isin(config['GENE_LIST_RESTRICT'])]
-	if config['CHR_LIST_RESTRICT']:
-		df = df[-df['Chr'].isin(config['CHR_LIST_RESTRICT'])]
-	df = df.drop(columns=['4', '5', '6', 'Tosplit', '9'])
-	df = df.drop_duplicates()
-	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
-
-# Old bed compatibility
-# Intersect bed design with panel intersectBed -a design.bed -b panel.bed -loj > RESULT.bed = columns 1 2 3 and the gene column from the panel is 10
-# chr1	65300206	65300354	JAK1_chr1_65300207_65300354	0	+	chr1	65300240	65300344	JAK1_ex25	0	- (gene is JAK1_ex25)
-# chr1	3598877	3599018	TP73_chr1_3598878_3599018	0	+	.	-1	-1	.	-1	. (gene is .)
-# New bed 13 cols
-# Intersect bed design with panel intersectBed -a design.bed -b panel.bed -loj > RESULT.bed = columns 1 2 3 & 10 are retained for the bed, column 13 for the exon number
-# ex = chr1	27022390	27024129	NM_006015_ARID1A_5utr-ex1_chr1_27022391_27024129	0	+	.	-1	-1	.	-1	.
-if config['BED_FILE'] and config['GENES_FILE'] and config['BED_PROCESS'] == 'STANDARD':
-	if config['LIST_GENES']:
-		basepath = os. path. dirname(config['LIST_GENES'])
-		with open(config['LIST_GENES']) as f:
-			cat_panel_list = f.read().splitlines()
-			cat_panel_list = [basepath + "/" + s for s in cat_panel_list]
-		with open(cat_list_genes, 'w+') as f:
-			f.write('\t'.join(cat_panel_list))
-		shell(f"xargs --delimiter='\\t' cat < {cat_list_genes} >> {cat_panels_bed}")
-	else:
-		shell(f"xargs --delimiter='\\t' cat < {config['GENES_FILE']} >> {cat_panels_bed}")
-	df = pd.read_csv(cat_panels_bed,  sep='\t')
-	df = df.drop_duplicates()
-	df.to_csv(cat_noduplicate_panels_bed, sep='\t', index=False, header=False)
-	####### Intersect bed with genes files using bedtools #######
-	intersectbed(config['BED_FILE'], cat_noduplicate_panels_bed, outputbed)
-	if not config['OLD_BED']:
-		df = pd.read_csv(outputbed, sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "13", "14", "15", "16", "17", "18", "Custom.Exon"])
-		df = df.drop(columns=['4', '5', '6', '7', '8', '9', '11', '12','13', '14', '15', '16', '17', '18'])
-	else:
-		df = pd.read_csv(outputbed, sep='\t', names=["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12"])
-		df = df.drop(columns=['4', '5', '6', '7', '8', '9', '11', '12'])
-	# Keep unknown option
-	if config['KEEP_UNKNOWN']:
-		keep_unknown('Gene', '.', 'Unknown')
-	else:
-		df = df[df.Gene != '.']
-	# Fix for some bed that remove _ex part if gene is noted genename_ex
-	if  config['EXON_SEP']: 
-		df['Gene'] = df['Gene'].str.split(config['EXON_SEP']).str[0]
-	# Option to filter the bed to analyse only certain genes
-	if config['GENE_LIST_RESTRICT']:
-		df = df[df['Gene'].isin(config['GENE_LIST_RESTRICT'])]
-	if config['CHR_LIST_RESTRICT']:
-		df = df[-df['Chr'].isin(config['CHR_LIST_RESTRICT'])]
-	df = df.drop_duplicates()
-	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
-
-if config['BED_FILE'] and config['BED_PROCESS'] == 'NO':
-	df = pd.read_csv(config['BED_FILE'], sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-	df.to_csv(intermediatebed, sep='\t', index=False, header=False)
-
-if config['customexon']:
-	df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene", "Custom.Exon"], index_col=False)
-	df = df.drop_duplicates()
-	df.to_csv(deconbed_file, sep='\t', index=False, header=False) # for decon.bed no header
-else:
-	if config['KMER']:
-		kmerisation(config['KMER'], intermediatebed, deconbed_file)
-	else:
-		df = pd.read_csv(intermediatebed, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
-		df = df.drop_duplicates()
-		df.to_csv(deconbed_file, sep='\t', index=False, header=False) # for decon.bed no header
-
-if not config['BED_FILE']:
-	print('No bed found, DECON cannot continue, exiting')
-	exit()
+deconbed_file=f"{resultDir}/{serviceName}.{date_time}.bed"
+process_bed_file(bed_file=deconbed_file,inputbed_file=config['BED_FILE'],bed_process=config['BED_PROCESS'],refseqgene_path=config['REFSEQGENE_PATH'],transcripts_file=config['TRANSCRIPTS_FILE'],unknown=config['KEEP_UNKNOWN'],gene_list_restrict=config['GENE_LIST_RESTRICT'],chr_list_restrict=config['CHR_LIST_RESTRICT'],old_bed=config['OLD_BED'],exon_sep=config['EXON_SEP'],kmer=config['KMER'],customexon=config['customexon'],list_genes=config['LIST_GENES'],genes_file=config['GENES_FILE'])
 
 # Create file_list of bam by gender with the runDict, depending on the gender_list
 # A = all ; XX = Female only ; XY = Male only
@@ -510,7 +522,6 @@ if not config['BED_FILE']:
 files_list_A = list(set([runDict[sample]['.bam'] for sample in sample_list if sample in runDict and '.bam' in runDict[sample]]))
 files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']))
 files_list_XY = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']))
-
 
 # Creating a txt list for the bam files per aligner per gender (A, M & F)
 for aligner in aligner_list:
