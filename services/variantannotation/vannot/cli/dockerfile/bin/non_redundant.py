@@ -35,6 +35,7 @@ def generate(run_informations):
     )
     input_files_dict = {}
     for input_file in input_files_list:
+        print(input_file)
         if input_file.split(".")[1] != "tsv":
             panel = input_file.split(".")[1]
             if panel in input_files_dict.keys():
@@ -43,13 +44,13 @@ def generate(run_informations):
                     previous_value = input_files_dict[panel]
                     new_value.append(previous_value)
                     new_value.append(input_file)
-                    input_files_dict[panel] = new_value
+                    input_files_dict["panel_" + panel] = new_value
                 else:
                     previous_value = input_files_dict[panel]
                     previous_value.append(input_file)
-                    input_files_dict[panel] = previous_value
+                    input_files_dict["panel_" + panel] = previous_value
             else:
-                input_files_dict[panel] = input_file
+                input_files_dict["panel_" + panel] = input_file
         else:
             if "design" in input_files_dict.keys():
                 if type(input_files_dict["design"]) is not list:
@@ -74,7 +75,6 @@ def generate(run_informations):
         already_seen_variants_dic = {}
         first_file = True
         cleaned_header = []
-        cleaned_line = []
         output_file = osj(input_dir, f"Non_Redondant.{key}.tsv")
 
         with open(output_file + "_unsorted", "w") as write_file:
@@ -104,6 +104,7 @@ def generate(run_informations):
                                     gnomadHomCount_all_index = l.index("gnomadHomCount_all")
                                 first_file = False
                             else:
+                                cleaned_line = []
                                 l = l.rstrip("\r\n").split("\t")
                                 for i in range(len(l)):
                                     if l[i] not in samples:

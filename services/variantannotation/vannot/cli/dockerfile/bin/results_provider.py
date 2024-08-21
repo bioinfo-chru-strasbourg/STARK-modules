@@ -43,7 +43,7 @@ def distribute(run_informations):
         variantannotation_folder_name = f"{os.path.basename(sample)}_{date}"
         results_files = (
             glob.glob(
-                osj(run_informations["archives_results_folder"], f"VANNOT_{sample}.tsv")
+                osj(run_informations["archives_results_folder"], f"VANNOT_*{sample}*.tsv")
             )
             + glob.glob(
                 osj(run_informations["archives_results_folder"], f"VANNOT_*{sample}.log")
@@ -65,7 +65,7 @@ def distribute(run_informations):
                     subprocess.run(["rsync", "-rp", merged_vcf, osj(output_folder, renamed_merged_vcf)])
                     log.info(f"Copied {renamed_merged_vcf} into {output_folder}")
                     
-        non_redundants = glob.glob(osj(run_informations["archives_results_folder"], "Non_redondant_*.tsv"))
+        non_redundants = glob.glob(osj(run_informations["archives_results_folder"], "Non_Redondant.*.tsv"))
         for non_redundant in non_redundants:
             renamed_non_redundant = f"VANNOT.{date}.Non_Redondant.{os.path.basename(non_redundant).split(".")[1]}.vcf.gz"
             for output_folder in output_folders:
