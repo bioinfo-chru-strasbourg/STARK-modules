@@ -63,6 +63,9 @@ DUMMY_FILES: "/app/scripts/dummy"
 # Script path
 SCRIPT_PATH: "/app/scripts"
 
+# LOG level "logging.WARNING" or "logging.INFO"
+LOG_LEVEL: "logging.INFO"
+
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/RAF>=0.01'"

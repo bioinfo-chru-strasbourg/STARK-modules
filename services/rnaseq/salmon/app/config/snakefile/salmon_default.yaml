@@ -61,6 +61,9 @@ RESULT_EXT_LIST: ['.sf']
 # Setup threads for salmon (workflow.cores or a integer)
 THREADS: 4
 
+# LOG level "logging.WARNING" or "logging.INFO"
+LOG_LEVEL: "logging.INFO"
+
 ################## Tools parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"

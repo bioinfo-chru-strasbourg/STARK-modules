@@ -64,6 +64,9 @@ TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
 RESULT_EXT_LIST: ['.pdf']
 
+# LOG level "logging.WARNING" or "logging.INFO"
+LOG_LEVEL: "logging.INFO"
+
 ############## Tools specific parameters ##############
 # List of tools used to generate fusion analysis
 FUSION_TOOL: ['arriba', 'starfusion']

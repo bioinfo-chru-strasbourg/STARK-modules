@@ -551,7 +551,7 @@ if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 
 # Log
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
-logging.basicConfig(filename=logfile, level=logging.INFO, format='%(asctime)s %(message)s')
+logging.basicConfig(filename=logfile, level=config['LOG_LEVEL'], format='%(asctime)s %(message)s')
 
 log_items = [
 	('Start of the analysis:', date_time),

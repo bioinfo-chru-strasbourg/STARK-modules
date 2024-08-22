@@ -214,7 +214,7 @@ config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, co
 config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
 
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
-logging.basicConfig(filename=logfile, level=logging.INFO, format='%(asctime)s %(message)s')
+logging.basicConfig(filename=logfile, level=config['LOG_LEVEL'], format='%(asctime)s %(message)s')
 
 log_items = [
 	('Start of the analysis:', date_time),

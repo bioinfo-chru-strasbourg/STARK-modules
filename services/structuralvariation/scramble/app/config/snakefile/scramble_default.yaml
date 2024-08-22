@@ -59,6 +59,9 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: ["/*/STARK/*", "/*/*"]
 
+# LOG level "logging.WARNING" or "logging.INFO"
+LOG_LEVEL: "logging.INFO"
+
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html

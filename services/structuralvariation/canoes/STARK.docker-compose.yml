@@ -79,4 +79,4 @@ services:
 
 networks:
     stark_stark:
-        external: true
+        external: true 

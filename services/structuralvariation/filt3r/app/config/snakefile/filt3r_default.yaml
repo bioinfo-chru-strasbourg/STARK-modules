@@ -58,6 +58,9 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 
+# LOG level "logging.WARNING" or "logging.INFO"
+LOG_LEVEL: "logging.INFO"
+
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
 DUMMY_FILES: "/app/scripts/dummy"

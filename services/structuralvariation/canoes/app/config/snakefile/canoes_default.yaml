@@ -62,12 +62,13 @@ TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'Design.tsv', 'gender', 'hpo'] # add '.pdf' if you want graphs
 
+# LOG level "logging.WARNING" or "logging.INFO"
+LOG_LEVEL: "logging.INFO"
+
 # kmerisation of CANOES bed (integer) (ex 250)
 KMER: ""
-
 # Remove M (XY) or F (XX) or A (autosome) analysis, ex ['XY', 'XX'] for autosome only
 REMOVE_GENDER: ""
-
 ################## Misc params ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"

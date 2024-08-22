@@ -94,11 +94,6 @@ BarPlotCoverage <- function(SAMPLE, INPUT, OUTPUT){
 coverage <- read.csv(options$input, header=TRUE, check.names=FALSE, row.names=1, sep="\t")
 sample.names <- colnames(coverage)
 
-for (i in 1:length(sample.names)) {
-    BoxPlotCoverage(sample.names[i], options$input, options$output1)
-	BarPlotCoverage(sample.names[i], options$input, options$output2)
-}
-
 # Execute the functions with the samples derived from the header
 for (SAMPLE in sample.names) {
     BoxPlotCoverage(SAMPLE, options$input, options$output1)
