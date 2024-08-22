@@ -137,16 +137,6 @@ def searchfiles(directory, search_args, recursive_arg):
 		results.extend(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
 	return sorted(results)
 
-def log_file(logfile, text, sep, items_list=None, items=None):
-	""" Function to log a variable value or a list of values into a log file """
-	with open(logfile, 'a+') as f:
-		f.write(f"{text}{sep}")
-		if items_list:
-			for item in items_list:
-				f.write(f"{str(item) if item != '' else 'None'}{sep}")
-		else:
-			f.write(f"{str(items) if items != '' else 'None'}{sep}")
-
 def extractlistfromfiles(file_list, ext_list, sep, position):
 	""" Function for creating list from a file list, with a specific extension, a separator and the position of the string we want to extract """
 	return list(set(os.path.basename(files).split(sep)[position] for files in file_list if any(files.endswith(ext) for ext in ext_list)))

@@ -298,31 +298,18 @@ def intersectbed(input_df, ref_df):
 		input_path = input_file.name
 		ref_path = ref_file.name
 		output_path = output_file.name
-
 		input_df.to_csv(input_path, sep='\t', index=False, header=False)
 		ref_df.to_csv(ref_path, sep='\t', index=False, header=False)
+		shell(f"intersectBed -a {input_path} -b {ref_path} -loj > {output_path}")
+		result_df = pd.read_csv(output_path, sep='\t', header=None)
+		print("Intersection complete.")
+		os.remove(input_path)
+		os.remove(ref_path)
+		os.remove(output_path)
+		return result_df
 
-		try:
-			shell(f"intersectBed -a {input_path} -b {ref_path} -loj > {output_path}")
-			result_df = pd.read_csv(output_path, sep='\t', header=None)
-			print("Intersection complete.")
-			return result_df
-
-		except Exception as e:
-			print(f"An error occurred: {e}")
-			raise
-			
-		finally:
-				os.remove(input_path)
-				os.remove(ref_path)
-				os.remove(output_path)
-
-def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None, transcripts_file=None, unknown=False, gene_list_restrict=None, chr_list_restrict=None, old_bed=False, exon_sep=None, kmer=None, customexon=False, list_genes=None, genes_file=None):
+def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None, transcripts_file=None, unknown_gene=False, gene_list_restrict=None, chr_list_restrict=None, old_bed=False, exon_sep=None, kmer=None, customexon=False, list_genes=None, genes_file=None):
 	
-	if not inputbed_file:
-		print('No bed found, DECON cannot continue, exiting')
-		exit()
-
 	# Case: REGEN - Generate custom exon file and intersect with refseqgene
 	if bed_process == 'REGEN':
 		df = pd.read_csv(inputbed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
@@ -335,7 +322,7 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 			intersected_df['NM'] = intersected_df['Tosplit'].str.split(',').str[0]
 			intersected_df = intersected_df[intersected_df['NM'].isin(NM_list)].drop(columns=['NM'])
 
-		if not unknown:
+		if not unknown_gene:
 			intersected_df = intersected_df[intersected_df.Gene != '-1']
 		else:
 			keep_unknown(intersected_df, 'Gene', '-1', 'Unknown')
@@ -375,7 +362,7 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 		intersected_df.columns = headers
 		df = intersected_df.drop(columns=columns_to_drop)
 
-		if not unknown:
+		if not unknown_gene:
 			df = df[df.Gene != '.']
 		else:
 			keep_unknown(df, 'Gene', '.', 'Unknown')
@@ -400,9 +387,9 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 	else:
 		df.to_csv(bed_file, sep='\t', index=False, header=False)
 
-def process_gene_list(file, source_dir, dest_dir,panels_list):
+def process_gene_list(file, source_dir, dest_dir, panels_list):
 	inputfile = os.path.join(source_dir, f"{file}.bed") 
-	panel_trunc = file.split(".", 1)[1].split(".genes", 1)[0] if "." in file else file  # Handle truncation
+	panel_trunc = file.split(".", 1)[1].split(".genes", 1)[0] if "." in file else file 
 	outputfile = os.path.join(dest_dir, panel_trunc) 
 	copy2(inputfile, outputfile) 
 	panels_list.append(panel_trunc)
@@ -441,7 +428,7 @@ if config['FILTER_SAMPLE']:
 	sample_list = list(config['FILTER_SAMPLE'])
 
 # For validation analyse bam will be sample.aligner.validation.bam, so we append .validation to all the aligner strings
-if config['VALIDATION_ONLY'] == True:
+if config['VALIDATION_ONLY']:
 	filtered_files = filter_files(files_list, filter_in='validation', extensions=config['PROCESS_FILE'])
 	append_aligner = '.validation'
 	aligner_list = [sub + append_aligner for sub in aligner_list]
@@ -472,8 +459,7 @@ else:
 
 # Extract the gender_list from dictionary with the key gender
 gender_list = ['A'] + ['XX' if runDict[sample]['gender'] == 'F' else 'XY' for sample in sample_list if sample in runDict and 'gender' in runDict[sample]]
-# Removing duplicate
-gender_list = list(set(gender_list))
+gender_list = list(set(gender_list)) # Removing duplicate
 
 # Find bed file (Design)
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
@@ -513,7 +499,7 @@ elif config['GENES_FILE'] and not config['LIST_GENES']:
 # DECON can also use a bed with the exons number for an accurate formating of pdfs graph (makeCNVcalls) and the IdentifyFailures metrics
 # ex	:	chr17	4511	4889	BCRA1	26
 deconbed_file=f"{resultDir}/{serviceName}.{date_time}.bed"
-process_bed_file(bed_file=deconbed_file,inputbed_file=config['BED_FILE'],bed_process=config['BED_PROCESS'],refseqgene_path=config['REFSEQGENE_PATH'],transcripts_file=config['TRANSCRIPTS_FILE'],unknown=config['KEEP_UNKNOWN'],gene_list_restrict=config['GENE_LIST_RESTRICT'],chr_list_restrict=config['CHR_LIST_RESTRICT'],old_bed=config['OLD_BED'],exon_sep=config['EXON_SEP'],kmer=config['KMER'],customexon=config['customexon'],list_genes=config['LIST_GENES'],genes_file=config['GENES_FILE'])
+process_bed_file(bed_file=deconbed_file,inputbed_file=config['BED_FILE'],bed_process=config['BED_PROCESS'],refseqgene_path=config['REFSEQGENE_PATH'],transcripts_file=config['TRANSCRIPTS_FILE'],unknown_gene=config['KEEP_UNKNOWN'],gene_list_restrict=config['GENE_LIST_RESTRICT'],chr_list_restrict=config['CHR_LIST_RESTRICT'],old_bed=config['OLD_BED'],exon_sep=config['EXON_SEP'],kmer=config['KMER'],customexon=config['customexon'],list_genes=config['LIST_GENES'],genes_file=config['GENES_FILE'])
 
 # Create file_list of bam by gender with the runDict, depending on the gender_list
 # A = all ; XX = Female only ; XY = Male only
@@ -546,15 +532,13 @@ if config['REF_BAM_LIST']:
 
 # Process .ped files 
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
-# Add 'hpo' key with None value for all individuals
-for individual_id in runDict:
+for individual_id in runDict: # Add 'hpo' key with None value for all individuals
 	runDict[individual_id]['hpo'] = None
 	runDict[individual_id]['gender'] = None
 
 if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 	df = pd.read_csv(ped_file, sep='\t', dtype=str)
-	# Iterate over rows and update runDict
-	for index, row in df.iterrows():
+	for index, row in df.iterrows(): 	# Iterate over rows and update runDict
 		individual_id = row['Individual ID']
 		hpo_list = row['HPOList']
 		
@@ -565,6 +549,7 @@ if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 		if individual_id in sample_list:
 			runDict[individual_id]['hpo'] = hpo_list
 
+# Log
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
 logging.basicConfig(filename=logfile, level=logging.INFO, format='%(asctime)s %(message)s')
 
@@ -578,7 +563,6 @@ log_items = [
 	('Transcripts file:', config['TRANSCRIPTS_FILE']),
 	('Genes list file', config['LIST_GENES'])
 ]
-
 for item in log_items:
 	if isinstance(item[1], list):
 		logging.info(f"{item[0]}\n{'\n'.join(map(str, item[1]))}")
@@ -766,7 +750,7 @@ rule vcf_normalization:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
 
-# --force-samples will output a vcf file with all annotations but without a sample name if the sample did not exist;
+# --force-samples will output a vcf file with all annotations but without a sample name if the sample did not exist
 # so we output a dummy vcf.gz
 rule split_vcf:
 	"""
