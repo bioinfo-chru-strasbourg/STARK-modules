@@ -64,8 +64,8 @@ TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
 RESULT_EXT_LIST: ['.pdf']
 
-# LOG level "logging.WARNING" or "logging.INFO"
-LOG_LEVEL: "logging.INFO"
+# LOG level 30=logging.WARNING or 20=logging.INFO
+LOG_LEVEL: 30
 
 ############## Tools specific parameters ##############
 # List of tools used to generate fusion analysis

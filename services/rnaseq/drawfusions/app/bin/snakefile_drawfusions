@@ -206,10 +206,6 @@ else:
 runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, None)
 print(dict(runDict))
 
-# List of tools used to generate the fusions file
-# TODO check if *.arriba.fusions.tsv and/or *.starfusion.fusions.tsv exist 
-fusion_list = config['FUSION_TOOL']
-
 # Find bed file (Design)
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
@@ -221,7 +217,6 @@ config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sam
 
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
 logging.basicConfig(filename=logfile, level=config['LOG_LEVEL'], format='%(asctime)s %(message)s')
-
 
 log_items = [
 	('Start of the analysis:', date_time),
@@ -240,7 +235,6 @@ for item in log_items:
 	else:
 		logging.info(f"{item[0]} {item[1]}")
 ################################################## RULES ##################################################
-
 ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
 rule all:
@@ -248,7 +242,7 @@ rule all:
 	Rule will create an pdf for arriba result's visualization
 	"""
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.{{fusion}}.pdf",aligner=aligner_list,sample=sample_list,fusion=fusion_list)
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.{{fusion}}.pdf",aligner=aligner_list,sample=sample_list,fusion=config['FUSION_TOOL'])
 
 rule help:
 	"""

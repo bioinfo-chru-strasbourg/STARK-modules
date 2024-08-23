@@ -59,8 +59,8 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: ["/*/STARK/*", "/*/*"]
 
-# LOG level "logging.WARNING" or "logging.INFO"
-LOG_LEVEL: "logging.INFO"
+# LOG level 30=logging.WARNING or 20=logging.INFO
+LOG_LEVEL: 30
 
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"

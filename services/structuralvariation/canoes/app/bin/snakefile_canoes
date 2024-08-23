@@ -298,47 +298,44 @@ if config['addruns']:
 		files_list_addrun.extend(result)
 	# We generate the sample list with the ext of the file in the PROCESS_FILE varialbe (bam/cram for ex)
 	sample_list_addruns = extractlistfromfiles(files_list_addrun, config['PROCESS_FILE'], '.', 0)
-	# Filter the list if validation only
-	if config['VALIDATION_ONLY']:
+	if config['VALIDATION_ONLY']: 	# Filter the list if validation only
 		filter_files(files_list_addrun, filter_in='validation', extensions=config['PROCESS_FILE'])
 	# We populate the dictionnary with the same EXT_INDEX_LIST variable as the original list, to get HPO and gender is avalaible
 	addrunDict = populate_dictionary(sample_list_addruns, config['EXT_INDEX_LIST'], files_list_addrun, None, ['analysis'])
-	
-	# Merge runDict dictionnary with the addrunDict
-	for key, value in addrunDict.items():
-		runDict[key].update(value)
-	
-	# Concatenate all samples for the analysis
-	sample_list = sample_list + sample_list_addruns
 
-	print(sample_list)
-	print(dict(addrunDict))
+	for key, value in addrunDict.items(): 	# Merge runDict dictionnary with the addrunDict
+		runDict[key].update(value)
+		sample_list = sample_list + sample_list_addruns # Concatenate all samples for the analysis
+		sample_list_to_copy = [x for x in sample_list if x not in sample_list_addruns]
 else:
 	sample_list_addruns = None
-
-# We create a sample_list_tocopy to copy only original sample's results
-if sample_list_addruns is not None:
-	sample_list_to_copy = [x for x in sample_list if x not in sample_list_addruns]
-else:
-	sample_list_to_copy = sample_list.copy()  # Copy all items if sample_list_addruns is None
+	sample_list_to_copy = sample_list.copy()
 
 # Set a filelist with all the files tag ; file format is sample.tag
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
-for individual_id in runDict:
-	runDict[individual_id]['hpo'] = None
-	runDict[individual_id]['gender'] = None
+for individual in runDict.values():
+	individual.update({'hpo': None, 'gender': None})
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
+
 if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 	pedigree_into_dict(ped_file, sample_list, runDict, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex')
 	print('[INFO] Gender found in the pedigree file')
+
+	df = pd.read_csv(ped_file, sep='\t', dtype=str)
+	for _, row in df.iterrows():
+		individual_id = row['Individual ID']
+		hpo_list = str(row['HPOList']).replace(" ", "")
+		if individual_id in sample_list:
+			runDict[individual_id]['hpo'] = hpo_list
 else:
-	tagfile_list = [runDict[sample]['.tag'] for sample in sample_list if sample in runDict and '.tag' in runDict[sample]]
+	tagfile_list = [runDict[sample].get('.tag') for sample in sample_list if '.tag' in runDict.get(sample, {})]
+
 	if not tagfile_list:
 		print('[INFO] No gender found for the samples')
 	else:
 		for tagfile in tagfile_list:
-			for sample in sample_list:
-				runDict[os.path.basename(tagfile).split(".")[0]]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
+			sample_name = os.path.basename(tagfile).split(".")[0]
+			runDict[sample_name]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
 		print('[INFO] Gender found in the tag files')
 
 # Extract the gender_list from dictionary with the key gender
@@ -369,14 +366,13 @@ else:
 config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
-panels_list = []
-if config['LIST_GENES']:
-	with open(config['LIST_GENES']) as f:
-		for file in f.read().splitlines():
-			panels_list = process_gene_list(file, os.path.dirname(config['LIST_GENES']), resultDir, panels_list)
-elif config['GENES_FILE'] and not config['LIST_GENES']:
-	file = os.path.splitext(os.path.basename(config['GENES_FILE']))[0]
-	panels_list = process_gene_list(file, os.path.dirname(config['GENES_FILE']), resultDir, panels_list)
+file_source = config.get('LIST_GENES') or config.get('GENES_FILE')
+
+if file_source:
+	with open(file_source) as f:
+		files = f.read().splitlines() if config['LIST_GENES'] else [os.path.splitext(os.path.basename(file_source))[0]]
+	for file in files:
+		panels_list = process_gene_list(file, os.path.dirname(file_source), resultDir, panels_list)
 
 # Kmerisation
 canoesbed_file = f"{resultDir}/{serviceName}.{date_time}.bed"
@@ -400,37 +396,15 @@ for aligner in aligner_list:
 		create_list(bamlist, globals()[f"files_list_{gender}"], config['PROCESS_FILE'], aligner)
 
 # Option to remove gender in the gender_list
-gender_list = [gender for gender in gender_list if gender not in config['REMOVE_GENDER']]
-gender_list.sort()
+gender_list = sorted([gender for gender in gender_list if gender not in config['REMOVE_GENDER']])
 
-# check the ref bam list and presence of gender
+# check the ref bam list and presence of gender, and update the gender_list based on the presence of 'F' and 'M'
 if config['REF_BAM_LIST']:
 	df = pd.read_csv(config['REF_BAM_LIST'], sep='\t')
-	contains_f = df['gender'].str.contains('F').any()
-	contains_m = df['gender'].str.contains('M').any()
-	# Update the gender_list based on the presence of 'F' and 'M'
-	if not contains_f:
+	if not df['gender'].str.contains('F').any():
 		gender_list.remove('XX')
-	if not contains_m:
+	if not df['gender'].str.contains('M').any():
 		gender_list.remove('XY')
-
-# Process .ped files 
-ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
-for individual_id in runDict:
-	runDict[individual_id]['hpo'] = None # Add 'hpo' key with None value for all individuals
-
-if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
-	df = pd.read_csv(ped_file, sep='\t', dtype=str)
-	for index, row in df.iterrows(): # Iterate over rows and update runDict
-		individual_id = row['Individual ID']
-		hpo_list = row['HPOList']
-		
-		if isinstance(hpo_list, float):
-			hpo_list = str(hpo_list)
-		hpo_list = hpo_list.replace(" ", "")
-		
-		if individual_id in sample_list:
-			runDict[individual_id]['hpo'] = hpo_list
 
 # Log
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
@@ -536,7 +510,7 @@ rule gc_percent:
 		"""
 			gatk --java-options {params.java_option} AnnotateIntervals -L {canoesbed_file} -R {input} -imr OVERLAPPING_ONLY -O {output.gc_percent_header} 2> {log}
 			grep -v '^@' {output.gc_percent_header} > {output.gc_percent}
-	 	"""
+		 """
 
 rule bam_to_multicov:
 	""" From each sample bam file generate a coverage file filtered with the bed provided """
@@ -825,12 +799,10 @@ onsuccess:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 
 	# Copy results to the main output directory, removing additional samples from the results
-	if sample_list_addruns is not None:
+	if sample_list_addruns:
 		for sample in sample_list_addruns:
 			shell(f"rm -rf {resultDir}/{sample} || true")
 			#shell(f"find {outputDir}/{sample}/{serviceName} -type f -exec rm -f {{}} +")
-
-	if sample_list_addruns is not None:
 		# We extract the samples that are present in the sample_list_addruns & the vcf
 		shell(f"bcftools query -l {resultDir}/{serviceName}.{date_time}.allsamples.Design.unfiltered.vcf.gz > vcf_samples.txt")
 		with open('final_sample_list.txt', 'w') as file:
