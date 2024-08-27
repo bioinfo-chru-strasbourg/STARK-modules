@@ -7,7 +7,6 @@ import logging as log
 import shutil
 import json
 import re
-from tools import bcftools, bgzip, tabix, intersectBed
 
 import howard_launcher
 
@@ -92,12 +91,19 @@ def run_initialisation(run_informations):
     vcf_file_to_analyse = glob.glob(
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
-
+    fixed_vcf = []
     for vcf_file in vcf_file_to_analyse:
-        cleaned_vcf = cleaning_annotations(vcf_file, run_informations)
-        howard_proc(run_informations, cleaned_vcf)
-        os.remove(cleaned_vcf)
+        # fixed_vcf.append(info_to_format_script(vcf_file, run_informations))
+        if os.path.basename(vcf_file).split(".")[1] == "POOL":
+            info_to_format_script(vcf_file, run_informations)
+    # merged_vcf = merge_vcf(fixed_vcf, run_informations)
 
+    # cleaned_merged_vcf = cleaning_annotations(merged_vcf, run_informations)
+    # howard_proc(run_informations, cleaned_merged_vcf)
+    # os.remove(cleaned_merged_vcf)
+    
+    
+    
 def cleaning_annotations(vcf_file, run_informations):
     module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
     with open(module_config, "r") as read_file:
@@ -110,7 +116,7 @@ def cleaning_annotations(vcf_file, run_informations):
     actual_info_fields = subprocess.run(["zgrep", "##INFO", vcf_file], capture_output=True, text=True)
     actual_info_fields = actual_info_fields.stdout.strip().split("##")
     if not vcf_file.endswith(".vcf.gz"):
-        subprocess.call([bgzip, vcf_file])
+        subprocess.call(["bgzip", vcf_file])
         vcf_file = vcf_file + ".gz"
 
     cleaned_vcf = osj(os.path.dirname(vcf_file), "cleaned_" + os.path.basename(vcf_file)[:-3])
@@ -127,7 +133,7 @@ def cleaning_annotations(vcf_file, run_informations):
         log.info(f"Keeping following annotations: {' '.join(info_to_keep)} for sample {os.path.basename(vcf_file)}")
         info_to_keep = "^" + ",".join(info_to_keep)
 
-    cmd = [bcftools, "annotate", "-x"]
+    cmd = ["bcftools", "annotate", "-x"]
     cmd.append(info_to_keep)
     cmd.append(vcf_file)
 
@@ -135,12 +141,77 @@ def cleaning_annotations(vcf_file, run_informations):
         subprocess.call(cmd, stdout=output, universal_newlines=True)
     os.remove(vcf_file)
         
-    subprocess.call([bgzip, cleaned_vcf], universal_newlines=True)
+    subprocess.call(["bgzip", cleaned_vcf], universal_newlines=True)
     renamed_clean = osj(os.path.dirname(cleaned_vcf), os.path.basename(cleaned_vcf).replace("cleaned_", "") + ".gz")
     cleaned_vcf = cleaned_vcf + ".gz"
     os.rename(cleaned_vcf, renamed_clean)
 
     return renamed_clean
+
+def merge_vcf(vcf_file_to_analyse, run_informations):
+    print(input)
+    return("merged_vcf")
+
+def info_to_format_script(vcf_file, run_informations):
+    module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
+    output_file = osj(os.path.dirname(vcf_file), f"fixed_{os.path.basename(vcf_file)[:-3]}")
+    sample = os.path.basename(vcf_file).split(".")[0]
+    tmp_annot = osj(os.path.dirname(vcf_file), "annot.txt.tmp")
+    tmp_annot_fixed = osj(os.path.dirname(vcf_file), "annot.fixed.txt.tmp")
+    tmp_hdr = osj(os.path.dirname(vcf_file), "hdr.txt.tmp")
+        
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        info_to_format_columns = data["info_to_format"][run_informations["run_platform_application"]]
+    info_to_format_columns_query = "\\t%".join(info_to_format_columns)
+    info_to_format_columns_query = "%CHROM\\t%POS\\t%REF\\t%ALT\\t%" + info_to_format_columns_query + "\n"
+
+    cmd = ["bcftools", "query", "-f", info_to_format_columns_query, vcf_file]
+    
+    with open(tmp_annot, "a") as writefile:
+        subprocess.call(cmd, universal_newlines=True, stdout=writefile)
+
+    with open(tmp_annot, "r") as readfile:
+        with open(tmp_annot_fixed, "a") as writefile:
+            lines = readfile.readlines()
+            for line in lines:
+                line = line.strip()
+                writefile.write(line.replace(":", ",") + "\n")
+
+    subprocess.call(["bgzip", tmp_annot_fixed], universal_newlines=True)    
+    tmp_annot_fixed = tmp_annot_fixed + ".gz"
+    cmd = ["tabix", "-s1", "-b2", "-e2", tmp_annot_fixed]
+    subprocess.call(cmd, universal_newlines=True)
+
+    vcf_file_gunzip = vcf_file[:-3]
+    subprocess.call(["gunzip", vcf_file])
+    with open(vcf_file_gunzip, "r") as readfile:
+        with open(tmp_hdr, "a") as writefile:
+            lines = readfile.readlines()
+            for line in lines:
+                for column in info_to_format_columns:
+                    if line.startswith("##INFO=<ID=" + column):
+                        writefile.write(line.replace("INFO", "FORMAT"))
+    subprocess.call(["bgzip", vcf_file_gunzip], universal_newlines=True)
+
+    info_to_format_columns_annotate = ",FORMAT/".join(info_to_format_columns)
+    info_to_format_columns_annotate = "CHROM,POS,REF,ALT,FORMAT/" + info_to_format_columns_annotate
+
+    cmd = ["bcftools", "annotate", "-s", sample, "-a", tmp_annot_fixed, "-h", tmp_hdr, "-c", info_to_format_columns_annotate, vcf_file]
+    # print(" ".join(cmd)) 
+    with open(output_file, "a") as writefile:
+        subprocess.call(cmd, universal_newlines=True, stdout=writefile)
+
+    subprocess.call(["bgzip", output_file], universal_newlines=True)
+    output_file = output_file + ".gz"
+    
+    os.remove(tmp_annot)
+    os.remove(tmp_annot_fixed)
+    os.remove(tmp_annot_fixed + ".tbi")
+    os.remove(tmp_hdr)
+
+
+# def unmerge_vcf(input, run_informations):
 
 def howard_proc(run_informations, vcf_file):
     log.info(f"Launching HOWARD analysis for {vcf_file}")
@@ -181,9 +252,9 @@ def merge_vcf_files(run_informations):
     output_file = osj(run_informations["tmp_analysis_folder"], f"merged_VANNOT_{run_informations["run_name"]}.design.vcf.gz")
     
     for vcf_file in vcf_files:
-        subprocess.call([tabix, vcf_file], universal_newlines=True)
+        subprocess.call(["tabix", vcf_file], universal_newlines=True)
 
-    cmd = [bcftools, "merge", "-o", output_file, "-O", "z"]
+    cmd = ["bcftools", "merge", "-o", output_file, "-O", "z"]
     for vcf_file in vcf_files:
         cmd.append(vcf_file)
 
@@ -194,7 +265,7 @@ def convert_to_final_tsv(run_informations, input_file, panel_name):
     log.info("Converting output file into readable tsv")
     container_name = f"VANNOT_convert_{run_informations['run_name']}_{os.path.basename(input_file).split('.')[0]}"
     if panel_name != "":
-        output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(input_file).split(".")[0]}.{panel_name}.tsv")
+        output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(input_file).split(".")[0]}.panel.{panel_name}.tsv")
     else:
         output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(input_file).split(".")[0]}.design.tsv")
     
@@ -235,14 +306,14 @@ def panel_filtering(run_informations):
         is_empty = True
         subprocess.call(["rsync", "-rvt", panel, run_informations["tmp_analysis_folder"]], universal_newlines=True)
         panel = os.path.join(run_informations["tmp_analysis_folder"], os.path.basename(panel))
-        if os.path.basename(panel).split(".")[2] != "vcf":
-            panel_name = os.path.basename(panel).split(".")[2]
+        if os.path.basename(panel).split(".")[3] != "genes":
+            panel_name = os.path.basename(panel).split(".")[1]
         else:
             panel_name = "_".join(os.path.basename(panel).split(".")[1].split("_")[1:])
         for tmp_vcf_file in tmp_vcf_files:
             sample_name = tmp_vcf_file.split(".")[0]
-            filtered_vcf = osj(run_informations["tmp_analysis_folder"], sample_name + "." + panel_name + ".vcf")
-            command_list = [intersectBed, "-a", tmp_vcf_file, "-b", panel,"-header"]
+            filtered_vcf = osj(run_informations["tmp_analysis_folder"], sample_name + ".panel." + panel_name + ".vcf")
+            command_list = ["intersectBed", "-a", tmp_vcf_file, "-b", panel,"-header"]
             log.info(" ".join(command_list))
             with open(filtered_vcf, "a") as f : 
                 subprocess.call(command_list, stdout=f, stderr=subprocess.STDOUT, universal_newlines=True)
@@ -255,7 +326,7 @@ def panel_filtering(run_informations):
             if is_empty is True:
                 log.info("Filtered VCF is empty, please check your .gene file, conversion to tsv is aborted")
                 
-            subprocess.call([bgzip, filtered_vcf])
+            subprocess.call(["bgzip", filtered_vcf])
             filtered_vcf = filtered_vcf + ".gz"
             if is_empty is False:
                 convert_to_final_tsv(run_informations, filtered_vcf, panel_name)

@@ -35,9 +35,8 @@ def generate(run_informations):
     )
     input_files_dict = {}
     for input_file in input_files_list:
-        print(input_file)
-        if input_file.split(".")[1] != "tsv":
-            panel = input_file.split(".")[1]
+        if input_file.split(".")[2] != "tsv":
+            panel = input_file.split(".")[2]
             if panel in input_files_dict.keys():
                 if type(input_files_dict[panel]) is not list:
                     new_value = []
@@ -79,6 +78,7 @@ def generate(run_informations):
 
         with open(output_file + "_unsorted", "w") as write_file:
             for i, f in enumerate(input_files_list):
+                print(i, f)
                 with open(f, "r") as read_file:
                     for l in read_file:
                         if l.startswith("##"):

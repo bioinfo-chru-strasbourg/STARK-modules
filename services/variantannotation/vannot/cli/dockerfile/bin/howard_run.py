@@ -118,16 +118,16 @@ def launch_run(args):
         pass
 
     synchronizer.vcf_synchronizer(run_informations)
-    dejavu_processing.convert_vcf_parquet(run_informations)
-    dejavu_processing.calculate_dejavu(run_informations)
+    # dejavu_processing.convert_vcf_parquet(run_informations)
+    # dejavu_processing.calculate_dejavu(run_informations)
     howard_processing.run_initialisation(run_informations)
-    howard_processing.merge_vcf_files(run_informations)
-    if run_informations["run_panels"] != "":
-        howard_processing.panel_filtering(run_informations)
-    non_redundant.generate(run_informations)
+    # howard_processing.merge_vcf_files(run_informations)
+    # if run_informations["run_panels"] != "":
+    #     howard_processing.panel_filtering(run_informations)
+    # non_redundant.generate(run_informations)
 
-    howard_processing.cleaner(run_informations)
-    results_provider.distribute(run_informations)
+    # howard_processing.cleaner(run_informations)
+    # results_provider.distribute(run_informations)
 
     lock_file = osj(run_repository, "VANNOTComplete.txt")
     with open(lock_file, "w") as write_file:
