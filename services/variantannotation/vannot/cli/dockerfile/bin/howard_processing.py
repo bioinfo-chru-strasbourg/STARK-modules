@@ -91,15 +91,16 @@ def run_initialisation(run_informations):
     vcf_file_to_analyse = glob.glob(
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
-    fixed_vcf = []
     for vcf_file in vcf_file_to_analyse:
-        # fixed_vcf.append(info_to_format_script(vcf_file, run_informations))
         if os.path.basename(vcf_file).split(".")[1] == "POOL":
-            info_to_format_script(vcf_file, run_informations)
-    # merged_vcf = merge_vcf(fixed_vcf, run_informations)
+            fixed_vcf_file = info_to_format_script(vcf_file, run_informations)
+        # exomiser_annotation()
+        else:
+            fixed_vcf_file = vcf_file
+        cleaning_annotations(fixed_vcf_file, run_informations)
 
-    # cleaned_merged_vcf = cleaning_annotations(merged_vcf, run_informations)
-    # howard_proc(run_informations, cleaned_merged_vcf)
+        # unmerge_vcf()
+        
     # os.remove(cleaned_merged_vcf)
     
     
@@ -127,7 +128,7 @@ def cleaning_annotations(vcf_file, run_informations):
                 info_to_keep.append("INFO/" + j.split(",")[0].split("=")[-1])
                 
     if len(info_to_keep) == 0:
-        log.info("No annotations to keep were found, deleting all annotations")
+        log.info(f"No annotations to keep were found in {os.path.basename(vcf_file)}, deleting all annotations")
         info_to_keep = "INFO"
     else:
         log.info(f"Keeping following annotations: {' '.join(info_to_keep)} for sample {os.path.basename(vcf_file)}")
@@ -148,11 +149,29 @@ def cleaning_annotations(vcf_file, run_informations):
 
     return renamed_clean
 
-def merge_vcf(vcf_file_to_analyse, run_informations):
-    print(input)
-    return("merged_vcf")
+def merge_vcf(run_informations):
+    vcf_file_to_merge = glob.glob(osj(run_informations["tmp_analysis_folder"], "*vcf*"))
+    for i in vcf_file_to_merge:
+        subprocess.call(["tabix", i], universal_newlines=True)
+    
+    output_merged = osj(run_informations["tmp_analysis_folder"], f"merged_{run_informations["run_name"]}.vcf.gz")
+    cmd = ["bcftools", "merge"] + vcf_file_to_merge
+    cmd_args = ["-m", "none", "-O", "z", "-o", output_merged]
+    cmd = cmd + cmd_args
+    log.debug(" ".join(cmd))
+    subprocess.call(cmd, universal_newlines=True)
+    for i in vcf_file_to_merge:
+        os.remove(i)
+        os.remove(i + ".tbi")
+    return(output_merged)
+
+def unmerge_vcf(run_informations, input):
+    vcf_file_to_unmerge = input
+    print(vcf_file_to_unmerge)
+
 
 def info_to_format_script(vcf_file, run_informations):
+    log.info(f"Moving POOL INFO sample specific columns to FORMAT column for {os.path.basename(vcf_file)}")
     module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
     output_file = osj(os.path.dirname(vcf_file), f"fixed_{os.path.basename(vcf_file)[:-3]}")
     sample = os.path.basename(vcf_file).split(".")[0]
@@ -198,7 +217,7 @@ def info_to_format_script(vcf_file, run_informations):
     info_to_format_columns_annotate = "CHROM,POS,REF,ALT,FORMAT/" + info_to_format_columns_annotate
 
     cmd = ["bcftools", "annotate", "-s", sample, "-a", tmp_annot_fixed, "-h", tmp_hdr, "-c", info_to_format_columns_annotate, vcf_file]
-    # print(" ".join(cmd)) 
+    log.debug(" ".join(cmd))
     with open(output_file, "a") as writefile:
         subprocess.call(cmd, universal_newlines=True, stdout=writefile)
 
@@ -209,9 +228,9 @@ def info_to_format_script(vcf_file, run_informations):
     os.remove(tmp_annot_fixed)
     os.remove(tmp_annot_fixed + ".tbi")
     os.remove(tmp_hdr)
-
-
-# def unmerge_vcf(input, run_informations):
+    os.remove(vcf_file)
+    
+    return(output_file)
 
 def howard_proc(run_informations, vcf_file):
     log.info(f"Launching HOWARD analysis for {vcf_file}")
@@ -244,7 +263,6 @@ def howard_proc(run_informations, vcf_file):
     log.info("Annotating input files with HOWARD")
     
     howard_launcher.launch(container_name, launch_annotate_arguments)
-    convert_to_final_tsv(run_informations, output_file, "")
 
 def merge_vcf_files(run_informations):
     log.info("Merging all vcfs into one for CuteVariant analysis")
@@ -303,7 +321,6 @@ def panel_filtering(run_informations):
     panels = run_informations["run_panels"]
     
     for panel in panels:
-        is_empty = True
         subprocess.call(["rsync", "-rvt", panel, run_informations["tmp_analysis_folder"]], universal_newlines=True)
         panel = os.path.join(run_informations["tmp_analysis_folder"], os.path.basename(panel))
         if os.path.basename(panel).split(".")[3] != "genes":
@@ -317,19 +334,9 @@ def panel_filtering(run_informations):
             log.info(" ".join(command_list))
             with open(filtered_vcf, "a") as f : 
                 subprocess.call(command_list, stdout=f, stderr=subprocess.STDOUT, universal_newlines=True)
-            with open(filtered_vcf, "r") as readfile :
-                lines = readfile.readlines()
-                for line in lines:
-                    if line.startswith("chr"):
-                        is_empty = False
-            
-            if is_empty is True:
-                log.info("Filtered VCF is empty, please check your .gene file, conversion to tsv is aborted")
                 
             subprocess.call(["bgzip", filtered_vcf])
             filtered_vcf = filtered_vcf + ".gz"
-            if is_empty is False:
-                convert_to_final_tsv(run_informations, filtered_vcf, panel_name)
 
 if __name__ == "__main__":
     pass
