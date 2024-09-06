@@ -71,7 +71,7 @@ rule download_and_extract_annotSV:
 	params:
 		folder=f"{db}/AnnotSV/{ANNOTSV_VERSION}",
 		command=config['COMMAND'],
-		download_link="https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
+		download_link=f"https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
 	shell: """
 		mkdir -p {params.folder}
 		{params.command} {params.download_link}
@@ -87,8 +87,8 @@ rule download_exomiser_data:
 	params:
 		folder=f"{db}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Exomiser/{EXOMISER_VERSION}",
 		command=config['COMMAND'],
-		download_link1="https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_{assembly}.zip",
-		download_link2="https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_phenotype.zip",
+		download_link1=f"https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_{assembly}.zip",
+		download_link2=f"https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_phenotype.zip",
 	shell: """
 		mkdir -p {params.folder}
 		{params.command} {params.download_link1}
