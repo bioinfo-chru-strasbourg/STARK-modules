@@ -10,8 +10,8 @@ services:
         build:
             context: ./
             dockerfile: decon_dockerfile
-        entrypoint: "python3"
-        command: "/app/bin/setup.py"
+        entrypoint: "snakemake"
+        command: "-p -s /app/bin/snakefile_decon_setup"
         container_name: stark-module-structuralvariation-submodule-decon-service-setup
         restart: "no"
         environment:
@@ -34,8 +34,10 @@ services:
             dockerfile: decon_dockerfile
         container_name: stark-module-structuralvariation-submodule-decon-service-cli
         restart: "no"
-        entrypoint: [ "/bin/bash", "-l", "-c" ]
-        command: "'while true; do sleep 60; done'"
+        entrypoint: ["/bin/bash"]
+        command: ["-l"]
+        tty: true
+        stdin_open: true
         volumes:
             - /home1/data/STARK/output/repository:/STARK/output/repository:rw
             - /home1/data/STARK/output/depository:/STARK/output/depository:rw
@@ -53,7 +55,7 @@ services:
                     "/STARK/services/structuralvariation/decon/cli/SETUPComplete.txt"
                 ]
             timeout: 10s
-            interval: 60s
+            interval: 30s
             retries: 60
 
     stark-module-structuralvariation-submodule-decon-service-listener:

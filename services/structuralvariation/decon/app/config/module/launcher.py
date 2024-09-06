@@ -49,13 +49,9 @@ def version_gt(version1, version2):
 
 # Function to get Docker version
 def get_docker_version():
-	try:
-		docker_version_output = subprocess.check_output(["docker", "--version"]).decode().strip()
-		docker_version = docker_version_output.split()[2].split(',')[0]
-		return docker_version
-	except subprocess.CalledProcessError:
-		return None
-
+	docker_version_output = subprocess.check_output(["docker", "--version"]).decode().strip()
+	docker_version = docker_version_output.split()[2].split(',')[0]
+	return docker_version
 
 def readconfig(configFile, serviceName, configkey):
 	""" Function to extract a specific key configuration variable from a json configuration file"""

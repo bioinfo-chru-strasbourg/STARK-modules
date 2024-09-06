@@ -34,8 +34,10 @@ services:
             dockerfile: canoes_dockerfile
         container_name: stark-module-structuralvariation-submodule-canoes-service-cli
         restart: "no"
-        entrypoint: [ "/bin/bash", "-l", "-c" ]
-        command: "'while true; do sleep 60; done'"
+        entrypoint: ["/bin/bash"]
+        command: ["-l"]
+        tty: true
+        stdin_open: true
         volumes:
             - /home1/data/STARK/output/repository:/STARK/output/repository:rw
             - /home1/data/STARK/output/depository:/STARK/output/depository:rw
