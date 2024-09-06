@@ -65,6 +65,17 @@ for item in log_items:
 		logging.info(f"{item[0]} {item[1]}")
 
 ################## Snakemake Rules ##################
+
+if os.path.exists(f"{services_folder}/setup/COSMIC/CosmicCompleteCNA.tsv.gz"):
+	run_cosmic = True
+else:
+	run_cosmic = False
+
+if os.path.exists(f"{services_folder}/setup/GENEHANCER/{GENEHANCER_VERSION}.zip"):
+	run_genehancer = True
+else:
+	run_genehancer = False
+
 rule all:
 	input: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV.dummyannotation.tsv"
 
@@ -127,54 +138,24 @@ rule download_exomiser_data:
 # Extract the URL from the JSON response and make another request to that URL to download the file. For example:
 	# curl "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData"
 # You do not need to supply the authentication header on this request. Download links are valid for one hour. 
-
-rule cosmic:
-	input: f"{services_folder}/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
-	output: 
-			success=f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_COSMIC_install.success",
-			notfound=f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_COSMIC_install.notfound"
-	params: f"{db}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/COSMIC/{genomeBuild}/"
-	shell: """
-		if [ -f {input} ]; then
-			mkdir -p {params}
-			unzip -q {input} -d {params}
-			touch {output.success}
-		else
-			touch {output.notfound}
-		fi
-	"""
+if run_cosmic:
+	rule cosmic:
+		input: f"{services_folder}/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
+		output: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_COSMIC_install.success"
+		params: f"{db}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/COSMIC/{genomeBuild}/"
+		shell: " mkdir -p {params} && unzip -q {input} -d {params} && touch {output} "
 
 # GeneHancer data is under a specific licence that prevent the systematic availability in AnnotSV sources. Users need to request the up-to-date GeneHancer data dedicated to AnnotSV " #(“GeneHancer_<version>_for_annotsv.zip“) by subscribing to the Genecard web site https://www.genecards.org/
 # unzip -q GeneHancer_<version>_for_annotsv.zip -d ($ANNOTSV/share/AnnotSV)/Annotations_Human/FtIncludedInSV/RegulatoryElements/
-
-rule genehancer:
-	input: f"{services_folder}/setup/GENEHANCER/{GENEHANCER_VERSION}.zip"
-	output: 
-			success=f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_GENEHANCER_install.success",
-			notfound=f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_GENEHANCER_install.notfound"
-	params: f"{db}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/RegulatoryElements/"
-	shell: """
-		if [ -f {input} ]; then
-			mkdir -p {params}
-			unzip -q {input} -d {params}
-			touch {output.success}
-		else
-			touch {output.notfound}
-		fi
-	"""
+if run_genehancer:
+	rule genehancer:
+		input: f"{services_folder}/setup/GENEHANCER/{GENEHANCER_VERSION}.zip"
+		output: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_GENEHANCER_install.success"
+		params: f"{db}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/RegulatoryElements/"
+		shell: " mkdir -p {params} && unzip -q {input} -d {params} && touch {output} "
 
 rule annotSV_dummy_vcf:
 	input:
-			genehancer=lambda wildcards: [
-				f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_GENEHANCER_install.success" 
-				if os.path.exists(f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_GENEHANCER_install.success")
-				else f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_GENEHANCER_install.notfound"
-			],
-			cosmic=lambda wildcards: [
-				f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_COSMIC_install.success"
-				if os.path.exists(f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_COSMIC_install.success")
-				else f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_COSMIC_install.notfound"
-			],
 			success=rules.download_exomiser_data.output,
 			file="/app/scripts/dummy/dummy.vcf"
 	output: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV.dummyannotation.tsv"
