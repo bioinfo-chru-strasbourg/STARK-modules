@@ -65,6 +65,8 @@ for item in log_items:
 		logging.info(f"{item[0]} {item[1]}")
 
 ################## Snakemake Rules ##################
+rule all:
+	input: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV.dummyannotation.tsv"
 
 rule download_and_extract_annotSV:
 	output: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_DB_install.success"
