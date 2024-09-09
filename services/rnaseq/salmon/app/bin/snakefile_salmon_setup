@@ -81,7 +81,7 @@ rule download_and_setup_gencode:
 		mkdir -p {params.db_folder}
 		{params.command} -o {output.genome} {params.genome_link} 
 		{params.command} -o {output.transcripts} {params.transcripts_link}
-		{params.command} -o {params.readme} {params.readme_link}
+		{params.command} -o {output.readme} {params.readme_link}
 		"""
 
 # recipe for Salmon index to perform count extraction
