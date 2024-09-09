@@ -14,7 +14,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # Update and install some tools
 RUN apt-get update --fix-missing && \
-	apt-get install -y unzip vim rsync
+	apt-get install -y unzip vim rsync aria2
 
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \

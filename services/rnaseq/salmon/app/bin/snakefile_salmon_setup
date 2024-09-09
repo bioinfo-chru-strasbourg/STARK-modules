@@ -34,8 +34,8 @@ services_folder = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleNam
 config_folder = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 gencode_version = config['GENCODE_VERSION']
-assembly=config['ASSEMBLY']
-species=config['SPECIES']
+assembly = config['ASSEMBLY']
+species = config['SPECIES']
 
 # Set up logging
 logfile = f"{services_folder}/cli/{serviceName}.{date_time}.parameters.log"
@@ -101,8 +101,8 @@ rule create_salmon_index:
 		genome=rules.download_and_setup_gencode.output.genome,
 		transcripts=rules.download_and_setup_gencode.output.transcripts
 	output:
-		decoy=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/decoys.txt"
-		gentrome=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/gentrome.fa.gz"
+		decoy=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/decoys.txt",
+		gentrome=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/gentrome.fa.gz",
 		index=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index",
 		txp2gene=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/txp2gene.tsv",
 		success=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/salmon_install.success"
@@ -112,7 +112,7 @@ rule create_salmon_index:
 		sed -i.bak -e 's/>//g' {output.decoys}
 		cat {input.transcripts} {input.genome} > {output.gentrome}
 		salmon index -t {output.gentrome} -d {output.decoys} -p 12 -i {output.index} --gencode
-		zgrep '^>' {output.gentrome}| cut -d '|' -f 1,6 --output-delimiter=$'\\t' - | sed 's/>//g; s/gene_symbol://g; s/"//g' > {output.txp2gene}
+		zgrep '^>' {output.gentrome}| cut -d '|' -f 1,6 --output-delimiter=$'\\t' - | sed 's/>//g; s/gene_symbol://g; s/'//g' > {output.txp2gene}
 		touch {output.success}
 		"""
 
