@@ -66,7 +66,7 @@ rule all:
 # https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M33/_README.TXT
 
 rule download_gencode:
-	output: f"{db}/salmon/{assembly}.v{gencode_version}/gencode_DB_download.success"
+	output: f"/app/gencode_DB_download.success"
 	params:
 		genome_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
 		transcripts_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/gencode.v{gencode_version}.transcripts.fa.gz",
@@ -105,7 +105,7 @@ rule create_salmon_index:
 		sed -i.bak -e 's/>//g' {output.decoy}
 		cat {params.transcripts} {params.genome} > {output.gentrome}
 		salmon index -t {output.gentrome} -d {output.decoy} -p 12 -i {output.index} --gencode
-		zgrep '^>' {params.gentrome}| cut -d '|' -f 1,6 --output-delimiter=$'\\t' - | sed 's/>//g; s/gene_symbol://g; s/'//g' > {output.txp2gene}
+		zgrep '^>' {output.gentrome}| cut -d '|' -f 1,6 --output-delimiter=$'\\t' - | sed 's/>//g; s/gene_symbol://g; s/'//g' > {output.txp2gene}
 		touch {output.success}
 		"""
 
