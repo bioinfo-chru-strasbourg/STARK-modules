@@ -65,23 +65,20 @@ rule all:
 # https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
 # https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M33/_README.TXT
 
-rule download_and_setup_gencode:
-	output:
-		genome=f"{db}/salmon/{assembly}.v{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
-		transcripts=f"{db}/salmon/{assembly}.v{gencode_version}/gencode.v{gencode_version}.transcripts.fa.gz",
-		readme=f"{db}/salmon/{assembly}.v{gencode_version}/_README.TXT"
+rule download_gencode:
+	output: f"{db}/salmon/{assembly}.v{gencode_version}/gencode_DB_download.success"
 	params:
 		genome_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
 		transcripts_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/gencode.v{gencode_version}.transcripts.fa.gz",
 		readme_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/_README.TXT",
 		command=config['COMMAND'],
-		db_folder=f"{db}/salmon/{assembly}.v{gencode_version}/"
+		db_folder=f"{db}/salmon/{assembly}.v{gencode_version}"
 	shell:
 		"""
 		mkdir -p {params.db_folder}
-		{params.command} -o {output.genome} {params.genome_link} 
-		{params.command} -o {output.transcripts} {params.transcripts_link}
-		{params.command} -o {output.readme} {params.readme_link}
+		{params.command} {params.genome_link} 
+		{params.command} {params.transcripts_link}
+		{params.command} {params.readme_link}
 		"""
 
 # recipe for Salmon index to perform count extraction
@@ -89,19 +86,12 @@ rule download_and_setup_gencode:
 # release can be change (actually v41 is used, relase is 07.2022)
 # for GRch38 primary assembly v42 : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
 # for gencode transcripts : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
-# grep "^>" <(gunzip -c GRCh38.primary_assembly.genome.fa.gz) | cut -d " " -f 1 > decoys.txt
-# sed -i.bak -e 's/>//g' decoys.txt
-# cat gencode.v41.transcripts.fa.gz GRCh38.primary_assembly.genome.fa.gz > gentrome.fa.gz
-# salmon index -t gentrome.fa.gz -d decoys.txt -p 12 -i salmon_index --gencode
-# eventually use --keepDuplicates for isoform analysis
-# to generate the transcript/gene table for alevin
-# zgrep "^>" gentrome.fa.gz| cut -d "|" -f 1,6 --output-delimiter=$'\t' - | sed 's/>//g; s/gene_symbol://g; s/"//g' > txp2gene.tsv
 
 rule create_salmon_index:
-	input:
-		genome=rules.download_and_setup_gencode.output.genome,
-		transcripts=rules.download_and_setup_gencode.output.transcripts
+	input: rules.download_gencode.output
 	output:
+		genome=f"/app/{assembly}.primary_assembly.genome.fa.gz",
+		transcripts=f"/app/gencode.v{gencode_version}.transcripts.fa.gz",
 		decoy=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/decoys.txt",
 		gentrome=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/gentrome.fa.gz",
 		index=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index",
@@ -109,10 +99,10 @@ rule create_salmon_index:
 		success=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/salmon_install.success"
 	shell:
 		"""
-		gunzip -c {input.genome} | grep '^>' | cut -d ' ' -f 1 > {output.decoys}
-		sed -i.bak -e 's/>//g' {output.decoys}
-		cat {input.transcripts} {input.genome} > {output.gentrome}
-		salmon index -t {output.gentrome} -d {output.decoys} -p 12 -i {output.index} --gencode
+		gunzip -c {params.genome} | grep '^>' | cut -d ' ' -f 1 > {output.decoy}
+		sed -i.bak -e 's/>//g' {output.decoy}
+		cat {params.transcripts} {params.genome} > {output.gentrome}
+		salmon index -t {output.gentrome} -d {output.decoy} -p 12 -i {output.index} --gencode
 		zgrep '^>' {output.gentrome}| cut -d '|' -f 1,6 --output-delimiter=$'\\t' - | sed 's/>//g; s/gene_symbol://g; s/'//g' > {output.txp2gene}
 		touch {output.success}
 		"""
