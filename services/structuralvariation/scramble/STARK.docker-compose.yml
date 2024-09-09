@@ -10,8 +10,8 @@ services:
         build:
             context: ./
             dockerfile: scramble_dockerfile
-        entrypoint: "python3"
-        command: "/app/bin/setup.py"
+        entrypoint: "snakemake"
+        command: "-p -s /app/bin/snakefile_decon_setup"
         container_name: stark-module-structuralvariation-submodule-scramble-service-setup
         restart: "no"
         environment:

@@ -1,0 +1,136 @@
+##########################################################################
+# SETUP Version:			3.0
+# Description:				Setup to configure module
+##########################################################################
+
+# DEV version 0.1 : 10/11/2021
+# INT version 0.1 : 17/03/2022
+# Authoring : Thomas LAVAUX
+
+# PROD version 1 : 17/03/2022
+# PROD version 2 : 17/10/2023
+# PROD version 3 : 06/09/2024
+	# switch to aria2c & snakemake
+
+################## Context ##################
+#
+# This snakemake will setup a cli ie checking and installing proper databases if needed ; copying launcher.py, .conf and .json files into specific directory
+####################################
+
+################## Import libraries ##################
+import os
+import yaml
+import logging
+from datetime import datetime
+import json
+
+################## Configuration ##################
+configfile: "/app/config/snakefile/salmon_default_setup.yaml"
+
+db = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES')  # DATABASES = "/STARK/databases"
+serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')  # serviceName = salmon
+moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')  # moduleName = "structuralvariation"
+services_folder = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
+config_folder = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
+date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
+gencode_version = config['GENCODE_VERSION']
+assembly=config['ASSEMBLY']
+species=config['SPECIES']
+
+# Set up logging
+logfile = f"{services_folder}/cli/{serviceName}.{date_time}.parameters.log"
+logging.basicConfig(
+	filename=logfile,
+	level=config['LOG_LEVEL'],
+	format='%(asctime)s - %(levelname)s - %(message)s'
+)
+log_items = [
+	('Start of the analysis:', date_time),
+	('Database:', db),
+	('serviceName:', serviceName),
+	('moduleName:', moduleName)
+]
+for item in log_items:
+	if isinstance(item[1], list):
+		logging.info(f"{item[0]}\n{'\n'.join(map(str, item[1]))}")
+	else:
+		logging.info(f"{item[0]} {item[1]}")
+
+################## Snakemake Rules ##################
+rule all:
+		input:
+			success=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/salmon_install.success"
+
+# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
+# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
+# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M33/_README.TXT
+
+rule download_and_setup_gencode:
+    output:
+        genome=f"{db}/gencode/{assembly}.{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
+        transcripts=f"{db}/gencode/{assembly}.{gencode_version}/gencode.v{gencode_version}.transcripts.fa.gz"
+    params:
+        genome_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
+        transcripts_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/gencode.v{gencode_version}.transcripts.fa.gz",
+		readme_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/_README.TXT",
+		command=config['COMMAND'],
+        db_folder=f"{db}/gencode/{assembly}.{gencode_version}/"
+    shell:
+        """
+        mkdir -p {params.db_folder}
+        {params.command} -d {params.db_folder} -o {output.genome} {params.genome_link} 
+        {params.command} -d {params.db_folder} -o {output.transcripts} {params.transcripts_link}
+		{params.command} -d {params.db_folder} -o {params.db_folder} {params.readme_link}
+        """
+
+# recipe for Salmon index to perform count extraction
+# GRch38 assembly and gencode.vxx.transcripts.fa.gz can be found on https://www.gencodegenes.org/human/
+# release can be change (actually v41 is used, relase is 07.2022)
+# for GRch38 primary assembly v42 : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
+# for gencode transcripts : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
+# grep "^>" <(gunzip -c GRCh38.primary_assembly.genome.fa.gz) | cut -d " " -f 1 > decoys.txt
+# sed -i.bak -e 's/>//g' decoys.txt
+# cat gencode.v41.transcripts.fa.gz GRCh38.primary_assembly.genome.fa.gz > gentrome.fa.gz
+# salmon index -t gentrome.fa.gz -d decoys.txt -p 12 -i salmon_index --gencode
+# eventually use --keepDuplicates for isoform analysis
+# to generate the transcript/gene table for alevin
+# zgrep "^>" gentrome.fa.gz| cut -d "|" -f 1,6 --output-delimiter=$'\t' - | sed 's/>//g; s/gene_symbol://g; s/"//g' > txp2gene.tsv
+
+rule create_salmon_index:
+    input:
+        genome=rules.download_and_setup_gencode.output.genome,
+        transcripts=rules.download_and_setup_gencode.output.transcripts
+    output:
+        decoy=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/decoys.txt"
+		gentrome=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/gentrome.fa.gz"
+		index=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index",
+        txp2gene=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/txp2gene.tsv",
+		success=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/salmon_install.success"
+    shell:
+        """
+        gunzip -c {input.genome} | grep '^>' | cut -d ' ' -f 1 > {output.decoys}
+        sed -i.bak -e 's/>//g' {output.decoys}
+        cat {input.transcripts} {input.genome} > {output.gentrome}
+        salmon index -t {output.gentrome} -d {output.decoys} -p 12 -i {output.index} --gencode
+        zgrep '^>' {output.gentrome}| cut -d '|' -f 1,6 --output-delimiter=$'\\t' - | sed 's/>//g; s/gene_symbol://g; s/"//g' > {output.txp2gene}
+		touch {output.success}
+        """
+
+onstart:
+	shell(f"touch {services_folder}/cli/SETUPRunning.txt")
+	with open(logfile, "a+") as f:
+		f.write("\nGlobal parameters of the setup for debug only\n")
+		json.dump(config, f, ensure_ascii=False, indent=2)
+		f.write("\n")
+
+onsuccess:
+	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")
+	shell(f"touch {services_folder}/cli/SETUPComplete.txt")
+	shell(f"mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli")
+	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
+	with open(logfile, "a+") as f:
+		f.write(f"End of the setup: {date_time_end}\n")
+
+onerror:
+	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")
+	shell(f"touch {services_folder}/cli/SETUPFailed.txt")
