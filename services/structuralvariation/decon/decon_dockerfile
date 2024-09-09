@@ -42,6 +42,7 @@ RUN git clone https://github.com/SamuelNicaise/variantconvert.git && \
     python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/STARK/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
 
 # Copy AnnotSV exomiser application.properties
+# Don't forget to modify the exomiser.data-directory to set it to the exomiser db path
 COPY ./app/config/annotsv/application.properties /opt/conda/etc/AnnotSV/
 
 # Copy applications files (/app)

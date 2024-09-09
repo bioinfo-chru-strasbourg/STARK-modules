@@ -88,6 +88,7 @@ rule download_and_extract_annotSV:
 	"""
 # https://data.monarchinitiative.org/exomiser/data/2309_hg19.zip
 # https://data.monarchinitiative.org/exomiser/data/2309_hg38.zip
+# https://github.com/lgmgeo/AnnotSV/blob/d20fd35999902f41b9d60d32ea26d0e4599cde49/share/AnnotSV/jar/exomiser-rest-prioritiser-12.1.0.jar
 
 rule download_exomiser_data:
 	input: rules.download_and_extract_annotSV.output
@@ -98,11 +99,12 @@ rule download_exomiser_data:
 		download_link1=f"https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_{assembly}.zip",
 		download_link2=f"https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_phenotype.zip",
 	shell: """
-		mkdir -p {params.folder}
+		mkdir -p {params.folder_exomiser}
 		{params.command} {params.download_link1}
 		{params.command} {params.download_link2}
-		unzip -q {EXOMISER_VERSION}_{assembly}.zip -d {params.folder}
-		unzip -q {EXOMISER_VERSION}_phenotype.zip -d {params.folder}
+		unzip -q {EXOMISER_VERSION}_{assembly}.zip -d {params.folder_exomiser}
+		unzip -q {EXOMISER_VERSION}_phenotype.zip -d {params.folder_exomiser}
+		mkdir -p {params.folder}/jar
 		cp -r /app/config/annotsv/exomiser-rest-prioritiser-12.1.0.jar {params.folder}/jar
 		touch {output}
 	"""
