@@ -154,6 +154,15 @@ REF_BAM_LIST: ""
 # Max cores to use
 MCORES: 16
 
+############# AnnotSV params for DB setup ##############
+ANNOTSV_VERSION: "3.4"
+GENEHANCER_VERSION: "GeneHancer_hg19_v5.9.zip"
+EXOMISER_VERSION: "2309"
+ASSEMBLY: "hg19"
+
+# Command to download (wget or aria2c)
+COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
+
 ############# IdentifyFailures params ##############
 mincorr: 0.98 # Minimum correlation threshold – the minimum correlation between a test sample and any other sample for the test sample to be considered well-correlated (default 0.98)
 mincov: 100 # Minimum coverage threshold – the minimum median coverage for any sample (measured across all exons in the target) or exon (measured across all samples) to be considered well-covered (default 100)

@@ -25,7 +25,7 @@ from datetime import datetime
 import json
 
 ################## Configuration ##################
-configfile: "/app/config/snakefile/flt3itdext_default_setup.yaml"
+configfile: "/app/config/snakefile/flt3itdext_default.yaml"
 
 
 db = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES')  # DATABASES = "/STARK/databases"

@@ -75,6 +75,15 @@ REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # Java mem option for gatk4 GC extraction
 JAVA_OPTION: "-Xmx8G"
 
+################## AnnotSV params for SB setup ##################
+ANNOTSV_VERSION: "3.4"
+GENEHANCER_VERSION: "GeneHancer_hg19_v5.9.zip"
+EXOMISER_VERSION: "2309"
+ASSEMBLY: "hg19"
+
+# Command to download (wget or aria2c)
+COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
+
 ################## AnnotSV params ##################
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100

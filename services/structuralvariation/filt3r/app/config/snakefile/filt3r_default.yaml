@@ -60,6 +60,8 @@ TEMPLATE_DIR: "/app/template"
 
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30
+# Command to download (wget or aria2c)
+COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
