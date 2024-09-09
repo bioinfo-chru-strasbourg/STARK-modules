@@ -56,7 +56,7 @@ services:
                 ]
             timeout: 10s
             interval: 30s
-            retries: 480
+            retries: 1000
  
  
     stark-module-rnaseq-submodule-salmon-service-listener:
