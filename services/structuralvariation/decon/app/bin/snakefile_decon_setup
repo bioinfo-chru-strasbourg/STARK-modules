@@ -150,12 +150,16 @@ if run_genehancer:
 
 rule annotSV_dummy_vcf:
 	input:
-			success=rules.download_exomiser_data.output,
-			file="/app/scripts/dummy/dummy.vcf"
+		success=rules.download_exomiser_data.output,
+		file="/app/scripts/dummy/dummy.vcf"
 	output: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV.dummyannotation.tsv"
+	params:
+		annotsvdir=f"{db}/AnnotSV/{ANNOTSV_VERSION}/",
+		genomeBuild=config['genomeBuild']
+
 	log: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV.dummyannotation.log"
 	shell: """
-		AnnotSV -SVinputFile {input.file} -annotationsDir {db}/AnnotSV/{ANNOTSV_VERSION}/ -outputFile {output} -genomeBuild {params.genomeBuild} 1>{log}
+		AnnotSV -SVinputFile {input.file} -annotationsDir {params.annotsvdir} -outputFile {output} -genomeBuild {params.genomeBuild} 1>{log}
 	"""
 
 onstart:

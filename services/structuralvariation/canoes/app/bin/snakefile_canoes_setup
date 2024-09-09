@@ -25,7 +25,7 @@ from datetime import datetime
 import json
 
 ################## Configuration ##################
-configfile: "/app/config/snakefile/canoes_default_setup.yaml"
+configfile: "/app/config/snakefile/decon_default_setup.yaml"
 ANNOTSV_VERSION = config['ANNOTSV_VERSION']
 GENEHANCER_VERSION = config['GENEHANCER_VERSION']
 EXOMISER_VERSION = config['EXOMISER_VERSION']
@@ -33,7 +33,7 @@ assembly = config['ASSEMBLY']
 genomeBuild=config['genomeBuild']
 
 db = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES')  # DATABASES = "/STARK/databases"
-serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')  # serviceName 
+serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')  # serviceName = "decon"
 moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')  # moduleName = "structuralvariation"
 services_folder = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
 config_folder = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
@@ -150,12 +150,16 @@ if run_genehancer:
 
 rule annotSV_dummy_vcf:
 	input:
-			success=rules.download_exomiser_data.output,
-			file="/app/scripts/dummy/dummy.vcf"
+		success=rules.download_exomiser_data.output,
+		file="/app/scripts/dummy/dummy.vcf"
 	output: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV.dummyannotation.tsv"
+	params:
+		annotsvdir=f"{db}/AnnotSV/{ANNOTSV_VERSION}/",
+		genomeBuild=config['genomeBuild']
+
 	log: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV.dummyannotation.log"
 	shell: """
-		AnnotSV -SVinputFile {input.file} -annotationsDir {db}/AnnotSV/{ANNOTSV_VERSION}/ -outputFile {output} -genomeBuild {params.genomeBuild} 1>{log}
+		AnnotSV -SVinputFile {input.file} -annotationsDir {params.annotsvdir} -outputFile {output} -genomeBuild {params.genomeBuild} 1>{log}
 	"""
 
 onstart:
