@@ -79,6 +79,7 @@ rule download_gencode:
 		{params.command} {params.genome_link} 
 		{params.command} {params.transcripts_link}
 		{params.command} {params.readme_link}
+		touch {output}
 		"""
 
 # recipe for Salmon index to perform count extraction
@@ -90,20 +91,21 @@ rule download_gencode:
 rule create_salmon_index:
 	input: rules.download_gencode.output
 	output:
-		genome=f"/app/{assembly}.primary_assembly.genome.fa.gz",
-		transcripts=f"/app/gencode.v{gencode_version}.transcripts.fa.gz",
-		decoy=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/decoys.txt",
-		gentrome=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/gentrome.fa.gz",
 		index=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index",
 		txp2gene=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/txp2gene.tsv",
+		decoy=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/decoys.txt",
+		gentrome=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/gentrome.fa.gz",
 		success=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/salmon_install.success"
+	params:
+		genome=f"/app/{assembly}.primary_assembly.genome.fa.gz",
+		transcripts=f"/app/gencode.v{gencode_version}.transcripts.fa.gz"
 	shell:
 		"""
 		gunzip -c {params.genome} | grep '^>' | cut -d ' ' -f 1 > {output.decoy}
 		sed -i.bak -e 's/>//g' {output.decoy}
 		cat {params.transcripts} {params.genome} > {output.gentrome}
 		salmon index -t {output.gentrome} -d {output.decoy} -p 12 -i {output.index} --gencode
-		zgrep '^>' {output.gentrome}| cut -d '|' -f 1,6 --output-delimiter=$'\\t' - | sed 's/>//g; s/gene_symbol://g; s/'//g' > {output.txp2gene}
+		zgrep '^>' {params.gentrome}| cut -d '|' -f 1,6 --output-delimiter=$'\\t' - | sed 's/>//g; s/gene_symbol://g; s/'//g' > {output.txp2gene}
 		touch {output.success}
 		"""
 
