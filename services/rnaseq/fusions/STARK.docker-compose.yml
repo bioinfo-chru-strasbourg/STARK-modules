@@ -11,7 +11,7 @@ services:
             context: ./
             dockerfile: fusions_dockerfile
         entrypoint: "snakemake"
-        command: "-p -s /app/bin/snakefile_decon_setup"
+        command: "-p -s /app/bin/snakefile_fusions_setup"
         container_name: stark-module-rnaseq-submodule-fusions-service-setup
         restart: "no"
         environment:
