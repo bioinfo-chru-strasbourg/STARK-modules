@@ -56,7 +56,7 @@ services:
                 ]
             timeout: 10s
             interval: 60s
-            retries: 60
+            retries: 480
 
     stark-module-structuralvariation-submodule-canoes-service-listener:
         image: stark/stark-module-common-submodule-listener-service-listener:2.0

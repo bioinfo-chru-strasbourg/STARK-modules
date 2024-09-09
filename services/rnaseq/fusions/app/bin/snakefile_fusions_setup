@@ -27,7 +27,6 @@ import json
 ################## Configuration ##################
 configfile: "/app/config/snakefile/fusions_default_setup.yaml"
 
-
 db = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES')  # DATABASES = "/STARK/databases"
 serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')  # serviceName
 moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')  # moduleName = "structuralvariation"

@@ -66,22 +66,22 @@ rule all:
 # https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M33/_README.TXT
 
 rule download_and_setup_gencode:
-    output:
-        genome=f"{db}/gencode/{assembly}.{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
-        transcripts=f"{db}/gencode/{assembly}.{gencode_version}/gencode.v{gencode_version}.transcripts.fa.gz"
-    params:
-        genome_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
-        transcripts_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/gencode.v{gencode_version}.transcripts.fa.gz",
+	output:
+		genome=f"{db}/gencode/{assembly}.{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
+		transcripts=f"{db}/gencode/{assembly}.{gencode_version}/gencode.v{gencode_version}.transcripts.fa.gz"
+	params:
+		genome_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
+		transcripts_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/gencode.v{gencode_version}.transcripts.fa.gz",
 		readme_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/_README.TXT",
 		command=config['COMMAND'],
-        db_folder=f"{db}/gencode/{assembly}.{gencode_version}/"
-    shell:
-        """
-        mkdir -p {params.db_folder}
-        {params.command} -d {params.db_folder} -o {output.genome} {params.genome_link} 
-        {params.command} -d {params.db_folder} -o {output.transcripts} {params.transcripts_link}
+		db_folder=f"{db}/gencode/{assembly}.{gencode_version}/"
+	shell:
+		"""
+		mkdir -p {params.db_folder}
+		{params.command} -d {params.db_folder} -o {output.genome} {params.genome_link} 
+		{params.command} -d {params.db_folder} -o {output.transcripts} {params.transcripts_link}
 		{params.command} -d {params.db_folder} -o {params.db_folder} {params.readme_link}
-        """
+		"""
 
 # recipe for Salmon index to perform count extraction
 # GRch38 assembly and gencode.vxx.transcripts.fa.gz can be found on https://www.gencodegenes.org/human/
@@ -97,24 +97,24 @@ rule download_and_setup_gencode:
 # zgrep "^>" gentrome.fa.gz| cut -d "|" -f 1,6 --output-delimiter=$'\t' - | sed 's/>//g; s/gene_symbol://g; s/"//g' > txp2gene.tsv
 
 rule create_salmon_index:
-    input:
-        genome=rules.download_and_setup_gencode.output.genome,
-        transcripts=rules.download_and_setup_gencode.output.transcripts
-    output:
-        decoy=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/decoys.txt"
+	input:
+		genome=rules.download_and_setup_gencode.output.genome,
+		transcripts=rules.download_and_setup_gencode.output.transcripts
+	output:
+		decoy=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/decoys.txt"
 		gentrome=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/gentrome.fa.gz"
 		index=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index",
-        txp2gene=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/txp2gene.tsv",
+		txp2gene=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/txp2gene.tsv",
 		success=f"{db}/gencode/{assembly}.{gencode_version}/salmon_index/salmon_install.success"
-    shell:
-        """
-        gunzip -c {input.genome} | grep '^>' | cut -d ' ' -f 1 > {output.decoys}
-        sed -i.bak -e 's/>//g' {output.decoys}
-        cat {input.transcripts} {input.genome} > {output.gentrome}
-        salmon index -t {output.gentrome} -d {output.decoys} -p 12 -i {output.index} --gencode
-        zgrep '^>' {output.gentrome}| cut -d '|' -f 1,6 --output-delimiter=$'\\t' - | sed 's/>//g; s/gene_symbol://g; s/"//g' > {output.txp2gene}
+	shell:
+		"""
+		gunzip -c {input.genome} | grep '^>' | cut -d ' ' -f 1 > {output.decoys}
+		sed -i.bak -e 's/>//g' {output.decoys}
+		cat {input.transcripts} {input.genome} > {output.gentrome}
+		salmon index -t {output.gentrome} -d {output.decoys} -p 12 -i {output.index} --gencode
+		zgrep '^>' {output.gentrome}| cut -d '|' -f 1,6 --output-delimiter=$'\\t' - | sed 's/>//g; s/gene_symbol://g; s/"//g' > {output.txp2gene}
 		touch {output.success}
-        """
+		"""
 
 onstart:
 	shell(f"touch {services_folder}/cli/SETUPRunning.txt")

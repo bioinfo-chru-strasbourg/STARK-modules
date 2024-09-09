@@ -57,7 +57,7 @@ services:
                 ]
             timeout: 10s
             interval: 30s
-            retries: 60
+            retries: 480
 
     stark-module-structuralvariation-submodule-scramble-service-listener:
         image: stark/stark-module-common-submodule-listener-service-listener:2.0
