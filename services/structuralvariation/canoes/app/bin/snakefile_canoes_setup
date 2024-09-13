@@ -89,6 +89,7 @@ rule download_and_extract_annotSV:
 # https://data.monarchinitiative.org/exomiser/data/2309_hg19.zip
 # https://data.monarchinitiative.org/exomiser/data/2309_hg38.zip
 # https://github.com/lgmgeo/AnnotSV/blob/d20fd35999902f41b9d60d32ea26d0e4599cde49/share/AnnotSV/jar/exomiser-rest-prioritiser-12.1.0.jar
+
 rule download_exomiser_data:
 	input: rules.download_and_extract_annotSV.output
 	output: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_Exomiser_install.success"
