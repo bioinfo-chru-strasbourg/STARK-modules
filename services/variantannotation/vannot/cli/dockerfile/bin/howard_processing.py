@@ -97,12 +97,7 @@ def run_initialisation(run_informations):
         # exomiser_annotation()
         else:
             fixed_vcf_file = vcf_file
-        cleaning_annotations(fixed_vcf_file, run_informations)
-
-        # unmerge_vcf()
-        
-    # os.remove(cleaned_merged_vcf)
-    
+        cleaning_annotations(fixed_vcf_file, run_informations)    
     
     
 def cleaning_annotations(vcf_file, run_informations):
@@ -165,9 +160,16 @@ def merge_vcf(run_informations):
         os.remove(i + ".tbi")
     return(output_merged)
 
-def unmerge_vcf(run_informations, input):
+def unmerge_vcf(input):
     vcf_file_to_unmerge = input
-    print(vcf_file_to_unmerge)
+    sample_list = subprocess.run(["bcftools", "query", "-l", vcf_file_to_unmerge], universal_newlines=True, stdout=subprocess.PIPE).stdout.strip().split("\n")
+    for sample in sample_list:
+        output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"{sample}.final.vcf")
+        cmd = ["bcftools", "view", "-s", sample, vcf_file_to_unmerge]
+        with open(output_file, "w") as writefile:
+            subprocess.call(cmd, universal_newlines=True, stdout=writefile)
+        subprocess.call(["bgzip", output_file], universal_newlines=True)
+        os.remove(output_file)
 
 
 def info_to_format_script(vcf_file, run_informations):
@@ -263,6 +265,8 @@ def howard_proc(run_informations, vcf_file):
     log.info("Annotating input files with HOWARD")
     
     howard_launcher.launch(container_name, launch_annotate_arguments)
+    os.remove(vcf_file)
+    return output_file
 
 def merge_vcf_files(run_informations):
     log.info("Merging all vcfs into one for CuteVariant analysis")
