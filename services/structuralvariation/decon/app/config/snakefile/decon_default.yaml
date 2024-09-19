@@ -77,33 +77,10 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv']
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
 # path to Refgene file containing custom exon numbers  
-# http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/refGene.hg19.bed 
-# # Given exon information
-#exon_data = [
-#    ("chr8", 30242056, 30242674, "RBPMS", "NM_001008711", "+"),
-#   ("chr8", 30332294, 30332372, "RBPMS", "NM_001008711", "+"),
-#    ("chr8", 30335314, 30335353, "RBPMS", "NM_001008711", "+"),
-#   ("chr8", 30336830, 30336893, "RBPMS", "NM_001008711", "+"),
-#    ("chr8", 30361802, 30361953, "RBPMS", "NM_001008711", "+"),
-#    ("chr8", 30402010, 30402141, "RBPMS", "NM_001008711", "+"),
-#    ("chr8", 30407016, 30407102, "RBPMS", "NM_001008711", "+"),
-#    ("chr8", 30416403, 30416473, "RBPMS", "NM_001008711", "+"),
-#    ("chr8", 30423773, 30423877, "RBPMS", "NM_001008711", "+"),
-#    ("chr8", 30428153, 30429773, "RBPMS", "NM_001008711", "+"),
-#]
-
-#output_data = []
-#for i, exon in enumerate(exon_data):
-#    chr, start, end, gene, transcript, strand = exon
-#    exon_number = f"exon{i+1}"
-#    new_transcript = f"{transcript},{exon_number}"
-#    output_data.append((chr, start, end, new_transcript, gene, strand))
-#for item in output_data:
-#    print("\t".join(map(str, item)))
-# chr8	30242056	30242674	NM_001008711,exon1	RBPMS	+
-# chr8	30332294	30332372	NM_001008711,exon2	RBPMS	+
-
+# http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/
+# archive formated_refgene for hg19 avalaible in /app/database
 REFSEQGENE_PATH: "/STARK/databases/refGene/current/formated_refgene.tsv"
+
 # Paths
 SCRIPTS_CONFIG: "/app/config/fileconversion"
 DUMMY_PATH: "/app/scripts/dummy"
