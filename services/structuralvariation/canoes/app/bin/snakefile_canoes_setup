@@ -26,6 +26,8 @@ import json
 
 ################## Configuration ##################
 configfile: "/app/config/snakefile/canoes_default.yaml"
+###################################################
+
 ANNOTSV_VERSION = config['ANNOTSV_VERSION']
 GENEHANCER_VERSION = config['GENEHANCER_VERSION']
 EXOMISER_VERSION = config['EXOMISER_VERSION']

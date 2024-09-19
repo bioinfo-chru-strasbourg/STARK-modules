@@ -553,8 +553,8 @@ rule plot_coverage:
 	""" Generate coverage plots per sample in pdf """
 	input: rules.plot_coverage_stats.output
 	output: 
-			barplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.pdf",
-			boxplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.pdf"
+		barplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.barplot.pdf",
+		boxplot = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.boxplot.pdf"
 	params: config['R_SCRIPTS']
 	log:
 		log=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.plotCoverage.log",
@@ -564,31 +564,31 @@ rule plot_coverage:
 rule canoes_calling:
 	""" CANOES analysis """
 	input: 
-			read = rules.merge_multicov.output,
-			gc = rules.gc_percent.output.gc_percent
+		read = rules.merge_multicov.output,
+		gc = rules.gc_percent.output.gc_percent
 	params:
-			Rscripts = config['R_SCRIPTS'],
-			chromosome= "{gender}",
-			bamlist= f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
-			pvalue = config['pval'],
-			distance = config['dist'],
-			tnumeric = config['tnum'],
-			numreference = config['numref'],
-			hom = config['homdel'],
-			refbamlist= "--refbams {}".format(config['REF_BAM_LIST']) if config['REF_BAM_LIST'] else "",
-			refmulticovtsv = f" --readsrefs {resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv" if config['REF_BAM_LIST'] else ""
+		Rscripts = config['R_SCRIPTS'],
+		chromosome= "{gender}",
+		bamlist= f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
+		pvalue = config['pval'],
+		distance = config['dist'],
+		tnumeric = config['tnum'],
+		numreference = config['numref'],
+		hom = config['homdel'],
+		refbamlist= "--refbams {}".format(config['REF_BAM_LIST']) if config['REF_BAM_LIST'] else "",
+		refmulticovtsv = f" --readsrefs {resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv" if config['REF_BAM_LIST'] else ""
 	output:
-			cnvcall = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv",
-			success = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.success",
-			rdata = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOES.Rdata"
+		cnvcall = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv",
+		success = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.success",
+		rdata = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOES.Rdata"
 	log: 
 		log = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.log",
 		err = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.err"
 	shell:
 		"""
-			Rscript {params.Rscripts}/CANOES.v2.2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
-			--samples {params.bamlist} --homdel {params.hom} --numref {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
-			--pvalue {params.pvalue} {params.refbamlist} {params.refmulticovtsv} --output {output.cnvcall} --rdata {output.rdata} 1> {log.log} 2> {log.err} && touch {output.success}
+		Rscript {params.Rscripts}/CANOES.v2.2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
+		--samples {params.bamlist} --homdel {params.hom} --numref {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
+		--pvalue {params.pvalue} {params.refbamlist} {params.refmulticovtsv} --output {output.cnvcall} --rdata {output.rdata} 1> {log.log} 2> {log.err} && touch {output.success}
 		"""
 
 rule merge_makeCNVcalls:
@@ -715,7 +715,7 @@ rule fix_vcf:
 	input: rules.sortvcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	params:	config['PY_SCRIPTS']
-	shell: " python {params}/multifix_vcf.py -i {input} -o {output} -z ; tabix {output}"
+	shell: "python {params}/multifix_vcf.py -i {input} -o {output} -z ; tabix {output}"
 
 rule merge_vcf:
 	""" Copy or merge multiple vcfs using bcftools """
