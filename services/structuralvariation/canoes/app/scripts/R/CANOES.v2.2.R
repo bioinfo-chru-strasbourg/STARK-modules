@@ -72,7 +72,7 @@ main <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numr
   stop("The fourth column is not named GC_CONTENT")
   }
   names(gc) <- "gc" # column name is gc
-   
+
   # Reads
   canoes.reads_un <- read.table(reads_file,header=TRUE)
   data <- read.table(reads_file,header=TRUE)
@@ -84,7 +84,7 @@ main <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numr
 refsample.names<-vector()
 if(length(refbams_file)>0){
     rawrefbams<- read.csv(paste(refbams_file), header=TRUE, sep="\t")
-    
+
       if("gender" %in% colnames(rawrefbams)){
     if (modechrom=="XX"){
       rawrefbams = subset(rawrefbams, rawrefbams$gender=='F')
@@ -97,8 +97,8 @@ if(length(refbams_file)>0){
         message('ERROR: No gender specified in the reference bam list, calling of chrX is not possible')
         quit()
         }
-    }    
-     
+    }
+
     refbams<-apply(rawrefbams,1,toString)
     a<-length(strsplit(refbams[1],"/")[[1]])
     refsample.names<-sapply(refbams,multi_strsplit,c("/","."),c(a,1))
@@ -133,12 +133,12 @@ if(length(refbams_file)>0){
 
   xcnv.list <- vector('list', length(sample.names_to_analyse))
   for (i in 1:length(sample.names_to_analyse)) {
-    xcnv.list[[i]] <- CallCNVs(sample.names_to_analyse[i], canoes.reads, p_value, Tnum, D, numrefs, FALSE, homdel_mean, refsample.names) 
+    xcnv.list[[i]] <- CallCNVs(sample.names_to_analyse[i], canoes.reads, p_value, Tnum, D, numrefs, FALSE, homdel_mean, refsample.names)
   }
-  
+
   xcnvs <- do.call('rbind', xcnv.list)
   xcnvs <- xcnvs %>%
-      mutate(Chrom = ifelse(Chrom == "23", "X", 
+      mutate(Chrom = ifelse(Chrom == "23", "X",
                              ifelse(Chrom == "24", "Y", Chrom)))
   xcnvs$INTERVAL <- gsub("^23:", "chrX:", xcnvs$INTERVAL)
   xcnvs$INTERVAL <- gsub("^24:", "chrY:", xcnvs$INTERVAL)
@@ -152,7 +152,7 @@ if(length(refbams_file)>0){
   xcnvs_final <- xcnvs[, c("Chrom", "Start", "End", "CNV", "SAMPLE", "INTERVAL", "KB", "MID_BP", "TARGETS", "NUM_TARG", "MLCN", "Q_SOME")]
   xcnvs_final$INTERVAL <- gsub("^(\\d+):", "chr\\1:", xcnvs_final$INTERVAL)
   write.table(xcnvs_final, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
-  
+
 # Identify all data frames in the environment & save to an Rdata file
 data_frames <- sapply(ls(), function(x) is.data.frame(get(x)))
 data_frame_names <- names(data_frames[data_frames])
@@ -172,10 +172,10 @@ DUPLICATION=3
 # Arguments:
 #   sample.name:
 #     sample to call CNVs in (should correspond to a column in counts)
-#   counts: 
-#     count matrix, first five columns should be 
+#   counts:
+#     count matrix, first five columns should be
 #       target: consecutive numbers for targets (integer)
-#       chromosome: chromosome number (integer-valued) 
+#       chromosome: chromosome number (integer-valued)
 #         (support for sex chromosomes to come)
 #       start: start position of probe (integer)
 #       end: end position of probe (integer)
@@ -189,9 +189,9 @@ DUPLICATION=3
 #     expected number of targets in a CNV (integer) default is 6
 #   numrefs
 #     maximum number of reference samples to use (integer) default is 30
-#     the weighted variance calculations will take a long time if too 
+#     the weighted variance calculations will take a long time if too
 #     many reference samples are used
-# Returns: 
+# Returns:
 #   data frame with the following columns:
 #      SAMPLE: name of sample
 #      CNV: DEL of DUP
@@ -209,10 +209,10 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
   if (length(setdiff(names(counts)[1:5], c("target", "chromosome", "start", "end", "gc"))) > 0){
     stop("First five columns of counts matrix must be target, chromosome, start, end, gc")
   }
-       
+
     if (sum(grepl("chr", counts$chromosome))==length(counts$chromosome)){
       counts <- counts %>%
-      mutate(chromosome = ifelse(chromosome == "chrX", "chr23", 
+      mutate(chromosome = ifelse(chromosome == "chrX", "chr23",
                              ifelse(chromosome == "chrY", "chr24", chromosome)))
       counts$chromosome <- gsub("chr", "", counts$chromosome)
     }
@@ -237,8 +237,8 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
   # find mean coverage of probes
   mean.counts <- mean(apply(counts[, sample.names], 2, mean))
   # normalize counts; round so we can use negative binomial
-  counts[, sample.names] <- apply(counts[, sample.names], 2, 
-        function(x, mean.counts) 
+  counts[, sample.names] <- apply(counts[, sample.names], 2,
+        function(x, mean.counts)
                  round(x * mean.counts / mean(x)), mean.counts)
   # calculate covariance of read count across samples
   cov <- cor(counts[, sample.names], counts[, sample.names])
@@ -252,15 +252,15 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
 
 
   covariances <- cov[sample.name, reference.samples]
-  reference.samples <- names(sort(covariances, 
+  reference.samples <- names(sort(covariances,
           decreasing=T)[1:min(numrefs, length(covariances))])
   sample.mean.counts <- mean(counts[, sample.name])
   sample.sumcounts <- apply(counts[, reference.samples], 2, sum)
   # normalize reference samples to sample of interest
-  counts[, reference.samples] <- apply(counts[, reference.samples], 2, 
-        function(x, sample.mean.counts) 
-                round(x * sample.mean.counts / 
-                mean(x)), sample.mean.counts)  
+  counts[, reference.samples] <- apply(counts[, reference.samples], 2,
+        function(x, sample.mean.counts)
+                round(x * sample.mean.counts /
+                mean(x)), sample.mean.counts)
   # select reference samples and weightings using non-negative least squares
   b <- counts[, sample.name]
   A <- as.matrix(counts[, reference.samples])
@@ -277,12 +277,12 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
 
   # calculate weighted mean of read count
   # this is used to calculate emission probabilities
-  counts$mean <- apply(counts[, reference.samples], 
+  counts$mean <- apply(counts[, reference.samples],
                        1, wtd.mean, sample.weights)
   targets <- counts$target
   # exclude probes with all zero counts
   nonzero.rows <- counts$mean > 0
-  nonzero.rows.df <- data.frame(target=counts$target, 
+  nonzero.rows.df <- data.frame(target=counts$target,
                                 nonzero.rows=nonzero.rows)
 
   counts <- counts[nonzero.rows, ]
@@ -290,28 +290,28 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
   # get the distances between consecutive probes
   distances <- GetDistances(counts)
   # estimate the read count variance at each probe
-  var.estimate <- EstimateVariance(counts, reference.samples, 
+  var.estimate <- EstimateVariance(counts, reference.samples,
                                                sample.weights)
   print(head(var.estimate))
-  emission.probs <- EmissionProbs(counts[, sample.name], 
-                        counts$mean, var.estimate$var.estimate, 
+  emission.probs <- EmissionProbs(counts[, sample.name],
+                        counts$mean, var.estimate$var.estimate,
                         counts[, "target"])
-  
+
   if (get.dfs){
     return(list(emission.probs=emission.probs, distances=distances))
   }
   # call CNVs with the Viterbi algorithm
-  viterbi.state <- Viterbi(emission.probs, distances, p, Tnum, D)  
+  viterbi.state <- Viterbi(emission.probs, distances, p, Tnum, D)
   # format the CNVs
-  cnvs <- PrintCNVs(sample.name, viterbi.state, 
+  cnvs <- PrintCNVs(sample.name, viterbi.state,
                          counts)
   # if there aren't too many CNVs, calculate the Q_SOME
   if (nrow(cnvs) > 0 & nrow(cnvs) <= 50){
-    qualities <- GenotypeCNVs(cnvs, sample.name, counts, p, Tnum, D, numrefs, 
-                          emission.probs=emission.probs, 
+    qualities <- GenotypeCNVs(cnvs, sample.name, counts, p, Tnum, D, numrefs,
+                          emission.probs=emission.probs,
                           distances=distances)
     for (i in 1:nrow(cnvs)){
-      cnvs$Q_SOME[i] <- ifelse(cnvs$CNV[i]=="DEL", qualities[i, "SQDel"], 
+      cnvs$Q_SOME[i] <- ifelse(cnvs$CNV[i]=="DEL", qualities[i, "SQDel"],
                                qualities[i, "SQDup"])
     }
   }
@@ -334,10 +334,10 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
 #               these should correspond to the target numbers in counts
 #   sample.name:
 #     sample to genotype CNVs in (should correspond to a column in counts)
-#   counts: 
-#     count matrix, first five columns should be 
+#   counts:
+#     count matrix, first five columns should be
 #       target: consecutive numbers for targets (integer)
-#       chromosome: chromosome number (integer-valued) 
+#       chromosome: chromosome number (integer-valued)
 #         (support for sex chromosomes to come)
 #       start: start position of probe (integer)
 #       end: end position of probe (integer)
@@ -351,24 +351,24 @@ CallCNVs <- function(sample.name, counts, p, Tnum, D, numrefs, get.dfs, homdel.m
 #     expected number of targets in a CNV (integer) default is 6
 #   numrefs
 #     maximum number of reference samples to use (integer) default is 30
-#     the weighted variance calculations will take a long time if too 
+#     the weighted variance calculations will take a long time if too
 #     many reference samples are used
 #   emission.probs and distances are for internal use only
-# Returns: 
+# Returns:
 #   data frame with the following columns and one row for each genotyped CNV:
 #      INTERVAL: CNV coordinates in the form chr:start-stop
-#      NQDEL: a Phred-scaled quality score that sample.name has no deletion 
+#      NQDEL: a Phred-scaled quality score that sample.name has no deletion
 #             in the interval
-#      SQDEL: a Phred-scaled quality score that sample.name has a deletion 
+#      SQDEL: a Phred-scaled quality score that sample.name has a deletion
 #             in the interval
 #      NQDUP and SQDUP: same, but for a duplication
-GenotypeCNVs <- function(xcnvs, sample.name, counts, p, Tnum, 
+GenotypeCNVs <- function(xcnvs, sample.name, counts, p, Tnum,
                     D, numrefs,
-                    emission.probs=NULL, 
+                    emission.probs=NULL,
                     distances=NULL){
-  
 
-  
+
+
   if (!sample.name %in% names(counts)){stop("No column for sample ", sample.name, " in counts matrix")}
   if (length(setdiff(names(counts)[1:5], c("target", "chromosome", "start", "end", "gc"))) > 0){
     stop("First five columns of counts matrix must be target, chromosome, start, end, gc")
@@ -381,7 +381,7 @@ GenotypeCNVs <- function(xcnvs, sample.name, counts, p, Tnum,
       counts$chromosome <- gsub("chr", "", counts$chromosome)
     }
     counts$chromosome <- as.numeric(counts$chromosome)
-    if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0) 
+    if (length(setdiff(unique(counts$chromosome), seq(1:24))) > 0)
       stop("chromosome must take value in range 1-22 (support for sex chromosomes to come)")
   }
 
@@ -408,40 +408,40 @@ GenotypeCNVs <- function(xcnvs, sample.name, counts, p, Tnum,
   }
   forward.m <- GetForwardMatrix(emission.probs, distances, p, Tnum, D)
   backward.m <- GetBackwardMatrix(emission.probs, distances, p, Tnum, D)
-  qualities <- matrix(0, nrow=num.cnvs, ncol=5, 
-                      dimnames=list(cnv.intervals, 
+  qualities <- matrix(0, nrow=num.cnvs, ncol=5,
+                      dimnames=list(cnv.intervals,
                                     c("INTERVAL", "NQDel", "SQDel", "NQDup", "SQDup")))
   for (i in 1:num.cnvs){
     interval <- as.character(xcnvs[i, "INTERVAL"])
     targets <- as.numeric(strsplit(as.character(xcnvs[i, "TARGETS"]), ".", fixed=T)[[1]][c(1,3)])
     left.target <- targets[1]
     right.target <- targets[2]
-    likelihoods <- GetModifiedLikelihood(forward.m, backward.m, 
-                                         emission.probs, distances, 
-                                         left.target, right.target, 
+    likelihoods <- GetModifiedLikelihood(forward.m, backward.m,
+                                         emission.probs, distances,
+                                         left.target, right.target,
                                          c(DUPLICATION, DELETION), p, Tnum, D)
-    modified.likelihood <- likelihoods[1]; 
+    modified.likelihood <- likelihoods[1];
     unmodified.likelihood <- likelihoods[2]
     Prob.All.Normal <- exp(modified.likelihood - unmodified.likelihood)
-    likelihoods <- GetModifiedLikelihood(forward.m, backward.m, 
-                                         emission.probs, distances, 
+    likelihoods <- GetModifiedLikelihood(forward.m, backward.m,
+                                         emission.probs, distances,
                                          left.target, right.target, DELETION, p, Tnum, D)
-    modified.likelihood <- likelihoods[1]; 
+    modified.likelihood <- likelihoods[1];
     unmodified.likelihood <- likelihoods[2]
     Prob.No.Deletion <- exp(modified.likelihood - unmodified.likelihood)
-    likelihoods <- GetModifiedLikelihood(forward.m, backward.m, 
-                                         emission.probs, distances, 
+    likelihoods <- GetModifiedLikelihood(forward.m, backward.m,
+                                         emission.probs, distances,
                                          left.target, right.target, DUPLICATION, p, Tnum, D)
-    modified.likelihood <- likelihoods[1]; 
+    modified.likelihood <- likelihoods[1];
     unmodified.likelihood <- likelihoods[2]
     Prob.No.Duplication <- exp(modified.likelihood - unmodified.likelihood)
     # Check if probabilities greater than 1 are numerical error or bug
     Phred <- function(prob){
       return(round(min(99, -10 * log10(1 - prob))))
     }
-    qualities[i, "NQDel"] <- Phred(Prob.No.Deletion)       
+    qualities[i, "NQDel"] <- Phred(Prob.No.Deletion)
     qualities[i, "SQDel"] <- Phred(Prob.No.Duplication - Prob.All.Normal)
-    qualities[i, "NQDup"] <- Phred(Prob.No.Duplication)       
+    qualities[i, "NQDup"] <- Phred(Prob.No.Duplication)
     qualities[i, "SQDup"] <- Phred(Prob.No.Deletion - Prob.All.Normal)
     qualities[i, "INTERVAL"] <- interval
   }
@@ -453,7 +453,7 @@ GenotypeCNVs <- function(xcnvs, sample.name, counts, p, Tnum,
   return(qualities)
 }
 
-# returns data frame with distance to each target from the previous target 
+# returns data frame with distance to each target from the previous target
 # (0 in the case of the first target on chromosome 1, a very big number
 # for the first target on each other chromosome--this resets the HMM
 # for each chromosome)
@@ -461,9 +461,9 @@ GetDistances <- function(counts){
   chromosome <- counts[, "chromosome"]
   startbase <- counts[, "start"]
   num.nonzero.exons <- length(startbase)
-  distances <- c(0, startbase[2:num.nonzero.exons] - 
-                   startbase[1:(num.nonzero.exons - 1)] + 
-                   1000000000000 * (chromosome[2:num.nonzero.exons] - 
+  distances <- c(0, startbase[2:num.nonzero.exons] -
+                   startbase[1:(num.nonzero.exons - 1)] +
+                   1000000000000 * (chromosome[2:num.nonzero.exons] -
                                       chromosome[1:(num.nonzero.exons - 1)]))
   return(data.frame(target=counts[, "target"], distance=distances))
 }
@@ -476,23 +476,23 @@ EstimateVariance <- function(counts, ref.sample.names, sample.weights){
   counts$var <- apply(counts[, ref.sample.names], 1, wtd.var, sample.weights, normwt=T)
   set.seed(1)
   counts.subset <- counts[sample(nrow(counts), min(36000, nrow(counts))), ]
-  
-  # can't do gamma regression with negative 
-  counts.subset$var[counts.subset$var==0] <- 0.1 
+
+  # can't do gamma regression with negative
+  counts.subset$var[counts.subset$var==0] <- 0.1
   fit <- gam(var ~ s(mean) + s(gc), family=Gamma(link=log), data=counts.subset)
-  
+
   #rsd <- residuals(fit)
   #qq.gam(fit,rep=100); plot(fitted(fit),rsd)
   #plot(counts.subset$x0,rsd); plot(counts.subset$x1,rsd)
   # we don't want variance less than Poisson
   # we take maximum of genome-wide estimate, method of moments estimate
   # and Poisson variance
-  v.estimate <- pmax(predict(fit, counts, type="response"), counts$var, 
+  v.estimate <- pmax(predict(fit, counts, type="response"), counts$var,
                      counts$mean * 1.01)
   return(data.frame(target=counts$target, var.estimate=v.estimate))
 }
-  
-EmissionProbs <- function(test.counts, target.means, 
+
+EmissionProbs <- function(test.counts, target.means,
                                       var.estimate, targets){
   num.targets <- length(test.counts)
   # calculate the means for the deletion, normal and duplication states
@@ -563,7 +563,7 @@ Viterbi <- function(emission.probs.matrix, distances, p, Tnum, D){
 # returns a transition matrix
 #                              to state
 #                    deletion   normal    duplication
-#           deletion   
+#           deletion
 #from state   normal
 #        duplication
 GetTransitionMatrix <- function(distance, p, Tnum, D){
@@ -574,8 +574,8 @@ GetTransitionMatrix <- function(distance, p, Tnum, D){
   prob.abnormal.diff.abnormal <- (1 - f) * p
   prob.normal.normal <- 1 - 2 * p
   prob.normal.abnormal <- p
-  transition.probs <- 
-    c(prob.abnormal.abnormal, prob.abnormal.normal, prob.abnormal.diff.abnormal, 
+  transition.probs <-
+    c(prob.abnormal.abnormal, prob.abnormal.normal, prob.abnormal.diff.abnormal,
       prob.normal.abnormal, prob.normal.normal, prob.normal.abnormal,
       prob.abnormal.diff.abnormal, prob.abnormal.normal, prob.abnormal.abnormal)
   transition.m = log(matrix(transition.probs, NUM.STATES, NUM.STATES, byrow=TRUE))
@@ -599,7 +599,7 @@ SumProbabilities <- function(x){
   return(sum.probs)
 }
 
-# finds the data likelihood by summing the product of the corresponding 
+# finds the data likelihood by summing the product of the corresponding
 # forward and backward probabilities at any token (should give the same value
 # regardless of the token)
 GetLikelihood <- function(forward.matrix, backward.matrix, x){
@@ -620,12 +620,12 @@ GetForwardMatrix <- function(emission.probs.matrix, distances, p, Tnum, D){
     # find the probability that we are in each of the three states
     sum.probs <- apply(temp.matrix, 2, SumProbabilities)
     forward.matrix[i, ] <- sum.probs + emission.probs.matrix[i, ]
-  }  
-  return(forward.matrix)  
+  }
+  return(forward.matrix)
 }
 
 # get the backward probabilities
-GetBackwardMatrix <- function(emission.probs.matrix, distances, 
+GetBackwardMatrix <- function(emission.probs.matrix, distances,
                                   p, Tnum, D){
   emission.probs.matrix <- as.matrix(emission.probs.matrix[, 2:4])
   num.exons <- dim(emission.probs.matrix)[1]
@@ -633,56 +633,56 @@ GetBackwardMatrix <- function(emission.probs.matrix, distances,
   initial.state <- log(c(0.0075 / NUM.ABNORMAL.STATES, 1 - 0.0075, 0.0075 / NUM.ABNORMAL.STATES))
   backward.matrix[num.exons, ] <- rep(0, NUM.STATES)
   for (i in (num.exons - 1):1){
-    temp.matrix <- GetTransitionMatrix(distances$distance[i+1], p, Tnum, D) + 
+    temp.matrix <- GetTransitionMatrix(distances$distance[i+1], p, Tnum, D) +
       matrix(backward.matrix[i + 1, ], 3, 3, byrow=T) +
       matrix(emission.probs.matrix[i+1, ], 3, 3, byrow=T)
     backward.matrix[i, ] <- apply(temp.matrix, 1, SumProbabilities)
-  }  
+  }
   final.prob <- backward.matrix[1, ] + emission.probs.matrix[1, ] + initial.state
-  return(backward.matrix)  
+  return(backward.matrix)
 }
 
 # find the likelihood of the data given that certain states are disallowed
 # between start target and end target
-GetModifiedLikelihood <- function(forward.matrix, backward.matrix, emission.probs.matrix, distances, 
+GetModifiedLikelihood <- function(forward.matrix, backward.matrix, emission.probs.matrix, distances,
                                       start.target, end.target, disallowed.states, p, Tnum, D){
   targets <- emission.probs.matrix[, 1]
   emission.probs.matrix <- as.matrix(emission.probs.matrix[, 2:4])
-  # there may be missing targets in this sample, we genotype the largest stretch of 
+  # there may be missing targets in this sample, we genotype the largest stretch of
   # targets that lie in the CNV
   left.target <- min(which(targets >= start.target))
   right.target <- max(which(targets <= end.target))
   num.exons <- dim(emission.probs.matrix)[1]
-  unmodified.likelihood <- GetLikelihood(forward.matrix, 
+  unmodified.likelihood <- GetLikelihood(forward.matrix,
                                              backward.matrix, min(right.target + 1, num.exons))
   #right.target or left.target may be empty
-  
+
   #if (right.target >= left.target) return(c(NA, unmodified.likelihood))
   stopifnot(right.target >= left.target)
   modified.emission.probs.matrix <- emission.probs.matrix
-  modified.emission.probs.matrix[left.target:right.target, 
+  modified.emission.probs.matrix[left.target:right.target,
                                  disallowed.states] <- -Inf
-  
-  # if the start target is the first target we need to recalculate the 
+
+  # if the start target is the first target we need to recalculate the
   # forward probabilities
   # for that target, using the modified emission probabilities
   if (left.target == 1){
     initial.state <- log(c(0.0075 / NUM.ABNORMAL.STATES, 1 - 0.0075, 0.0075 / NUM.ABNORMAL.STATES))
     forward.matrix[1, ] <- initial.state + modified.emission.probs.matrix[1, ]
     left.target <- left.target + 1
-  } 
+  }
   for (i in seq(left.target, min(right.target + 1, num.exons))){
     # compute matrix with probability we were in state j and are now in state i
     # in temp.matrix[j, i] (ignoring emission of current token)
     temp.matrix <- forward.matrix[i - 1, ] + GetTransitionMatrix(distances$distance[i], p, Tnum, D)
     # find the probability that we are in each of the three states
-    sum.probs <- apply(temp.matrix, 2, SumProbabilities) 
+    sum.probs <- apply(temp.matrix, 2, SumProbabilities)
     if (!i == (right.target + 1)){
       forward.matrix[i, ] <- sum.probs + modified.emission.probs.matrix[i, ]
     } else{
       forward.matrix[i, ] <- sum.probs + emission.probs.matrix[i, ]
     }
-  }  
+  }
   # find the modified likelihood of the sequence
   modified.likelihood <- GetLikelihood(forward.matrix, backward.matrix, min(right.target + 1, num.exons))
   return(c(modified.likelihood, unmodified.likelihood))
@@ -703,12 +703,12 @@ SummarizeCNVs <- function(cnv.targets, counts, sample.name, state){
   cnv.targets <- paste(cnv.start.target, "..", cnv.end.target, sep="")
   cnv.interval <- paste(cnv.chromosome, ":", cnv.start.base, "-", cnv.end.base, sep="")
   num.targets <- cnv.end.target - cnv.start.target + 1
-  return(data.frame(sample.name=sample.name, cnv.type=cnv.type, cnv.interval=cnv.interval, 
-                    cnv.kbs=cnv.kbs, cnv.chromosome=cnv.chromosome, 
+  return(data.frame(sample.name=sample.name, cnv.type=cnv.type, cnv.interval=cnv.interval,
+                    cnv.kbs=cnv.kbs, cnv.chromosome=cnv.chromosome,
                     cnv.midbp=cnv.midbp, cnv.targets=cnv.targets, num.targets=num.targets))
 }
 
-PrintCNVs <- function(test.sample.name, viterbi.state, nonzero.counts){  
+PrintCNVs <- function(test.sample.name, viterbi.state, nonzero.counts){
   consecutiveGroups <- function(sequence){
     num <- length(sequence)
     group <- 1
@@ -729,8 +729,8 @@ PrintCNVs <- function(test.sample.name, viterbi.state, nonzero.counts){
     if (!length(cnv.targets) == 0){
       groups <- consecutiveGroups(cnv.targets)
 
-      cnvs.temp.df <- ddply(data.frame(target=cnv.targets, group=groups), 
-                            "group", SummarizeCNVs, nonzero.counts, test.sample.name, 
+      cnvs.temp.df <- ddply(data.frame(target=cnv.targets, group=groups),
+                            "group", SummarizeCNVs, nonzero.counts, test.sample.name,
                             state)
       if (state == 1){
         deletions.df <- cnvs.temp.df
@@ -748,19 +748,19 @@ PrintCNVs <- function(test.sample.name, viterbi.state, nonzero.counts){
   num.calls <- num.deletions + num.duplications
   cat(num.calls, "CNVs called in sample", test.sample.name, "\n")
   if (num.deletions == 0 & num.duplications == 0){
-    df <- data.frame(SAMPLE=character(0), CNV=character(0), INTERVAL=character(0), 
-                     KB=numeric(0), CHR=character(0), 
+    df <- data.frame(SAMPLE=character(0), CNV=character(0), INTERVAL=character(0),
+                     KB=numeric(0), CHR=character(0),
                      MID_BP=numeric(), TARGETS=character(0), NUM_TARG=numeric(0), Q_SOME=numeric(0), MLCN=numeric(0))
     return(df)
   }
   if (num.deletions > 0 & num.duplications > 0){
     cnvs.df <- rbind(deletions.df, duplications.df)
   } else {
-    ifelse(num.deletions > 0, 
+    ifelse(num.deletions > 0,
            cnvs.df <- deletions.df, cnvs.df <- duplications.df)
   }
-  xcnv <- cbind(cnvs.df[, c("sample.name", "cnv.type", "cnv.interval", 
-                      "cnv.kbs", "cnv.chromosome", "cnv.midbp", 
+  xcnv <- cbind(cnvs.df[, c("sample.name", "cnv.type", "cnv.interval",
+                      "cnv.kbs", "cnv.chromosome", "cnv.midbp",
                       "cnv.targets", "num.targets")], 0)
   colnames(xcnv) <- c("SAMPLE", "CNV", "INTERVAL", "KB", "Chrom", "MID_BP", "TARGETS",
                       "NUM_TARG", "MLCN")
@@ -773,30 +773,13 @@ CalcCopyNumber <- function(data, cnvs, homdel.mean){
     cnv <- cnvs[i, ]
     targets <- as.numeric(unlist(strsplit(as.character(cnv$TARGETS), "..", fixed=T)))
     cnv.data <- subset(data, target >= targets[1] & target <= targets[2])
-    state.target.means <- t(apply(data.frame(x=cnv.data$countsmean), 1, 
-                                  function(x) c(C1=x*1/2, C2=x, C3=x*3/2, 
+    state.target.means <- t(apply(data.frame(x=cnv.data$countsmean), 1,
+                                  function(x) c(C1=x*1/2, C2=x, C3=x*3/2,
                                                 C4=x * 2, C5=x * 5/2, C6=x*6/2)))
     # calculate the expected size (given the predicted variance)
     size <- cnv.data$countsmean ^ 2 / (cnv.data$varestimate - cnv.data$countsmean)
     emission.probs <- matrix(NA, nrow(cnv.data), 7)
     colnames(emission.probs) <- c("C0", "C1", "C2", "C3", "C4", "C5", "C6")
-    #colnames(emission.probs) <- c("target", "delprob", "normalprob", "dupprob")
+    # colnames(emission.probs) <- c("target", "delprob", "normalprob", "dupprob")
     # calculate the emission probabilities given the read count
-    emission.probs[, 1] <- dpois(cnv.data$sample, homdel.mean, log=T)
-    for (s in 1:6){
-      size.state <- size * s/2
-      emission.probs[, s+1] <- dnbinom(cnv.data$sample, mu=state.target.means[, s], 
-                                       size=size.state, log=T)
-    }
-    cs <- colSums(emission.probs)
-    ml.state <- which.max(cs) - 1
-    if (ml.state==2){
-      ml.state <- ifelse(cnv$CNV=="DEL", 1, 3)
-    }
-    cnvs$MLCN[i] <- ml.state
-  }  
-  return(cnvs)
-}
-
-# Call the main function with parsed arguments
 main(options$gc, options$reads, options$modechrom, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$outputrdata, options$refbams, options$readsrefs)
