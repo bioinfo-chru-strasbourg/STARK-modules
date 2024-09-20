@@ -59,35 +59,18 @@ def launch_run(args):
             os.environ["DOCKER_DEJAVU_DATABASE"],
             "current",
             args.assembly,
-            run_repository_list[-3],
-            f"{run_repository_list[-2]}.parquet",
-            run_repository_list[-1],
-        ),
-        "parquet_db_howard_run_folder": osj(
-            "/",
-            "databases",
-            "dejavu",
-            "current",
-            args.assembly,
-            run_repository_list[-3],
-            f"{run_repository_list[-2]}.parquet",
-            run_repository_list[-1],
-        ),
-        "parquet_db_howard_project_folder": osj(
-            "/",
-            "databases",
-            "dejavu",
-            "current",
-            args.assembly,
-            run_repository_list[-3],
-            f"{run_repository_list[-2]}.parquet",
+            "dejavu.partition.parquet",
+            f"GROUP={run_repository_list[-3]}",
+            f"PROJECT={run_repository_list[-2]}",
+            f"RUN={run_repository_list[-1]}",
         ),
         "parquet_db_project_folder": osj(
             os.environ["DOCKER_DEJAVU_DATABASE"],
             "current",
             args.assembly,
-            run_repository_list[-3],
-            f"{run_repository_list[-2]}.parquet",
+            "dejavu.partition.parquet",
+            f"GROUP={run_repository_list[-3]}",
+            f"PROJECT={run_repository_list[-2]}",
         ),
         "parquet_db_howard_folder": osj(
             "/",
@@ -95,13 +78,13 @@ def launch_run(args):
             "dejavu",
             "current",
             args.assembly,
-            run_repository_list[-3],
+            "dejavu.partition.parquet",
         ),
         "parquet_db_folder": osj(
             os.environ["DOCKER_DEJAVU_DATABASE"],
             "current",
             args.assembly,
-            run_repository_list[-3],
+            "dejavu.partition.parquet",
         ),
         "tmp_analysis_folder": osj(
             os.environ["DOCKER_TMP"],
@@ -118,12 +101,12 @@ def launch_run(args):
         pass
 
     synchronizer.vcf_synchronizer(run_informations)
-    # dejavu_processing.convert_vcf_parquet(run_informations)
-    # dejavu_processing.calculate_dejavu(run_informations)
-    howard_processing.run_initialisation(run_informations)
-    merged_vcf = howard_processing.merge_vcf(run_informations)
-    annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
-    howard_processing.unmerge_vcf(annotated_merged_vcf)
+    dejavu_processing.convert_vcf_parquet(run_informations)
+    dejavu_processing.calculate_dejavu(run_informations)
+    # howard_processing.run_initialisation(run_informations)
+    # merged_vcf = howard_processing.merge_vcf(run_informations)
+    # annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
+    # howard_processing.unmerge_vcf(annotated_merged_vcf)
     # if run_informations["run_panels"] != "":
     #     howard_processing.panel_filtering(run_informations)
     # howard_processing.convert_to_final_tsv(run_informations, output_file, "")

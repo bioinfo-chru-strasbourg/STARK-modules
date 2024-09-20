@@ -169,7 +169,6 @@ def unmerge_vcf(input):
         with open(output_file, "w") as writefile:
             subprocess.call(cmd, universal_newlines=True, stdout=writefile)
         subprocess.call(["bgzip", output_file], universal_newlines=True)
-        os.remove(output_file)
 
 
 def info_to_format_script(vcf_file, run_informations):
