@@ -396,7 +396,7 @@ onsuccess:
 				shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 	
 	# Generate dictionary for results
-	search_args = [arg.format(serviceName=serviceName) for arg in ["/*/{serviceName}/*", "/*"]]
+	search_args = [arg.format(serviceName=serviceName) for arg in ["/*/{serviceName}/*", config['SEARCH_ARGUMENT']]]
 	result_files_list = searchfiles(os.path.normpath(config['run']), search_args, False)
 	replaced_paths = replace_path(result_files_list, config['run'], "")
 	sample_list.insert(0,"allsamples")
