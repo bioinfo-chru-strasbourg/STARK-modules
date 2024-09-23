@@ -8,6 +8,14 @@ import json
 
 def launch(container_name, launch_arguments):
     module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
+    howard_config = osj(os.environ["DOCKER_MODULE_CONFIG"], "howard_config.json")
+    if not os.path.isfile(module_config):
+        log.error(f"{module_config} do not exist, primordial file, check its existence")
+        raise ValueError(module_config)
+    elif not os.path.isfile(howard_config):
+        log.error(f"{howard_config} do not exist, primordial file, check its existence")
+        raise ValueError(howard_config)
+      
     with open(module_config, "r") as read_file:
         data = json.load(read_file)
         howard_image = data["howard_image"]
@@ -33,10 +41,11 @@ def launch(container_name, launch_arguments):
         f"{os.environ["HOST_SERVICES"]}:{os.environ["DOCKER_SERVICES"]}",
         "-v",
         f"{os.environ["HOST_CONFIG"]}:{os.environ["DOCKER_CONFIG"]}",
+        "-v",
+        f"{howard_config}:/tools/devel/config/config.json",
         howard_image
         ]
     
     command_list = command_list + launch_arguments
-    print(" ".join(command_list))
     log.debug(" ".join(command_list))
     subprocess.call(command_list, universal_newlines=True)
