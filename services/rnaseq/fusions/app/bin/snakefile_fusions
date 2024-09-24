@@ -473,8 +473,8 @@ onsuccess:
 	print(dict(resultDict))
 
 	# Generate html report (need to add the run results)
-	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{outputDir}/{serviceName}.{date_time}.report.html")
-	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', outputDir)
+	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html")
+	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR']:
