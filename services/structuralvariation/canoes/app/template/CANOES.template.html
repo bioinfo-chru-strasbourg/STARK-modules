@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="CANOES_style.css">
+	<link rel="stylesheet" href="CANOES.style.css">
     <title>Report</title>
 </head>
 <body>
@@ -40,10 +40,10 @@
         {% set combined_sample_list = sample_list + sample_list_added %}
         <p>Total of samples used : {{ combined_sample_list|length -1 }}</p>
         {% if gender_list|length == 1 and gender_list[0] == "A" %}
-        <p style="color:red;font-weight:bold;">WARNING : analysis was performed only for autosomes</p>
+        <p style="color:red;font-weight:bold;">WARNING : analysis was performed only for the autosomes</p>
         {% endif %}
         {% if gender_list|length == 2 or gender_list|length == 3 %}
-        <p style="color:red;font-weight:bold;">Analysis was performed for sexual chromosomes without errors</p>
+        <p style="color:red;font-weight:bold;">Analysis was performed for the sex chromosomes without errors</p>
         {% endif %}
         {% if (gender_list|length == 2 or gender_list|length == 3) and (gender_list[1] == "XY" or gender_list[2] == "XY") %}
         <p style="font-weight:bold;">Male patients list</p>
@@ -54,7 +54,7 @@
         {% for item in list_XX %}  {{ item }} {% if not loop.last %} , {% endif %} {% endfor %}
         {% endif %}
         {% if none_gender_samples %}
-        <p style="color:red;font-weight:bold;">WARNING : some samples did not have a gender specified :</p>
+        <p style="color:red;font-weight:bold;">WARNING : "Some samples did not have a specified gender :</p>
         {% for sample in none_gender_samples %} {{ sample }} {% if not loop.last %} , {% endif %} {% endfor %}
         {% endif %}
         <p>Here are the details for each samples in the run</p><br>
@@ -69,7 +69,7 @@
                     <tr>
                         <td>{{ file }}</td>
                         <td>
-                        {% if file == "gender" or file == "HPO" %}
+                        {% if file == "gender" or file == "hpo" %}
                             {{ path }}
                         {% else %}
                         <a href="{{ path }}" target="_blank">{{ path }}</a>

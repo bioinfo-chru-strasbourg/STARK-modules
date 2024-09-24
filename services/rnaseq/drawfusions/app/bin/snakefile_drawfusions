@@ -164,6 +164,38 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, templ
 
 	print(f"HTML report generated successfully: {output_file}")
 
+def update_results(dictionnary, update_dictionnary, keys, exclude_samples=None, exclude_keys=None):
+	"""
+	Update a dictionary and remove specified keys for certain samples.
+
+	Parameters:
+	- dictionnary: Dictionary containing sample results.
+	- update_dictionnary: Dictionary to be updated with results.
+	- keys: A list of keys to update.
+	- exclude_samples: List of specific samples for which to remove keys.
+	- exclude_keys: List of specific keys to remove for certain samples.
+	"""
+	if exclude_samples is None:
+		exclude_samples = []
+	if exclude_keys is None:
+		exclude_keys = []
+
+	# First, update the dictionary with results
+	for sample, results in dictionnary.items():
+		if sample in update_dictionnary:
+			for key, value in results.items():
+				if key in keys:
+					if key not in update_dictionnary[sample]:
+						update_dictionnary[sample][key] = value
+					elif update_dictionnary[sample][key] is None:
+						update_dictionnary[sample][key] = value
+	
+	# Then, remove the specified keys for samples in exclude_samples
+	for sample in exclude_samples:
+		if sample in update_dictionnary:
+			for key in exclude_keys:
+				update_dictionnary[sample].pop(key, None)  # Remove the key if it exists
+
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -341,34 +373,27 @@ onsuccess:
 	for sample in sample_list:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 
-	# Optionally, perform DEPOT_DIR copy
-	if config['DEPOT_DIR']:
-		if outputDir != depotDir:
-			shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
-			for sample in sample_list:
-				shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
-	
+
 	# Generate dictionary for results
 	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*", "/*"] + config['SEARCH_ARGUMENT']]
 	result_files_list = searchfiles(os.path.normpath(config['run']), search_args, False)
 	replaced_paths = replace_path(result_files_list, config['run'], "")
 	sample_list.insert(0,"allsamples")
 	resultDict= populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
+	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender"])
 	print(dict(resultDict))
 
-	# Update resultDict with values from runDict
-	for sample, results in runDict.items():
-		if sample in resultDict:
-			for key, value in results.items():
-				if key in config['RESULT_EXT_LIST']:
-					if key not in resultDict[sample]:
-						resultDict[sample][key] = value
-					elif resultDict[sample][key] is None:
-						resultDict[sample][key] = value
-
 	# Generate html report (need to add the run results)
-	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}_template.html" , f"{outputDir}/{serviceName}_{date_time}_report.html")
-	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '_style.css', outputDir)
+	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{outputDir}/{serviceName}.{date_time}.report.html")
+	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', outputDir)
+
+	# Optionally, perform DEPOT_DIR copy
+	if config['DEPOT_DIR']:
+		if outputDir != depotDir:
+			shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
+			for sample in sample_list:
+				shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
+
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
