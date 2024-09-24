@@ -245,13 +245,13 @@ def process_gene_list(file, source_dir, dest_dir, panels_list):
 	panels_list.append(panel_trunc)
 	return panels_list
 
-def update_results(dictionnary, update_dictionnary, keys, exclude_samples=None, exclude_keys=None):
+def update_results(dictionary, update_dictionary, keys, exclude_samples=None, exclude_keys=None):
 	"""
 	Update a dictionary and remove specified keys for certain samples.
 
 	Parameters:
-	- dictionnary: Dictionary containing sample results.
-	- update_dictionnary: Dictionary to be updated with results.
+	- dictionary: Dictionary containing sample results.
+	- update_dictionary: Dictionary to be updated with results.
 	- keys: A list of keys to update.
 	- exclude_samples: List of specific samples for which to remove keys.
 	- exclude_keys: List of specific keys to remove for certain samples.
@@ -262,20 +262,20 @@ def update_results(dictionnary, update_dictionnary, keys, exclude_samples=None, 
 		exclude_keys = []
 
 	# First, update the dictionary with results
-	for sample, results in dictionnary.items():
-		if sample in update_dictionnary:
+	for sample, results in dictionary.items():
+		if sample in update_dictionary:
 			for key, value in results.items():
 				if key in keys:
-					if key not in update_dictionnary[sample]:
-						update_dictionnary[sample][key] = value
-					elif update_dictionnary[sample][key] is None:
-						update_dictionnary[sample][key] = value
+					if key not in update_dictionary[sample]:
+						update_dictionary[sample][key] = value
+					elif update_dictionary[sample][key] is None:
+						update_dictionary[sample][key] = value
 	
 	# Then, remove the specified keys for samples in exclude_samples
 	for sample in exclude_samples:
-		if sample in update_dictionnary:
+		if sample in update_dictionary:
 			for key in exclude_keys:
-				update_dictionnary[sample].pop(key, None)  # Remove the key if it exists
+				update_dictionary[sample].pop(key, None)  # Remove the key if it exists
 
 
 ### END OF FUNCTIONS ###
@@ -320,7 +320,7 @@ if config['VALIDATION_ONLY']:
 else:
 	filtered_files = filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
 
-# Populate dictionnary
+# Populate dictionary
 runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, ['analysis'])
 
 # Add other runs/samples to improve sensibility
@@ -333,10 +333,10 @@ if config['addruns']:
 	sample_list_addruns = extractlistfromfiles(files_list_addrun, config['PROCESS_FILE'], '.', 0)
 	if config['VALIDATION_ONLY']: 	# Filter the list if validation only
 		filter_files(files_list_addrun, filter_in='validation', extensions=config['PROCESS_FILE'])
-	# We populate the dictionnary with the same EXT_INDEX_LIST variable as the original list, to get HPO and gender is avalaible
+	# We populate the dictionary with the same EXT_INDEX_LIST variable as the original list, to get HPO and gender is avalaible
 	addrunDict = populate_dictionary(sample_list_addruns, config['EXT_INDEX_LIST'], files_list_addrun, None, ['analysis'])
 
-	for key, value in addrunDict.items(): 	# Merge runDict dictionnary with the addrunDict
+	for key, value in addrunDict.items(): 	# Merge runDict dictionary with the addrunDict
 		runDict[key].update(value)
 		sample_list = sample_list + sample_list_addruns # Concatenate all samples for the analysis
 		sample_list_to_copy = [x for x in sample_list if x not in sample_list_addruns]
@@ -418,7 +418,7 @@ else:
 # Create file_list of bam by gender with the runDict, depending on the gender_list
 # A = all ; XX = Female only ; XY = Male only
 # files_list_A contains the full path of all files (bam files for ex)
-# Warning the key dictionnary for sexe is A/M/F but the gender_list is A/XY/XX
+# Warning the key dictionary for sexe is A/M/F but the gender_list is A/XY/XX
 files_list_A = list(set([runDict[sample]['.bam'] for sample in sample_list if sample in runDict and '.bam' in runDict[sample]]))
 files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']))
 files_list_XY = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']))
@@ -819,7 +819,6 @@ onstart:
 		json.dump(config, f, ensure_ascii=False, indent=2)
 		f.write("\n")
 
-
 onsuccess:
 	include = config['INCLUDE_RSYNC']
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
@@ -828,11 +827,7 @@ onsuccess:
 	with open(logfile, "a+") as f:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
-	# Clear existing output directories
-	for sample in sample_list_to_copy:
-		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-
-	# Copy results to the main output directory, removing additional samples from the results
+	# Removing additional samples from the results
 	if sample_list_addruns:
 		for sample in sample_list_addruns:
 			shell(f"rm -rf {resultDir}/{sample} || true")
@@ -847,12 +842,6 @@ onsuccess:
 		# And convert vcf to tsv
 		shell(f"vcf2tsvpy --keep_rejected_calls --input_vcf {resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz --out_tsv {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp && cat {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp | grep -v '^#' > {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv ")
 
-	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
-
-	# Copy individual sample results to their respective directories
-	for sample in sample_list_to_copy:
-		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
-
 	# Generate dictionary for results
 	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*", "/*"] + config['SEARCH_ARGUMENT']]
 	result_files_list = searchfiles(os.path.normpath(config['run']), search_args, False)
@@ -862,17 +851,19 @@ onsuccess:
 
 	# Update resultDict with values from runDict
 	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender"])
-	print(dict(resultDict))
-
 	list_XX = [os.path.basename(file).split('.')[0] for file in files_list_XX]
 	list_XY = [os.path.basename(file).split('.')[0] for file in files_list_XY]
-
 	none_gender_samples = [sample for sample, data in runDict.items() if data.get('gender') == 'None']
-	print(none_gender_samples)
-	# Generate html report
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html", sample_list_added=sample_list_addruns, gender_list=gender_list, list_XX=list_XX, list_XY=list_XY, none_gender_samples=none_gender_samples)
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 
+	# Clear existing output directories
+	for sample in sample_list_to_copy:
+		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
+	# Copy individual sample results to their respective directories
+	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
+	for sample in sample_list_to_copy:
+		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR']:
 		if outputDir != depotDir:
