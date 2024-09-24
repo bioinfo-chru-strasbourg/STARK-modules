@@ -842,10 +842,11 @@ onsuccess:
 		# And convert vcf to tsv
 		shell(f"vcf2tsvpy --keep_rejected_calls --input_vcf {resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz --out_tsv {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp && cat {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp | grep -v '^#' > {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv ")
 
-	# Generate dictionary for results
-	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*", "/*"] + config['SEARCH_ARGUMENT']]
-	result_files_list = searchfiles(os.path.normpath(config['run']), search_args, False)
-	replaced_paths = replace_path(result_files_list, config['run'], "")
+
+	# Generate dictionary from outputdir
+	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*/*", "/*"]]
+	result_files_list = searchfiles(resultDir, search_args, False)
+	replaced_paths = replace_path(result_files_list, resultDir, "")
 	sample_list_to_copy.insert(0,"allsamples")
 	resultDict = populate_dictionary(sample_list_to_copy, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 
@@ -857,13 +858,14 @@ onsuccess:
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html", sample_list_added=sample_list_addruns, gender_list=gender_list, list_XX=list_XX, list_XY=list_XY, none_gender_samples=none_gender_samples)
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 
-	# Clear existing output directories
+	# Clear existing output directories & copy
 	for sample in sample_list_to_copy:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-	# Copy individual sample results to their respective directories
+
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 	for sample in sample_list_to_copy:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR']:
 		if outputDir != depotDir:
