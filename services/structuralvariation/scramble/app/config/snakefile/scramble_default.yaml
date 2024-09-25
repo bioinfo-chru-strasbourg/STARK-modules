@@ -60,7 +60,7 @@ VALIDATION_ONLY: False
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*Full.vcf.gz','*Full.vcf.gz.tbi','*Design.vcf.gz','*Design.vcf.gz.tbi','*AnnotSV.Full.tsv','*AnnotSV.Design.tsv','*Panel*.vcf.gz','*Panel*.vcf.gz.tbi','*Panel*.tsv','*/'}"
+INCLUDE_RSYNC: "{'*Full.vcf.gz','*Full.vcf.gz.tbi','*Design.vcf.gz','*Design.vcf.gz.tbi','*AnnotSV.Full.tsv','*AnnotSV.Design.tsv','*Panel*.vcf.gz','*Panel*.vcf.gz.tbi','*Panel*.tsv','*.html','*.css','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
@@ -74,7 +74,9 @@ LOG_LEVEL: 30
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', "gender", "hpo"]
+
+
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/VAF>=0.01'" or "-e 'ABS(SVLEN) >= 10000'" -e exclude -i include 
 BCFTOOLS_FILTER: "-e 'ABS(SVLEN) >= 100000'"
@@ -82,16 +84,13 @@ BCFTOOLS_FILTER: "-e 'ABS(SVLEN) >= 100000'"
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 
-
-# Path of the dummy vcf
+# Path for scripts and dummy files
 DUMMY_FILES: "/app/scripts/dummy"
-# R scripts
 R_SCRIPTS: "/app/scripts/R"
-# Python scripts
 PY_SCRIPTS: "/app/scripts/python"
+
 # Path of the fileconversion json
 VARIANT_CONVERT_CONFIG: "/app/config/fileconversion"
-
 
 # Path to Scramble R directory scripts
 SCRAMBLE_PATH: "/opt/conda/share/scramble/bin" # installed via conda

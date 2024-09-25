@@ -79,7 +79,7 @@ LOG_LEVEL: 30
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', '.pdf', 'Design.tsv', 'Metrics.tsv']
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'merge.pdf', 'Design.tsv', 'Metrics.tsv']
 
 ############## Tools specific parameters ##############
 ### TOOLS PATH ###
@@ -89,10 +89,6 @@ REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 # http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/
 # archive formated_refgene for hg19 avalaible in /app/database
 REFSEQGENE_PATH: "/databases/refGene/current/formated_refgene.tsv"
-
-# Paths
-SCRIPTS_CONFIG: "/app/config/fileconversion"
-DUMMY_PATH: "/app/scripts/dummy"
 
 ### DECON BED processing ###
 # Regen exon number with IntersectBed and a refseqgene reference (REGEN) containing a column with the exon number
@@ -117,15 +113,12 @@ customexon: FALSE
 # kmerisation of DECON bed (integer) (ex 250)
 KMER: ""
 
-# Path of the dummy vcf
+# Path for scripts and dummy files
 DUMMY_FILES: "/app/scripts/dummy"
-# R scripts
 R_SCRIPTS: "/app/scripts/R"
-# Python scripts
 PY_SCRIPTS: "/app/scripts/python"
 # Path of the fileconversion json
 VARIANT_CONVERT_CONFIG: "/app/config/fileconversion"
-
 
 ### DECON ###
 # Plots for DECON True/False

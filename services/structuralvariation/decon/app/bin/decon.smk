@@ -395,21 +395,27 @@ def process_gene_list(file, source_dir, dest_dir, panels_list):
 	panels_list.append(panel_trunc)
 	return panels_list
 
-def update_results(dictionary, update_dictionary, keys, exclude_samples=None, exclude_keys=None):
+def update_results(dictionary, update_dictionary, keys, exclude_samples=None, exclude_keys=None, remove_none_samples=None, restrict_none_keys=None):
 	"""
 	Update a dictionary and remove specified keys for certain samples.
 
 	Parameters:
-	- dictionnary: Dictionary containing sample results.
-	- update_dictionnary: Dictionary to be updated with results.
+	- dictionary: Dictionary containing sample results.
+	- update_dictionary: Dictionary to be updated with results.
 	- keys: A list of keys to update.
 	- exclude_samples: List of specific samples for which to remove keys.
 	- exclude_keys: List of specific keys to remove for certain samples.
+	- remove_none_samples: List of samples for which to remove keys with None values.
+	- restrict_none_keys: List of keys to be removed if they have None values for specified samples.
 	"""
 	if exclude_samples is None:
 		exclude_samples = []
 	if exclude_keys is None:
 		exclude_keys = []
+	if remove_none_samples is None:
+		remove_none_samples = []
+	if restrict_none_keys is None:
+		restrict_none_keys = []
 
 	# First, update the dictionary with results
 	for sample, results in dictionary.items():
@@ -420,12 +426,20 @@ def update_results(dictionary, update_dictionary, keys, exclude_samples=None, ex
 						update_dictionary[sample][key] = value
 					elif update_dictionary[sample][key] is None:
 						update_dictionary[sample][key] = value
-	
-	# Then, remove the specified keys for samples in exclude_samples
+
+	# Remove the specified keys for samples in exclude_samples
 	for sample in exclude_samples:
 		if sample in update_dictionary:
 			for key in exclude_keys:
 				update_dictionary[sample].pop(key, None)  # Remove the key if it exists
+
+	# Remove keys with None values for specific samples, restricted to certain keys
+	for sample in remove_none_samples:
+		if sample in update_dictionary:
+			none_keys = [key for key in restrict_none_keys if key in update_dictionary[sample] and update_dictionary[sample][key] is None]
+			for key in none_keys:
+				update_dictionary[sample].pop(key, None)  # Remove keys with None values if they match restrict_none_keys
+
 
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
@@ -962,7 +976,7 @@ onsuccess:
 		matching_pdfs = [pdf for pdf in pdf_path_list if sample in pdf]
 		
 		if matching_pdfs:
-			output_pdf = f"{resultDir}/pdfs/{serviceName}.{date_time}.{sample}.pdf"
+			output_pdf = f"{resultDir}/pdfs/{serviceName}.{date_time}.{sample}.merge.pdf"
 			output_pdf_list.append(os.path.basename(output_pdf))
 			merge_pdfs(matching_pdfs, output_pdf)
 
@@ -978,9 +992,11 @@ onsuccess:
 	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*/*", "/*"]]
 	result_files_list = searchfiles(resultDir, search_args, False)
 	replaced_paths = replace_path(result_files_list, resultDir, "")
+	sample_list_orig = sample_list
 	sample_list.insert(0,"allsamples")
 	resultDict = populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
-	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender"])
+	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender", ".pdf"],remove_none_samples=sample_list_orig,
+    restrict_none_keys=["Metrics.tsv"])
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html")
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 
