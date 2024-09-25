@@ -14,16 +14,10 @@ services:
         command: "-p -s /app/bin/flt3itdext_setup.smk"
         container_name: stark-module-structuralvariation-submodule-flt3itdext-service-setup
         restart: "no"
-        environment:
-            - DOCKER_STARK_MODULE_SUBMODULE_NAME=flt3itdext
-            - DOCKER_STARK_MODULE_NAME=structuralvariation
-            - DOCKER_STARK_INNER_FOLDER_DATABASES=/STARK/databases
-            - DOCKER_STARK_INNER_FOLDER_SERVICES=/STARK/services
-            - DOCKER_STARK_INNER_FOLDER_CONFIG=/STARK/config
         volumes:
-            - /home1/data/STARK/services/structuralvariation/flt3itdext:/STARK/services/structuralvariation/flt3itdext:rw
-            - /home1/data/STARK/config/structuralvariation/flt3itdext:/STARK/config/structuralvariation/flt3itdext:rw
-            - /home1/data/STARK/databases:/STARK/databases:rw
+            - /home1/data/STARK/services/structuralvariation/flt3itdext:/services/structuralvariation/flt3itdext:rw
+            - /home1/data/STARK/config/structuralvariation/flt3itdext:/config/structuralvariation/flt3itdext:rw
+            - /home1/data/STARK/databases:/databases:rw
         networks:
             - stark_stark
 
@@ -39,11 +33,11 @@ services:
         tty: true
         stdin_open: true
         volumes:
-            - /home1/data/STARK/output/repository:/STARK/output/repository:rw
-            - /home1/data/STARK/output/depository:/STARK/output/depository:rw
-            - /home1/data/STARK/services/structuralvariation/flt3itdext/cli:/STARK/services/structuralvariation/flt3itdext/cli:rw
-            - /home1/data/STARK/config/structuralvariation/flt3itdext/cli:/STARK/config/structuralvariation/flt3itdext/cli:ro
-            - /home1/data/STARK/databases:/STARK/databases:ro
+            - /home1/data/STARK/output/repository:/output/repository:rw
+            - /home1/data/STARK/output/depository:/output/depository:rw
+            - /home1/data/STARK/services/structuralvariation/flt3itdext/cli:/services/structuralvariation/flt3itdext/cli:rw
+            - /home1/data/STARK/config/structuralvariation/flt3itdext/cli:/config/structuralvariation/flt3itdext/cli:ro
+            - /home1/data/STARK/databases:/databases:ro
         networks:
             - stark_stark
         healthcheck:
@@ -52,7 +46,7 @@ services:
                     "CMD",
                     "test",
                     "-f",
-                    "/STARK/services/structuralvariation/flt3itdext/cli/SETUPComplete.txt"
+                    "/services/structuralvariation/flt3itdext/cli/SETUPComplete.txt"
                 ]
             timeout: 10s
             interval: 30s
@@ -63,15 +57,15 @@ services:
         image: stark/stark-module-common-submodule-listener-service-listener:2.0
         container_name: stark-module-structuralvariation-submodule-flt3itdext-service-listener
         entrypoint: "python3"
-        command: "/app/bin/listener.py --input=/STARK/output/repository --json=/STARK/config/structuralvariation/flt3itdext/listener/flt3itdext.json --config=/STARK/config/structuralvariation/flt3itdext/listener/flt3itdext.conf --servicename=FLT3ITDEXT --containersfile=/STARK/services/structuralvariation/flt3itdext/listener --nbDaysBack=30 --minDelay=1"
+        command: "/app/bin/listener.py --input=/output/repository --json=/config/structuralvariation/flt3itdext/listener/flt3itdext.json --config=/config/structuralvariation/flt3itdext/listener/flt3itdext.conf --servicename=FLT3ITDEXT --containersfile=/services/structuralvariation/flt3itdext/listener --nbDaysBack=30 --minDelay=1"
         restart: always
         environment:
             - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/config/structuralvariation/flt3itdext
         volumes:
-            - /home1/data/STARK/output/repository:/STARK/output/repository:ro
-            - /home1/data/STARK/output/depository:/STARK/output/depository:ro
-            - /home1/data/STARK/services/structuralvariation/flt3itdext:/STARK/services/structuralvariation/flt3itdext:rw
-            - /home1/data/STARK/config/structuralvariation/flt3itdext:/STARK/config/structuralvariation/flt3itdext:ro
+            - /home1/data/STARK/output/repository:/output/repository:ro
+            - /home1/data/STARK/output/depository:/output/depository:ro
+            - /home1/data/STARK/services/structuralvariation/flt3itdext:/services/structuralvariation/flt3itdext:rw
+            - /home1/data/STARK/config/structuralvariation/flt3itdext:/config/structuralvariation/flt3itdext:ro
             - /home1/data/STARK/config/structuralvariation/flt3itdext/listener/launcher.py:/app/bin/config/launcher.py:ro
             - /var/run/docker.sock:/var/run/docker.sock
         networks:

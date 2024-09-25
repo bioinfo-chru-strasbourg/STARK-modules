@@ -6,8 +6,17 @@
 # Authoring : Thomas LAVAUX
 
 ################## Directories and variables ##################
-# Name of the module = {serviceName} from listener.py/launcher.py
+# Name of the submodule = {serviceName} from listener.py/launcher.py
 serviceName: "SALMON"
+# Name of the module
+module: "rnaseq"
+# Databases folder
+databases: "databases"
+# Service folder
+services: "services"
+# Config folder
+config: "config"
+
 # Specify a DATE_TIME value (for rerun)
 DATE_TIME: ""
 # Output directory
@@ -74,7 +83,7 @@ COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
 ################## Tools parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENOMEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+REFGENOMEFA_PATH: "/databases/genomes/current/hg19.fa"
 ################## Salmon ##################
 # FASTP params
 FASTP_GLOBALS_PARAMS: "--disable_quality_filtering --disable_trim_poly_g --disable_length_filtering --disable_adapter_trimming"
@@ -82,7 +91,7 @@ FASTP_COMPRESSION: 1
 FASTP_TRIM: "" # ex FASTP_TRIM: "--trim_front2=5 --trim_tail2=5"
 
 # For Salmon quantification fastq mode, path to the index file
-REFSALMONQUANTFASTQ_PATH: "/STARK/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
+REFSALMONQUANTFASTQ_PATH: "/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
 # SE ou PE Reads
 SALMON_FASTQ_TYPE: "PE"  # won't work with SE for the moment
 MISC_SALMON_OPTIONS: ""

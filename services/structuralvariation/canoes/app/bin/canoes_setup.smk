@@ -33,12 +33,13 @@ GENEHANCER_VERSION = config['GENEHANCER_VERSION']
 EXOMISER_VERSION = config['EXOMISER_VERSION']
 assembly = config['ASSEMBLY']
 genomeBuild=config['genomeBuild']
-
-db = os.getenv('DOCKER_STARK_INNER_FOLDER_DATABASES')  # DATABASES = "/STARK/databases"
-serviceName = os.getenv('DOCKER_STARK_MODULE_SUBMODULE_NAME')  # serviceName = "decon"
-moduleName = os.getenv('DOCKER_STARK_MODULE_NAME')  # moduleName = "structuralvariation"
-services_folder = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_SERVICES')}/{moduleName}/{serviceName}"
-config_folder = f"{os.getenv('DOCKER_STARK_INNER_FOLDER_CONFIG')}/{moduleName}/{serviceName}"
+serviceName = config['serviceName']
+moduleName = config['module']
+db = config['databases']
+services = config['services']
+config = config['config']
+services_folder = {services}/{moduleName}/{serviceName}
+config_folder = {config}/{moduleName}/{serviceName}
 
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 

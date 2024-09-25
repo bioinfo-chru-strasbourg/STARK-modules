@@ -12,8 +12,17 @@
 # separate multiple variable with a space
 ################## Directories and variables ##################
 
-# Name of the module = {serviceName} from listener.py/launcher.py
+# Name of the submodule = {serviceName} from listener.py/launcher.py
 serviceName: "SCRAMBLE"
+# Name of the module
+module: "structuralvariation"
+# Databases folder
+databases: "databases"
+# Service folder
+services: "services"
+# Config folder
+config: "config"
+
 # Specify a DATE_TIME value (for rerun)
 DATE_TIME: ""
 # Output directory
@@ -71,7 +80,7 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 BCFTOOLS_FILTER: "-e 'ABS(SVLEN) >= 100000'"
 ################## Tools specific parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 
 
 # Path of the dummy vcf
@@ -115,5 +124,5 @@ COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: full # split, full or both (defaut both)
-annotationdir: "/STARK/databases/AnnotSV/3.4/" # path to the annotation database
+annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database
 vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFiles option ; extension should be in EXT_INDEX_LIST

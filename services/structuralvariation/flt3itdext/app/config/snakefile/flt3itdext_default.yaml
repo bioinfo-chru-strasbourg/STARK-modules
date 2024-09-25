@@ -5,8 +5,16 @@
 # DEV version 0.2 : 05/03/2023
 # Authoring : Thomas LAVAUX
 ################## Directories and variables ##################
-# Name of the module = {serviceName} from listener.py/launcher.py
+# Name of the submodule = {serviceName} from listener.py/launcher.py
 serviceName: "FLT3ITDEXT"
+# Name of the module
+module: "structuralvariation"
+# Databases folder
+databases: "databases"
+# Service folder
+services: "services"
+# Config folder
+config: "config"
 # Specify a DATE_TIME value (for rerun)
 DATE_TIME: ""
 # Output directory
@@ -68,12 +76,12 @@ LOG_LEVEL: 30
 # Command to download (wget or aria2c)
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
-REFGENEFA_PATH: "/STARK/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/RAF>=0.01'"
 BCFTOOLS_FILTER: "-i 'INFO/RAF>=0.01'"
 ################## flt3_itd_ext ##################
-REF_ITD_PATH: "/STARK/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
+REF_ITD_PATH: "/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
 # Assembly (hg19/hg38)
 ASSEMBLY: "hg19"
 # Type of sequencing technology (HC = capture)
