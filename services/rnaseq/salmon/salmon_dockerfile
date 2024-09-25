@@ -13,8 +13,11 @@ FROM condaforge/mambaforge
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Update and install some tools
-RUN apt-get update --fix-missing && \
-	apt-get install -y unzip vim rsync aria2
+RUN apt-get update  --fix-missing && \
+	apt-get install -y unzip vim rsync aria2 alien
+
+COPY app/tools/bcl-convert-4.3.6-2.el7.x86_64.rpm /app/tools/bcl-convert-4.3.6-2.el7.x86_64.rpm
+RUN alien -i -d /app/tools/bcl-convert-4.3.6-2.el7.x86_64.rpm
 
 # Mamba install
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds -c bih-cubi  \
@@ -23,7 +26,7 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds -c bih-cubi  \
 	snakemake~=8.16 pandas~=2.2 vcf2tsvpy~=0.6.1 bcl2fastq2~=2.20.0.422 \
 	salmon~=1.10.3 seqkit~=2.8 fastp~=0.23.4 boost-cpp=1.85 \
 	&& mamba clean -afy
-
+ 
 
 # Copy applications files (/app)
 COPY ./app /app

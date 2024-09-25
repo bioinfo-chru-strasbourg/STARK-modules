@@ -372,11 +372,12 @@ rule fastp:
 	params:
 		miscs = config['FASTP_GLOBALS_PARAMS'],
 		compression = config['FASTP_COMPRESSION'],
-		trim = config['FASTP_TRIM']
+		trim = config['FASTP_TRIM'],
+		umi = config['FASTP_UMI']
 	threads: workflow.cores
 	shell:	
 		"""
-		fastp --thread={threads} {params.miscs} {params.trim} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
+		fastp --thread={threads} {params.miscs} {params.trim} {params.umi} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
 		"""
 
 rule salmon:

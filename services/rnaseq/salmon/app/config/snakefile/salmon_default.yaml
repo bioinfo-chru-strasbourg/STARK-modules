@@ -85,10 +85,12 @@ COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/databases/genomes/current/hg19.fa"
 ################## Salmon ##################
-# FASTP params
+# FASTP params globals : -D to activate deduplication, with UMI the sequence of the UMIs shoud be left in the reads to identify duplicate with them
 FASTP_GLOBALS_PARAMS: "--disable_quality_filtering --disable_trim_poly_g --disable_length_filtering --disable_adapter_trimming"
+# Others options
 FASTP_COMPRESSION: 1
 FASTP_TRIM: "" # ex FASTP_TRIM: "--trim_front2=5 --trim_tail2=5"
+FASTP_UMI: "" #  -U --umi_loc=per_read --umi_len=5 for XTHS2
 
 # For Salmon quantification fastq mode, path to the index file
 REFSALMONQUANTFASTQ_PATH: "/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
