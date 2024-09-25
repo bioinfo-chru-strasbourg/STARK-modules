@@ -11,7 +11,7 @@ services:
             context: ./
             dockerfile: flt3itdext_dockerfile
         entrypoint: "snakemake"
-        command: "-p -s /app/bin/snakefile_flt3itdext_setup"
+        command: "-p -s /app/bin/flt3itdext_setup.smk"
         container_name: stark-module-structuralvariation-submodule-flt3itdext-service-setup
         restart: "no"
         environment:

@@ -11,7 +11,7 @@ services:
             context: ./
             dockerfile: scramble_dockerfile
         entrypoint: "snakemake"
-        command: "-p -s /app/bin/snakefile_scramble_setup"
+        command: "-p -s /app/bin/scramble_setup.smk"
         container_name: stark-module-structuralvariation-submodule-scramble-service-setup
         restart: "no"
         environment:

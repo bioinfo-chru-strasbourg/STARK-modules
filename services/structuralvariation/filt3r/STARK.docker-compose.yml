@@ -11,7 +11,7 @@ services:
             context: ./
             dockerfile: filt3r_dockerfile
         entrypoint: "snakemake"
-        command: "-p -s /app/bin/snakefile_filt3r_setup"
+        command: "-p -s /app/bin/filt3r_setup.smk"
         container_name: stark-module-structuralvariation-submodule-filt3r-service-setup
         restart: "no"
         environment:

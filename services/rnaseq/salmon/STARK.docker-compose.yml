@@ -11,7 +11,7 @@ services:
             context: ./
             dockerfile: salmon_dockerfile
         entrypoint: "snakemake"
-        command: "-p -s /app/bin/snakefile_salmon_setup"
+        command: "-p -s /app/bin/salmon_setup.smk"
         container_name: stark-module-rnaseq-submodule-salmon-service-setup
         restart: "no"
         environment:

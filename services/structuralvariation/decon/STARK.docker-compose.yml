@@ -11,7 +11,7 @@ services:
             context: ./
             dockerfile: decon_dockerfile
         entrypoint: "snakemake"
-        command: "-p -s /app/bin/snakefile_decon_setup"
+        command: "-p -s /app/bin/decon_setup.smk"
         container_name: stark-module-structuralvariation-submodule-decon-service-setup
         restart: "no"
         environment:
