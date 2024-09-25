@@ -146,19 +146,24 @@ def cleaning_annotations(vcf_file, run_informations):
 
 def merge_vcf(run_informations):
     vcf_file_to_merge = glob.glob(osj(run_informations["tmp_analysis_folder"], "*vcf*"))
-    for i in vcf_file_to_merge:
-        subprocess.call(["tabix", i], universal_newlines=True)
-    
-    output_merged = osj(run_informations["tmp_analysis_folder"], f"merged_{run_informations["run_name"]}.vcf.gz")
-    cmd = ["bcftools", "merge"] + vcf_file_to_merge
-    cmd_args = ["-m", "none", "-O", "z", "-o", output_merged]
-    cmd = cmd + cmd_args
-    log.debug(" ".join(cmd))
-    subprocess.call(cmd, universal_newlines=True)
-    for i in vcf_file_to_merge:
-        os.remove(i)
-        os.remove(i + ".tbi")
-    return(output_merged)
+    if len(vcf_file_to_merge) > 1 :
+        log.info(f"Merging {len(vcf_file_to_merge)} vcf files")
+        print("merging")
+        for i in vcf_file_to_merge:
+            subprocess.call(["tabix", i], universal_newlines=True)
+        
+        output_merged = osj(run_informations["tmp_analysis_folder"], f"merged_{run_informations["run_name"]}.vcf.gz")
+        cmd = ["bcftools", "merge"] + vcf_file_to_merge
+        cmd_args = ["-m", "none", "-O", "z", "-o", output_merged]
+        cmd = cmd + cmd_args
+        log.debug(" ".join(cmd))
+        subprocess.call(cmd, universal_newlines=True)
+        for i in vcf_file_to_merge:
+            os.remove(i)
+            os.remove(i + ".tbi")
+        return(output_merged)
+    else:
+        return(vcf_file_to_merge[0])
 
 def unmerge_vcf(input):
     vcf_file_to_unmerge = input
@@ -257,14 +262,13 @@ def howard_proc(run_informations, vcf_file):
     if not os.path.isfile(configfile):
         log.error("param.default.json not found, please check your config directory")
         raise ValueError(configfile)
-
     container_name = f"VANNOT_annotate_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
     launch_annotate_arguments = ["annotation", "--input", vcf_file, "--output", output_file, "--param", configfile, "--assembly", run_informations["assembly"]]
 
     log.info("Annotating input files with HOWARD")
     
     howard_launcher.launch(container_name, launch_annotate_arguments)
-    os.remove(vcf_file)
+    # os.remove(vcf_file)
     return output_file
 
 def merge_vcf_files(run_informations):

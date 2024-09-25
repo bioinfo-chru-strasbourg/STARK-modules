@@ -103,9 +103,9 @@ def launch_run(args):
     synchronizer.vcf_synchronizer(run_informations)
     dejavu_processing.convert_vcf_parquet(run_informations)
     dejavu_processing.calculate_dejavu(run_informations)
-    # howard_processing.run_initialisation(run_informations)
-    # merged_vcf = howard_processing.merge_vcf(run_informations)
-    # annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
+    howard_processing.run_initialisation(run_informations)
+    merged_vcf = howard_processing.merge_vcf(run_informations)
+    annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
     # howard_processing.unmerge_vcf(annotated_merged_vcf)
     # if run_informations["run_panels"] != "":
     #     howard_processing.panel_filtering(run_informations)

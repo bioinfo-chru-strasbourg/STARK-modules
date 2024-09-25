@@ -48,4 +48,5 @@ def launch(container_name, launch_arguments):
     
     command_list = command_list + launch_arguments
     log.debug(" ".join(command_list))
+    print(" ".join(command_list))
     subprocess.call(command_list, universal_newlines=True)
