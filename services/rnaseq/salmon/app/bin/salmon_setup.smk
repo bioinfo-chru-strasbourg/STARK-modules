@@ -28,21 +28,18 @@ import json
 configfile: "/app/config/snakefile/salmon_default.yaml"
 ######################################################
 
-serviceName = config['serviceName']
-moduleName = config['module']
-db = config['databases']
-services = config['services']
-config = config['config']
-services_folder = {services}/{moduleName}/{serviceName}
-config_folder = {config}/{moduleName}/{serviceName}
-
-date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 gencode_version = config['GENCODE_VERSION']
 assembly = config['ASSEMBLY']
 species = config['SPECIES']
 
+db = config['databases']
+services_folder = f"{config['services']}/{config['moduleName']}/{config['serviceName']}
+config_folder = f"{config['config']}/{config['moduleName']}/{config['serviceName']}
+
+date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
+
 # Set up logging
-logfile = f"{services_folder}/cli/{serviceName}.{date_time}.parameters.log"
+logfile = f"{services_folder}/cli/{config['serviceName']}.{date_time}.parameters.log"
 logging.basicConfig(
 	filename=logfile,
 	level=config['LOG_LEVEL'],
@@ -51,8 +48,8 @@ logging.basicConfig(
 log_items = [
 	('Start of the analysis:', date_time),
 	('Database:', db),
-	('serviceName:', serviceName),
-	('moduleName:', moduleName)
+	('serviceName:', config['serviceName']),
+	('moduleName:', config['module'])
 ]
 for item in log_items:
 	if isinstance(item[1], list):

@@ -26,19 +26,16 @@ import json
 
 ################## Configuration ##################
 configfile: "/app/config/snakefile/fusions_default.yaml"
+###################################################
 
-serviceName = config['serviceName']
-moduleName = config['module']
-db = config['databases']
-services = config['services']
-config = config['config']
-services_folder = {services}/{moduleName}/{serviceName}
-config_folder = {config}/{moduleName}/{serviceName}
+services_folder = f"{config['services']}/{config['moduleName']}/{config['serviceName']}
+config_folder = f"{config['config']}/{config['moduleName']}/{config['serviceName']}
 
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 
 # Set up logging
-logfile = f"{services_folder}/cli/{serviceName}.{date_time}.parameters.log"
+# Set up logging
+logfile = f"{services_folder}/cli/{config['serviceName']}.{date_time}.parameters.log"
 logging.basicConfig(
 	filename=logfile,
 	level=config['LOG_LEVEL'],
@@ -46,9 +43,9 @@ logging.basicConfig(
 )
 log_items = [
 	('Start of the analysis:', date_time),
-	('Database:', db),
-	('serviceName:', serviceName),
-	('moduleName:', moduleName)
+	('Database:', config['databases']),
+	('serviceName:', config['serviceName']),
+	('moduleName:', config['module'])
 ]
 for item in log_items:
 	if isinstance(item[1], list):
