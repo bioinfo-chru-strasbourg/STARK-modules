@@ -403,7 +403,7 @@ rule all:
 rule help:
 	"""
 	General help for SCRAMBLE module
-	Launch snakemake -s  snakefile_scramble -c(numberofthreads) --config run=absolutepathoftherundirectory
+	Launch snakemake -s scramble.smk -c(numberofthreads) --config run=absolutepathoftherundirectory
 	To launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
 	Every variable defined in the yaml file can be change
 	Separate multiple variable with a space (ex  --config DATA_DIR=runname transProb=0.05 var1=0.05 var2=12)

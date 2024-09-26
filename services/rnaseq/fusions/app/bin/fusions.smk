@@ -272,6 +272,8 @@ for item in log_items:
 ################################################## RULES ##################################################
 # check the number of sample for copy or merge vcf rule
 sample_count = len(sample_list) 
+################################################## RULES ##################################################
+ruleorder: copy_fastq > bcl_convert
 
 rule all:
 	"""
@@ -286,17 +288,42 @@ rule all:
 rule help:
 	"""
 	General help for drawfusions module
-	Launch snakemake -s  snakefile_fusions -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory (default is data) without / at the end of the path
-	To launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
-	Every variable defined in the yaml file can be change
+	Launch snakemake -s  fusions.smk -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory (default is data) without / at the end of the path
+	To launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory, every variable defined in the yaml file can be change
 	Separate multiple variable with a space (ex  --config DATA_DIR=runname transProb=0.05 var1=0.05 var2=12)
 	Also use option --configfile another.yaml to replace and merge existing config.yaml file variables
-	Use -p to display shell commands
-	Use --lt to display docstrings of rules
-	Input file = bam files (if bai is needed, it will be generate), tsv output fusion list from arriba
-	Output file = pdf report with arriba graphs
+	Use -p to display shell commands / use --lt to display docstrings of rules
+	Input file = fastq
+	Output file =  vcfs é pdf report for arriba / STARFusion
+	To launch only DrawR : snakemake -s fusions.smk --rule DrawR ...
 	"""
 
+rule bcl_convert:
+	""" Convert BCL files to FASTQ using bcl-convert """
+	input:
+		bcl_dir = config['BCL_DIRECTORY']
+	output:
+		fastqR1 = f"{resultDir}/{{sample}}.R1.fastq.gz",
+		fastqR2 = f"{resultDir}/{{sample}}.R2.fastq.gz"
+	params:
+		sample_sheet = config['SAMPLE_SHEET'], 
+		output_dir = resultDir,  
+		sample_name = lambda wildcards: wildcards.sample
+		#config_file = config['BCL_CONVERT_CONFIG']  # Path to bcl-convert config JSON file
+	threads: workflow.cores
+	shell:
+		"""
+		bcl-convert --input-dir {input.bcl_dir} \
+					--output-dir {params.output_dir} \
+					--sample-sheet {params.sample_sheet} \
+					--threads {threads}
+
+		R1_fastq=$(find {params.output_dir} -type f -name "{params.sample_name}*_R1_*.fastq.gz" | head -n 1)
+		R2_fastq=$(find {params.output_dir} -type f -name "{params.sample_name}*_R2_*.fastq.gz" | head -n 1)
+		
+		mv $R1_fastq {output.fastqR1}
+		mv $R2_fastq {output.fastqR2}
+		"""
 
 rule copy_fastq:
 	output:

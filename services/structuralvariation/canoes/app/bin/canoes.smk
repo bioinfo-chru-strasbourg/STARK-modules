@@ -486,14 +486,12 @@ rule all:
 rule help:
 	"""
 	General help for CANOES
-	Launch snakemake -s snakefile_canoes -c(numberofthreads) --config run=absolutepathoftherundirectory
+	Launch snakemake -s canoes.smk -c(numberofthreads) --config run=absolutepathoftherundirectory
 	To launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
 	Every variable defined in the yaml file can be change
 	Separate multiple variable with a space (ex  --config run=runname transProb=0.05 var1=0.05 var2=12)
 	Use option --configfile another.yaml to replace and merge existing default config.yaml file variables
-	Use -p to display shell commands
-	Use --lt to display docstrings of rules
-	Use -n for a dry run
+	Use -p to display shell commands, use --lt to display docstrings of rules, use -n for a dry run
 	Input file = bam or cram files (if bai is needed, it will be generate)
 	Output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of vcf files by design/panel
 	"""

@@ -67,9 +67,6 @@ TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
 RESULT_EXT_LIST: ['.sf']
 
-# Setup threads for salmon (workflow.cores or a integer)
-THREADS: 4
-
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30
 
@@ -80,6 +77,10 @@ SPECIES: "human"
 
 # Command to download (wget or aria2c)
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
+
+# Bcl convert
+BCL_DIRECTORY: ""
+SAMPLE_SHEET: ""
 
 ################## Tools parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)

@@ -76,6 +76,10 @@ RESULT_EXT_LIST: ['.tsv','.bam','.pdf','.vcf.gz','.vcf.gz.tbi']
 LOG_LEVEL: 30
 # Command to download (wget or aria2c)
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
+
+# Bcl convert
+BCL_DIRECTORY: ""
+SAMPLE_SHEET: ""
 ############## Tools specific parameters ##############
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENOMEFA_PATH: "/databases/genomes/current/hg19.fa"

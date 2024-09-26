@@ -280,7 +280,7 @@ for item in log_items:
 		logging.info(f"{item[0]} {item[1]}")
 
 ################################################## RULES ##################################################
-ruleorder: copy_fastq > cramtobam > copy_bam > samtools_fastq > fastp
+ruleorder: copy_fastq > bcl_convert
 
 rule all:
 	input:
@@ -290,26 +290,41 @@ rule all:
 rule help:
 	"""
 	General help for salmon module
-	Launch snakemake -s  snakefile_salmon -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory (default is data) without / at the end of the path
-	To launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
-	Every variable defined in the yaml file can be change
-	Separate multiple variable with a space (ex  --config DATA_DIR=runname transProb=0.05 var1=0.05 var2=12)
-	Also use option --configfile another.yaml to replace and merge existing config.yaml file variables
-	Use -p to display shell commands
-	Use --lt to display docstrings of rules
+	Launch snakemake -s salmon.smk -c(numberofthreads) --config DATA_DIR=absolutepathoftherundirectory
+	Separate multiple variable with a space (ex --config DATA_DIR=runname transProb=0.05 var1=0.05 var2=12)
+	Use -p to display shell commands, use --lt to display docstrings of rules, 
 	Input file = fastq PE (SE don't work for now)
 	Output file = quant.sf files
 	"""
 
 
-#rule bcl2fastq:
-#input: folder to raw datas run 
-#output: folder to demutliplexed datas
-#params: filepath to the samplesheet file
-#	shell:
-#		"""
-#		bcl2fastq --runfolder-dir {input} --output-dir {output} --sample-sheet {params}--barcode-mismatches 1 --fastq-compression-level 1 -r 1 -p 1 -w 6 --no-lane-splitting
-#		"""
+rule bcl_convert:
+	""" Convert BCL files to FASTQ using bcl-convert """
+	input:
+		bcl_dir = config['BCL_DIRECTORY']
+	output:
+		fastqR1 = f"{resultDir}/{{sample}}.R1.fastq.gz",
+		fastqR2 = f"{resultDir}/{{sample}}.R2.fastq.gz"
+	params:
+		sample_sheet = config['SAMPLE_SHEET'], 
+		output_dir = resultDir,  
+		sample_name = lambda wildcards: wildcards.sample
+		#config_file = config['BCL_CONVERT_CONFIG']  # Path to bcl-convert config JSON file
+	threads: workflow.cores
+	shell:
+		"""
+		bcl-convert --input-dir {input.bcl_dir} \
+					--output-dir {params.output_dir} \
+					--sample-sheet {params.sample_sheet} \
+					--threads {threads}
+
+		R1_fastq=$(find {params.output_dir} -type f -name "{params.sample_name}*_R1_*.fastq.gz" | head -n 1)
+		R2_fastq=$(find {params.output_dir} -type f -name "{params.sample_name}*_R2_*.fastq.gz" | head -n 1)
+		
+		mv $R1_fastq {output.fastqR1}
+		mv $R2_fastq {output.fastqR2}
+		"""
+
 
 rule copy_fastq:
 	output:
@@ -320,45 +335,6 @@ rule copy_fastq:
 		download_link1 = lambda wildcards: runDict[wildcards.sample]['.R1.fastq.gz'],
 		download_link2 = lambda wildcards: runDict[wildcards.sample]['.R2.fastq.gz']
 	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link1} {output.fastqR1} && ln -sfn {params.download_link2} {output.fastqR2} || rsync -azvh {params.download_link1} {output.fastqR1} && rsync -azvh {params.download_link2} {output.fastqR2}"
-
-rule copy_bam:
-	output: temp(f"{resultDir}/{{sample}}.bam")
-	params:
-		process=config['PROCESS_CMD'],
-		download_link=lambda wildcards: runDict[wildcards.sample]['.bam']
-	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
-
-rule copy_cram:
-	output: temp(f"{resultDir}/{{sample}}.cram")
-	params:
-		process=config['PROCESS_CMD'],
-		download_link=lambda wildcards: runDict[wildcards.sample]['.cram']
-	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}"
-
-rule cramtobam:
-	""" Extract bam from a cram file with samtools, need a reference genome """
-	input: rules.copy_cram.output
-	output: temp(f"{resultDir}/{{sample}}.bam")
-	params: refgenome=config['REFGENOMEFA_PATH']
-	shell: "samtools view -b -T {params.refgenome} -o {output} {input}"
-
-rule indexing:
-	""" Indexing bam files with samtools or ln """
-	input: f"{resultDir}/{{sample}}.bam"
-	output: temp(f"{resultDir}/{{sample}}.bam.bai")
-	params:
-		process=config['PROCESS_CMD'],
-		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
-	threads: workflow.cores
-	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
-
-rule samtools_fastq:
-	""" Extract fastq from a bam file """
-	input: f"{resultDir}/{{sample}}.bam"
-	output:
-		fastqR1=temp(f"{resultDir}/{{sample}}.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.R2.fastq.gz")
-	shell: "samtools fastq -1 {output.fastqR1} -2 {output.fastqR2} {input}"
 
 
 # https://github.com/OpenGene/fastp
@@ -387,20 +363,20 @@ rule salmon:
 	output:
 		f"{resultDir}/tmp/{{sample}}.salmon.quant/quant.sf"
 	params:
-		threads = config['THREADS'],
 		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
 		fastq_type = config['SALMON_FASTQ_TYPE'],
 		misc_options = config['MISC_SALMON_OPTIONS'],
 		salmondir= f"{resultDir}/tmp/{{sample}}.salmon.quant/"
+	threads: workflow.cores
 	shell:
 		"""
 		if [ "{params.fastq_type}" = 'PE' ];
 		then
-		salmon quant -p {params.threads} -i {params.fastquantref} -l A -1 {input.fastqR1} -2 {input.fastqR2} {params.misc_options} -o {params.salmondir}
+		salmon quant -p {threads} -i {params.fastquantref} -l A -1 {input.fastqR1} -2 {input.fastqR2} {params.misc_options} -o {params.salmondir}
 		fi
 		if [ "{params.fastq_type}" = 'SE' ];
 		then
-		salmon quant -p {params.threads} -i {params.fastquantref} -l A -r {input.fastqR1} {params.misc_options} -o {params.salmondir}
+		salmon quant -p {threads} -i {params.fastquantref} -l A -r {input.fastqR1} {params.misc_options} -o {params.salmondir}
 		fi
 		"""
 
@@ -433,9 +409,8 @@ onsuccess:
 	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*/*", "/*"]]
 	result_files_list = searchfiles(resultDir, search_args, False)	
 	replaced_paths = replace_path(result_files_list, resultDir, "")
-	sample_list.insert(0,"allsamples")
 	resultDict = populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
-	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender"])
+	update_results(runDict, resultDict, config['RESULT_EXT_LIST'])
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html")
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 	shell("rm -rf {resultDir}/tmp/")

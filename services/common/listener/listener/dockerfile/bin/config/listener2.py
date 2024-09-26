@@ -183,7 +183,6 @@ def get_run_name(stark_complete):
     return stark_complete[:-22]
 
 def get_stark_copy_complete(group_input, days):
-    stark_complete_list = []
     cmd = f"find {group_input}/*/*/STARKCopyComplete.txt -maxdepth 5 -mtime -{days} 2>/dev/null"
     out = subprocess.check_output(cmd, shell=True).decode("utf-8").splitlines()
     return out
