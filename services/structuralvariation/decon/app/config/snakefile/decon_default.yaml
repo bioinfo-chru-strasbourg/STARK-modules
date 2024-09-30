@@ -13,7 +13,7 @@
 ##########################################################################
 # Add here variables that will extend default configuration yaml file.
 # If a variable was already defined in the default configuration yaml file, it will be replace.
-# launch snakemake -s snakefile_decon -c(numberofthreads) --config run=absolutepathoftherundirectory var1=0.05 var2=12
+# launch snakemake -s decon.smk -c(numberofthreads) --config run=absolutepathoftherundirectory var1=0.05 var2=12
 # separate multiple variable with a space
 ################## Directories and variables ##################
 
