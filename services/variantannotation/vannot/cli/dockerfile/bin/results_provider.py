@@ -55,12 +55,12 @@ def distribute(run_informations):
             )
         )
 
-        merged_vcfs = glob.glob(osj(run_informations["archives_results_folder"], f"merged_VANNOT_{run_informations["run_name"]}*.vcf.gz"))
+        merged_vcfs = glob.glob(osj(run_informations["archives_results_folder"], f"VANNOT_merged_{run_informations["run_name"]}*.vcf.gz"))
         for merged_vcf in merged_vcfs:
-            if os.path.basename(merged_vcf).split(".")[1] != "vcf":
-                renamed_merged_vcf = f"VANNOT.{date}.{os.path.basename(merged_vcf).split(".")[1]}.vcf.gz"
+            if os.path.basename(merged_vcf).split(".")[1] != "design":
+                renamed_merged_vcf = f"VANNOT.{date}.{os.path.basename(merged_vcf).split(".")[2]}.vcf.gz"
             else:
-                renamed_merged_vcf = f"VANNOT.{date}.vcf.gz"
+                renamed_merged_vcf = f"VANNOT.{date}.design.vcf.gz"
             for output_folder in output_folders:
                     subprocess.run(["rsync", "-rp", merged_vcf, osj(output_folder, renamed_merged_vcf)])
                     log.info(f"Copied {renamed_merged_vcf} into {output_folder}")

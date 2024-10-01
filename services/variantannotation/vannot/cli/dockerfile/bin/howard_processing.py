@@ -169,7 +169,7 @@ def unmerge_vcf(input):
     vcf_file_to_unmerge = input
     sample_list = subprocess.run(["bcftools", "query", "-l", vcf_file_to_unmerge], universal_newlines=True, stdout=subprocess.PIPE).stdout.strip().split("\n")
     for sample in sample_list:
-        output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"{sample}.final.vcf")
+        output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"VANNOT_{sample}.design.vcf")
         cmd = ["bcftools", "view", "-s", sample, vcf_file_to_unmerge]
         with open(output_file, "w") as writefile:
             subprocess.call(cmd, universal_newlines=True, stdout=writefile)
@@ -268,7 +268,7 @@ def howard_proc(run_informations, vcf_file):
     log.info("Annotating input files with HOWARD")
     
     howard_launcher.launch(container_name, launch_annotate_arguments)
-    # os.remove(vcf_file)
+    os.remove(vcf_file)
     return output_file
 
 def merge_vcf_files(run_informations):
@@ -286,17 +286,20 @@ def merge_vcf_files(run_informations):
     subprocess.call(cmd, universal_newlines=True)
     
 
-def convert_to_final_tsv(run_informations, input_file, panel_name):
+def convert_to_final_tsv(run_informations):
     log.info("Converting output file into readable tsv")
-    container_name = f"VANNOT_convert_{run_informations['run_name']}_{os.path.basename(input_file).split('.')[0]}"
-    if panel_name != "":
-        output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(input_file).split(".")[0]}.panel.{panel_name}.tsv")
-    else:
-        output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(input_file).split(".")[0]}.design.tsv")
-    
-    if not input_file.startswith("merged"):
-        launch_convert_arguments = ["convert", "--input", input_file, "--output", output_file, "--explode_infos"]
-        howard_launcher.launch(container_name, launch_convert_arguments)
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    for vcf_file in vcf_files:
+        panel_name = vcf_file.split(".")[-3]
+        container_name = f"VANNOT_convert_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+        if panel_name != "design":
+            output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.panel.{panel_name}.tsv")
+        else:
+            output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.design.tsv")
+        
+        if not os.path.basename(vcf_file).startswith("VANNOT_merged"):
+            launch_convert_arguments = ["convert", "--input", vcf_file, "--output", output_file, "--explode_infos"]
+            howard_launcher.launch(container_name, launch_convert_arguments)
 
 def cleaner(run_informations):
     log.info("Moving results from temporary folder")

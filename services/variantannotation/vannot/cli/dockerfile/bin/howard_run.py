@@ -106,14 +106,14 @@ def launch_run(args):
     howard_processing.run_initialisation(run_informations)
     merged_vcf = howard_processing.merge_vcf(run_informations)
     annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
-    # howard_processing.unmerge_vcf(annotated_merged_vcf)
-    # if run_informations["run_panels"] != "":
-    #     howard_processing.panel_filtering(run_informations)
-    # howard_processing.convert_to_final_tsv(run_informations, output_file, "")
-    # non_redundant.generate(run_informations)
+    howard_processing.unmerge_vcf(annotated_merged_vcf)
+    if run_informations["run_panels"] != "":
+        howard_processing.panel_filtering(run_informations)
+    howard_processing.convert_to_final_tsv(run_informations)
+    non_redundant.generate(run_informations)
 
-    # howard_processing.cleaner(run_informations)
-    # results_provider.distribute(run_informations)
+    howard_processing.cleaner(run_informations)
+    results_provider.distribute(run_informations)
 
     lock_file = osj(run_repository, "VANNOTComplete.txt")
     with open(lock_file, "w") as write_file:

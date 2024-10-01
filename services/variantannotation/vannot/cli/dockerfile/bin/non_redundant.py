@@ -78,7 +78,6 @@ def generate(run_informations):
 
         with open(output_file + "_unsorted", "w") as write_file:
             for i, f in enumerate(input_files_list):
-                print(i, f)
                 with open(f, "r") as read_file:
                     for l in read_file:
                         if l.startswith("##"):
