@@ -993,7 +993,7 @@ onsuccess:
 	sample_list_orig = sample_list
 	sample_list.insert(0,"allsamples")
 	resultDict = populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
-	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender", ".pdf"],remove_none_samples=sample_list_orig,
+	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender", "merge.pdf"],remove_none_samples=sample_list_orig,
     restrict_none_keys=["Metrics.tsv"])
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html")
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)

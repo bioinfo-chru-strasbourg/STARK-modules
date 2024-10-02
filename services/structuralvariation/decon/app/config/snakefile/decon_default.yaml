@@ -136,7 +136,7 @@ MCORES: 16
 ############# AnnotSV params for DB setup ##############
 ANNOTSV_VERSION: "3.4"
 GENEHANCER_VERSION: "GeneHancer_hg19_v5.9.zip"
-EXOMISER_VERSION: "2309"
+EXOMISER_VERSION: "2402"
 ASSEMBLY: "hg19"
 
 # Command to download (wget or aria2c)
