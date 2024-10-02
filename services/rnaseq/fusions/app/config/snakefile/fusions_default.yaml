@@ -65,7 +65,7 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 
 ##### Search parameters of input for the search function #####
 RECURSIVE_SEARCH: False
-SEARCH_ARGUMENT: ["/*/STARK/*"]
+SEARCH_ARGUMENT: ["/*"]
 
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"

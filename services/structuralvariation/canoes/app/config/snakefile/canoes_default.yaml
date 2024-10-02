@@ -81,7 +81,8 @@ REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 # Java mem option for gatk4 GC extraction
 JAVA_OPTION: "-Xmx8G"
 
-################## AnnotSV params for SB setup ##################
+################## AnnotSV params for DB setup ##################
+# don't forget to change application.properties from /app/config/annotsv
 ANNOTSV_VERSION: "3.4"
 GENEHANCER_VERSION: "GeneHancer_hg19_v5.9.zip"
 EXOMISER_VERSION: "2402"

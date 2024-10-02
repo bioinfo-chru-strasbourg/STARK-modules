@@ -134,6 +134,7 @@ REF_BAM_LIST: ""
 MCORES: 16
 
 ############# AnnotSV params for DB setup ##############
+# don't forget to change application.properties from /app/config/annotsv
 ANNOTSV_VERSION: "3.4"
 GENEHANCER_VERSION: "GeneHancer_hg19_v5.9.zip"
 EXOMISER_VERSION: "2402"
@@ -151,6 +152,6 @@ transProb: 0.01 # Transition probability – the transition probability between 
 ############# AnnotSV params ##############
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
-annotationMode: split # split, full or both (defaut both)
+annotationMode: full # split, full or both (defaut both)
 annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database
 vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFiles option ; extension should be in EXT_INDEX_LIST

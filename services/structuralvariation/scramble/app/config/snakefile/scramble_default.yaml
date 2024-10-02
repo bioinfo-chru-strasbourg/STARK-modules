@@ -88,7 +88,6 @@ REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 DUMMY_FILES: "/app/scripts/dummy"
 R_SCRIPTS: "/app/scripts/R"
 PY_SCRIPTS: "/app/scripts/python"
-
 # Path of the fileconversion json
 VARIANT_CONVERT_CONFIG: "/app/config/fileconversion"
 
@@ -110,7 +109,8 @@ scramble_mode: "--eval-meis"
 # Default path to an FASTA file with MEI Ref sequences
 REFMEI_PATH: "/opt/conda/share/scramble/resources/MEI_consensus_seqs.fa"
 
-################## AnnotSV params for db setup ##################
+################## AnnotSV params for DB setup ##################
+# don't forget to change application.properties from /app/config/annotsv
 ANNOTSV_VERSION: "3.4"
 GENEHANCER_VERSION: "GeneHancer_hg19_v5.9.zip"
 EXOMISER_VERSION: "2402"
