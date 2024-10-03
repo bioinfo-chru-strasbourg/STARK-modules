@@ -34,7 +34,7 @@ db = config['databases']
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 
 # Set up logging
-logfile = {config['serviceName']}.{date_time}.parameters.log"
+logfile = f"{config['serviceName']}.{date_time}.parameters.log"
 logging.basicConfig(
 	filename=logfile,
 	level=config['LOG_LEVEL'],
@@ -57,21 +57,21 @@ rule all:
 		input: f"{db}/CTAT_LIB/CTAT_DB_install.success"
 
 rule install_gencode_db:
-    output: f"{db}/gencode/{assembly}.v{gencode_version}/gencode_DB_download.success"
-    params:
-        genome_link=config['GENCODE_GENOME_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION'], ASSEMBLY=config['ASSEMBLY']),
-        transcripts_link=config['GENCODE_TRANSCRIPTS_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION']),
-        readme_link=config['GENCODE_README_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION']),
-        command=config['COMMAND'],
-        db_folder=f"{db}/gencode/{config['ASSEMBLY']}.v{gencode_version}"
-    shell:
-        """
-        mkdir -p {params.db_folder}
-        {params.command} {params.genome_link} -O {params.db_folder}/genome.fa.gz
-        {params.command} {params.transcripts_link} -O {params.db_folder}/transcripts.fa.gz
-        {params.command} {params.readme_link} -O {params.db_folder}/README.txt
-        touch {output}
-        """
+	output: f"{db}/gencode/{config['ASSEMBLY']}.v{config['GENCODE_VERSION']}/gencode_DB_download.success"
+	params:
+		genome_link=config['GENCODE_GENOME_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION'], ASSEMBLY=config['ASSEMBLY']),
+		transcripts_link=config['GENCODE_TRANSCRIPTS_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION']),
+		readme_link=config['GENCODE_README_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION']),
+		command=config['COMMAND'],
+		db_folder=f"{db}/gencode/{config['ASSEMBLY']}.v{config['GENCODE_VERSION']}"
+	shell:
+		"""
+		mkdir -p {params.db_folder}
+		{params.command} {params.genome_link} -o {params.db_folder}/genome.fa.gz
+		{params.command} {params.transcripts_link} -o {params.db_folder}/transcripts.fa.gz
+		{params.command} {params.readme_link} -o {params.db_folder}/README.txt
+		touch {output}
+		"""
 
 rule install_CTAT_DB:
 	input: rules.install_gencode_db.output,

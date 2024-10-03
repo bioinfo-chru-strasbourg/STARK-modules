@@ -110,10 +110,19 @@ REFCYTOBAND_PATH: "/opt/conda/var/lib/arriba/cytobands_hg19_hs37d5_GRCh37_v2.4.0
 BLACKLIST_PATH: "/opt/conda/var/lib/arriba/blacklist_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
 REFFUSION_PATH: "/opt/conda/var/lib/arriba/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
 
-# Gencode DB
+# Gencode DB Human
+# for hg19 the last gencode version is v19; check the p version of the genome (p13) and name of the transcript file (prefixe pc_)
 ASSEMBLY: "GRCh37"
 GENCODE_VERSION: "19"
 GENCODE_GTF_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.annotation.gtf.gz"
-GENCODE_GENOME_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/{ASSEMBLY}.primary_assembly.genome.fa.gz"
-GENCODE_TRANSCRIPTS_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.transcripts.fa.gz"
+GENCODE_GENOME_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/{ASSEMBLY}.p13.genome.fa.gz"
+GENCODE_TRANSCRIPTS_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.pc_transcripts.fa.gz"
 GENCODE_README_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/_README.TXT"
+
+# for hg38 the first gencode version is v20 ; version 10/2023 is v44; version v46 is 05/2024 ; check the p version of the genome (p14)
+#ASSEMBLY: "GRCh38"
+#GENCODE_VERSION: "44"
+#GENCODE_GTF_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.annotation.gtf.gz"
+#GENCODE_GENOME_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/{ASSEMBLY}.p14.genome.fa.gz"
+#GENCODE_TRANSCRIPTS_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.transcripts.fa.gz"
+#GENCODE_README_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/_README.TXT"
