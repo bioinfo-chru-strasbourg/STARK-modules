@@ -8,9 +8,12 @@ import shutil
 import json
 import re
 
+from vannotplus.family.barcode import main_barcode
+from vannotplus.exomiser.exomiser import main_exomiser
+from vannotplus.annot.score import main_annot
+from vannotplus.__main__ import main_config
 import howard_launcher
-
-
+    
 def folder_initialisation(run_informations):
     input_files = glob.glob(
         osj(run_informations["archives_project_folder"], "*vcf*")

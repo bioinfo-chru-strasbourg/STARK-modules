@@ -81,5 +81,7 @@ def calculate_dejavu(run_informations):
     sample_count = len(glob.glob(osj(run_informations["parquet_db_project_folder"], "*", "*", "*.parquet")))
     
     log.info("Calculating new frequencies")
-    launch_query_arguments = ["query", "--input", parquet_db_project, "--query", f"SELECT '#CHROM', POS, REF, ALT, count(barcode)/({sample_count}*2) AS FREQ FROM variants WHERE PROJECT='{project}' GROUP BY '#CHROM', POS, REF, ALT", "--output", inner_dejavu_output_parquet]
+    launch_query_arguments = ["query", "--input", parquet_db_project, "--query", f"SELECT '#CHROM', POS, REF, ALT, sum(CAST(barcode AS INT)) AS ALLELECOUNT, count(barcode) FILTER(barcode=1) AS HETCOUNT, count(barcode) FILTER(barcode=2) AS HOMCOUNT, sum(CAST(barcode AS INT))/({sample_count}*2) AS ALLELEFREQ FROM variants WHERE PROJECT='{project}' GROUP BY '#CHROM', POS, REF, ALT", "--output", inner_dejavu_output_parquet]
+    # launch_query_arguments = ["query", "--input", parquet_db_project, "--query", f"SELECT '#CHROM', POS, REF, ALT, {sample_count} AS {project}_SAMPLECOUNT, sum(CAST(barcode AS INT)) AS {project}_ALLELECOUNT, count(barcode) FILTER(barcode=1) AS {project}_HETCOUNT, count(barcode) FILTER(barcode=2) AS {project}_HOMCOUNT, sum(CAST(barcode AS INT))/({sample_count}*2) AS {project}_ALLELEFREQ FROM variants WHERE PROJECT='{project}' GROUP BY '#CHROM', POS, REF, ALT", "--output", inner_dejavu_output_parquet]
+
     howard_launcher.launch(container_name, launch_query_arguments)
