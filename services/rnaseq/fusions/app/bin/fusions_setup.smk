@@ -66,9 +66,9 @@ rule install_gencode_db:
 		"""
 		mkdir -p {params.db_folder}
 		{params.command} --dir={params.db_folder} {params.genome_link}
-		unzip -o {params.db_folder}/$(basename {params.genome_link}) -d {params.db_folder}
+		gunzip {params.db_folder}/$(basename {params.genome_link})
 		{params.command} --dir={params.db_folder} {params.transcripts_link}
-		unzip -o {params.db_folder}/$(basename {params.transcripts_link}) -d {params.db_folder}
+		gunzip {params.db_folder}/$(basename {params.transcripts_link})
 		{params.command} --dir={params.db_folder} {params.readme_link} 
 		touch {output}
 		"""
