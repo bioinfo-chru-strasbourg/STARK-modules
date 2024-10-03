@@ -12,11 +12,6 @@
 # PROD version 3 : 06/09/2024
 	# switch to aria2c & snakemake
 
-################## Context ##################
-#
-# This snakemake will setup a cli ie checking and installing proper databases if needed ; copying launcher.py, .conf and .json files into specific directory
-####################################
-
 ################## Import libraries ##################
 import os
 import yaml
@@ -59,17 +54,22 @@ rule all:
 rule install_gencode_db:
 	output: f"{db}/gencode/{config['ASSEMBLY']}.v{config['GENCODE_VERSION']}/gencode_DB_download.success"
 	params:
+		command=config['COMMAND'],
 		genome_link=config['GENCODE_GENOME_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION'], ASSEMBLY=config['ASSEMBLY']),
 		transcripts_link=config['GENCODE_TRANSCRIPTS_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION']),
 		readme_link=config['GENCODE_README_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION']),
-		command=config['COMMAND'],
-		db_folder=f"{db}/gencode/{config['ASSEMBLY']}.v{config['GENCODE_VERSION']}"
+		db_folder=f"{db}/gencode/{config['ASSEMBLY']}.v{config['GENCODE_VERSION']}",
+		gencode_version=config['GENCODE_VERSION'],
+		assembly=config['ASSEMBLY']
+
 	shell:
 		"""
 		mkdir -p {params.db_folder}
-		{params.command} {params.genome_link} -o {params.db_folder}/genome.fa.gz
-		{params.command} {params.transcripts_link} -o {params.db_folder}/transcripts.fa.gz
-		{params.command} {params.readme_link} -o {params.db_folder}/README.txt
+		{params.command} --dir={params.db_folder} {params.genome_link}
+		unzip -o {params.db_folder}/$(basename {params.genome_link}) -d {params.db_folder}
+		{params.command} --dir={params.db_folder} {params.transcripts_link}
+		unzip -o {params.db_folder}/$(basename {params.transcripts_link}) -d {params.db_folder}
+		{params.command} --dir={params.db_folder} {params.readme_link} 
 		touch {output}
 		"""
 
@@ -85,12 +85,12 @@ rule install_CTAT_DB:
 	shell:
 		"""
 		echo 'Download CTAT library'
-		{params.command} {params.ctat_download} -o {params.ctlib}/CTAT_lib.tar.gz
-		{params.command} {params.ctat_filter_pm_download} -o {params.ctlib}/AnnotFilterRule.pm
+		{params.command} --dir={params.ctlib} {params.ctat_download}
+		{params.command} --dir={params.ctlib} {params.ctat_filter_pm_download}
 
 		echo 'Install CTAT database'
 		mkdir -p {params.ctlib}
-		tar -xzf {params.ctlib}/CTAT_lib.tar.gz -C {params.ctlib} --strip-components=1
+		tar -xzf {params.ctlib}/$(basename {params.ctat_download}) -C {params.ctlib} --strip-components=1
 		touch {output}
 		"""
 
