@@ -15,13 +15,13 @@
 # Name of the submodule = {serviceName} from listener.py/launcher.py
 serviceName: "FUSIONS"
 # Name of the module
-module: "rnaseq"
+moduleName: "rnaseq"
 # Databases folder
-databases: "databases"
+databases: "/databases"
 # Service folder
-services: "services"
+services: "/services"
 # Config folder
-config: "config"
+config: "/config"
 # Specify a DATE_TIME value (for rerun)
 DATE_TIME: ""
 # Output directory
@@ -72,31 +72,48 @@ TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
 RESULT_EXT_LIST: ['.tsv','.bam','.pdf','.vcf.gz','.vcf.gz.tbi']
 
+# Path for scripts
+SCRIPTS: "/app/scripts"
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30
-# Command to download (wget or aria2c)
-COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
 # Bcl convert
 BCL_DIRECTORY: ""
 SAMPLE_SHEET: ""
-############## Tools specific parameters ##############
-# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENOMEFA_PATH: "/databases/genomes/current/hg19.fa"
-# GTF file (Gencode)
-REFGTFGENCODE_PATH: "/databases/gencode/current/gencode.v19.annotation.gtf_withproteinids"
-# Which caller to use fir fusion
+
+# Which caller to use for fusion
 FUSION_CALLER: ["arriba", "starfusion"]
+
+############## Tools specific parameters ##############
+# Command to download db
+COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
+
 ########## STAR ##########
 # STAR option to junction file
 JUNCTION_FILE: "Junctions WithinBAM"
-GENOME_PATH_INDEXED: "/databases/CTAT_LIB/current/ref_genome.fa.star.idx"
-########## ARRIBA ##########
-# Arriba specifics databases (default is /opt/conda/var/lib/arriba)
-REFPROTDOMAIN_PATH: "/databases/arriba/current/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
-REFCYTOBAND_PATH: "/databases/arriba/current/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
-BLACKLIST_PATH: "/databases/arriba/current/blacklist_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
-REFFUSION_PATH: "/databases/arriba/current/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
+GENOME_PATH_INDEXED: "/databases/CTAT_LIB/ref_genome.fa.star.idx"
+
 ########## STAR FUSION ##########
-CTAT_LIB_GENCODE: "/databases/CTAT_LIB/current/"
-ARRIBA_SCRIPTS: "/app/scripts"
+CTAT_LIB: "/databases/CTAT_LIB/"
+CTAT_LINK: "https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/GRCh37_gencode_v19_CTAT_lib_Mar012021.plug-n-play.tar.gz"
+CTAT_FILTER_PM_LINK: "https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/__genome_libs_StarFv1.10/AnnotFilterRule.pm"
+
+######### ARRIBA ##########
+# Gencode GTF file for arriba
+GTF_GENCODE: "/databases/gencode/gencode.v19.annotation.gtf_withproteinids"
+# Genome FASTA file reference for arriba (can be standard ref genome fa file)
+GENOME_GENCODE_FA: "/databases/genomes/current/hg19.fa"
+# Arriba specifics databases (default is /opt/conda/var/lib/arriba)
+#arriba: "https://github.com/suhrig/arriba/releases/download/v2.4.0/arriba_v2.4.0.tar.gz"
+REFPROTDOMAIN_PATH: "/opt/conda/var/lib/arriba/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
+REFCYTOBAND_PATH: "/opt/conda/var/lib/arriba/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
+BLACKLIST_PATH: "/opt/conda/var/lib/arriba/blacklist_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
+REFFUSION_PATH: "/opt/conda/var/lib/arriba/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
+
+# Gencode DB
+ASSEMBLY: "GRCh37"
+GENCODE_VERSION: "19"
+GENCODE_GTF_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.annotation.gtf.gz"
+GENCODE_GENOME_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/{ASSEMBLY}.primary_assembly.genome.fa.gz"
+GENCODE_TRANSCRIPTS_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.transcripts.fa.gz"
+GENCODE_README_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/_README.TXT"

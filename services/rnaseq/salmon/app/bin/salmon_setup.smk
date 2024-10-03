@@ -33,13 +33,13 @@ assembly = config['ASSEMBLY']
 species = config['SPECIES']
 
 db = config['databases']
-services_folder = f"{config['services']}/{config['moduleName']}/{config['serviceName']}
-config_folder = f"{config['config']}/{config['moduleName']}/{config['serviceName']}
+services_folder = f"{config['services']}/{config['moduleName']}/{config['serviceName'].lower()}"
+config_folder = f"{config['config']}/{config['moduleName']}/{config['serviceName'].lower()}"
 
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 
 # Set up logging
-logfile = f"{services_folder}/cli/{config['serviceName']}.{date_time}.parameters.log"
+logfile = {config['serviceName']}.{date_time}.parameters.log"
 logging.basicConfig(
 	filename=logfile,
 	level=config['LOG_LEVEL'],
@@ -49,7 +49,7 @@ log_items = [
 	('Start of the analysis:', date_time),
 	('Database:', db),
 	('serviceName:', config['serviceName']),
-	('moduleName:', config['module'])
+	('moduleName:', config['moduleName'])
 ]
 for item in log_items:
 	if isinstance(item[1], list):
@@ -61,10 +61,6 @@ for item in log_items:
 rule all:
 		input:
 			success=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/salmon_install.success"
-
-# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
-# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
-# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M33/_README.TXT
 
 rule download_gencode:
 	output: f"/app/gencode_DB_download.success"
@@ -124,7 +120,8 @@ onsuccess:
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write(f"End of the setup: {date_time_end}\n")
-
+	shell(f"cp {logfile} {services_folder}/cli/{logfile}")
+	shell(f"cp {logfile} {db}/salmon/{assembly}.v{gencode_version}/{logfile}")
 onerror:
 	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")
 	shell(f"touch {services_folder}/cli/SETUPFailed.txt")

@@ -8,13 +8,13 @@
 # Name of the submodule = {serviceName} from listener.py/launcher.py
 serviceName: "FILT3R"
 # Name of the module
-module: "structuralvariation"
+moduleName: "structuralvariation"
 # Databases folder
-databases: "databases"
+databases: "/databases"
 # Service folder
-services: "services"
+services: "/services"
 # Config folder
-config: "config"
+config: "/config"
 # Specify a DATE_TIME value (for rerun)
 DATE_TIME: ""
 # Output directory

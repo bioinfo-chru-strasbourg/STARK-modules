@@ -28,14 +28,13 @@ import json
 configfile: "/app/config/snakefile/fusions_default.yaml"
 ###################################################
 
-services_folder = f"{config['services']}/{config['moduleName']}/{config['serviceName']}
-config_folder = f"{config['config']}/{config['moduleName']}/{config['serviceName']}
-
+services_folder = f"{config['services']}/{config['moduleName']}/{config['serviceName'].lower()}"
+config_folder = f"{config['config']}/{config['moduleName']}/{config['serviceName'].lower()}"
+db = config['databases']
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 
 # Set up logging
-# Set up logging
-logfile = f"{services_folder}/cli/{config['serviceName']}.{date_time}.parameters.log"
+logfile = {config['serviceName']}.{date_time}.parameters.log"
 logging.basicConfig(
 	filename=logfile,
 	level=config['LOG_LEVEL'],
@@ -45,7 +44,7 @@ log_items = [
 	('Start of the analysis:', date_time),
 	('Database:', config['databases']),
 	('serviceName:', config['serviceName']),
-	('moduleName:', config['module'])
+	('moduleName:', config['moduleName'])
 ]
 for item in log_items:
 	if isinstance(item[1], list):
@@ -54,9 +53,46 @@ for item in log_items:
 		logging.info(f"{item[0]} {item[1]}")
 
 ################## Snakemake Rules ##################
-rule cp:
-	output: f"{services_folder}/cli/SETUPComplete.txt"
-	shell: " mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli && touch {output} " 
+rule all:
+		input: f"{db}/CTAT_LIB/CTAT_DB_install.success"
+
+rule install_gencode_db:
+    output: f"{db}/gencode/{assembly}.v{gencode_version}/gencode_DB_download.success"
+    params:
+        genome_link=config['GENCODE_GENOME_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION'], ASSEMBLY=config['ASSEMBLY']),
+        transcripts_link=config['GENCODE_TRANSCRIPTS_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION']),
+        readme_link=config['GENCODE_README_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION']),
+        command=config['COMMAND'],
+        db_folder=f"{db}/gencode/{config['ASSEMBLY']}.v{gencode_version}"
+    shell:
+        """
+        mkdir -p {params.db_folder}
+        {params.command} {params.genome_link} -O {params.db_folder}/genome.fa.gz
+        {params.command} {params.transcripts_link} -O {params.db_folder}/transcripts.fa.gz
+        {params.command} {params.readme_link} -O {params.db_folder}/README.txt
+        touch {output}
+        """
+
+rule install_CTAT_DB:
+	input: rules.install_gencode_db.output,
+	output:	f"{db}/CTAT_LIB/CTAT_DB_install.success"
+	params:
+		command=config['COMMAND'],
+		ctlib=config['CTAT_LIB'],
+		ctat_download=config['CTAT_LINK'],
+		ctat_filter_pm_download=config['CTAT_FILTER_PM_LINK']
+
+	shell:
+		"""
+		echo 'Download CTAT library'
+		{params.command} {params.ctat_download} -o {params.ctlib}/CTAT_lib.tar.gz
+		{params.command} {params.ctat_filter_pm_download} -o {params.ctlib}/AnnotFilterRule.pm
+
+		echo 'Install CTAT database'
+		mkdir -p {params.ctlib}
+		tar -xzf {params.ctlib}/CTAT_lib.tar.gz -C {params.ctlib} --strip-components=1
+		touch {output}
+		"""
 
 onstart:
 	shell(f"touch {services_folder}/cli/SETUPRunning.txt")
@@ -67,9 +103,12 @@ onstart:
 
 onsuccess:
 	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")
-	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S") 
+	shell(f"touch {services_folder}/cli/SETUPComplete.txt")
+	shell(f"mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli")
+	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write(f"End of the setup: {date_time_end}\n")
+	shell(f"cp {logfile} {services_folder}/cli/{logfile}")
 
 onerror:
 	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")

@@ -9,13 +9,13 @@
 # Name of the submodule = {serviceName} from listener.py/launcher.py
 serviceName: "SALMON"
 # Name of the module
-module: "rnaseq"
+moduleName: "rnaseq"
 # Databases folder
-databases: "databases"
+databases: "/databases"
 # Service folder
-services: "services"
+services: "/services"
 # Config folder
-config: "config"
+config: "/config"
 
 # Specify a DATE_TIME value (for rerun)
 DATE_TIME: ""
@@ -70,7 +70,10 @@ RESULT_EXT_LIST: ['.sf']
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30
 
-################## Gencode version for db setup ##################
+################## Gencode version for DB setup ##################
+# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
+# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
+# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M33/_README.TXT
 GENCODE_VERSION: "41"
 ASSEMBLY: "GRCh38"
 SPECIES: "human"

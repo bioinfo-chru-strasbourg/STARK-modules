@@ -382,8 +382,8 @@ rule Arriba:
 	input: rules.STAR.output.bam
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.tsv"
 	params:
-		refgenome = config['REFGENOMEFA_PATH'],
-		refgtfgencode = config['REFGTFGENCODE_PATH'],
+		refgenome = config['GENOME_GENCODE_FA'],
+		refgtfgencode = config['GTF_GENCODE'],
 		refprot = config['REFPROTDOMAIN_PATH'],
 		blacklist = config['BLACKLIST_PATH'],
 		reffusion = config['REFFUSION_PATH'],
@@ -399,12 +399,12 @@ rule STARFusion:
 	input: rules.STAR.output.junction
 	output: f"{resultDir}/{{sample}}/tmp/star-fusion.fusion_predictions.tsv"
 	params:
-		libgencode=config['CTAT_LIB_GENCODE'],
+		ctatlib=config['CTAT_LIB'],
 		fusiondir=f"{resultDir}/{{sample}}/tmp/"
 	conda: "starfusion"
 	shell:
 		"""
-		STAR-Fusion --genome_lib_dir {params.libgencode} -J {input} --output_dir {params.fusiondir}
+		STAR-Fusion --genome_lib_dir {params.ctatlib} -J {input} --output_dir {params.fusiondir}
 		"""
 
 rule rename_tsv:
@@ -452,13 +452,13 @@ rule DrawR:
 		fusiontsv=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.tsv"
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{fusion}}.pdf"
 	params:
-		refgtfgencode=config['REFGTFGENCODE_PATH'],
+		refgtfgencode=config['GTF_GENCODE'],
 		refprot=config['REFPROTDOMAIN_PATH'],
 		cytoband=config['REFCYTOBAND_PATH'],
-		arriba_scripts=config['ARRIBA_SCRIPTS']
+		scripts=config['SCRIPTS']
 	shell:
 		"""
-		Rscript {params.arriba_scripts}/draw_fusions.R --annotation={params.refgtfgencode} --fusions={input.fusiontsv} --output={output} --alignments={input.bam} --cytobands={params.cytoband} --proteinDomains={params.refprot}
+		Rscript {params.scripts}/draw_fusions.R --annotation={params.refgtfgencode} --fusions={input.fusiontsv} --output={output} --alignments={input.bam} --cytobands={params.cytoband} --proteinDomains={params.refprot}
 		"""
 
 onstart:

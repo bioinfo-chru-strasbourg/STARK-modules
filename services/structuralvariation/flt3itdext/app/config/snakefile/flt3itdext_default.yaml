@@ -8,13 +8,13 @@
 # Name of the submodule = {serviceName} from listener.py/launcher.py
 serviceName: "FLT3ITDEXT"
 # Name of the module
-module: "structuralvariation"
+moduleName: "structuralvariation"
 # Databases folder
-databases: "databases"
+databases: "/databases"
 # Service folder
-services: "services"
+services: "/services"
 # Config folder
-config: "config"
+config: "/config"
 # Specify a DATE_TIME value (for rerun)
 DATE_TIME: ""
 # Output directory
@@ -66,9 +66,8 @@ TEMPLATE_DIR: "/app/template"
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 
 ################## Tools parameters ##################
-# Folder to store dummy.vcf for ex
+# Folder for scripts & dummy files
 DUMMY_FILES: "/app/scripts/dummy"
-# Script path
 SCRIPT_PATH: "/app/scripts"
 
 # LOG level 30=logging.WARNING or 20=logging.INFO

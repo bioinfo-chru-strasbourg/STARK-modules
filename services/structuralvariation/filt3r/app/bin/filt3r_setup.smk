@@ -28,13 +28,13 @@ import json
 configfile: "/app/config/snakefile/filt3r_default.yaml"
 ##################################################
 
-services_folder = f"{config['services']}/{config['moduleName']}/{config['serviceName']}
-config_folder = f"{config['config']}/{config['moduleName']}/{config['serviceName']}
+services_folder = f"{config['services']}/{config['moduleName']}/{config['serviceName'].lower()}
+config_folder = f"{config['config']}/{config['moduleName']}/{config['serviceName'].lower()}
 
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 
 # Set up logging
-logfile = f"{services_folder}/cli/{config['serviceName']}.{date_time}.parameters.log"
+logfile = {config['serviceName']}.{date_time}.parameters.log"
 logging.basicConfig(
 	filename=logfile,
 	level=config['LOG_LEVEL'],
@@ -44,7 +44,7 @@ log_items = [
 	('Start of the analysis:', date_time),
 	('Database:', config['databases']),
 	('serviceName:', config['serviceName']),
-	('moduleName:', config['module'])
+	('moduleName:', config['moduleName'])
 ]
 for item in log_items:
 	if isinstance(item[1], list):
@@ -69,7 +69,8 @@ onsuccess:
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S") 
 	with open(logfile, "a+") as f:
 		f.write(f"End of the setup: {date_time_end}\n")
-
+	shell(f"cp {logfile} {services_folder}/cli/{logfile}")
+	
 onerror:
 	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")
 	shell(f"touch {services_folder}/cli/SETUPFailed.txt")
