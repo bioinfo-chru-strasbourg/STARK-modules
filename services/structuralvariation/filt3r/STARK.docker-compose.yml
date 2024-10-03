@@ -18,6 +18,7 @@ services:
             - /home1/data/STARK/services/structuralvariation/filt3r:/services/structuralvariation/filt3r:rw
             - /home1/data/STARK/config/structuralvariation/filt3r:/config/structuralvariation/filt3r:rw
             - /home1/data/STARK/databases:/databases:rw
+        working_dir: /
         networks:
             - stark_stark
 

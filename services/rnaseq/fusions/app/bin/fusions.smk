@@ -382,7 +382,7 @@ rule Arriba:
 	input: rules.STAR.output.bam
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.arriba.tsv"
 	params:
-		refgenome = config['GENOME_GENCODE_FA'],
+		refgenome = config['GENOME_FA'],
 		refgtfgencode = config['GTF_GENCODE'],
 		refprot = config['REFPROTDOMAIN_PATH'],
 		blacklist = config['BLACKLIST_PATH'],

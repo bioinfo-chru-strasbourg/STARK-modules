@@ -57,6 +57,7 @@ rule install_gencode_db:
 		command=config['COMMAND'],
 		genome_link=config['GENCODE_GENOME_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION'], ASSEMBLY=config['ASSEMBLY']),
 		transcripts_link=config['GENCODE_TRANSCRIPTS_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION']),
+		gtf_link=config['GENCODE_GTF_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION']),
 		readme_link=config['GENCODE_README_LINK'].format(GENCODE_VERSION=config['GENCODE_VERSION']),
 		db_folder=f"{db}/gencode/{config['ASSEMBLY']}.v{config['GENCODE_VERSION']}",
 		gencode_version=config['GENCODE_VERSION'],
@@ -69,7 +70,9 @@ rule install_gencode_db:
 		gunzip {params.db_folder}/$(basename {params.genome_link})
 		{params.command} --dir={params.db_folder} {params.transcripts_link}
 		gunzip {params.db_folder}/$(basename {params.transcripts_link})
-		{params.command} --dir={params.db_folder} {params.readme_link} 
+		{params.command} --dir={params.db_folder} {params.gtf_link}
+		gunzip {params.db_folder}/$(basename {params.gtf_link})
+		{params.command} --dir={params.db_folder} {params.readme_link}
 		touch {output}
 		"""
 

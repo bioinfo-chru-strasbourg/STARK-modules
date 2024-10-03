@@ -14,17 +14,11 @@ services:
         command: "-p -s /app/bin/scramble_setup.smk"
         container_name: stark-module-structuralvariation-submodule-scramble-service-setup
         restart: "no"
-        environment:
-            - DOCKER_STARK_MODULE_SUBMODULE_NAME=scramble
-            - DOCKER_STARK_MODULE_NAME=structuralvariation
-            - DOCKER_STARK_INNER_FOLDER_DATABASES=/databases
-            - DOCKER_STARK_INNER_FOLDER_DATABASES_REFGENOME=/databases/genomes/current/hg19.fa
-            - DOCKER_STARK_INNER_FOLDER_SERVICES=/services
-            - DOCKER_STARK_INNER_FOLDER_CONFIG=/config
         volumes:
             - /home1/data/STARK/services/structuralvariation/scramble:/services/structuralvariation/scramble:rw
             - /home1/data/STARK/config/structuralvariation/scramble:/config/structuralvariation/scramble:rw
             - /home1/data/STARK/databases:/databases:rw
+        working_dir: /
         networks:
             - stark_stark
 

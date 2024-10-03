@@ -98,11 +98,11 @@ CTAT_LIB: "/databases/CTAT_LIB"
 CTAT_LINK: "https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/GRCh37_gencode_v19_CTAT_lib_Mar012021.plug-n-play.tar.gz"
 CTAT_FILTER_PM_LINK: "https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/__genome_libs_StarFv1.10/AnnotFilterRule.pm"
 
-######### ARRIBA ##########
+######### ARRIBA ########## 
 # Gencode GTF file for arriba
 GTF_GENCODE: "/databases/gencode/gencode.v19.annotation.gtf_withproteinids"
 # Genome FASTA file reference for arriba (can be standard ref genome fa file)
-GENOME_GENCODE_FA: "/databases/genomes/current/hg19.fa"
+GENOME_FA: "/databases/genomes/current/hg19.fa"
 # Arriba specifics databases (default is /opt/conda/var/lib/arriba)
 #arriba: "https://github.com/suhrig/arriba/releases/download/v2.4.0/arriba_v2.4.0.tar.gz"
 REFPROTDOMAIN_PATH: "/opt/conda/var/lib/arriba/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
