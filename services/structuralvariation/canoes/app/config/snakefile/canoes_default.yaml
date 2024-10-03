@@ -88,7 +88,7 @@ EXOMISER_VERSION: "2402"
 # Other params
 ASSEMBLY: "hg19" # must be consistant with genomeBuild variable
 # accessory db
-GENEHANCER_VERSION: "GeneHancer_hg19_v5.9.zip"
+GENEHANCER_VERSION: "GeneHancer_hg19_v5.9"
 # GeneHancer data is under a specific licence that prevent the systematic availability in AnnotSV sources. Users need to request the up-to-date GeneHancer data dedicated to AnnotSV " #(“GeneHancer_<version>_for_annotsv.zip“) by subscribing to the Genecard web site https://www.genecards.org/
 # unzip -q GeneHancer_<version>_for_annotsv.zip -d ($ANNOTSV/share/AnnotSV)/Annotations_Human/FtIncludedInSV/RegulatoryElements/
 # Cosmic db is CosmicCompleteCNA.tsv.gz

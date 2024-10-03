@@ -108,7 +108,7 @@ if run_cosmic:
 	rule cosmic:
 		input: f"{services_folder}/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
 		output: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_COSMIC_install.success"
-		params: lambda wildcards: f"{db}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/COSMIC/{genomeBuild}/"
+		params: f"{db}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/COSMIC/{genomeBuild}/"
 		shell: " mkdir -p {params} && unzip -q {input} -d {params} && touch {output} "
 
 if run_genehancer:
