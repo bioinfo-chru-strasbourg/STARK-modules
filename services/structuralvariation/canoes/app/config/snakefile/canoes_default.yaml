@@ -1,13 +1,13 @@
 # Name of the submodule = {serviceName} from listener.py/launcher.py
 serviceName: "CANOES"
 # Name of the module
-module: "structuralvariation"
-# Databases folder
-databases: "databases"
-# Service folder
-services: "services"
-# Config folder
-config: "config"
+moduleName: "structuralvariation"
+# Databases folder (start with /)
+databases: "/databases"
+# Service folder (start with /)
+services: "/services"
+# Config folder (start with /)
+config: "/config"
 # Specify a DATE_TIME value (for rerun)
 DATE_TIME: ""
 # Output directory (should be defined in the container if using docker)
@@ -56,14 +56,14 @@ INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed','*/'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: ["/*/STARK/*", "/*/*"]
 
-# R & Python scripts, dummy files (vcf or tsv)
+# R & Python scripts, dummy folders
 R_SCRIPTS: "/app/scripts/R"
 PY_SCRIPTS: "/app/scripts/python"
 DUMMY_FILES: "/app/scripts/dummy"
-# Path of the fileconversion json for variant convert
+# Path of the fileconversion json folder for variant convert
 VARIANT_CONVERT_CONFIG: "/app/config/fileconversion"
 
-# Path of the template (template is serviceName_template.html)
+# Path folder of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'Design.tsv', 'gender', 'hpo'] # add '.pdf' if you want graphs
@@ -84,11 +84,22 @@ JAVA_OPTION: "-Xmx8G"
 ################## AnnotSV params for DB setup ##################
 # don't forget to change application.properties from /app/config/annotsv
 ANNOTSV_VERSION: "3.4"
-GENEHANCER_VERSION: "GeneHancer_hg19_v5.9.zip"
 EXOMISER_VERSION: "2402"
-ASSEMBLY: "hg19"
+# Other params
+ASSEMBLY: "hg19" # must be consistant with genomeBuild variable
+# accessory db
+GENEHANCER_VERSION: "GeneHancer_hg19_v5.9.zip"
+# GeneHancer data is under a specific licence that prevent the systematic availability in AnnotSV sources. Users need to request the up-to-date GeneHancer data dedicated to AnnotSV " #(“GeneHancer_<version>_for_annotsv.zip“) by subscribing to the Genecard web site https://www.genecards.org/
+# unzip -q GeneHancer_<version>_for_annotsv.zip -d ($ANNOTSV/share/AnnotSV)/Annotations_Human/FtIncludedInSV/RegulatoryElements/
+# Cosmic db is CosmicCompleteCNA.tsv.gz
 
-# Command to download (wget or aria2c)
+
+# HTTPS links for AnnotSV and Exomiser downloads
+ANNOTSV_DOWNLOAD_LINK: "https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
+EXOMISER_DOWNLOAD_LINK1: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_{assembly}.zip"
+EXOMISER_DOWNLOAD_LINK2: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_phenotype.zip"
+
+# Command to download
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
 ################## AnnotSV params ##################
@@ -114,3 +125,29 @@ homdel: "0.2" # threeshold for homozygous deletion
 # the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
 # REF_BAM_LIST: "--refbams /app/res/list.tsv"
 REF_BAM_LIST: ""
+
+# AnnotSV needs the "CosmicCompleteCNA.tsv.gz" file from https://cancer.sanger.ac.uk/cosmic/download (Copy Number Variants part, Download Whole file)
+# Put the "CosmicCompleteCNA.tsv.gz" file in the corresponding directory: "$ANNOTSV/share/AnnotSV/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/
+# create the directory is necessary (./Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/)
+# These files will be reprocessed and then removed the first time AnnotSV is executed.
+
+## Auto install COSMIC Annotation for SV
+# 1 - Generate an authentication string
+# Your first request needs to supply your registered email address and COSMIC password. 
+# We use HTTP Basic Auth to check your credentials, which requires you to combine your email address and password and then Base64 encode them. 
+# For example, using standard Unix command line tools: 
+	# echo "email@example.com:mycosmicpassword" | base64
+	# yougetthekey64
+# You can use the same authentication string for all of your downloads. You only need to re-generate the string if you change your COSMIC password. 
+
+# 2 - Get a download link
+#Make a request to https://cancer.sanger.ac.uk/cosmic/file_download/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz. 
+# You need to pass the authentication string to the server when you make your request. For example: 
+	# curl -H "Authorization: Basic yougetthekey64" https://cancer.sanger.ac.uk/cosmic/file_download/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz
+# That request will return a snippet of JSON containing the link that you need to use to download your file. For example: 
+	#{"url" : "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData" }
+
+# 3 - Download the data file
+# Extract the URL from the JSON response and make another request to that URL to download the file. For example:
+	# curl "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData"
+# You do not need to supply the authentication header on this request. Download links are valid for one hour. 
