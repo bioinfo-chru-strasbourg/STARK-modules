@@ -88,8 +88,8 @@ rule create_salmon_index:
 		success=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/salmon_install.success"
 	params:
 		index=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index",
-		genome=f"{db}/salmon/{assembly}.v{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
-		transcripts=f"{db}/salmon/{assembly}.v{gencode_version}//gencode.v{gencode_version}.transcripts.fa.gz"
+		genome=f"{db}/gencode/{assembly}.v{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
+		transcripts=f"{db}/gencode/{assembly}.v{gencode_version}//gencode.v{gencode_version}.transcripts.fa.gz"
 	shell:
 		"""
 		gunzip -c {params.genome} | grep '^>' | cut -d ' ' -f 1 > {output.decoy}
