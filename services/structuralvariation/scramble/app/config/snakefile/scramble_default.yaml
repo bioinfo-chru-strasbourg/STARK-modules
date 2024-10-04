@@ -146,18 +146,18 @@ vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFil
 # Your first request needs to supply your registered email address and COSMIC password. 
 # We use HTTP Basic Auth to check your credentials, which requires you to combine your email address and password and then Base64 encode them. 
 # For example, using standard Unix command line tools: 
-	# echo "email@example.com:mycosmicpassword" | base64
-	# yougetthekey64
+# echo "email@example.com:mycosmicpassword" | base64
+# yougetthekey64
 # You can use the same authentication string for all of your downloads. You only need to re-generate the string if you change your COSMIC password. 
 
 # 2 - Get a download link
 #Make a request to https://cancer.sanger.ac.uk/cosmic/file_download/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz. 
 # You need to pass the authentication string to the server when you make your request. For example: 
-	# curl -H "Authorization: Basic yougetthekey64" https://cancer.sanger.ac.uk/cosmic/file_download/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz
+# curl -H "Authorization: Basic yougetthekey64" https://cancer.sanger.ac.uk/cosmic/file_download/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz
 # That request will return a snippet of JSON containing the link that you need to use to download your file. For example: 
-	#{"url" : "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData" }
+#{"url" : "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData" }
 
 # 3 - Download the data file
 # Extract the URL from the JSON response and make another request to that URL to download the file. For example:
-	# curl "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData"
+# curl "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData"
 # You do not need to supply the authentication header on this request. Download links are valid for one hour. 
