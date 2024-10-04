@@ -101,6 +101,7 @@ rule create_salmon_index:
 		"""
 
 onstart:
+	shell(f"rm -f {services_folder}/cli/SETUPComplete.txt")
 	shell(f"touch {services_folder}/cli/SETUPRunning.txt")
 	with open(logfile, "a+") as f:
 		f.write("\nGlobal parameters of the setup for debug only\n")
@@ -116,6 +117,7 @@ onsuccess:
 		f.write(f"End of the setup: {date_time_end}\n")
 	shell(f"cp {logfile} {services_folder}/cli/{logfile}")
 	shell(f"cp {logfile} {db}/salmon/{assembly}.v{gencode_version}/{logfile}")
+
 onerror:
 	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")
 	shell(f"touch {services_folder}/cli/SETUPFailed.txt")

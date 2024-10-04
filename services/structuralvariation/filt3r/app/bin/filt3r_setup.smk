@@ -58,6 +58,7 @@ rule cp:
 	shell: " mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli && touch {output} " 
 
 onstart:
+	shell(f"rm -f {services_folder}/cli/SETUPComplete.txt")
 	shell(f"touch {services_folder}/cli/SETUPRunning.txt")
 	with open(logfile, "a+") as f:
 		f.write("\nGlobal parameters of the setup for debug only\n")
