@@ -90,12 +90,13 @@ rule create_salmon_index:
 		index=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index",
 		genome=f"{db}/gencode/{assembly}.v{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
 		transcripts=f"{db}/gencode/{assembly}.v{gencode_version}//gencode.v{gencode_version}.transcripts.fa.gz"
+	threads: workflow.cores
 	shell:
 		"""
 		gunzip -c {params.genome} | grep '^>' | cut -d ' ' -f 1 > {output.decoy}
 		sed -i.bak -e 's/>//g' {output.decoy}
 		cat {params.transcripts} {params.genome} > {output.gentrome}
-		salmon index -t {output.gentrome} -d {output.decoy} -p 12 -i {params.index} --gencode
+		salmon index -t {output.gentrome} -d {output.decoy} -p {threads} -i {params.index} --gencode
 		zgrep '^>' {output.gentrome}| cut -d '|' -f 1,6 --output-delimiter=$'\\t' - | sed 's/>//g; s/gene_symbol://g; s/"//g' > {output.txp2gene}
 		touch {output.success}
 		"""

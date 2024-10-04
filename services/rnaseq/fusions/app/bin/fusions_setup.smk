@@ -107,7 +107,7 @@ onstart:
 
 onsuccess:
 	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")
-	shell(f"touch {services_folder}/cli/SETUPComplete.txt") # "/services/rnaseq/fusions/cli/SETUPComplete.txt"
+	shell(f"touch {services_folder}/cli/SETUPComplete.txt")
 	shell(f"mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
