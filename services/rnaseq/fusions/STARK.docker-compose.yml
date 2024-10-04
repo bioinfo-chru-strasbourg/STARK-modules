@@ -50,8 +50,8 @@ services:
                     "/services/rnaseq/fusions/cli/SETUPComplete.txt"
                 ]
             timeout: 10s
-            interval: 30s
-            retries: 30
+            interval: 60s
+            retries: 3600
  
  
     stark-module-rnaseq-submodule-fusions-service-listener:

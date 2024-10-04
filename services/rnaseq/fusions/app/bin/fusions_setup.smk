@@ -89,11 +89,11 @@ rule install_CTAT_DB:
 		"""
 		echo 'Download CTAT library'
 		{params.command} --dir={params.ctlib} {params.ctat_download}
-		{params.command} --dir={params.ctlib} {params.ctat_filter_pm_download}
-
+		
 		echo 'Install CTAT database'
 		mkdir -p {params.ctlib}
 		tar -xzf {params.ctlib}/$(basename {params.ctat_download}) -C {params.ctlib} --strip-components=1
+		{params.command} --dir={params.ctlib} {params.ctat_filter_pm_download}/ctat_genome_lib_build_dir
 		touch {output}
 		"""
 
@@ -106,12 +106,13 @@ onstart:
 
 onsuccess:
 	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")
-	shell(f"touch {services_folder}/cli/SETUPComplete.txt")
+	shell(f"touch {services_folder}/cli/SETUPComplete.txt") # "/services/rnaseq/fusions/cli/SETUPComplete.txt"
 	shell(f"mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write(f"End of the setup: {date_time_end}\n")
 	shell(f"cp {logfile} {services_folder}/cli/{logfile}")
+	
 
 onerror:
 	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")

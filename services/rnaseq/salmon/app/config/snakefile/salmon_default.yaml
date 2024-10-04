@@ -71,12 +71,22 @@ RESULT_EXT_LIST: ['.sf']
 LOG_LEVEL: 30
 
 ################## Gencode version for DB setup ##################
+# GRch38 assembly and gencode.vxx.transcripts.fa.gz can be found on https://www.gencodegenes.org/human/
+# release can be change (actually v41 is used, relase is 07.2022)
+# for GRch38 primary assembly v42 : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
+# for gencode transcripts : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
 # https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
 # https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
 # https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M33/_README.TXT
 GENCODE_VERSION: "41"
 ASSEMBLY: "GRCh38"
 SPECIES: "human"
+
+GENCODE_GENOME_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{SPECIES}/release_{GENCODE_VERSION}/{ASSEMBLY}.primary_assembly.genome.fa.gz"
+GENCODE_TRANSCRIPTS_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{SPECIES}/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.transcripts.fa.gz"
+GENCODE_README_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{SPECIES}/release_{GENCODE_VERSION}/_README.TXT"
+
+#GENCODE_GTF_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{SPECIES}/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.annotation.gtf.gz"
 
 # Command to download (wget or aria2c)
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"

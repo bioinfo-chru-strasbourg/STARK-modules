@@ -63,27 +63,21 @@ rule all:
 			success=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/salmon_install.success"
 
 rule download_gencode:
-	output: f"/app/gencode_DB_download.success"
+	output: f"{db}/gencode/{assembly}.v{gencode_version}/gencode_DB_download.success"
 	params:
-		genome_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
-		transcripts_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/gencode.v{gencode_version}.transcripts.fa.gz",
-		readme_link=f"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{species}/release_{gencode_version}/_README.TXT",
 		command=config['COMMAND'],
-		db_folder=f"{db}/salmon/{assembly}.v{gencode_version}"
+		genome_link=config['GENCODE_GENOME_LINK'].format(GENCODE_VERSION=gencode_version, ASSEMBLY=assembly, SPECIES=species),
+		transcripts_link=config['GENCODE_TRANSCRIPTS_LINK'].format(GENCODE_VERSION=gencode_version, SPECIES=species),
+		readme_link=config['GENCODE_README_LINK'].format(GENCODE_VERSION=gencode_version, SPECIES=species),
+		db_folder=f"{db}/gencode/{assembly}.v{gencode_version}"
 	shell:
 		"""
 		mkdir -p {params.db_folder}
-		{params.command} {params.genome_link} 
-		{params.command} {params.transcripts_link}
-		{params.command} {params.readme_link}
+		{params.command}  --dir={params.db_folder} {params.genome_link} 
+		{params.command}  --dir={params.db_folder} {params.transcripts_link}
+		{params.command}  --dir={params.db_folder} {params.readme_link}
 		touch {output}
 		"""
-
-# recipe for Salmon index to perform count extraction
-# GRch38 assembly and gencode.vxx.transcripts.fa.gz can be found on https://www.gencodegenes.org/human/
-# release can be change (actually v41 is used, relase is 07.2022)
-# for GRch38 primary assembly v42 : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
-# for gencode transcripts : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
 
 rule create_salmon_index:
 	input: rules.download_gencode.output
@@ -94,8 +88,8 @@ rule create_salmon_index:
 		success=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/salmon_install.success"
 	params:
 		index=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index",
-		genome=f"/app/{assembly}.primary_assembly.genome.fa.gz",
-		transcripts=f"/app/gencode.v{gencode_version}.transcripts.fa.gz"
+		genome=f"{db}/salmon/{assembly}.v{gencode_version}/{assembly}.primary_assembly.genome.fa.gz",
+		transcripts=f"{db}/salmon/{assembly}.v{gencode_version}//gencode.v{gencode_version}.transcripts.fa.gz"
 	shell:
 		"""
 		gunzip -c {params.genome} | grep '^>' | cut -d ' ' -f 1 > {output.decoy}
