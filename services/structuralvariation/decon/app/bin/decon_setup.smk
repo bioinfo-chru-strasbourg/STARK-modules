@@ -25,7 +25,7 @@ from datetime import datetime
 import json
 
 ################## Configuration ##################
-configfile: "/app/config/snakefile/canoes_default.yaml"
+configfile: "/app/config/snakefile/decon_default.yaml"
 ###################################################
 
 # Format versions for download
