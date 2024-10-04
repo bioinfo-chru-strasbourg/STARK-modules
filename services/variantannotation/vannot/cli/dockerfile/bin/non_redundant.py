@@ -38,33 +38,18 @@ def generate(run_informations):
         if input_file.split(".")[2] != "tsv":
             panel = input_file.split(".")[2]
             if panel in input_files_dict.keys():
-                if type(input_files_dict[panel]) is not list:
-                    new_value = []
-                    previous_value = input_files_dict[panel]
-                    new_value.append(previous_value)
-                    new_value.append(input_file)
-                    input_files_dict["panel_" + panel] = new_value
-                else:
-                    previous_value = input_files_dict[panel]
-                    previous_value.append(input_file)
-                    input_files_dict["panel_" + panel] = previous_value
+                previous_value = input_files_dict[panel]
+                previous_value.append(input_file)
+                input_files_dict[panel] = previous_value
             else:
-                input_files_dict["panel_" + panel] = input_file
+                input_files_dict[panel] = [input_file]
         else:
             if "design" in input_files_dict.keys():
-                if type(input_files_dict["design"]) is not list:
-                    new_value = []
-                    previous_value = input_files_dict["design"]
-                    new_value.append(previous_value)
-                    new_value.append(input_file)
-                    input_files_dict["design"] = new_value
-                else:
-                    previous_value = input_files_dict["design"]
-                    previous_value.append(input_file)
-                    input_files_dict["design"] = previous_value
+                previous_value = input_files_dict["design"]
+                previous_value.append(input_file)
+                input_files_dict["design"] = previous_value
             else:
-                input_files_dict["design"] = input_file
-
+                input_files_dict["design"] = [input_file]
     samples = []
     for i in input_files_list:
         samples.append(os.path.basename(i).split(".")[0][7:])

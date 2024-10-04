@@ -147,11 +147,13 @@ def cleaning_annotations(vcf_file, run_informations):
 
     return renamed_clean
 
+# def exomiser():
+#     print(main_exomiser())
+    
 def merge_vcf(run_informations):
     vcf_file_to_merge = glob.glob(osj(run_informations["tmp_analysis_folder"], "*vcf*"))
     if len(vcf_file_to_merge) > 1 :
         log.info(f"Merging {len(vcf_file_to_merge)} vcf files")
-        print("merging")
         for i in vcf_file_to_merge:
             subprocess.call(["tabix", i], universal_newlines=True)
         

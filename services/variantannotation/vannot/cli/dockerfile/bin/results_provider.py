@@ -58,7 +58,7 @@ def distribute(run_informations):
         merged_vcfs = glob.glob(osj(run_informations["archives_results_folder"], f"VANNOT_merged_{run_informations["run_name"]}*.vcf.gz"))
         for merged_vcf in merged_vcfs:
             if os.path.basename(merged_vcf).split(".")[1] != "design":
-                renamed_merged_vcf = f"VANNOT.{date}.{os.path.basename(merged_vcf).split(".")[2]}.vcf.gz"
+                renamed_merged_vcf = f"VANNOT.{date}.panel.{os.path.basename(merged_vcf).split(".")[2]}.vcf.gz"
             else:
                 renamed_merged_vcf = f"VANNOT.{date}.design.vcf.gz"
             for output_folder in output_folders:
@@ -67,7 +67,10 @@ def distribute(run_informations):
                     
         non_redundants = glob.glob(osj(run_informations["archives_results_folder"], "Non_Redondant.*.tsv"))
         for non_redundant in non_redundants:
-            renamed_non_redundant = f"VANNOT.{date}.Non_Redondant.{os.path.basename(non_redundant).split(".")[1]}.vcf.gz"
+            if os.path.basename(merged_vcf).split(".")[1] != "design":
+                renamed_non_redundant = f"VANNOT.{date}.Non_Redondant.panel.{os.path.basename(non_redundant).split(".")[1]}.vcf.gz"
+            else:
+                renamed_non_redundant = f"VANNOT.{date}.Non_Redondant.design.vcf.gz"
             for output_folder in output_folders:
                 subprocess.run(["rsync", "-rp", non_redundant, osj(output_folder, renamed_non_redundant)])
                 log.info(f"Copied {renamed_non_redundant} into {output_folder}")
