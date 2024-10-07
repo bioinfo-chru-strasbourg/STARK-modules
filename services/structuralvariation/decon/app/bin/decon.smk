@@ -313,8 +313,9 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 	# Case: REGEN - Generate custom exon file and intersect with refseqgene
 	if bed_process == 'REGEN':
 		df = pd.read_csv(inputbed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
-		ref_df = pd.read_csv(refseqgene_path, sep='\t')  # Adjust as needed based on refseqgene file format
+		ref_df = pd.read_csv(refseqgene_path, sep='\t')
 		intersected_df = intersectbed(df, ref_df)
+		intersected_df.columns = ["Chr", "Start", "End", "4", "5", "6", "Tosplit", "Gene", "9"]
 		intersected_df['Custom.Exon'] = intersected_df['Tosplit'].str.split(',').str[-1].str.replace('exon', '')
 
 		if transcripts_file and os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
@@ -345,13 +346,16 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 			with open(cat_list_genes, 'w+') as f:
 				f.write('\t'.join(cat_panel_list))
 			shell(f"xargs --delimiter='\\t' cat < {cat_list_genes} >> {cat_panels_bed}")
-		else:
+		elif config['GENES_FILE']:
+			cat_panels_bed = f"/tmp/catpanel.bed"
 			shell(f"xargs --delimiter='\\t' cat < {config['GENES_FILE']} >> {cat_panels_bed}")
 		concatenated_df = pd.read_csv(cat_panels_bed,  sep='\t')
 		concatenated_df = concatenated_df.drop_duplicates()
 		input_df = pd.read_csv(inputbed_file, sep='\t',header=None)
 		intersected_df = intersectbed(input_df, concatenated_df)
-		
+		else:  
+		raise SystemExit("No valid configuration for LIST_GENES or GENES_FILE was provided. Stopping execution.")
+
 		if not old_bed:
 			headers = ["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "13", "14", "15", "16", "17", "18", "Custom.Exon"]
 			columns_to_drop = ['4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '15', '16', '17', '18']
@@ -502,7 +506,7 @@ if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 			runDict[individual_id]['hpo'] = hpo_list
 else:
 	tagfile_list = [runDict[sample].get('.tag') for sample in sample_list if '.tag' in runDict.get(sample, {})]
-
+	tagfile_list = [tag for tag in tagfile_list if tag is not None]
 	if not tagfile_list:
 		print('[INFO] No gender found for the samples')
 	else:
@@ -665,7 +669,7 @@ rule indexing:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
 	threads: workflow.cores
-	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
+	shell: "samtools index -b -@ {threads} {input} {output}"
 
 rule ReadInBams:
 	""" DECoN calculates FPKM for each exon in each samples BAM file, using a list of BAM files and a BED file """
@@ -994,7 +998,7 @@ onsuccess:
 	sample_list.insert(0,"allsamples")
 	resultDict = populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender", "merge.pdf"],remove_none_samples=sample_list_orig,
-    restrict_none_keys=["Metrics.tsv"])
+	restrict_none_keys=["Metrics.tsv"])
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html")
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 

@@ -362,7 +362,7 @@ if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 			runDict[individual_id]['hpo'] = hpo_list
 else:
 	tagfile_list = [runDict[sample].get('.tag') for sample in sample_list if '.tag' in runDict.get(sample, {})]
-
+	tagfile_list = [tag for tag in tagfile_list if tag is not None]
 	if not tagfile_list:
 		print('[INFO] No gender found for the samples')
 	else:
@@ -525,7 +525,7 @@ rule indexing:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
 	threads: workflow.cores
-	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
+	shell: "samtools index -b -@ {threads} {input} {output}"
 
 rule gc_percent:
 	""" Compute GC percent from the reference genome and a bed file, removing header 

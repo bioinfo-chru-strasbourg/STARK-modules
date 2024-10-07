@@ -304,7 +304,7 @@ rule indexing:
 		process=config['PROCESS_CMD'],
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
 	threads: workflow.cores
-	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || samtools index -b -@ {threads} {input} {output}"
+	shell: "samtools index -b -@ {threads} {input} {output}"
 
 rule flt3_itd_ext:
 	"""
