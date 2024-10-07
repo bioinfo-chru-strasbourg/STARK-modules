@@ -439,7 +439,7 @@ rule cramtobam:
 	shell: "samtools view -b -T {params} -o {output} {input}"
 
 rule indexing:
-	""" Indexing bam files with samtools or ln """
+	""" Indexing bam files with samtools """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
 	params:
@@ -460,8 +460,8 @@ rule cluster_identifier:
 	Requirement : .bam file must have a .bai file associated in the same folder
 	"""
 	input:
-		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
-		bai = f"{resultDir}/{{sample}}.{{aligner}}.bam.bai",
+		bam=f"{resultDir}/{{sample}}.{{aligner}}.bam",
+		bai=f"{resultDir}/{{sample}}.{{aligner}}.bam.bai",
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.clusters.txt")
 	params:
 		mini = config['m'],

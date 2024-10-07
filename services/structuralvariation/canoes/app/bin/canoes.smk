@@ -518,7 +518,7 @@ rule cramtobam:
 	shell: "samtools view -b -T {params} -o {output} {input}"
 
 rule indexing:
-	""" Indexing bam files with samtools or ln """
+	""" Indexing bam files with samtools """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
 	params:
@@ -547,8 +547,8 @@ rule gc_percent:
 rule bam_to_multicov:
 	""" From each sample bam file generate a coverage file filtered with the bed provided """
 	input: 
-		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
-		bai = f"{resultDir}/{{sample}}.{{aligner}}.bam.bai"
+		bam=f"{resultDir}/{{sample}}.{{aligner}}.bam",
+		bai=f"{resultDir}/{{sample}}.{{aligner}}.bam.bai"
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv"
 	params: pyscripts = config['PY_SCRIPTS']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"

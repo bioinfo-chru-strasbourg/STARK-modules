@@ -662,7 +662,7 @@ rule cramtobam:
 	shell: "samtools view -b -T {params} -o {output} {input}"
 
 rule indexing:
-	""" Indexing bam files with samtools or ln """
+	""" Indexing bam files with samtools """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
 	params:
@@ -674,6 +674,7 @@ rule indexing:
 rule ReadInBams:
 	""" DECoN calculates FPKM for each exon in each samples BAM file, using a list of BAM files and a BED file """
 	input:
+		bam=expand(f"{resultDir}/{{sample}}.{{aligner}}.bam", aligner=aligner_list, sample=sample_list),
 		allbamlist=f"{resultDir}/{serviceName}.{date_time}.A.list.txt",
 		bai=expand(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai", sample=sample_list, aligner=aligner_list)
 	output:
