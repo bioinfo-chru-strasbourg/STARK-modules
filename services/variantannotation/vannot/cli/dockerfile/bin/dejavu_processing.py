@@ -81,7 +81,20 @@ def calculate_dejavu(run_informations):
     sample_count = len(glob.glob(osj(run_informations["parquet_db_project_folder"], "*", "*", "*.parquet")))
     
     log.info("Calculating new frequencies")
-    launch_query_arguments = ["query", "--input", parquet_db_project, "--query", f"SELECT '#CHROM', POS, REF, ALT, sum(CAST(barcode AS INT)) AS ALLELECOUNT, count(barcode) FILTER(barcode=1) AS HETCOUNT, count(barcode) FILTER(barcode=2) AS HOMCOUNT, sum(CAST(barcode AS INT))/({sample_count}*2) AS ALLELEFREQ FROM variants WHERE PROJECT='{project}' GROUP BY '#CHROM', POS, REF, ALT", "--output", inner_dejavu_output_parquet]
-    # launch_query_arguments = ["query", "--input", parquet_db_project, "--query", f"SELECT '#CHROM', POS, REF, ALT, {sample_count} AS {project}_SAMPLECOUNT, sum(CAST(barcode AS INT)) AS {project}_ALLELECOUNT, count(barcode) FILTER(barcode=1) AS {project}_HETCOUNT, count(barcode) FILTER(barcode=2) AS {project}_HOMCOUNT, sum(CAST(barcode AS INT))/({sample_count}*2) AS {project}_ALLELEFREQ FROM variants WHERE PROJECT='{project}' GROUP BY '#CHROM', POS, REF, ALT", "--output", inner_dejavu_output_parquet]
+    allelecount = "ALLELECOUNT"
+    hetcount = "HETCOUNT"
+    homcount = "HOMCOUNT"
+    allelefreq = "ALLELEFREQ"
+    query = f"SELECT \"#CHROM\", POS, ANY_VALUE(ID) AS ID, REF, ALT, ANY_VALUE(QUAL) AS QUAL, ANY_VALUE(FILTER) AS FILTER, ANY_VALUE(INFO) AS INFO, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq} FROM variants WHERE PROJECT='{project}' GROUP BY \"#CHROM\", POS, REF, ALT"
+    
+    launch_query_arguments = ["query", "--input", parquet_db_project, "--query", query , "--output", inner_dejavu_output_parquet]
 
     howard_launcher.launch(container_name, launch_query_arguments)
+    os.remove(dejavu_output_parquet_hdr)
+    with open(dejavu_output_parquet_hdr, "w") as writefile:
+        writefile.write('##fileformat=VCFv4.2\n')
+        writefile.write('##INFO=<ID=ALLELECOUNT,Number=.,Type=Float,Description=\"allele count annotation\">\n')
+        writefile.write('##INFO=<ID=HETCOUNT,Number=.,Type=Float,Description=\"heterozygot count annotation\">\n')
+        writefile.write('##INFO=<ID=HOMCOUNT,Number=.,Type=Float,Description=\"homozygot count annotation\">\n')
+        writefile.write('##INFO=<ID=ALLELEFREQ,Number=.,Type=Float,Description=\"allele frequency annotation\">\n')
+        writefile.write(f'#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\t{allelecount}\t{hetcount}\t{homcount}\t{allelefreq}\n')
