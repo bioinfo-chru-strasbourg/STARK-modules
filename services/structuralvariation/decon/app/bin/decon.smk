@@ -564,7 +564,7 @@ process_bed_file(bed_file=deconbed_file,inputbed_file=config['BED_FILE'],bed_pro
 # A = all ; XX = Female only ; XY = Male only
 # files_list_A contains the full path of all files (bam files for ex)
 # Warning the key dictionnary for sexe is A/M/F but the gender_list is A/XY/XX
-files_list_A = list(set([runDict[sample]['.bam'] for sample in sample_list if sample in runDict and '.bam' in runDict[sample]]))
+files_list_A = list(set([os.path.join(resultDir, os.path.basename(runDict[sample][".bam"])) for sample in sample_list if sample in runDict and ".bam" in runDict[sample]]))
 files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']))
 files_list_XY = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']))
 
@@ -617,6 +617,7 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams list and the bed provided """
 	input:
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.bam", aligner=aligner_list, sample=sample_list)
 		expand(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai", aligner=aligner_list, sample=sample_list) +
 		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv", aligner=aligner_list) +
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list, sample=sample_list) +
@@ -675,8 +676,8 @@ rule ReadInBams:
 	""" DECoN calculates FPKM for each exon in each samples BAM file, using a list of BAM files and a BED file """
 	input:
 		bam=expand(f"{resultDir}/{{sample}}.{{aligner}}.bam", aligner=aligner_list, sample=sample_list),
-		allbamlist=f"{resultDir}/{serviceName}.{date_time}.A.list.txt",
-		bai=expand(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai", sample=sample_list, aligner=aligner_list)
+		bai=expand(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai", sample=sample_list, aligner=aligner_list),
+		allbamlist=f"{resultDir}/{serviceName}.{date_time}.A.list.txt"
 	output:
 		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.ReadInBams.RData"
 	params:
