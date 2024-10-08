@@ -346,15 +346,17 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 			with open(cat_list_genes, 'w+') as f:
 				f.write('\t'.join(cat_panel_list))
 			shell(f"xargs --delimiter='\\t' cat < {cat_list_genes} >> {cat_panels_bed}")
+		
 		elif config['GENES_FILE']:
 			cat_panels_bed = f"/tmp/catpanel.bed"
 			shell(f"xargs --delimiter='\\t' cat < {config['GENES_FILE']} >> {cat_panels_bed}")
-		concatenated_df = pd.read_csv(cat_panels_bed,  sep='\t')
-		concatenated_df = concatenated_df.drop_duplicates()
-		input_df = pd.read_csv(inputbed_file, sep='\t',header=None)
-		intersected_df = intersectbed(input_df, concatenated_df)
-		else:  
-		raise SystemExit("No valid configuration for LIST_GENES or GENES_FILE was provided. Stopping execution.")
+			concatenated_df = pd.read_csv(cat_panels_bed,  sep='\t')
+			concatenated_df = concatenated_df.drop_duplicates()
+			input_df = pd.read_csv(inputbed_file, sep='\t',header=None)
+			intersected_df = intersectbed(input_df, concatenated_df)
+		
+		else:
+			raise SystemExit("No valid configuration for LIST_GENES or GENES_FILE was provided. Stopping execution.")
 
 		if not old_bed:
 			headers = ["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "13", "14", "15", "16", "17", "18", "Custom.Exon"]
@@ -617,7 +619,7 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	""" Output a design vcf.gz with the bams list and the bed provided """
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.bam", aligner=aligner_list, sample=sample_list)
+		expand(f"{resultDir}/{{sample}}.{{aligner}}.bam", aligner=aligner_list, sample=sample_list) +
 		expand(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai", aligner=aligner_list, sample=sample_list) +
 		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv", aligner=aligner_list) +
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list, sample=sample_list) +
