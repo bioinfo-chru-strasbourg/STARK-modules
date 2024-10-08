@@ -274,7 +274,7 @@ def howard_proc(run_informations, vcf_file):
     memory = commons.get_memory("memory_annotation")
 
     container_name = f"VANNOT_annotate_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
-    launch_annotate_arguments = ["annotation", "--input", vcf_file, "--output", output_file, "--param", configfile, "--assembly", "--memory", memory,"--threads", threads, run_informations["assembly"]]
+    launch_annotate_arguments = ["annotation", "--input", vcf_file, "--output", output_file, "--param", configfile, "--assembly", run_informations["assembly"], "--memory", memory,"--threads", threads]
 
     log.info("Annotating input files with HOWARD")
     
