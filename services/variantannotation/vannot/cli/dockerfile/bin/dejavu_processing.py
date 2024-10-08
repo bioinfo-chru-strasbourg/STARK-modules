@@ -5,11 +5,15 @@ import os
 import logging as log
 import shutil
 import subprocess
+import commons
 
 import howard_launcher
 
 
 def convert_vcf_parquet(run_informations):
+    threads = commons.get_threads("threads_dejavu")
+    memory = commons.get_memory("memory_dejavu")
+
     log.info(f"Generating new dejavu database for {run_informations["run_platform_application"]}")
     if not os.path.isdir(run_informations["parquet_db_run_folder"]):
         os.makedirs(run_informations["parquet_db_run_folder"], 0o775)
@@ -32,8 +36,8 @@ def convert_vcf_parquet(run_informations):
         vcf_minimalize = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.mini.parquet")
         output_parquet = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.parquet")
         
-        launch_minimalize_arguments = ["minimalize", "--input", vcf_file, "--output", vcf_minimalize, "--minimalize_info", "--minimalize_samples"]
-        launch_parquet_arguments = ["process", "--input", vcf_minimalize, "--output", output_parquet, "--calculations=BARCODE", "--explode_infos", '--explode_infos_fields=barcode', '--query=SELECT \"#CHROM\", POS, ID, REF, ALT, QUAL, FILTER, INFO, barcode FROM variants']
+        launch_minimalize_arguments = ["minimalize", "--input", vcf_file, "--output", vcf_minimalize, "--minimalize_info", "--minimalize_samples", "--threads", threads, "--memory", memory]
+        launch_parquet_arguments = ["process", "--input", vcf_minimalize, "--output", output_parquet, "--calculations=BARCODE", "--explode_infos", '--explode_infos_fields=barcode', '--query=SELECT \"#CHROM\", POS, ID, REF, ALT, QUAL, FILTER, INFO, barcode FROM variants', "--threads", threads, "--memory", memory]
         log.info("Minimalizing vcfs")
         howard_launcher.launch(container_name, launch_minimalize_arguments)
         log.info("Converting to parquet format")
@@ -56,6 +60,9 @@ def convert_vcf_parquet(run_informations):
     shutil.rmtree(run_informations["tmp_analysis_folder"])
 
 def calculate_dejavu(run_informations):
+    threads = commons.get_threads("threads_dejavu")
+    memory = commons.get_memory("memory_dejavu")
+
     container_name = f"VANNOT_dejavu_{run_informations["run_name"]}"
     parquet_db_project = run_informations["parquet_db_howard_folder"]
     project = run_informations["run_application"]
@@ -87,7 +94,7 @@ def calculate_dejavu(run_informations):
     allelefreq = "ALLELEFREQ"
     query = f"SELECT \"#CHROM\", POS, ANY_VALUE(ID) AS ID, REF, ALT, ANY_VALUE(QUAL) AS QUAL, ANY_VALUE(FILTER) AS FILTER, ANY_VALUE(INFO) AS INFO, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq} FROM variants WHERE PROJECT='{project}' GROUP BY \"#CHROM\", POS, REF, ALT"
     
-    launch_query_arguments = ["query", "--input", parquet_db_project, "--query", query , "--output", inner_dejavu_output_parquet]
+    launch_query_arguments = ["query", "--input", parquet_db_project, "--query", query , "--output", inner_dejavu_output_parquet, "--threads", threads, "--memory", memory]
 
     howard_launcher.launch(container_name, launch_query_arguments)
     os.remove(dejavu_output_parquet_hdr)

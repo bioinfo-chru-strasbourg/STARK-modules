@@ -27,19 +27,10 @@ def main(args):
 
     # print(mylog.handlers[0].baseFilename)
 
-    # if "varank" is True:
-    #     if "run" in args:
-    #         print("run")
-    #     if "folder" in args:
-    #         print("folder")
-
     if "run" in args:
         commons.set_log_level_run(args)
         commons.set_logger_info_run(args)
-
         howard_run.launch_run(args)
-
-        commons.set_logger_info_run(args)
 
     elif "folder" in args:
         commons.set_log_level_default(args)
@@ -78,13 +69,6 @@ def parse_args():
         default="manual",
         help="hidden argument to know if the vannot analysis is manual or listener launched",
     )
-    clean_parser = argparse.ArgumentParser(add_help=False)
-    clean_parser.add_argument(
-        "-ca",
-        "--clean_annotation",
-        action="store_true",
-        help="argument to clean vcf annotation if existing, it's based on module config file where kept annotations are written",
-    )
     assembly_parser = argparse.ArgumentParser(add_help=False)
     assembly_parser.add_argument(
         "-a",
@@ -105,13 +89,6 @@ def parse_args():
         "--param",
         help="Parameters JSON file (or string) defines parameters to process annotations, calculations, prioritizations, convertions and queries.",
     )
-    # type_parser = argparse.ArgumentParser(add_help=False)
-    # type_parser.add_argument(
-    #     "-t",
-    #     "--type",
-    #     action="store_true",
-    #     help="Choose howard analysis type, annotation or calculation",
-    # )
 
     # Subparser definition
     subparsers = main_parser.add_subparsers(help="sub-command help")
@@ -121,7 +98,6 @@ def parse_args():
         help="run vannot on any folder you want, must containing VCFs and optional custom configfile",
         parents=[
             verbosity_parser,
-            clean_parser,
             assembly_parser,
             output_format_parser,
             param_parser,
@@ -132,7 +108,7 @@ def parse_args():
         "--folder",
         required=True,
         type=checker.absolute_folder_path,
-        help="absolute path to the folder where you want to launch vannot analysis",
+        help="absolute path to the folder containing vcfs, merged or not",
     )
 
     parser_run = subparsers.add_parser(
@@ -142,7 +118,6 @@ def parse_args():
             verbosity_parser,
             pattern_parser,
             mode_parser,
-            clean_parser,
             assembly_parser,
             output_format_parser,
             param_parser,

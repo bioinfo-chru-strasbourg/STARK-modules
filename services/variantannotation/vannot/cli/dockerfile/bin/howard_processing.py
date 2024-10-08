@@ -13,6 +13,8 @@ from vannotplus.exomiser.exomiser import main_exomiser
 from vannotplus.annot.score import main_annot
 from vannotplus.__main__ import main_config
 import howard_launcher
+import commons
+
     
 def folder_initialisation(run_informations):
     input_files = glob.glob(
@@ -208,7 +210,7 @@ def info_to_format_script(vcf_file, run_informations):
                 line = line.strip()
                 writefile.write(line.replace(":", ",") + "\n")
 
-    subprocess.call(["bgzip", tmp_annot_fixed], universal_newlines=True)    
+    subprocess.call(["bgzip", tmp_annot_fixed], universal_newlines=True)
     tmp_annot_fixed = tmp_annot_fixed + ".gz"
     cmd = ["tabix", "-s1", "-b2", "-e2", tmp_annot_fixed]
     subprocess.call(cmd, universal_newlines=True)
@@ -267,8 +269,12 @@ def howard_proc(run_informations, vcf_file):
     if not os.path.isfile(configfile):
         log.error("param.default.json not found, please check your config directory")
         raise ValueError(configfile)
+    
+    threads = commons.get_threads("threads_annotation")
+    memory = commons.get_memory("memory_annotation")
+
     container_name = f"VANNOT_annotate_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
-    launch_annotate_arguments = ["annotation", "--input", vcf_file, "--output", output_file, "--param", configfile, "--assembly", run_informations["assembly"]]
+    launch_annotate_arguments = ["annotation", "--input", vcf_file, "--output", output_file, "--param", configfile, "--assembly", "--memory", memory,"--threads", threads, run_informations["assembly"]]
 
     log.info("Annotating input files with HOWARD")
     
@@ -294,6 +300,9 @@ def merge_vcf_files(run_informations):
 def convert_to_final_tsv(run_informations):
     log.info("Converting output file into readable tsv")
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    threads = commons.get_threads("threads_conversion")
+    memory = commons.get_memory("memory_conversion")
+
     for vcf_file in vcf_files:
         panel_name = vcf_file.split(".")[-3]
         container_name = f"VANNOT_convert_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
@@ -303,7 +312,7 @@ def convert_to_final_tsv(run_informations):
             output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.design.tsv")
         
         if not os.path.basename(vcf_file).startswith("VANNOT_merged"):
-            launch_convert_arguments = ["convert", "--input", vcf_file, "--output", output_file, "--explode_infos"]
+            launch_convert_arguments = ["convert", "--input", vcf_file, "--output", output_file, "--explode_infos", "--threads", threads, "--memory", memory]
             howard_launcher.launch(container_name, launch_convert_arguments)
 
 def cleaner(run_informations):

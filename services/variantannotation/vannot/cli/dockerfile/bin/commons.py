@@ -5,7 +5,31 @@ from os.path import join as osj
 from threading import local
 import sys
 import time
+import json
 
+def get_threads(threads_type):
+    module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
+    if not os.path.isfile(module_config):
+        log.error(f"{module_config} do not exist, primordial file, check its existence")
+        raise ValueError(module_config)
+      
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        threads = data[threads_type]
+
+    return threads
+
+def get_memory(memory_type):
+    module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
+    if not os.path.isfile(module_config):
+        log.error(f"{module_config} do not exist, primordial file, check its existence")
+        raise ValueError(module_config)
+      
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        memory = data[memory_type]
+
+    return memory
 
 def get_default_pattern():
     default_pattern = "*/STARK/*.reports/*.final.vcf.gz"
