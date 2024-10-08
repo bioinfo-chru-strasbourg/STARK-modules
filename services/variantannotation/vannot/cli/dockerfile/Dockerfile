@@ -49,7 +49,6 @@ RUN make
 COPY bin/*.py /tools/vannot/
 RUN chmod -R 777 /tools/
 
-RUN echo 'source activate common' >> ~/.bashrc
 RUN echo 'alias ll="ls -lra"' >> ~/.bashrc
 RUN echo 'alias vannot="python3 /tools/vannot/__main__.py"' >> ~/.bashrc
 RUN echo 'PATH="$PATH:/tools/bin/"' >> ~/.bashrc
