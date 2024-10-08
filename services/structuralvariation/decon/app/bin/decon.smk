@@ -518,7 +518,13 @@ else:
 		print('[INFO] Gender found in the tag files')
 
 # Extract the gender_list from dictionary with the key gender
-gender_list = ['A'] + ['XX' if runDict[sample]['gender'] == 'F' else 'XY' for sample in sample_list if sample in runDict and 'gender' in runDict[sample]]
+gender_list = ['A'] + [
+	gender for sample in sample_list 
+	if sample in runDict and 'gender' in runDict[sample] 
+	for gender in ['XX' if runDict[sample]['gender'] == 'F' else 'XY' if runDict[sample]['gender'] == 'M' else None]
+	if gender is not None
+]
+
 gender_list = list(set(gender_list)) # Removing duplicate
 
 # Find bed file (Design)

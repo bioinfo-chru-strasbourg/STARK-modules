@@ -372,7 +372,13 @@ else:
 		print('[INFO] Gender found in the tag files')
 
 # Extract the gender_list from dictionary with the key gender
-gender_list = ['A'] + ['XX' if runDict[sample]['gender'] == 'F' else 'XY' for sample in sample_list if sample in runDict and 'gender' in runDict[sample]]
+gender_list = ['A'] + [
+	gender for sample in sample_list 
+	if sample in runDict and 'gender' in runDict[sample] 
+	for gender in ['XX' if runDict[sample]['gender'] == 'F' else 'XY' if runDict[sample]['gender'] == 'M' else None]
+	if gender is not None
+]
+
 gender_list = list(set(gender_list)) # Removing duplicate
 
 # Find bed file (Design)
@@ -419,7 +425,7 @@ else:
 # A = all ; XX = Female only ; XY = Male only
 # files_list_A contains the full path of all files (bam files for ex)
 # Warning the key dictionary for sexe is A/M/F but the gender_list is A/XY/XX
-files_list_A = list(set([runDict[sample]['.bam'] for sample in sample_list if sample in runDict and '.bam' in runDict[sample]]))
+files_list_A = list(set([os.path.join(resultDir, os.path.basename(runDict[sample][".bam"])) for sample in sample_list if sample in runDict and ".bam" in runDict[sample]]))
 files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']))
 files_list_XY = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']))
 
