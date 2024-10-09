@@ -24,6 +24,12 @@ suppressPackageStartupMessages({
     library(ggplot2)
 })
 
+# Function to sanitize gene names for file naming
+sanitize_filename <- function(name) {
+    # Replace forbidden characters with an underscore
+    gsub("[[:punct:] ]+", "_", name)
+}
+
 ###### Parsing input options and setting defaults ########
 option_list<-list(
     make_option('--rdata',help='Input summary RData file (required)',dest='data'),
@@ -213,15 +219,19 @@ temp = cnv.calls[cnv.calls$Sample==Sample,]
 
     ######### Save plot in pdf format ###########
     cnv_genes_sample=cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$Gene
-    if(sum(cnv_genes_sample==Gene)==1){
-        pdf(file=paste(plotFolder,"/DECON.",prefixfile,".",Sample,".",Gene,".pdf",sep=""),useDingbats=FALSE)
-    }else{
-        cnv_genes_sample_index=which(cnv.calls_plot$Sample==Sample & cnv.calls_plot$Gene==paste(Gene,collapse=", "))
-        pdf(file=paste(plotFolder,"/DECON.",prefixfile,".",Sample,".",paste(Gene,collapse="_"),"_",which(cnv_genes_sample_index==call_index),".pdf",sep=""),useDingbats=F)
+    cleaned_gene <- sanitize_filename(Gene)
+    if (sum(cnv_genes_sample == cleaned_gene) == 1) {
+        pdf(file = paste(plotFolder, "/DECON.", prefixfile, ".", Sample, ".", cleaned_gene, ".pdf", sep = ""), useDingbats = FALSE)
+    } else {
+        cnv_genes_sample_index = which(cnv.calls_plot$Sample == Sample & cnv.calls_plot$Gene == paste(cleaned_gene, collapse = ", "))
+        pdf(file = paste(plotFolder, "/DECON.", prefixfile, ".", Sample, ".", paste(cleaned_gene, collapse = "_"), "_", which(cnv_genes_sample_index == call_index), ".pdf", sep = ""), useDingbats = FALSE)
     }
 
-    if(sum(cnv_genes_sample==Gene)>2){print(paste("WARNING: more than 2 calls in ",Gene,", could affect plotting",sep=""))}
+    if (sum(cnv_genes_sample == cleaned_gene) > 2) {
+        print(paste("WARNING: more than 2 calls in ", cleaned_gene, ", could affect plotting", sep = ""))
+    }
 
+ 
     grid.newpage()
     pushViewport(viewport(layout = grid.layout(6, 1)))
     print(A1,vp=viewport(layout.pos.row=1:3,layout.pos.col=1))

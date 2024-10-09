@@ -64,23 +64,30 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     
     parallel::stopCluster(cl)
     
-    filtercount1 <- basename(bams)
-    filtercount2 <- if (ncol(bed.file) == 4) c("chromosome", "start", "end", "exon", "GC")
-                    else if (ncol(bed.file) == 5) c("chromosome", "start", "end", "exon", "exon_number", "GC")
-    filtercount <- append(filtercount2, filtercount1)
-    
-    counts <- dplyr::select(unfilteredcounts, all_of(filtercount))
-    names(counts) <- unlist(lapply(strsplit(names(counts), "\\."), "[[", 1))
-    colnames(counts)[colnames(counts) == "exon"] <- "gene"
-    colnames(counts)[colnames(counts) == "exon_number"] <- "exon"
-    
+    # Dynamically adjust the filtercount based on the number of columns in the BED file
+    filtercount <- c("chromosome", "start", "end", "gene")
     if (ncol(bed.file) == 5) {
-        colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
+        filtercount <- append(filtercount, "exon_number")
+    }
+    
+    filtercount <- append(filtercount, basename(bams))
+    
+    # Check if columns exist before selecting
+    existing_cols <- intersect(filtercount, colnames(unfilteredcounts))
+    
+    counts <- dplyr::select(unfilteredcounts, all_of(existing_cols))
+    names(counts) <- unlist(lapply(strsplit(names(counts), "\\."), "[[", 1))
+    
+    # Adjust column names
+    colnames(counts)[colnames(counts) == "exon"] <- "gene"
+    if ("exon_number" %in% colnames(counts)) {
+        colnames(counts)[colnames(counts) == "exon_number"] <- "exon"
     }
     
     save(counts, bams, bed.file, sample.names, fasta, file=output)
     warnings()
 }
+
 
 read_bam_files <- function(bam_file) {
     apply(read.table(bam_file), 1, toString)
