@@ -39,8 +39,9 @@ def vcf_synchronizer(run_informations):
     ignored_samples = ignored_samples + control_samples
     log.info("Ignoring following sample patterns for the analysis and dejavu generation : " + ", ".join(ignored_samples))
 
-    shutil.rmtree(run_informations["archives_run_folder"])
-    if not os.path.isdir(run_informations["archives_run_folder"]):
+    if os.path.isdir(run_informations["archives_run_folder"]):
+        shutil.rmtree(run_informations["archives_run_folder"])
+    elif not os.path.isdir(run_informations["archives_run_folder"]):
         os.makedirs(run_informations["archives_run_folder"])
         os.chmod(run_informations["archives_run_folder"], 0o777)      
 

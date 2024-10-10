@@ -92,8 +92,9 @@ def calculate_dejavu(run_informations):
     hetcount = "HETCOUNT"
     homcount = "HOMCOUNT"
     allelefreq = "ALLELEFREQ"
-    query = f"SELECT \"#CHROM\", POS, ANY_VALUE(ID) AS ID, REF, ALT, ANY_VALUE(QUAL) AS QUAL, ANY_VALUE(FILTER) AS FILTER, ANY_VALUE(INFO) AS INFO, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq} FROM variants WHERE PROJECT='{project}' GROUP BY \"#CHROM\", POS, REF, ALT"
-    
+    query = f"SELECT \"#CHROM\", POS, REF, ALT, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq} FROM variants WHERE PROJECT='{project}' GROUP BY \"#CHROM\", POS, REF, ALT"
+    # query = f"SELECT \"#CHROM\", POS, ANY_VALUE(ID) AS ID, REF, ALT, ANY_VALUE(QUAL) AS QUAL, ANY_VALUE(FILTER) AS FILTER, ANY_VALUE(INFO) AS INFO, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq} FROM variants WHERE PROJECT='{project}' GROUP BY \"#CHROM\", POS, REF, ALT"
+
     launch_query_arguments = ["query", "--input", parquet_db_project, "--query", query , "--output", inner_dejavu_output_parquet, "--threads", threads, "--memory", memory]
 
     howard_launcher.launch(container_name, launch_query_arguments)
@@ -104,4 +105,4 @@ def calculate_dejavu(run_informations):
         writefile.write('##INFO=<ID=HETCOUNT,Number=.,Type=Float,Description=\"heterozygot count annotation\">\n')
         writefile.write('##INFO=<ID=HOMCOUNT,Number=.,Type=Float,Description=\"homozygot count annotation\">\n')
         writefile.write('##INFO=<ID=ALLELEFREQ,Number=.,Type=Float,Description=\"allele frequency annotation\">\n')
-        writefile.write(f'#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\t{allelecount}\t{hetcount}\t{homcount}\t{allelefreq}\n')
+        writefile.write(f'#CHROM\tPOS\tREF\tALT\t{allelecount}\t{hetcount}\t{homcount}\t{allelefreq}\n')

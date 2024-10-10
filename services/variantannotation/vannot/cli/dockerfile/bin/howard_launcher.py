@@ -45,6 +45,8 @@ def launch(container_name, launch_arguments):
         f"{os.environ["HOST_CONFIG"]}:{os.environ["DOCKER_CONFIG"]}",
         "-v",
         f"{howard_config_host}:/tools/howard/current/config/config.json",
+        "-v",
+        "/var/run/docker.sock:/var/run/docker.sock",
         howard_image
         ]
     
