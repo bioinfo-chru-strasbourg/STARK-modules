@@ -64,10 +64,6 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
 
     unfilteredcounts <- foreach(i = 1:nfiles, .combine='cbind') %dopar% {
         bam <- bams[[i]]
-        # Ensure bam is a character string before passing
-        if (!is.character(bam)) {
-            stop("BAM file is not a valid character string")
-        }
         
         # Debugging output
         message("Processing BAM: ", bam)
@@ -76,42 +72,34 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     }
     
     parallel::stopCluster(cl)
-    
+
     # Dynamically adjust the filtercount based on the number of columns in the BED file
     filtercount <- c("chromosome", "start", "end", "gene")
     if (ncol(bed.file) == 5) {
         filtercount <- append(filtercount, "exon_number")
     }
 
-    filtercount <- append(filtercount, basename(bams))
+    # Only keep count columns (without chromosome, start, end, gene) from unfilteredcounts
+    counts_data <- unfilteredcounts[, !colnames(unfilteredcounts) %in% filtercount]
 
-    # Check if columns exist before selecting
-    existing_cols <- intersect(filtercount, colnames(unfilteredcounts))
-    counts <- dplyr::select(unfilteredcounts, all_of(existing_cols))
-
-    # Extract the chromosome, start, end, gene, and exon from the BED file
+    # Extract the unique chromosome, start, end, gene (and exon if applicable) from the BED file
     bed_info <- bed.file[, c("chromosome", "start", "end", "gene")]
     if (ncol(bed.file) == 5) {
         bed_info <- cbind(bed_info, exon = bed.file$exon_number)
-    } else {
-        bed_info <- cbind(bed_info)
     }
 
-    # Combine the bed_info with counts
-    counts <- cbind(bed_info, counts)
+    # Combine bed_info and counts_data, ensuring no duplication
+    counts <- cbind(bed_info, counts_data)
 
-    names(counts) <- unlist(lapply(strsplit(names(counts), "\\."), "[[", 1))
-
-    # Adjust column names
-    colnames(counts)[colnames(counts) == "exon"] <- "gene"
-    if ("exon_number" %in% colnames(counts)) {
-        colnames(counts)[colnames(counts) == "exon_number"] <- "exon"
-    }
+    # Rename columns appropriately, if necessary
+    #if ("gene.1" %in% colnames(counts)) {
+    #    colnames(counts)[colnames(counts) == "gene.1"] <- "exon"
+    #}
 
     save(counts, bams, bed.file, sample.names, fasta, file=output)
     warnings()
-
 }
+
 
 
 read_bam_files <- function(bam_file) {
