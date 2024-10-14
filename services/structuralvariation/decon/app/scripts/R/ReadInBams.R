@@ -40,65 +40,74 @@ stop_if_missing <- function(val, message) {
     }
 }
 
-process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
+process_bams <- function(bamfiles, rbams = NULL, bed, fasta, output, maxcores = 16) {
+    # Read BAM files
     bams <- read_bam_files(bamfiles)
     
+    # Optionally append reference BAMs
     if (!is.null(rbams) && file.exists(rbams)) {
         refbams <- read_reference_bams(rbams)
         bams <- append(refbams, bams)
     }
     
+    # Get sample names
     sample.names <- get_sample_names(bams)
+    
+    # Read BED file
     bed.file <- read_bed_file(bed)
     
     nfiles <- length(bams)
-    message(paste('Parse', nfiles, 'BAM files'))
+    message(paste('Parsing', nfiles, 'BAM files'))
+    
+    # Set up parallel processing
     numCores <- min(detectCores(), maxcores)
     cl <- parallel::makeForkCluster(numCores)
     doParallel::registerDoParallel(cl)
     
     # Debugging: Check structure of bams and bed.file
-    message("BAM files: ", paste(bams, collapse=", "))
+    message("BAM files: ", paste(bams, collapse = ", "))
     message("BED file structure: ", str(bed.file))
-    head(bed.file)
-
-    unfilteredcounts <- foreach(i = 1:nfiles, .combine='cbind') %dopar% {
+    
+    # Process each BAM file in parallel and get counts
+    counts_list <- foreach(i = 1:nfiles, .combine = 'cbind') %dopar% {
         bam <- bams[[i]]
-        
-        # Debugging output
         message("Processing BAM: ", bam)
         
-        getBamCounts(bed.frame = bed.file, bam.files = bam, include.chr = FALSE, referenceFasta = fasta)
+        counts <- getBamCounts(bed.frame = bed.file, bam.files = bam, include.chr = FALSE, referenceFasta = fasta)
+        
+        # Assign sample name to the column
+        colnames(counts) <- sample.names[i]
+        
+        return(counts)
     }
     
     parallel::stopCluster(cl)
 
-    # Dynamically adjust the filtercount based on the number of columns in the BED file
-    filtercount <- c("chromosome", "start", "end", "gene")
+    # Dynamically adjust the filter columns based on the BED file structure
+    filter_cols <- c("chromosome", "start", "end", "gene")
     if (ncol(bed.file) == 5) {
-        filtercount <- append(filtercount, "exon_number")
+        filter_cols <- c(filter_cols, "exon_number")
     }
 
-    # Only keep count columns (without chromosome, start, end, gene) from unfilteredcounts
-    counts_data <- unfilteredcounts[, !colnames(unfilteredcounts) %in% filtercount]
+    # Extract unique chromosome, start, end, gene (and exon if applicable) from the BED file
+    bed_info <- bed.file[, filter_cols]
 
-    # Extract the unique chromosome, start, end, gene (and exon if applicable) from the BED file
-    bed_info <- bed.file[, c("chromosome", "start", "end", "gene")]
-    if (ncol(bed.file) == 5) {
-        bed_info <- cbind(bed_info, exon = bed.file$exon_number)
-    }
+    # Make sure bed_info has unique entries
+    bed_info <- unique(bed_info)
 
-    # Combine bed_info and counts_data, ensuring no duplication
-    counts <- cbind(bed_info, counts_data)
-
-    # Rename columns appropriately, if necessary
-    #if ("gene.1" %in% colnames(counts)) {
-    #    colnames(counts)[colnames(counts) == "gene.1"] <- "exon"
-    #}
-
-    save(counts, bams, bed.file, sample.names, fasta, file=output)
-    warnings()
+    # Bind the BED information (metadata) with the counts
+    # Note: We assume that bed_info rows correspond correctly to counts columns
+    counts_df <- cbind(bed_info, counts_list)
+    
+    # Save the output counts dataframe
+    save(counts_df, file = output)
+    
+    message("Counts matrix saved to: ", output)
+    
+    return(counts_df)
 }
+
+
 
 
 
