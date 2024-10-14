@@ -36,7 +36,7 @@ def get_default_pattern():
     return default_pattern
 
 
-def set_logger_info_run(args):
+def set_logger_info():
     mylog = log.getLogger()
     log_file = mylog.handlers[0].baseFilename
     info_file = log_file.replace(".log", ".info")
@@ -71,7 +71,7 @@ Time run: {delta}"""
             write_file.write(logging)
 
 
-def logger_header_run(log_file):
+def logger_header(log_file):
     logging = f"""#########################
 #         vAnnot        #
 # Author: Mateusz Rauch #
@@ -86,22 +86,31 @@ def logger_header_run(log_file):
         write_file.write(logging)
 
 
-def set_log_level_run(args):
+def set_log_level(args):
     verbosity = args.verbosity
-    run = args.run
+    if args.run:
+        run = args.run
+    else:
+        folder = args.folder
     mode = args.launchmode
     if run.endswith("/"):
         run = run[:-1]
 
-    run_name = run.split("/")[-1]
-    run_application = run.split("/")[-2]
-    run_platform = run.split("/")[-3]
+    if args.run:
+        run_name = run.split("/")[-1]
+        run_application = run.split("/")[-2]
+        run_platform = run.split("/")[-3]
+    else:
+        folder_name = folder.split("/")[-1]
 
     time_seconds = time.time() + 7200
     local_time = time.localtime(time_seconds)
     actual_time = time.strftime("%Y%m%d_%H%M%S", local_time)
 
-    log_file = f"{actual_time}_{run_platform}_{run_application}_{run_name}_{mode}.log"
+    if args.run:
+        log_file = f"{actual_time}_{run_platform}_{run_application}_{run_name}_{mode}.log"
+    else:
+        log_file = f"{actual_time}_{folder_name}_{mode}.log"
 
     log_file = osj(
         os.environ["DOCKER_SERVICES"],
@@ -109,7 +118,7 @@ def set_log_level_run(args):
         log_file,
     )
 
-    logger_header_run(log_file)
+    logger_header(log_file)
 
     configs = {
         "debug": log.DEBUG,
@@ -132,31 +141,6 @@ def set_log_level_run(args):
         filemode="a",
         format="vAnnot %(asctime)s [%(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
-        level=configs[verbosity],
-    )
-
-
-def set_log_level_default(args):
-    verbosity = args.verbosity
-
-    configs = {
-        "debug": log.DEBUG,
-        "info": log.INFO,
-        "warning": log.WARNING,
-        "error": log.ERROR,
-        "critical": log.CRITICAL,
-    }
-    if verbosity not in configs.keys():
-        raise ValueError(
-            "Unknown verbosity level:"
-            + verbosity
-            + "\nPlease use any in:"
-            + configs.keys()
-        )
-    log.basicConfig(
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        force=True,
         level=configs[verbosity],
     )
 

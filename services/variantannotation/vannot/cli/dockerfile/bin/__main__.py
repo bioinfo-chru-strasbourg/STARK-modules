@@ -28,15 +28,15 @@ def main(args):
     # print(mylog.handlers[0].baseFilename)
 
     if "run" in args:
-        commons.set_log_level_run(args)
-        commons.set_logger_info_run(args)
+        commons.set_log_level(args)
+        commons.set_logger_info()
         howard_run.launch_run(args)
 
     elif "folder" in args:
-        commons.set_log_level_default(args)
+        commons.set_log_level(args)
         howard_folder.launch_folder(args)
 
-    commons.set_logger_info_run(args)
+    commons.set_logger_info()
     os.umask(original_umask)
 
 
