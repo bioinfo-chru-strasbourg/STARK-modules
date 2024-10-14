@@ -54,7 +54,7 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     sample.names <- get_sample_names(bams)
     
     # Read BED file without headers
-    bed.file <- read_bed_file(bed, header = FALSE)
+    bed.file <- read_bed_file(bed)
     
     nfiles <- length(bams)
     message(paste('Parse', nfiles, 'BAM files'))
