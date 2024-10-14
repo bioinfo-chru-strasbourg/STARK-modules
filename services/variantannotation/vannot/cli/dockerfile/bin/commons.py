@@ -104,6 +104,8 @@ def set_log_level(args):
 
     else:
         folder = args.folder
+        if folder.endswith("/"):
+            folder = folder[:-1]
         folder_name = folder.split("/")[-1]
         log_file = f"{actual_time}_{folder_name}.log"
 
