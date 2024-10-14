@@ -55,7 +55,7 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     
     # Read BED file without headers
     bed.file <- read_bed_file(bed)
-    
+
     nfiles <- length(bams)
     message(paste('Parse', nfiles, 'BAM files'))
     
@@ -80,15 +80,15 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     parallel::stopCluster(cl)
 
     # Dynamically adjust the filtercount based on the number of columns in the BED file
-    filtercount <- c("chromosome", "start", "end")
+    filtercount <- c("chromosome", "start", "end", "gene")
     if (ncol(bed.file) == 5) {
         filtercount <- append(filtercount, "exon_number")
     }
 
     # Extract the unique chromosome, start, end, gene (and exon if applicable) from the BED file
-    bed_info <- bed.file[, c("V1", "V2", "V3", "V4")]
+    bed_info <- bed.file[, c("chromosome", "start", "end", "gene")]
     if (ncol(bed.file) == 5) {
-        bed_info <- cbind(bed_info, exon = bed.file$V5)
+        bed_info <- cbind(bed_info, exon = bed.file$exon_number)
     }
 
     # Remove the metadata columns from the unfiltered counts
@@ -96,22 +96,16 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
 
     # Combine bed_info (unique) with counts_data
     counts <- cbind(bed_info[!duplicated(bed_info), ], counts_data)
-    
+
     # Rename the coverage columns to sample names
     colnames(counts)[-(1:(ncol(bed_info)))] <- sample.names
-    
-    # Append gene and exon_number (if applicable) at the start of counts
-    if (ncol(bed.file) == 5) {
-        final_counts <- cbind(gene = bed_info$V4, exon_number = bed_info$exon, counts)
-    } else {
-        final_counts <- cbind(gene = bed_info$V4, counts)
-    }
-    
+
     # Save the output
-    save(final_counts, bams, bed.file, sample.names, fasta, file = output)
+    save(counts, bams, bed.file, sample.names, fasta, file = output)
     
     warnings()
 }
+
 
 
 
