@@ -259,12 +259,16 @@ def howard_proc(run_informations, vcf_file):
         )
 
     if run_informations["parameters_file"] == None:
-        for option in [run_informations["run_platform_application"], run_informations["run_platform"], "default"]:
+        for option in [run_informations["run_platform_application"], run_informations["run_platform"], "default", "none"]:
             configfile = osj(os.environ["DOCKER_MODULE_CONFIG"], "configfiles", f"param.{option}.json")
             if os.path.isfile(configfile):
                 break
+            elif configfile == osj(os.environ["DOCKER_MODULE_CONFIG"], "configfiles", "param.none.json"):
+                log.error("Missing parameter file for your analysis, didn't find application nor platform not default parameters")
+                raise ValueError(configfile)
             else:
                 continue
+    
 
     log.info(f"Using {configfile} as parameter for HOWARD analysis")
     if not os.path.isfile(configfile):
