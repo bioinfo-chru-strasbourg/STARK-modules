@@ -16,52 +16,28 @@ from vannotplus.__main__ import main_config
 import howard_launcher
 import commons
 
+def project_folder_initialisation(run_informations):
+    print(run_informations)
     
 def folder_initialisation(run_informations):
-    input_files = glob.glob(
-        osj(run_informations["archives_project_folder"], "*vcf*")
-    ) + glob.glob(osj(run_informations["archives_project_folder"], "*", "*vcf*"))
-
-    if len(input_files) != 0:
-        if not os.path.isdir(
-            osj(run_informations["archives_project_folder"], "VCF", "DEFAULT")
-        ):
-            os.makedirs(
-                osj(run_informations["archives_project_folder"], "VCF", "DEFAULT", ""),
-                0o775,
-            )
-        archives_default_vcf_folder = osj(
-            run_informations["archives_project_folder"], "VCF", "DEFAULT", ""
-        )
-
-        for input_file in input_files:
-            subprocess.run(
-                [
-                    "rsync",
-                    "-rp",
-                    input_file,
-                    archives_default_vcf_folder,
-                ]
-            )
-            os.remove(input_file)
-
     vcf_file_list = glob.glob(
-        osj(run_informations["archives_project_folder"], "VCF", "*", "*vcf*")
+        osj(run_informations["archives_run_folder"], "*vcf*")
     )
-
     if os.path.isdir(run_informations["tmp_analysis_folder"]):
-        log.error(f"{run_informations["tmp_analysis_folder"]} already existing, be careful that the analysis is not already running")
-        raise ValueError(run_informations["tmp_analysis_folder"])
+        log.info("Cleaning temporary analysis folder")
+        shutil.rmtree(run_informations["tmp_analysis_folder"])
+        os.mkdir(run_informations["tmp_analysis_folder"])
     else:
         os.mkdir(run_informations["tmp_analysis_folder"])
 
+    log.info("Copying vcf files to temporary folder")
     for processed_vcf_file in vcf_file_list:
         subprocess.run(
             [
                 "rsync",
                 "-rp",
                 processed_vcf_file,
-                run_informations["tmp_analysis_folder"],
+                osj(run_informations["tmp_analysis_folder"], ""),
             ]
         )
 
@@ -69,8 +45,8 @@ def folder_initialisation(run_informations):
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
     for vcf_file in vcf_file_to_analyse:
-        howard_proc(run_informations, vcf_file)
-        os.remove(vcf_file)
+        # exomiser_annotation()
+        cleaning_annotations(vcf_file, run_informations)
 
 def run_initialisation(run_informations):
     vcf_file_list = glob.glob(
@@ -103,7 +79,7 @@ def run_initialisation(run_informations):
         # exomiser_annotation()
         else:
             fixed_vcf_file = vcf_file
-        cleaning_annotations(fixed_vcf_file, run_informations)    
+        cleaning_annotations(fixed_vcf_file, run_informations)
     
     
 def cleaning_annotations(vcf_file, run_informations):
@@ -147,7 +123,6 @@ def cleaning_annotations(vcf_file, run_informations):
     renamed_clean = osj(os.path.dirname(cleaned_vcf), os.path.basename(cleaned_vcf).replace("cleaned_", "") + ".gz")
     cleaned_vcf = cleaned_vcf + ".gz"
     os.rename(cleaned_vcf, renamed_clean)
-
     return renamed_clean
 
 # def exomiser():
@@ -173,11 +148,14 @@ def merge_vcf(run_informations):
     else:
         return(vcf_file_to_merge[0])
 
-def unmerge_vcf(input):
+def unmerge_vcf(input, run_informations):
     vcf_file_to_unmerge = input
     sample_list = subprocess.run(["bcftools", "query", "-l", vcf_file_to_unmerge], universal_newlines=True, stdout=subprocess.PIPE).stdout.strip().split("\n")
     for sample in sample_list:
-        output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"VANNOT_{sample}.design.vcf")
+        if run_informations["type"] == "run":
+            output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"VANNOT_{sample}.design.vcf")
+        else:
+            output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"VANNOT_{sample}.vcf")
         cmd = ["bcftools", "view", "-s", sample, vcf_file_to_unmerge]
         with open(output_file, "w") as writefile:
             subprocess.call(cmd, universal_newlines=True, stdout=writefile)
@@ -248,16 +226,24 @@ def info_to_format_script(vcf_file, run_informations):
 
 def howard_proc(run_informations, vcf_file):
     log.info(f"Launching HOWARD analysis for {vcf_file}")
-
-    if run_informations["output_format"] != None:
-        output_file = osj(
-            run_informations["tmp_analysis_folder"], f"VANNOT_{os.path.basename(vcf_file).split(".")[0]}.design.{run_informations["output_format"]}"
-        )
-    else:
-        output_file = osj(
-            run_informations["tmp_analysis_folder"], f"VANNOT_{os.path.basename(vcf_file).split(".")[0]}.design.{".".join(os.path.basename(vcf_file).split(".")[1:])}"
-        )
-
+    if run_informations["type"] == "run":
+        if run_informations["output_format"] != None:
+            output_file = osj(
+                run_informations["tmp_analysis_folder"], f"VANNOT_{os.path.basename(vcf_file).split(".")[0]}.design.{run_informations["output_format"]}"
+            )
+        else:
+            output_file = osj(
+                run_informations["tmp_analysis_folder"], f"VANNOT_{os.path.basename(vcf_file).split(".")[0]}.design.{".".join(os.path.basename(vcf_file).split(".")[1:])}"
+            )
+    elif run_informations["type"] == "folder":
+        if run_informations["output_format"] != None:
+            output_file = osj(
+                run_informations["tmp_analysis_folder"], f"VANNOT_{os.path.basename(vcf_file).split(".")[0]}.{run_informations["output_format"]}"
+            )
+        else:
+            output_file = osj(
+                run_informations["tmp_analysis_folder"], f"VANNOT_{os.path.basename(vcf_file).split(".")[0]}.{".".join(os.path.basename(vcf_file).split(".")[1:])}"
+            )
     if run_informations["parameters_file"] == None:
         for option in [run_informations["run_platform_application"], run_informations["run_platform"], "default", "none"]:
             configfile = osj(os.environ["DOCKER_MODULE_CONFIG"], "configfiles", f"param.{option}.json")
@@ -294,7 +280,11 @@ def howard_proc(run_informations, vcf_file):
 def merge_vcf_files(run_informations):
     log.info("Merging all vcfs into one for CuteVariant analysis")
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
-    output_file = osj(run_informations["tmp_analysis_folder"], f"merged_VANNOT_{run_informations["run_name"]}.design.vcf.gz")
+    if run_informations["type"] == "run":
+        output_file = osj(run_informations["tmp_analysis_folder"], f"merged_VANNOT_{run_informations["run_name"]}.design.vcf.gz")
+    else:
+        output_file = osj(run_informations["tmp_analysis_folder"], f"merged_VANNOT_{run_informations["run_name"]}.vcf.gz")
+
     
     for vcf_file in vcf_files:
         subprocess.call(["tabix", vcf_file], universal_newlines=True)
@@ -320,10 +310,14 @@ def convert_to_final_tsv(run_informations):
         actual_time = time.strftime("%H%M%S", local_time)
         start = actual_time
         container_name = f"VANNOT_convert_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
-        if panel_name != "design":
-            output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.panel.{panel_name}.tsv")
+        if run_informations["type"] == "run":
+            if panel_name != "design":
+                output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.panel.{panel_name}.tsv")
+            else:
+                output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.design.tsv")
         else:
-            output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.design.tsv")
+            output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.tsv")
+
         
         if not os.path.basename(vcf_file).startswith("VANNOT_merged"):
             launch_convert_arguments = ["convert", "--input", vcf_file, "--output", output_file, "--explode_infos", "--threads", threads, "--memory", memory]

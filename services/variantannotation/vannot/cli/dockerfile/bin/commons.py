@@ -88,29 +88,24 @@ def logger_header(log_file):
 
 def set_log_level(args):
     verbosity = args.verbosity
-    if args.run:
-        run = args.run
-    else:
-        folder = args.folder
-    mode = args.launchmode
-    if run.endswith("/"):
-        run = run[:-1]
-
-    if args.run:
-        run_name = run.split("/")[-1]
-        run_application = run.split("/")[-2]
-        run_platform = run.split("/")[-3]
-    else:
-        folder_name = folder.split("/")[-1]
-
     time_seconds = time.time() + 7200
     local_time = time.localtime(time_seconds)
     actual_time = time.strftime("%Y%m%d_%H%M%S", local_time)
 
-    if args.run:
+    if "run" in args:
+        run = args.run
+        if run.endswith("/"):
+            run = run[:-1]
+        mode = args.launchmode
+        run_name = run.split("/")[-1]
+        run_application = run.split("/")[-2]
+        run_platform = run.split("/")[-3]
         log_file = f"{actual_time}_{run_platform}_{run_application}_{run_name}_{mode}.log"
+
     else:
-        log_file = f"{actual_time}_{folder_name}_{mode}.log"
+        folder = args.folder
+        folder_name = folder.split("/")[-1]
+        log_file = f"{actual_time}_{folder_name}.log"
 
     log_file = osj(
         os.environ["DOCKER_SERVICES"],

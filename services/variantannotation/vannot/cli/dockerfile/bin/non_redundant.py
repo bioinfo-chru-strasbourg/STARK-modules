@@ -34,22 +34,32 @@ def generate(run_informations):
         )
     )
     input_files_dict = {}
-    for input_file in input_files_list:
-        if input_file.split(".")[2] != "tsv":
-            panel = input_file.split(".")[2]
-            if panel in input_files_dict.keys():
-                previous_value = input_files_dict[panel]
-                previous_value.append(input_file)
-                input_files_dict[panel] = previous_value
+    if run_informations["type"] == "run":
+        for input_file in input_files_list:
+            if input_file.split(".")[2] != "tsv":
+                panel = input_file.split(".")[2]
+                if panel in input_files_dict.keys():
+                    previous_value = input_files_dict[panel]
+                    previous_value.append(input_file)
+                    input_files_dict[panel] = previous_value
+                else:
+                    input_files_dict[panel] = [input_file]
             else:
-                input_files_dict[panel] = [input_file]
-        else:
-            if "design" in input_files_dict.keys():
-                previous_value = input_files_dict["design"]
+                if "design" in input_files_dict.keys():
+                    previous_value = input_files_dict["design"]
+                    previous_value.append(input_file)
+                    input_files_dict["design"] = previous_value
+                else:
+                    input_files_dict["design"] = [input_file]
+    else:
+        for input_file in input_files_list:
+            if "folder" in input_files_dict.keys():
+                previous_value = input_files_dict["folder"]
                 previous_value.append(input_file)
-                input_files_dict["design"] = previous_value
+                input_files_dict["folder"] = previous_value
             else:
-                input_files_dict["design"] = [input_file]
+                input_files_dict["folder"] = [input_file]
+
     samples = []
     for i in input_files_list:
         samples.append(os.path.basename(i).split(".")[0][7:])

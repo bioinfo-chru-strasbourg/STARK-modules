@@ -34,6 +34,7 @@ def main(args):
 
     elif "folder" in args:
         commons.set_log_level(args)
+        commons.set_logger_info()
         howard_folder.launch_folder(args)
 
     commons.set_logger_info()

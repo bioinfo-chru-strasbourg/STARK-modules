@@ -19,6 +19,7 @@ def launch_run(args):
         "assembly": args.assembly,
         "parameters_file": args.param,
         "output_format": args.output_format,
+        "type": "run",
         "run_name": run_repository_list[-1],
         "run_application": run_repository_list[-2],
         "run_platform": run_repository_list[-3],
@@ -106,7 +107,7 @@ def launch_run(args):
     # howard_processing.run_initialisation(run_informations)
     # merged_vcf = howard_processing.merge_vcf(run_informations)
     # annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
-    # howard_processing.unmerge_vcf(annotated_merged_vcf)
+    # howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
     # if run_informations["run_panels"] != "":
     #     howard_processing.panel_filtering(run_informations)
     # howard_processing.convert_to_final_tsv(run_informations)
