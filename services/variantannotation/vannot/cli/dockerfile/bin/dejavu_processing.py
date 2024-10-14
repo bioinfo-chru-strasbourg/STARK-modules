@@ -6,6 +6,7 @@ import logging as log
 import shutil
 import subprocess
 import commons
+import time
 
 import howard_launcher
 
@@ -32,7 +33,11 @@ def convert_vcf_parquet(run_informations):
         subprocess.call(["rsync", "-rvt", vcf_file, run_informations["tmp_analysis_folder"]], universal_newlines=True)
     
     for vcf_file in glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz")):
-        container_name = f"VANNOT_dejavu_{run_informations["run_name"]}_{os.path.basename(vcf_file).split(".")[0]}"
+        exact_time = time.time() + 7200
+        local_time = time.localtime(exact_time)
+        actual_time = time.strftime("%H%M%S", local_time)
+        start = actual_time
+        container_name = f"VANNOT_dejavu_{start}_{run_informations["run_name"]}_{os.path.basename(vcf_file).split(".")[0]}"
         vcf_minimalize = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.mini.parquet")
         output_parquet = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.parquet")
         

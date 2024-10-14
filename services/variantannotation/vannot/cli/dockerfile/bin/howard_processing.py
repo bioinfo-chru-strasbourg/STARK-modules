@@ -7,6 +7,7 @@ import logging as log
 import shutil
 import json
 import re
+import time
 
 from vannotplus.family.barcode import main_barcode
 from vannotplus.exomiser.exomiser import main_exomiser
@@ -273,7 +274,11 @@ def howard_proc(run_informations, vcf_file):
     threads = commons.get_threads("threads_annotation")
     memory = commons.get_memory("memory_annotation")
 
-    container_name = f"VANNOT_annotate_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+    exact_time = time.time() + 7200
+    local_time = time.localtime(exact_time)
+    actual_time = time.strftime("%H%M%S", local_time)
+    start = actual_time
+    container_name = f"VANNOT_annotate_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
     launch_annotate_arguments = ["annotation", "--input", vcf_file, "--output", output_file, "--param", configfile, "--assembly", run_informations["assembly"], "--memory", memory,"--threads", threads]
 
     log.info("Annotating input files with HOWARD")
@@ -304,8 +309,13 @@ def convert_to_final_tsv(run_informations):
     memory = commons.get_memory("memory_conversion")
 
     for vcf_file in vcf_files:
+        
         panel_name = vcf_file.split(".")[-3]
-        container_name = f"VANNOT_convert_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+        exact_time = time.time() + 7200
+        local_time = time.localtime(exact_time)
+        actual_time = time.strftime("%H%M%S", local_time)
+        start = actual_time
+        container_name = f"VANNOT_convert_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
         if panel_name != "design":
             output_file = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}.panel.{panel_name}.tsv")
         else:

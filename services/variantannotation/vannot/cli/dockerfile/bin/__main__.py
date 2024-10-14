@@ -36,6 +36,7 @@ def main(args):
         commons.set_log_level_default(args)
         howard_folder.launch_folder(args)
 
+    commons.set_logger_info_run(args)
     os.umask(original_umask)
 
 
