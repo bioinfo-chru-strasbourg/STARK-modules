@@ -41,9 +41,9 @@ def launch_folder(args):
         "module_config": osj(os.environ["DOCKER_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json"),
     }
     if os.environ["DOCKER_SERVICES"] in analysis_folder:
-        run_informations["run_application"] = analysis_folder.split("/")[-1]
-        run_informations["run_platform"] = analysis_folder.split("/")[-2]
-        run_informations["run_platform_application"] = f"{analysis_folder[-2]}.{analysis_folder[-1]}"
+        run_informations["run_application"] = analysis_folder_name[-1]
+        run_informations["run_platform"] = analysis_folder_name[-2]
+        run_informations["run_platform_application"] = f"{analysis_folder_name[-2]}.{analysis_folder_name[-1]}"
 
         howard_processing.project_folder_initialisation(run_informations)
         merged_vcf = howard_processing.merge_vcf(run_informations)

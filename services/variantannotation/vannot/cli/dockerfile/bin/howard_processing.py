@@ -17,7 +17,36 @@ import howard_launcher
 import commons
 
 def project_folder_initialisation(run_informations):
-    print(run_informations)
+    vcf_file_list = glob.glob(osj(run_informations["archives_run_folder"], "VCF", "*", "*.vcf.gz"))
+
+    if os.path.isdir(run_informations["tmp_analysis_folder"]):
+        log.info("Cleaning temporary analysis folder")
+        shutil.rmtree(run_informations["tmp_analysis_folder"])
+        os.mkdir(run_informations["tmp_analysis_folder"])
+    else:
+        os.mkdir(run_informations["tmp_analysis_folder"])
+
+    log.info("Copying vcf files to temporary folder")
+    for processed_vcf_file in vcf_file_list:
+        subprocess.run(
+            [
+                "rsync",
+                "-rp",
+                processed_vcf_file,
+                osj(run_informations["tmp_analysis_folder"], ""),
+            ]
+        )
+
+    vcf_file_to_analyse = glob.glob(
+        osj(run_informations["tmp_analysis_folder"], "*vcf*")
+    )
+    for vcf_file in vcf_file_to_analyse:
+        if os.path.basename(vcf_file).split(".")[1] == "POOL":
+            fixed_vcf_file = info_to_format_script(vcf_file, run_informations)
+        # exomiser_annotation()
+        else:
+            fixed_vcf_file = vcf_file
+        cleaning_annotations(fixed_vcf_file, run_informations)
     
 def folder_initialisation(run_informations):
     vcf_file_list = glob.glob(
@@ -130,7 +159,6 @@ def cleaning_annotations(vcf_file, run_informations):
     
 def merge_vcf(run_informations):
     vcf_file_to_merge = glob.glob(osj(run_informations["tmp_analysis_folder"], "*vcf*"))
-    print(vcf_file_to_merge)
     if len(vcf_file_to_merge) > 1 :
         log.info(f"Merging {len(vcf_file_to_merge)} vcf files")
         for i in vcf_file_to_merge:
@@ -255,6 +283,8 @@ def howard_proc(run_informations, vcf_file):
                 raise ValueError(configfile)
             else:
                 continue
+    else:
+        configfile = run_informations["parameters_file"]
     
 
     log.info(f"Using {configfile} as parameter for HOWARD analysis")
