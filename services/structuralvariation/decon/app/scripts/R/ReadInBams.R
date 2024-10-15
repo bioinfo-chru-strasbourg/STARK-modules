@@ -109,7 +109,7 @@ get_sample_names <- function(bam_paths) {
 read_bed_file <- function(bedfile) {
     bed.file <- read.table(bedfile)
     if (ncol(bed.file) == 5) {
-        colnames(bed.file) <- c("chromosome", "start", "end", "gene","exon_number"))
+        colnames(bed.file) <- c("chromosome", "start", "end", "gene","exon_number")
     } else if (ncol(bed.file) == 4) {
         colnames(bed.file) <- c("chromosome", "start", "end", "gene")
     }
