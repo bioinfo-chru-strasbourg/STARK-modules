@@ -41,6 +41,8 @@ def vcf_synchronizer(run_informations):
 
     if os.path.isdir(run_informations["archives_run_folder"]):
         shutil.rmtree(run_informations["archives_run_folder"])
+    elif os.path.isfile(run_informations["archives_run_folder"]):
+        os.remove(run_informations["archives_run_folder"])
     elif not os.path.isdir(run_informations["archives_run_folder"]):
         os.makedirs(run_informations["archives_run_folder"])
         os.chmod(run_informations["archives_run_folder"], 0o777)      

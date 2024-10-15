@@ -130,6 +130,7 @@ def cleaning_annotations(vcf_file, run_informations):
     
 def merge_vcf(run_informations):
     vcf_file_to_merge = glob.glob(osj(run_informations["tmp_analysis_folder"], "*vcf*"))
+    print(vcf_file_to_merge)
     if len(vcf_file_to_merge) > 1 :
         log.info(f"Merging {len(vcf_file_to_merge)} vcf files")
         for i in vcf_file_to_merge:
