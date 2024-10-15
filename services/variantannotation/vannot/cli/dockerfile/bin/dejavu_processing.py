@@ -11,16 +11,18 @@ import time
 import howard_launcher
 
 
-def convert_vcf_parquet(run_informations):
+def convert_vcf_parquet(run_informations, args):
     threads = commons.get_threads("threads_dejavu")
     memory = commons.get_memory("memory_dejavu")
+    run_dict = {}
 
     log.info(f"Generating new dejavu database for {run_informations["run_platform_application"]}")
-    if not os.path.isdir(run_informations["parquet_db_run_folder"]):
-        os.makedirs(run_informations["parquet_db_run_folder"], 0o775)
-    else:
-        shutil.rmtree(run_informations["parquet_db_run_folder"])
-        os.makedirs(run_informations["parquet_db_run_folder"], 0o775)
+    if "run" in args:
+        if not os.path.isdir(run_informations["parquet_db_run_folder"]):
+            os.makedirs(run_informations["parquet_db_run_folder"], 0o775)
+        else:
+            shutil.rmtree(run_informations["parquet_db_run_folder"])
+            os.makedirs(run_informations["parquet_db_run_folder"], 0o775)
 
     if not os.path.isdir(run_informations["tmp_analysis_folder"]):
         os.makedirs(run_informations["tmp_analysis_folder"], 0o775)
@@ -28,7 +30,21 @@ def convert_vcf_parquet(run_informations):
         shutil.rmtree(run_informations["tmp_analysis_folder"])
         os.makedirs(run_informations["tmp_analysis_folder"], 0o775)
 
-    vcf_files = glob.glob(osj(run_informations["archives_run_folder"], "*.vcf.gz"))
+    if "run" in args:
+        vcf_files = glob.glob(osj(run_informations["archives_run_folder"], "*.vcf.gz"))
+    elif "dejavu" in args:
+        vcf_files = glob.glob(osj(run_informations["archives_project_folder"], "VCF", "*", "*.vcf.gz"))
+        
+    for vcf_file in vcf_files:
+        run = vcf_file.split("/")[-2]
+        vcf_name = vcf_file.split("/")[-1].split(".")[0]
+        if run in run_dict.keys():
+            previous_value = run_dict[run]
+            previous_value.append(vcf_name)
+            run_dict[run] = previous_value
+        else:
+            run_dict[run] = [vcf_name]
+
     for vcf_file in vcf_files:
         subprocess.call(["rsync", "-rvt", vcf_file, run_informations["tmp_analysis_folder"]], universal_newlines=True)
     
@@ -49,18 +65,16 @@ def convert_vcf_parquet(run_informations):
         howard_launcher.launch(container_name, launch_parquet_arguments)
         os.remove(vcf_minimalize)
         os.remove(vcf_minimalize + ".hdr")
-
-    parquet_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.parquet*"))
-    
-    for parquet_file in parquet_files:
-        if "hdr" not in os.path.basename(parquet_file):
-            sample_dejavu_db_folder = osj(run_informations["parquet_db_run_folder"], f"SAMPLE={".".join(os.path.basename(parquet_file).split(".")[:-1])}")
-        else:
-            sample_dejavu_db_folder = osj(run_informations["parquet_db_run_folder"], f"SAMPLE={".".join(os.path.basename(parquet_file).split(".")[:-2])}")
-
+        
+    for key, values in run_dict.items():
+        for sample_name in values:
+            parquet_file = osj(run_informations["tmp_analysis_folder"], sample_name + ".parquet")
+            parquet_file_hdr = osj(run_informations["tmp_analysis_folder"], parquet_file + ".hdr")
+            sample_dejavu_db_folder = osj(run_informations["parquet_db_project_folder"], f"RUN={key}", f"SAMPLE={sample_name}", "")
         if not os.path.isdir(sample_dejavu_db_folder):
-            os.mkdir(sample_dejavu_db_folder)
+            os.makedirs(sample_dejavu_db_folder)
         subprocess.call(["rsync", "-rvt", parquet_file, sample_dejavu_db_folder], universal_newlines=True)
+        subprocess.call(["rsync", "-rvt", parquet_file_hdr, sample_dejavu_db_folder], universal_newlines=True)
 
     shutil.rmtree(run_informations["tmp_analysis_folder"])
 

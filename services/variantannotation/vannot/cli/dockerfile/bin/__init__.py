@@ -11,4 +11,5 @@ __all__ = [
     "howard_launcher.py",
     "non_redundant.py",
     "tools.py",
+    "dejavu.py",
 ]

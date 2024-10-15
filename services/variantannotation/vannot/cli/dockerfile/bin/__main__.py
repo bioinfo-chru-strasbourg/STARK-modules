@@ -20,12 +20,11 @@ import commons
 import checker
 import howard_run
 import howard_folder
+import dejavu
 
 
 def main(args):
     original_umask = os.umask(0o000)
-
-    # print(mylog.handlers[0].baseFilename)
 
     if "run" in args:
         commons.set_log_level(args)
@@ -35,7 +34,12 @@ def main(args):
     elif "folder" in args:
         commons.set_log_level(args)
         commons.set_logger_info()
-        # howard_folder.launch_folder(args)
+        howard_folder.launch_folder(args)
+
+    elif "dejavu" in args:
+        commons.set_log_level(args)
+        commons.set_logger_info()
+        dejavu.launch_dejavu(args)
 
     commons.set_logger_info()
     os.umask(original_umask)
@@ -97,7 +101,7 @@ def parse_args():
 
     parser_folder = subparsers.add_parser(
         "folder",
-        help="run vannot on any folder you want, must containing VCFs and optional custom configfile",
+        help="run vannot on any folder you want, must contain VCFs and optional custom configfile",
         parents=[
             verbosity_parser,
             assembly_parser,
@@ -111,6 +115,22 @@ def parse_args():
         required=True,
         type=checker.absolute_folder_path,
         help="absolute path to the folder containing vcfs, merged or not",
+    )
+
+    parser_folder = subparsers.add_parser(
+        "dejavu",
+        help="run vannot dejavu on any vannot archives folder you want, must contain VCFs",
+        parents=[
+            verbosity_parser,
+            assembly_parser,
+        ],
+    )
+    parser_folder.add_argument(
+        "-dv",
+        "--dejavu",
+        required=True,
+        type=checker.absolute_folder_path,
+        help="absolute path to the vannot archives folder to calculate dejavu",
     )
 
     parser_run = subparsers.add_parser(

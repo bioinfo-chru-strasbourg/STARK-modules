@@ -102,12 +102,19 @@ def set_log_level(args):
         run_platform = run.split("/")[-3]
         log_file = f"{actual_time}_{run_platform}_{run_application}_{run_name}_{mode}.log"
 
-    else:
+    elif "folder" in args:
         folder = args.folder
         if folder.endswith("/"):
             folder = folder[:-1]
         folder_name = folder.split("/")[-1]
         log_file = f"{actual_time}_{folder_name}.log"
+        
+    elif "dejavu" in args:
+        dejavu = args.dejavu
+        if dejavu.endswith("/"):
+            dejavu = dejavu[:-1]
+        dejavu_name = dejavu.split("/")[-1]
+        log_file = f"{actual_time}_dejavuonly_{dejavu_name}.log"
 
     log_file = osj(
         os.environ["DOCKER_SERVICES"],
