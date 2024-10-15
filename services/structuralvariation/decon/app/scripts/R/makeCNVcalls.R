@@ -336,7 +336,13 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
 
   bed.file <- prepare_bed_file(bed.file)
   ExomeCount <- as.data.frame(counts)
-  colnames(ExomeCount)[1:length(sample.names) + 5] <- sample.names
+  # Check if 'exon' column exists in ExomeCount
+  if ("exon" %in% colnames(ExomeCount)) {
+    colnames(ExomeCount)[1:length(sample.names) + 6] <- sample.names
+  } else {
+    colnames(ExomeCount)[1:length(sample.names) + 5] <- sample.names
+  }
+
   ExomeCount$chromosome <- gsub('chr', '', as.character(ExomeCount$chromosome))
   
   filtered.data <- filter_data_by_chromosome(ExomeCount, bed.file, counts, modechrom)

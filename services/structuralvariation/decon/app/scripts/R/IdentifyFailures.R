@@ -104,7 +104,7 @@ calculate_metrics <- function(count, sample.names, min_corr, min_cov, bed.file) 
 
 # Function to write metrics to a file
 write_metrics <- function(metrics, output_file, bed.file) {
-    if ("exon" %in% colnames(bed.file) & any(metrics$Exon != "All")) {
+    if ("exon_number" %in% colnames(bed.file) & any(metrics$Exon != "All")) {
         exons <- bed.file
         failed.calls <- bed.file[as.numeric(metrics$Exon[metrics$Exon != "All"]),]
         
