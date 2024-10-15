@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 from os.path import join as osj
 import os
 import subprocess

@@ -1,13 +1,7 @@
-# -*- coding: utf-8 -*-
 import logging as log
-import checker
 import os
 from os.path import join as osj
-import synchronizer
-import howard_processing
-import results_provider
 import dejavu_processing
-import non_redundant
 
 
 def launch_dejavu(args):

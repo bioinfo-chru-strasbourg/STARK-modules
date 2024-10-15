@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
 import glob
 from operator import truediv
 from os.path import join as osj
 import os
 import json
-import re
 import logging as log
 import subprocess
 

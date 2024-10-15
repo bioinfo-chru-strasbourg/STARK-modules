@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import glob
 from os.path import join as osj
 import os
@@ -102,14 +101,18 @@ def run_initialisation(run_informations):
     vcf_file_to_analyse = glob.glob(
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
-    for vcf_file in vcf_file_to_analyse:
-        if os.path.basename(vcf_file).split(".")[1] == "POOL":
-            fixed_vcf_file = info_to_format_script(vcf_file, run_informations)
-        # exomiser_annotation()
-        else:
-            fixed_vcf_file = vcf_file
-        cleaning_annotations(fixed_vcf_file, run_informations)
+    # for vcf_file in vcf_file_to_analyse:
+    #     output_exomiser = osj(run_informations["tmp_analysis_folder"], "exomized_" + os.path.basename(vcf_file))
+    #     main_exomiser(vcf_file, output_exomiser, run_informations["run_application"], "config")
     
+        # if os.path.basename(vcf_file).split(".")[1] == "POOL":
+        #     fixed_vcf_file = info_to_format_script(vcf_file, run_informations)
+        # else:
+        #     fixed_vcf_file = vcf_file
+
+        # cleaning_annotations(fixed_vcf_file, run_informations)
+        
+
     
 def cleaning_annotations(vcf_file, run_informations):
     module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")

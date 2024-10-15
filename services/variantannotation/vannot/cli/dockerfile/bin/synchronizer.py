@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import glob
 import logging as log
 from os.path import join as osj
