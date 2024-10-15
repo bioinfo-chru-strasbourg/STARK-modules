@@ -41,75 +41,45 @@ stop_if_missing <- function(val, message) {
 }
 
 process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
-    # Read BAM files
     bams <- read_bam_files(bamfiles)
     
-    # Optionally append reference BAMs
     if (!is.null(rbams) && file.exists(rbams)) {
         refbams <- read_reference_bams(rbams)
         bams <- append(refbams, bams)
     }
     
-    # Get sample names
     sample.names <- get_sample_names(bams)
-    
-    # Read BED file without headers
     bed.file <- read_bed_file(bed)
-
+    
     nfiles <- length(bams)
     message(paste('Parse', nfiles, 'BAM files'))
-    
-    # Set up parallel processing
     numCores <- min(detectCores(), maxcores)
     cl <- parallel::makeForkCluster(numCores)
     doParallel::registerDoParallel(cl)
     
-    # Debugging: Check structure of bams and bed.file
-    message("BAM files: ", paste(bams, collapse=", "))
-    message("BED file structure: ", str(bed.file))
-    head(bed.file)
-
-    # Process each BAM file in parallel and get counts
-    unfilteredcounts <- foreach(i = 1:nfiles, .combine = 'cbind') %dopar% {
-        bam <- bams[[i]]
-        message("Processing BAM: ", bam)
-        
+    unfilteredcounts <- foreach(i = 1:nfiles, .combine='cbind') %dopar% {
+        bam <- bams[i]
         getBamCounts(bed.frame = bed.file, bam.files = bam, include.chr = FALSE, referenceFasta = fasta)
     }
     
     parallel::stopCluster(cl)
-
-    # Dynamically adjust the filtercount based on the number of columns in the BED file
-    filtercount <- c("chromosome", "start", "end", "gene")
-    if (ncol(bed.file) == 5) {
-        filtercount <- append(filtercount, "exon_number")
-    }
-
-    # Extract the unique chromosome, start, end, gene (and exon if applicable) from the BED file
-    bed_info <- bed.file[, c("chromosome", "start", "end", "gene")]
-    if (ncol(bed.file) == 5) {
-        bed_info <- cbind(bed_info, exon = bed.file$exon_number)
-    }
-
-    # Remove the metadata columns from the unfiltered counts
-    counts_data <- unfilteredcounts[, !colnames(unfilteredcounts) %in% filtercount]
-
-    # Combine bed_info (unique) with counts_data
-    counts <- cbind(bed_info[!duplicated(bed_info), ], counts_data)
-
-    # Rename the coverage columns to sample names
-    colnames(counts)[-(1:(ncol(bed_info)))] <- sample.names
-
-    # Save the output
-    save(counts, bams, bed.file, sample.names, fasta, file = output)
     
+    filtercount1 <- basename(bams)
+    filtercount2 <- if (ncol(bed.file) == 5) c("chromosome", "start", "end", "exon", "exon_number", "GC")
+                    else if (ncol(bed.file) == 4) c("chromosome", "start", "end", "exon", "GC")
+    filtercount <- append(filtercount2, filtercount1)
+    
+    counts <- dplyr::select(unfilteredcounts, all_of(filtercount))
+    names(counts) <- unlist(lapply(strsplit(names(counts), "\\."), "[[", 1))
+    colnames(counts)[colnames(counts) == "exon"] <- "gene"
+   
+    if (ncol(bed.file) == 5) {
+        colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
+    }
+    
+    save(counts, bams, bed.file, sample.names, fasta, file=output)
     warnings()
 }
-
-
-
-
-
 
 read_bam_files <- function(bam_file) {
     apply(read.table(bam_file), 1, toString)
@@ -137,26 +107,13 @@ get_sample_names <- function(bam_paths) {
 
 
 read_bed_file <- function(bedfile) {
-    bed.file <- read.table(bedfile, sep="\t", header=FALSE, stringsAsFactors=FALSE)
-    # Debugging output to check the structure
-    message("Number of columns in bed file: ", ncol(bed.file))
-    print(head(bed.file))
-    
-    # Remove any completely empty columns, just in case
-    bed.file <- bed.file[, colSums(is.na(bed.file) | bed.file == "") != nrow(bed.file)]
-    
-    # Debugging output after cleanup
-    message("Number of columns after cleanup: ", ncol(bed.file))
-    
-    # Set column names based on the number of columns
+    bed.file <- read.table(bedfile)
     if (ncol(bed.file) == 5) {
-        colnames(bed.file) <- c("chromosome", "start", "end", "gene", "exon_number")
+        colnames(bed.file) <- c("chromosome", "start", "end", "gene","exon_number"))
     } else if (ncol(bed.file) == 4) {
         colnames(bed.file) <- c("chromosome", "start", "end", "gene")
-    } else {
-        stop("Unexpected number of columns in BED file")
     }
-    return(bed.file)  # Make sure to return the data frame
+    bed.file
 }
 
 main <- function(bamfiles, rbams, bed, fasta, data, mcore) {
