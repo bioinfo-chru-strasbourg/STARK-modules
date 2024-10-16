@@ -42,9 +42,9 @@ def vcf_synchronizer(run_informations):
         shutil.rmtree(run_informations["archives_run_folder"])
     elif os.path.isfile(run_informations["archives_run_folder"]):
         os.remove(run_informations["archives_run_folder"])
-    elif not os.path.isdir(run_informations["archives_run_folder"]):
-        os.makedirs(run_informations["archives_run_folder"])
-        os.chmod(run_informations["archives_run_folder"], 0o777)      
+
+    os.makedirs(run_informations["archives_run_folder"])
+    os.chmod(run_informations["archives_run_folder"], 0o777)      
 
     kept_vcf = []
     treated_samples = []
@@ -66,5 +66,6 @@ def vcf_synchronizer(run_informations):
                     kept_vcf.remove(sample_vcf)
 
     for vcf_file in kept_vcf:
+        vcf_file_output = os.path.basename(vcf_file).split(".")[0] + ".vcf.gz"
         log.info(f"Synchronizing {vcf_file}")
-        subprocess.run(["rsync", "-rp", vcf_file, run_informations["archives_run_folder"]])
+        subprocess.run(["rsync", "-rp", vcf_file, osj(run_informations["archives_run_folder"], vcf_file_output)])

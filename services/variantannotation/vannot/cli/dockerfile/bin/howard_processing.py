@@ -11,7 +11,8 @@ import time
 from vannotplus.family.barcode import main_barcode
 from vannotplus.exomiser.exomiser import main_exomiser
 from vannotplus.annot.score import main_annot
-from vannotplus.__main__ import main_config
+from vannotplus.__main__ import load_config, main_config
+
 import howard_launcher
 import commons
 
@@ -101,16 +102,13 @@ def run_initialisation(run_informations):
     vcf_file_to_analyse = glob.glob(
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
-    # for vcf_file in vcf_file_to_analyse:
-    #     output_exomiser = osj(run_informations["tmp_analysis_folder"], "exomized_" + os.path.basename(vcf_file))
-    #     main_exomiser(vcf_file, output_exomiser, run_informations["run_application"], "config")
-    
-        # if os.path.basename(vcf_file).split(".")[1] == "POOL":
-        #     fixed_vcf_file = info_to_format_script(vcf_file, run_informations)
-        # else:
-        #     fixed_vcf_file = vcf_file
+    for vcf_file in vcf_file_to_analyse:
+        # output_exomiser = osj(run_informations["tmp_analysis_folder"], "exomized_" + os.path.basename(vcf_file))
+        # vannotplus_config = osj(os.environ["DOCKER_MODULE_CONFIG"], "vannotplus.yml")
+        # main_exomiser(vcf_file, output_exomiser, "WES_AGILENT", load_config(vannotplus_config))
 
-        # cleaning_annotations(fixed_vcf_file, run_informations)
+        fixed_vcf_file = info_to_format_script(vcf_file, run_informations)
+        cleaning_annotations(fixed_vcf_file, run_informations)
         
 
     
@@ -195,7 +193,7 @@ def unmerge_vcf(input, run_informations):
 
 
 def info_to_format_script(vcf_file, run_informations):
-    log.info(f"Moving POOL INFO sample specific columns to FORMAT column for {os.path.basename(vcf_file)}")
+    log.info(f"Moving desired columns to FORMAT column for {os.path.basename(vcf_file)}")
     module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
     output_file = osj(os.path.dirname(vcf_file), f"fixed_{os.path.basename(vcf_file)[:-3]}")
     sample = os.path.basename(vcf_file).split(".")[0]
@@ -206,6 +204,7 @@ def info_to_format_script(vcf_file, run_informations):
     with open(module_config, "r") as read_file:
         data = json.load(read_file)
         info_to_format_columns = data["info_to_format"][run_informations["run_platform_application"]]
+
     info_to_format_columns_query = "\\t%".join(info_to_format_columns)
     info_to_format_columns_query = "%CHROM\\t%POS\\t%REF\\t%ALT\\t%" + info_to_format_columns_query + "\n"
 
@@ -244,7 +243,9 @@ def info_to_format_script(vcf_file, run_informations):
     log.debug(" ".join(cmd))
     with open(output_file, "a") as writefile:
         subprocess.call(cmd, universal_newlines=True, stdout=writefile)
-
+    
+    shutil.copy(output_file, output_file + ".unzipped")
+    unzipped_output_file = output_file + ".unzipped"
     subprocess.call(["bgzip", output_file], universal_newlines=True)
     output_file = output_file + ".gz"
     
@@ -252,9 +253,14 @@ def info_to_format_script(vcf_file, run_informations):
     os.remove(tmp_annot_fixed)
     os.remove(tmp_annot_fixed + ".tbi")
     os.remove(tmp_hdr)
-    os.remove(vcf_file)
-    
-    return(output_file)
+
+    if os.stat(unzipped_output_file).st_size == 0:
+        os.remove(unzipped_output_file)
+        os.remove(output_file)
+        return vcf_file
+    else:
+        os.remove(vcf_file)
+        return output_file
 
 def howard_proc(run_informations, vcf_file):
     log.info(f"Launching HOWARD analysis for {vcf_file}")
