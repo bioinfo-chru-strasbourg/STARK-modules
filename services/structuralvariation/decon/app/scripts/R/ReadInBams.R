@@ -65,8 +65,7 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     parallel::stopCluster(cl)
     
     filtercount1 <- basename(bams)
-    filtercount2 <- if (ncol(bed.file) == 5) c("chromosome", "start", "end", "exon", "exon_number", "GC")
-                    else if (ncol(bed.file) == 4) c("chromosome", "start", "end", "exon", "GC")
+    filtercount2 <- c("chromosome", "start", "end", "exon", "GC")
     filtercount <- append(filtercount2, filtercount1)
     
     counts <- dplyr::select(unfilteredcounts, all_of(filtercount))
@@ -74,7 +73,10 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     colnames(counts)[colnames(counts) == "exon"] <- "gene"
    
     if (ncol(bed.file) == 5) {
-        colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
+    counts <- dplyr::bind_cols(counts, bed.file["exon_number"])
+    counts <- counts %>%
+        dplyr::relocate(exon_number, .after = gene)
+    colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
     }
     
     save(counts, bams, bed.file, sample.names, fasta, file=output)
