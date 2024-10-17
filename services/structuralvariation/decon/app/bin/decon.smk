@@ -300,9 +300,10 @@ def intersectbed(input_df, ref_df):
 		output_path = output_file.name
 		input_df.to_csv(input_path, sep='\t', index=False, header=False)
 		ref_df.to_csv(ref_path, sep='\t', index=False, header=False)
+		print("[INFO] Intersection bed start.")
 		shell(f"intersectBed -a {input_path} -b {ref_path} -loj > {output_path}")
 		result_df = pd.read_csv(output_path, sep='\t', header=None)
-		print("Intersection complete.")
+		print("[INFO] Intersection bed complete.")
 		os.remove(input_path)
 		os.remove(ref_path)
 		os.remove(output_path)
@@ -312,6 +313,7 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 	
 	# Case: REGEN - Generate custom exon file and intersect with refseqgene
 	if bed_process == 'REGEN':
+		print("[INFO] Starting generating DECON bed with external reference.")
 		df = pd.read_csv(inputbed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
 		ref_df = pd.read_csv(refseqgene_path, sep='\t')
 		intersected_df = intersectbed(df, ref_df)
@@ -336,6 +338,7 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 
 	# Case: STANDARD - Intersect bed design with panel
 	elif bed_process == 'STANDARD':
+		print("[INFO] Starting generating DECON bed with the bed files detected.")
 		if config['LIST_GENES']:
 			basepath = os. path. dirname(config['LIST_GENES'])
 			cat_panels_bed = f"/tmp/catpanel.bed"
@@ -356,7 +359,7 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 			intersected_df = intersectbed(input_df, concatenated_df)
 		
 		else:
-			raise SystemExit("No valid configuration for LIST_GENES or GENES_FILE was provided. Stopping execution.")
+			raise SystemExit("[ERROR] No valid configuration for LIST_GENES or GENES_FILE was provided. Stopping execution.")
 
 		if not old_bed:
 			headers = ["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12", "13", "14", "15", "16", "17", "18", "Custom.Exon"]
@@ -383,23 +386,47 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 
 	# Case: NO - Directly convert bed file
 	elif bed_process == 'NO':
+		print("[INFO] Using DECON bed provided.")
+		# Read the input BED file with specified column names
 		df = pd.read_csv(inputbed_file, sep='\t', names=["Chr", "Start", "End", "Gene"], index_col=False)
+		
+		# Check if the dataframe contains exactly the expected 4 columns
+		expected_columns = ["Chr", "Start", "End", "Gene"]
+		
+		if list(df.columns) != expected_columns:
+			raise ValueError(f"[ERROR] The input BED file does not contain the expected columns: {expected_columns}. Found columns: {list(df.columns)}")
+		else:
+			print("[INFO] BED file contains the expected columns.")
 
 	# Final Processing: KMER or CustomExon or direct save
 	if customexon:
+		print("[INFO] Saving DECON bed with custom exon.")
 		df.to_csv(bed_file, sep='\t', index=False, header=False)
 	elif kmer:
 		kmerisation(kmer, df, bed_file)
 	else:
+		print("[INFO] Saving DECON bed.")
 		df.to_csv(bed_file, sep='\t', index=False, header=False)
 
-def process_gene_list(file, source_dir, dest_dir, panels_list):
-	inputfile = os.path.join(source_dir, f"{file}.bed") 
-	panel_trunc = file.split(".", 1)[1].split(".genes", 1)[0] if "." in file else file 
-	outputfile = os.path.join(dest_dir, panel_trunc) 
-	copy2(inputfile, outputfile) 
-	panels_list.append(panel_trunc)
-	return panels_list
+def process_gene_list(file, dest_dir, res_list):
+	# The truncated panel name is the name of the file without the first part (the sample name) and the .genes extension
+	panel_name_trunc = file.split('.', 1)[-1].replace('.genes', '')
+	
+	# Copy the file to the destination directory with the truncated name
+	copy2(file, os.path.join(dest_dir, panel_name_trunc)) 
+	
+	# Append the truncated panel name to the provided result list
+	res_list.append(panel_name_trunc)
+	
+	# Return the updated list
+	return res_list
+
+def check_if_filename_contains_path(filename):
+	# Check if the filename is an absolute path
+	if os.path.isabs(filename):
+		print(f"The filename '{filename}' contains a path.")
+	else:
+		print(f"The filename '{filename}' does not contain a path.")
 
 def update_results(dictionary, update_dictionary, keys, exclude_samples=None, exclude_keys=None, remove_none_samples=None, restrict_none_keys=None):
 	"""
@@ -466,7 +493,9 @@ for directory in directories:
 	os.makedirs(directory, exist_ok=True)
 
 # Search files in repository 
+print('[INFO] Starting searching files with the parameters provided')
 files_list = searchfiles(os.path.normpath(config['run']), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
+print('[INFO] Searching files done')
 
 # Create sample and aligner list
 sample_list = extractlistfromfiles(files_list, config['PROCESS_FILE'], '.', 0)
@@ -477,7 +506,9 @@ sample_list = [sample for sample in sample_list if not any(sample.upper().starts
 
 # If filter_sample_list variable is not empty, it will force the sample list
 if config['FILTER_SAMPLE']:
+	print('[INFO] Filtering samples list')
 	sample_list = list(config['FILTER_SAMPLE'])
+	print('[INFO] Filtering of samples list done')
 
 # For validation analyse bam will be sample.aligner.validation.bam, so we append .validation to all the aligner strings
 if config['VALIDATION_ONLY']:
@@ -487,17 +518,20 @@ if config['VALIDATION_ONLY']:
 else:
 	filtered_files = filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
 
-# Populate dictionnary
+print('[INFO] Construction the dictionnary for the run')
 runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, ['analysis'])
+print('[INFO] Dictionnary done')
 
 # Set a filelist with all the files tag ; file format is sample.tag
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
 for individual in runDict.values():
 	individual.update({'hpo': None, 'gender': None})
 
+print('[INFO] Seaching for pedigree files')
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
 
 if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
+	print('[INFO] Reading pedigree files')
 	pedigree_into_dict(ped_file, sample_list, runDict, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex')
 	print('[INFO] Gender found in the pedigree file')
 	df = pd.read_csv(ped_file, sep='\t', dtype=str)
@@ -507,10 +541,12 @@ if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 		if individual_id in sample_list:
 			runDict[individual_id]['hpo'] = hpo_list
 else:
+	print('[INFO] No pedigree files found, reading gender from tag files')
 	tagfile_list = [runDict[sample].get('.tag') for sample in sample_list if '.tag' in runDict.get(sample, {})]
 	tagfile_list = [tag for tag in tagfile_list if tag is not None]
 	if not tagfile_list:
-		print('[INFO] No gender found for the samples')
+		print('[INFO] No tag files found to find the genders of the samples')
+		print('[WARM] The calling of chrXX or chrXY will not be done')
 	else:
 		for tagfile in tagfile_list:
 			sample_name = os.path.basename(tagfile).split(".")[0]
@@ -524,39 +560,52 @@ gender_list = ['A'] + [
 	for gender in ['XX' if runDict[sample]['gender'] == 'F' else 'XY' if runDict[sample]['gender'] == 'M' else None]
 	if gender is not None
 ]
-
 gender_list = list(set(gender_list)) # Removing duplicate
 
 # Find bed file (Design)
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
 if not config['BED_FILE']:
-	print('No bed found, DECON cannot continue, exiting')
+	print('[ERROR] No bed found, DECON cannot continue, exiting')
 	exit()
+
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
 config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes.bed', '.list.genes')
+
+# Find list.genes files, containing the name of the panel's files (without path)
+config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
+
+# Transform list_genes into a list if list_genes exist, else use genes_file if exist
+panels_list = []
+file_source = config['LIST_GENES'] or config['GENES_FILE']
+if file_source:
+	print('[INFO] Processing panel bed files')
+	with open(file_source) as f:
+		# files is either a list of files in the LIST_GENES file or a single file == GENES_FILE ; ext is .genes
+		files = f.read().splitlines() if config['LIST_GENES'] else [os.path.basename(file_source)]
+	for file in files:
+		if not os.path.isabs(file): # if the file name not contains the path we append it
+			os.path.join(os.path.dirname(file_source), file)
+		
+		# Process the gene list and accumulate results
+		res_list = process_gene_list(file, resultDir, res_list)
+		panels_list.extend(res_list)  # Append results to panels_list
+
+	print('[INFO] Processing panel bed files done')
+
 # Find transcripts files (NM)
 config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
 # If transcript file exist, create the annotation file for AnnotSV
 annotation_file = f"{resultDir}/{serviceName}.{date_time}.AnnotSV.txt"
 if os.path.exists(config['TRANSCRIPTS_FILE']) and os.path.getsize(config['TRANSCRIPTS_FILE']):
+	print('[INFO] Processing transcript file')
 	df = pd.read_csv(config['TRANSCRIPTS_FILE'], sep='\t', names=["NM", "Gene"])
 	with open(annotation_file, 'w+') as f:
 		f.write('\t'.join(df['NM']))
+	print('[INFO] Processing transcript file done')
 else:
+	print('[WARN] No transcript file found')
 	with open(annotation_file, 'w') as f:
 		f.write("No NM found")
-
-# Find list.genes files 
-config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
-
-# Transform list_genes into a list if list_genes exist, else use genes_file if exist
-panels_list = []
-file_source = config.get('LIST_GENES') or config.get('GENES_FILE')
-if file_source:
-	with open(file_source) as f:
-		files = f.read().splitlines() if config['LIST_GENES'] else [os.path.splitext(os.path.basename(file_source))[0]]
-	for file in files:
-		panels_list = process_gene_list(file, os.path.dirname(file_source), resultDir, panels_list)
 
 ### DECON bed ###
 # DECON need a 4 columns bed for the ReadInBams rule, if bed is not set correctly ReadInBams will crash
@@ -565,13 +614,16 @@ if file_source:
 # ex	:	chr17	4511	4889	BCRA1
 # DECON can also use a bed with the exons number for an accurate formating of pdfs graph (makeCNVcalls) and the IdentifyFailures metrics
 # ex	:	chr17	4511	4889	BCRA1	26
+print('[INFO] Start processing bed')
 deconbed_file=f"{resultDir}/{serviceName}.{date_time}.bed"
 process_bed_file(bed_file=deconbed_file,inputbed_file=config['BED_FILE'],bed_process=config['BED_PROCESS'],refseqgene_path=config['REFSEQGENE_PATH'],transcripts_file=config['TRANSCRIPTS_FILE'],unknown_gene=config['KEEP_UNKNOWN'],gene_list_restrict=config['GENE_LIST_RESTRICT'],chr_list_restrict=config['CHR_LIST_RESTRICT'],old_bed=config['OLD_BED'],exon_sep=config['EXON_SEP'],kmer=config['KMER'],customexon=config['customexon'],list_genes=config['LIST_GENES'],genes_file=config['GENES_FILE'])
+print('[INFO] Processing bed complete')
 
 # Create file_list of bam by gender with the runDict, depending on the gender_list
 # A = all ; XX = Female only ; XY = Male only
 # files_list_A contains the full path of all files (bam files for ex)
 # Warning the key dictionnary for sexe is A/M/F but the gender_list is A/XY/XX
+print('[INFO] Creating the files text list for CNV calling')
 files_list_A = list(set([os.path.join(resultDir, os.path.basename(runDict[sample][".bam"])) for sample in sample_list if sample in runDict and ".bam" in runDict[sample]]))
 files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']))
 files_list_XY = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']))
@@ -581,16 +633,20 @@ for aligner in aligner_list:
 	for gender in gender_list:
 		bamlist = f"{resultDir}/{serviceName}.{date_time}.{gender}.list.txt"
 		create_list(bamlist, globals()[f"files_list_{gender}"], config['PROCESS_FILE'], aligner)
+print('[INFO] Creating the file text list for CNV calling done')
 
 # Option to remove gender in the gender_list
 gender_list = sorted([gender for gender in gender_list if gender not in config['REMOVE_GENDER']])
 
 # check the ref bam list and presence of gender, and update the gender_list based on the presence of 'F' and 'M'
 if config['REF_BAM_LIST']:
+	print('[INFO] Using external bam reference files')
 	df = pd.read_csv(config['REF_BAM_LIST'], sep='\t')
 	if not df['gender'].str.contains('F').any():
+		print('[WARN] No XX gender found in the reference files, the calling of chrX for Female will not be done')
 		gender_list.remove('XX')
 	if not df['gender'].str.contains('M').any():
+		print('[WARN] No XY gender found in the reference files, the calling of Male will not be done')
 		gender_list.remove('XY')
 
 # Log
@@ -615,6 +671,7 @@ for item in log_items:
 
 print(dict(runDict))
 
+print('[INFO] Starting DECON pipeline')
 ################################################## RULES ##################################################
 # check the number of sample for copy or merge vcf rule
 sample_count = len(sample_list) 
@@ -640,13 +697,12 @@ rule help:
 	"""
 	General help for DECON
 	Launch snakemake -s decon.smk -c(numberofthreads) --config run=absolutepathoftherundirectory
-	To launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
-	Every variable defined in the yaml file can be change
-	Separate multiple variable with a space (ex  --config run=runname transProb=0.05 var1=0.05 var2=12)
+	To launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory ; every variable defined in the yaml file can be change
+	Separate multiple variable with a space (ex --config run=runname transProb=0.05 var1=0.05 var2=12)
 	Use option --configfile another.yaml to replace and merge existing default config.yaml file variables
 	Use -p to display shell commands, use --lt to display docstrings of rules, use -n for a dry run
 	Input file = bam or cram files (if bai is needed, it will be generate)
-	Output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of vcf files by design/panel
+	Output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of vcf files by design/panel ; a pdf report from DECON
 	"""
 
 rule copy_bam:
@@ -973,6 +1029,7 @@ onstart:
 		f.write("\n")
 
 onsuccess:
+	print('[INFO] DECON pipeline success')
 	include = config['INCLUDE_RSYNC']
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
 	shell(f"touch {outputDir}/{serviceName}Complete.txt")
@@ -981,6 +1038,7 @@ onsuccess:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
 	# Move pdfs into sample's directories
+	print('[INFO] Processing pdfs')
 	pdf_list = os.listdir(f"{resultDir}/pdfs")
 	pdf_path_list = [f"{resultDir}/pdfs/{pdf}" for pdf in pdf_list]	
 	
@@ -1000,6 +1058,7 @@ onsuccess:
 			if sample in pdf:
 				shell(f"mv {resultDir}/pdfs/{pdf} {resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/")
 	shell(f"rm -rf {resultDir}/pdfs")
+	print('[INFO] Processing pdfs done')
 
 	# Generate dictionary for results
 	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*/*", "/*"]]
@@ -1010,24 +1069,31 @@ onsuccess:
 	resultDict = populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender", "merge.pdf"],remove_none_samples=sample_list_orig,
 	restrict_none_keys=["Metrics.tsv"])
+	print('[INFO] Generating html report')
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html")
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
+	print('[INFO] Generating html report done')
 
 	# Clear existing output directories & copy results
+	print('[INFO] Copying files')
 	for sample in sample_list:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 	for sample in sample_list:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+	print('[INFO] Copying files done')
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR']:
+		print('[INFO] Copying files into archives')
 		if outputDir != depotDir:
 			shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
 			for sample in sample_list:
 				shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
+			print('[INFO] Copying files into archives done')
 
 onerror:
+	print('[ERROR] DECON pipeline error, check for log and err files')
 	include_log = config['INCLUDE_LOG_RSYNC']
 	shell(f"touch {outputDir}/{serviceName}Failed.txt")
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")

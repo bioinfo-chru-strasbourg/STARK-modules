@@ -209,26 +209,18 @@ def pedigree_into_dict(ped_file, sample_list, dictionary, individual_id_column='
 			dictionary.setdefault(individual_id, {})['hpo'] = hpo_list
 			dictionary.setdefault(individual_id, {})['gender'] = gender
 
-def process_gene_list(file, source_dir, dest_dir, panels_list):
-	"""
-    Processes a gene list file by copying it from the source directory to the destination directory 
-    and appending a truncated version of the filename to a list of panels.
-
-    Args:
-        file (str): The name of the gene list file (without the '.bed' extension).
-        source_dir (str): The directory where the input file is located.
-        dest_dir (str): The directory where the processed file should be saved.
-        panels_list (list): A list to which the truncated panel name will be appended.
-
-    Returns:
-        list: The updated list of panels with the newly appended panel name.
-    """
-	inputfile = os.path.join(source_dir, f"{file}.bed") 
-	panel_trunc = file.split(".", 1)[1].split(".genes", 1)[0] if "." in file else file 
-	outputfile = os.path.join(dest_dir, panel_trunc) 
-	copy2(inputfile, outputfile) 
-	panels_list.append(panel_trunc)
-	return panels_list
+def process_gene_list(file, dest_dir, res_list):
+	# The truncated panel name is the name of the file without the first part (the sample name) and the .genes extension
+	panel_name_trunc = file.split('.', 1)[-1].replace('.genes', '')
+	
+	# Copy the file to the destination directory with the truncated name
+	copy2(file, os.path.join(dest_dir, panel_name_trunc)) 
+	
+	# Append the truncated panel name to the provided result list
+	res_list.append(panel_name_trunc)
+	
+	# Return the updated list
+	return res_list
 
 def update_results(dictionary, update_dictionary, keys, exclude_samples=None, exclude_keys=None):
 	"""
@@ -352,12 +344,21 @@ else:
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
 panels_list = []
-file_source = config.get('LIST_GENES') or config.get('GENES_FILE')
+file_source = config['LIST_GENES'] or config['GENES_FILE']
 if file_source:
+	print('[INFO] Processing panel bed files')
 	with open(file_source) as f:
-		files = f.read().splitlines() if config['LIST_GENES'] else [os.path.splitext(os.path.basename(file_source))[0]]
+		# files is either a list of files in the LIST_GENES file or a single file == GENES_FILE ; ext is .genes
+		files = f.read().splitlines() if config['LIST_GENES'] else [os.path.basename(file_source)]
 	for file in files:
-		panels_list = process_gene_list(file, os.path.dirname(file_source), resultDir, panels_list)
+		if not os.path.isabs(file): # if the file name not contains the path we append it
+			os.path.join(os.path.dirname(file_source), file)
+		
+		# Process the gene list and accumulate results
+		res_list = process_gene_list(file, resultDir, res_list)
+		panels_list.extend(res_list)  # Append results to panels_list
+
+	print('[INFO] Processing panel bed files done')
 
 # Log
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
