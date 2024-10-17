@@ -352,7 +352,7 @@ if file_source:
 		files = f.read().splitlines() if config['LIST_GENES'] else [os.path.basename(file_source)]
 	for file in files:
 		if not os.path.isabs(file): # if the file name not contains the path we append it
-			os.path.join(os.path.dirname(file_source), file)
+			file = os.path.join(os.path.dirname(file_source), file)
 		
 		# Process the gene list and accumulate results
 		res_list = process_gene_list(file, resultDir, res_list)

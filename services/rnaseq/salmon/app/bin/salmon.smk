@@ -225,52 +225,23 @@ for directory in directories:
 
 # Search files in repository 
 files_list = searchfiles(os.path.normpath(config['run']), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
-
-# Create sample and aligner list
+# Create sample  list
 sample_list = extractlistfromfiles(files_list, config['PROCESS_FILE'], '.', 0)
-aligner_list = extractlistfromfiles(files_list, config['PROCESS_FILE'], '.', 1)
-
 # Exclude samples from the exclude_list , case insensitive
 sample_list = [sample for sample in sample_list if not any(sample.upper().startswith(exclude.upper()) for exclude in config['EXCLUDE_SAMPLE'])]
-
 # If filter_sample_list variable is not empty, it will force the sample list
 if config['FILTER_SAMPLE']:
 	sample_list = list(config['FILTER_SAMPLE'])
-
-# For validation analyse bam will be sample.aligner.validation.bam, so we append .validation to all the aligner strings
-if config['VALIDATION_ONLY'] == True:
-	filtered_files = filter_files(files_list, filter_in='validation', extensions=config['PROCESS_FILE'])
-	append_aligner = '.validation'
-	aligner_list = [sub + append_aligner for sub in aligner_list]
-else:
-	filtered_files = filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
-
 runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, None)
 print(dict(runDict))
 
-# Find bed file (Design)
-config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
-# Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
-config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes.bed', '.list.genes')
-# Find list.genes files 
-config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
-# Find transcripts files (NM)
-config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
-
-
+# Log
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
 logging.basicConfig(filename=logfile, level=config['LOG_LEVEL'], format='%(asctime)s %(message)s')
-
-
 log_items = [
 	('Start of the analysis:', date_time),
 	('Analysing run:', runName),
-	('List of all samples:', sample_list),
-	('Aligner list from files:', aligner_list),
-	('Design bed file:', config['BED_FILE']),
-	('Panel bed file:', config['GENES_FILE']),
-	('Transcripts file:', config['TRANSCRIPTS_FILE']),
-	('Genes list file', config['LIST_GENES'])
+	('List of all samples:', sample_list)
 ]
 
 for item in log_items:
@@ -296,7 +267,6 @@ rule help:
 	Input file = fastq PE (SE don't work for now)
 	Output file = quant.sf files
 	"""
-
 
 rule bcl_convert:
 	""" Convert BCL files to FASTQ using bcl-convert """
@@ -333,50 +303,61 @@ rule copy_fastq:
 	params:
 		process = config['PROCESS_CMD'],
 		download_link1 = lambda wildcards: runDict[wildcards.sample]['.R1.fastq.gz'],
-		download_link2 = lambda wildcards: runDict[wildcards.sample]['.R2.fastq.gz']
-	shell: "[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link1} {output.fastqR1} && ln -sfn {params.download_link2} {output.fastqR2} || rsync -azvh {params.download_link1} {output.fastqR1} && rsync -azvh {params.download_link2} {output.fastqR2}"
+		download_link2 = lambda wildcards: runDict[wildcards.sample].get('.R2.fastq.gz', None)  # Use .get() to avoid KeyError
+	shell:
+		"""
+		[ \"{params.process}\" = \"ln\" ] && \
+		ln -sfn {params.download_link1} {output.fastqR1} && \
+		{output.fastqR2} && \
+		if [ -f {params.download_link2} ]; then
+			ln -sfn {params.download_link2} {output.fastqR2} || rsync -azvh {params.download_link2} {output.fastqR2};
+		else
+			echo "Warning: {params.download_link2} does not exist, proceeding with single-end data.";
+		fi
+		|| rsync -azvh {params.download_link1} {output.fastqR1}
+		"""
 
 
 # https://github.com/OpenGene/fastp
 rule fastp:
 	input:
 		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz",
-		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz"
+		fastqR2=lambda wildcards: f"{resultDir}/{wildcards.sample}.R2.fastq.gz" if runDict[wildcards.sample].get('.R2.fastq.gz') else None  # Make fastqR2 optional
 	output:
 		fastqR1=temp(f"{resultDir}/{{sample}}.fastp.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz")
+		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz") if runDict[wildcards.sample].get('.R2.fastq.gz') else None
 	params:
-		miscs = config['FASTP_GLOBALS_PARAMS'],
-		compression = config['FASTP_COMPRESSION'],
-		trim = config['FASTP_TRIM'],
-		umi = config['FASTP_UMI']
+		miscs=config['FASTP_GLOBALS_PARAMS'],
+		compression=config['FASTP_COMPRESSION'],
+		trim=config['FASTP_TRIM']
 	threads: workflow.cores
 	shell:	
 		"""
-		fastp --thread={threads} {params.miscs} {params.trim} {params.umi} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2} 
+		if [ -f "{input.fastqR2}" ]; then
+			fastp --thread={threads} {params.miscs} {params.trim} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2}
+		else
+			fastp --thread={threads} {params.miscs} {params.trim} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --out1={output.fastqR1}
+		fi
 		"""
 
 rule salmon:
 	input:
 		fastqR1=rules.fastp.output.fastqR1,
-		fastqR2=rules.fastp.output.fastqR2
+		fastqR2=rules.fastp.output.fastqR2  # Ensure fastqR2 is still defined, but may not exist
 	output:
 		f"{resultDir}/tmp/{{sample}}.salmon.quant/quant.sf"
 	params:
 		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
-		fastq_type = config['SALMON_FASTQ_TYPE'],
 		misc_options = config['MISC_SALMON_OPTIONS'],
 		salmondir= f"{resultDir}/tmp/{{sample}}.salmon.quant/"
 	threads: workflow.cores
 	shell:
 		"""
-		if [ "{params.fastq_type}" = 'PE' ];
-		then
-		salmon quant -p {threads} -i {params.fastquantref} -l A -1 {input.fastqR1} -2 {input.fastqR2} {params.misc_options} -o {params.salmondir}
-		fi
-		if [ "{params.fastq_type}" = 'SE' ];
-		then
-		salmon quant -p {threads} -i {params.fastquantref} -l A -r {input.fastqR1} {params.misc_options} -o {params.salmondir}
+		if [ -f {input.fastqR2} ]; then
+			salmon quant -p {threads} -i {params.fastquantref} -l A -1 {input.fastqR1} -2 {input.fastqR2} {params.misc_options} -o {params.salmondir};
+		else
+			echo "Warning: {input.fastqR2} does not exist, proceeding with single-end quantification.";
+			salmon quant -p {threads} -i {params.fastquantref} -l A -r {input.fastqR1} {params.misc_options} -o {params.salmondir};
 		fi
 		"""
 

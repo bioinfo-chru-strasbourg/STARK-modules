@@ -27,25 +27,12 @@ DEPOT_DIR: ""
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
 
-# Bed file
-BED_FILE: ""
-# Genes file
-GENES_FILE: ""
-# Transcripts file
-TRANSCRIPTS_FILE: ""
-# List genes
-LIST_GENES: ""
-
 # Files to index into the dictionary depending on extension (endwith)
 EXT_INDEX_LIST : [".R1.fastq.gz",".R2.fastq.gz"]
 # List of files extension to process
 PROCESS_FILE: [".R1.fastq.gz",".R2.fastq.gz"]
 # How to copy input files (bam, bai, cram) : ln or leave empty (it will rsync files or index for bai from bam)
 PROCESS_CMD: 'ln'
-# Only analyse validation.bam/cram files
-VALIDATION_ONLY: False
-# Append an aligner name if no empty (from sample.bam to sample.aligner_name.bam)
-ALIGNER_NAME:
 
 # Samples list exclusion (not to be analysed) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
@@ -108,6 +95,4 @@ FASTP_UMI: "" #  -U --umi_loc=per_read --umi_len=5 for XTHS2
 
 # For Salmon quantification fastq mode, path to the index file
 REFSALMONQUANTFASTQ_PATH: "/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
-# SE ou PE Reads
-SALMON_FASTQ_TYPE: "PE"  # won't work with SE for the moment
 MISC_SALMON_OPTIONS: ""
