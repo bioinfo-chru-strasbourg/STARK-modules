@@ -12,7 +12,7 @@
 #   - separate plot script from makeCNVcall, refactor code, remove install systemn, update ExomeDepth 1.16
 #   - optparse script
 ########################################################################################################
-
+ 
 print("BEGIN DECONPlot script")
 
 suppressPackageStartupMessages({
@@ -30,13 +30,42 @@ sanitize_filename <- function(name) {
     gsub("[[:punct:] ]+", "_", name)
 }
 
+# Function to filter df based on overlapping intervals
+filter_df <- function(input_df, filtering_df) {
+  # Example usage:
+  # filtered_df <- filter_df(cnv.calls_ids, bed.file)
+  
+  # Ensure the required columns exist in both data frames
+  required_cols <- c("Chromosome", "Start", "End")
+  if (!all(required_cols %in% colnames(input_df))) {
+    stop("CNV calls data frame must contain the following columns: Chromosome, Start, End")
+  }
+  
+  if (!all(required_cols %in% colnames(filtering_df))) {
+    stop("BED file data frame must contain the following columns: Chromosome, Start, End")
+  }
+
+  # Use a filter to find overlapping intervals between dfs
+  filtered_input_df <- input_df %>%
+    filter(
+      Chromosome %in% filtering_df[[grep("^Chromosome$", names(filtering_df), ignore.case = TRUE)]] &  # Matching chromosomes
+      Start >= filtering_df[[grep("^Start$", names(filtering_df), ignore.case = TRUE)]][match(Chromosome, filtering_df[[grep("^Chromosome$", names(filtering_df), ignore.case = TRUE)]])] &  # Start falls within the interval
+      End <= filtering_df[[grep("^End$", names(filtering_df), ignore.case = TRUE)]][match(Chromosome, filtering_df[[grep("^Chromosome$", names(filtering_df), ignore.case = TRUE)]])]  # End falls within the interval
+    )
+  
+  return(filtered_input_df)
+}
+
+
+
 ###### Parsing input options and setting defaults ########
-option_list<-list(
-    make_option('--rdata',help='Input summary RData file (required)',dest='data'),
-    make_option('--out',default='./plots',help='Output directory, default=./plots',dest='pfolder'),
-    make_option('--prefix',default='',help='Prefix for the files, default=None',dest='prefix')
+option_list <- list(
+    make_option('--rdata', help = 'Input summary RData file (required)', dest = 'data'),
+    make_option('--out', default = './plots', help = 'Output directory, default=./plots', dest = 'pfolder'),
+    make_option('--prefix', default = '', help = 'Prefix for the files, default=None', dest = 'prefix'),
+    make_option('--bedfile', default = NULL, help = 'Specify a BED file. Default is the one in RData', dest = 'bedfile') # BED file option
 )
-opt<-parse_args(OptionParser(option_list=option_list))
+opt <- parse_args(OptionParser(option_list = option_list))
 
 
 # Load R workspace with all the results saved : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
@@ -58,6 +87,7 @@ if (length(cnv.calls_ids)==0){
 plotFolder=opt$pfolder
 if(!file.exists(plotFolder)){dir.create(plotFolder)}
 
+# Set the prefix for file names
 prefixfile=opt$prefix
 # Get current date and time
 current_datetime <- Sys.time()
@@ -67,6 +97,23 @@ formatted_datetime <- format(current_datetime, "%Y%m%d-%H%M%S")
 if(prefixfile=="NULL"){prefixfile=NULL}
 if(is.null(prefixfile)){
     prefixfile <- formatted_datetime
+}
+
+###### Handling BED file option ########
+if (!is.null(opt$bedfile)) {
+    # Load the specified BED file
+    message('Loading specified BED file: ', opt$bedfile)
+    bed.file <- read.table(opt$bedfile, header = FALSE, sep = "\t", colClasses = c("character", "integer", "integer", "character"))
+    
+    # Keep only the first four columns and assign the required column names
+    bed.file <- bed.file[, 1:4]
+    colnames(bed.file) <- c("chromosome", "start", "end", "gene")
+
+    # Filtering
+    cnv.calls <- filter_df(cnv.calls, bed.file)
+    cnv.calls_ids <- filter_df(cnv.calls_ids, bed.file)
+    counts <- filter_df(counts, bed.file)
+    Exomecount <- filter_df(Exomecount, bed.file)
 }
 
 #################### Plots ####################################

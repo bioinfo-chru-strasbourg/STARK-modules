@@ -518,9 +518,9 @@ if config['VALIDATION_ONLY']:
 else:
 	filtered_files = filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
 
-print('[INFO] Construction the dictionnary for the run')
+print('[INFO] Construct the dictionary for the run')
 runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, ['analysis'])
-print('[INFO] Dictionnary done')
+print('[INFO] Dictionary done')
 
 # Set a filelist with all the files tag ; file format is sample.tag
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
@@ -546,7 +546,7 @@ else:
 	tagfile_list = [tag for tag in tagfile_list if tag is not None]
 	if not tagfile_list:
 		print('[INFO] No tag files found to find the genders of the samples')
-		print('[WARM] The calling of chrXX or chrXY will not be done')
+		print('[WARN] The calling of chrXX & chrXY will not be done')
 	else:
 		for tagfile in tagfile_list:
 			sample_name = os.path.basename(tagfile).split(".")[0]
@@ -622,7 +622,7 @@ print('[INFO] Processing bed complete')
 # Create file_list of bam by gender with the runDict, depending on the gender_list
 # A = all ; XX = Female only ; XY = Male only
 # files_list_A contains the full path of all files (bam files for ex)
-# Warning the key dictionnary for sexe is A/M/F but the gender_list is A/XY/XX
+# Warning the key dictionary for sexe is A/M/F but the gender_list is A/XY/XX
 print('[INFO] Creating the files text list for CNV calling')
 files_list_A = list(set([os.path.join(resultDir, os.path.basename(runDict[sample][".bam"])) for sample in sample_list if sample in runDict and ".bam" in runDict[sample]]))
 files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']))
