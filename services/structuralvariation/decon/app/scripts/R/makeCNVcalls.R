@@ -284,23 +284,18 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   
 # Check if Start.p or End.p is empty or not nuemric
 if (length(cnv.calls_ids$Start.p) == 0 || length(cnv.calls_ids$End.p) == 0) {
-  Start.b <- NULL
-  End.b <- NULL
+  Start.b <- End.b <- NULL
 } else {
   if (!is.numeric(cnv.calls_ids$Start.p) || !is.numeric(cnv.calls_ids$End.p)) {
-    Start.b <- NULL
-    End.b <- NULL
+  Start.b <- End.b <- Start.p <- End.p <- NULL
   } else {
     Start.b <- Gene.index[cnv.calls_ids$Start.p]
     End.b <- Gene.index[cnv.calls_ids$End.p]
   }
 }
   cnv.calls_ids <- cbind(cnv.calls_ids, Start.b, End.b)
-  
   return(cnv.calls_ids)
 }
-
-
 
 save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.names, bams, output.rdata,  bed.file, counts, refs, models, fasta) {
   if (!is.null(cnv.calls_ids)) {

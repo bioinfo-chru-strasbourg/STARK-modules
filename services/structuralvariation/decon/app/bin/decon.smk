@@ -671,14 +671,15 @@ rule cramtobam:
 	shell: "samtools view -b -T {params} -o {output} {input}"
 
 rule indexing:
-	""" Indexing bam files with samtools """
+	""" Indexing bam files with samtools if .bam.bai is not in PROCESS_FILE """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
 	params:
 		process=config['PROCESS_CMD'],
-		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
+		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai'],
+		bai_in_process=lambda: '.bam.bai' in config['PROCESS_FILE']
 	threads: workflow.cores
-	shell: "samtools index -b -@ {threads} {input} {output}"
+	shell: "[ \"{params.bai_in_process}\" = \"True\" ] && ( [ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output} ) || samtools index -b -@ {threads} {input} {output}"
 
 rule ReadInBams:
 	""" DECoN calculates FPKM for each exon in each samples BAM file, using a list of BAM files and a BED file """
