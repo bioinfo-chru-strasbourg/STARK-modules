@@ -203,7 +203,7 @@ calculate_confidence <- function(cnv.calls, bed.file) {
 
 # Function to add custom exon numbers
 add_custom_exon_numbers <- function(cnv.calls_ids, bed.file, counts) {
-  if (colnames(counts)[5] == "exon") {
+  if (colnames(counts)[5] == "exon_number") {
     Custom.first <- rep(NA, nrow(cnv.calls_ids))
     Custom.last <- rep(NA, nrow(cnv.calls_ids))
     exons <- bed.file
@@ -305,7 +305,7 @@ save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.na
     colnames(cnv.calls_ids)[ncol(cnv.calls_ids)] <- "Confidence"
     
     # Handle exon numbers if present
-    if (colnames(counts)[5] == "exon") {
+    if (colnames(counts)[5] == "exon_number") {
       cnv.calls_ids <- cnv.calls_ids[, c(1:4, 14, 15, 5:13, 16)]
     }
     
@@ -332,7 +332,7 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
   bed.file <- prepare_bed_file(bed.file)
   ExomeCount <- as.data.frame(counts)
   # Check if 'exon' column exists in ExomeCount
-  if ("exon" %in% colnames(ExomeCount)) {
+  if ("exon_number" %in% colnames(ExomeCount)) {
     colnames(ExomeCount)[1:length(sample.names) + 6] <- sample.names
   } else {
     colnames(ExomeCount)[1:length(sample.names) + 5] <- sample.names

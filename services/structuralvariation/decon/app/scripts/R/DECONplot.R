@@ -38,8 +38,9 @@ option_list<-list(
 )
 opt<-parse_args(OptionParser(option_list=option_list))
 
-# Load R workspace with all the results save : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
-count_data=opt$data
+
+# Load R workspace with all the results saved : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
+count_data=opt$datas
 if(count_data=="NULL"){count_data=NULL}
 if(is.null(count_data)){
     print("ERROR: no RData summary file provided -- Execution halted")
@@ -72,7 +73,7 @@ if(is.null(prefixfile)){
 message('Start generating plots')
 
 if ("Custom.first" %in% colnames(cnv.calls_ids)){
-    cnv.calls_plot=cnv.calls_ids[!is.na(cnv.calls_ids$Custom.first),]
+    cnv.calls_plot=cnv.calls_ids[!is.na(cnv.calls_ids$Custom.first),] # filter NA
 }else{
     cnv.calls_plot=cnv.calls_ids
 }
@@ -90,7 +91,7 @@ for(i in 2:nrow(bed.file)){
     }
 }
 
-if(colnames(counts)[5]=="exon"){
+if(colnames(counts)[5]=="exon_number"){
     for(i in 1:nrow(exons)){
         x=which(paste(bed.file[,4])==paste(exons[i,4]) & bed.file[,2]<=exons[i,3] & bed.file[,3]>=exons[i,2])
         Index[x]=exons[i,5]
@@ -202,7 +203,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     CIData<-data.frame(exonRange,ratio,mins,maxs)
     names(CIData)<-c("Exon","Ratio","Min","Max")
     CIPlot<-ggplot(CIData,aes(x=Exon,y=Ratio))+geom_ribbon(aes(ymin=Min,ymax=Max),fill="grey")+geom_point(col="blue",cex=3.5) + theme_bw() +xlab("")+ylab("Observed/Expected")
-temp = cnv.calls[cnv.calls$Sample==Sample,]
+    temp = cnv.calls[cnv.calls$Sample==Sample,]
     if(sum(temp$Start.p%in%exonRange |temp$End.p%in%exonRange)>0){
         temp = temp[temp$Start.p%in%exonRange|temp$End.p%in%exonRange,]
         for(i in 1:nrow(temp)){
