@@ -311,14 +311,16 @@ rule cramtobam:
 	shell: "samtools view -b -T {params} -o {output} {input}"
 
 rule indexing:
-	""" Indexing bam files with samtools or ln """
+	""" Indexing bam files with samtools if .bam.bai is not in PROCESS_FILE """
 	input: f"{resultDir}/{{sample}}.{{aligner}}.bam"
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai")
 	params:
 		process=config['PROCESS_CMD'],
-		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai']
+		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai'],
+		process_file_str=" ".join(config['PROCESS_FILE']) 
 	threads: workflow.cores
-	shell: "samtools index -b -@ {threads} {input} {output}"
+	shell: "[[ \"{params.process_file_str}\" =~ \"bam.bai\" ]] && ( [ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output} ) || samtools index -b -@ {threads} {input} {output}"
+
 
 rule samtools_fastq:
 	""" Extract fastq from a bam file """
