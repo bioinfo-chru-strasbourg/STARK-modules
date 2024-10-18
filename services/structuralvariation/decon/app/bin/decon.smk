@@ -1006,8 +1006,9 @@ rule plot:
 	input:
 		rules.makeCNVcalls.output.rdata
 	params:
-		folder=f"{resultDir}/pdfs/",
-		decondir=config['R_SCRIPTS']
+		folder=f"{resultDir}/pdfs/", # should be by design/panels
+		decondir=config['R_SCRIPTS'],
+		bed_file: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	output:
 		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess"
 	log:

@@ -63,11 +63,12 @@ option_list <- list(
     make_option('--rdata', help = 'Input summary RData file (required)', dest = 'data'),
     make_option('--out', default = './plots', help = 'Output directory, default=./plots', dest = 'pfolder'),
     make_option('--prefix', default = '', help = 'Prefix for the files, default=None', dest = 'prefix'),
-    make_option('--bedfile', default = NULL, help = 'Specify a BED file. Default is the one in RData', dest = 'bedfile') # BED file option
+    make_option('--bedfile', default = NULL, help = 'Specify a BED file. Default is the one in RData', dest = 'bedfile'), # BED file option
+    make_option("--outrdata", default="./DECONplot.Rdata", help="Output Rdata file, default: ./DECONplot.Rdata", dest='outdata')
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
-
+rdata_output = opt$outdata
 # Load R workspace with all the results saved : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
 count_data=opt$datas
 if(count_data=="NULL"){count_data=NULL}
@@ -114,6 +115,7 @@ if (!is.null(opt$bedfile)) {
     cnv.calls_ids <- filter_df(cnv.calls_ids, bed.file)
     counts <- filter_df(counts, bed.file)
     Exomecount <- filter_df(Exomecount, bed.file)
+    save.image(file = rdata_output)
 }
 
 #################### Plots ####################################

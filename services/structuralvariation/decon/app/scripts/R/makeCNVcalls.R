@@ -207,11 +207,11 @@ add_custom_exon_numbers <- function(cnv.calls_ids, bed.file, counts) {
     Custom.first <- rep(NA, nrow(cnv.calls_ids))
     Custom.last <- rep(NA, nrow(cnv.calls_ids))
     exons <- bed.file
-    exonnumber <- sapply(cnv.calls_ids$Gene, '==', exons$Gene)
+    exonnumber <- sapply(cnv.calls_ids$Gene, '==', exons$gene)
     
     for (i in 1:nrow(exonnumber)) {
       for (j in 1:ncol(exonnumber)) {
-        temp <- cnv.calls_ids$start[j] <= exons$End[i] & cnv.calls_ids$end[j] >= exons$Start[i]
+        temp <- cnv.calls_ids$Start[j] <= exons$end[i] & cnv.calls_ids$End[j] >= exons$start[i]
         exonnumber[i, j] <- exonnumber[i, j] & temp
       }
     }
