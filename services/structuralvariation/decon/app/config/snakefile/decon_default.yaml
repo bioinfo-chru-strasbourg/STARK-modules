@@ -116,8 +116,9 @@ KMER: ""
 DUMMY_FILES: "/app/scripts/dummy"
 R_SCRIPTS: "/app/scripts/R"
 PY_SCRIPTS: "/app/scripts/python"
-# Path of the fileconversion json folder
-VARIANT_CONVERT_CONFIG: "/app/config/fileconversion"
+# Fileconversion json for variant convert
+VARIANT_CONVERT_DECON: "/app/config/fileconversion/config_decon.json"
+VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf.json"
 
 ### DECON ###
 # Plots for DECON True/False

@@ -388,17 +388,17 @@ print(dict(runDict))
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > fix_vcf_full > bcftools_filter
+ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > correct_tsv > AnnotSV
 
 rule all:
 	"""Rule will create an unfiltered vcf.gz and corresponding tsv, with an optional design/panel vcf.gz & tsv if a bed/gene file is provided"""
 	input:
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz", sample=sample_list, aligner=aligner_list) +
-		[f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.tsv"] +
+		[f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Full.tsv"] +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list) if config['BED_FILE'] else []) +
-		([f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"] if config['BED_FILE'] else []) +
+		([f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.tsv"] if config['BED_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
-		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv", panel=panels_list) if config['GENES_FILE'] else []) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else [])
 
 rule help:
@@ -492,7 +492,7 @@ rule scramble:
 		dummypath = config['DUMMY_FILES'],
 		output = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.raw"
 	output:
-		f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.raw.vcf"
+		temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.raw.vcf")
 	log: 
 		log = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.ScrambleR.log", 
 		err = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.ScrambleR.err"
@@ -522,18 +522,42 @@ rule correct_vcf:
 
 rule vcf2gz:
 	input: rules.correct_vcf.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz")
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz"
 	params: config['DUMMY_FILES']
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
-rule bcftools_filter:
-	"""	Filter with bcftools """
-	input: rules.vcf2gz.output	
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz"
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.filter.log"
-	params: bed=config['BCFTOOLS_FILTER'],
-			dummy=config['DUMMY_FILES']
-	shell: "bcftools view {params.bed} {input} -o {output}  2> {log} && [[ -s {output} ]] || cat {params.dummy}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}" 
+rule merge_vcf:
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz", sample=sample_list, aligner=aligner_list)
+	output:f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.Full.vcf.gz"
+	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"	
+
+# filter raw full with bed to get design
+rule filter_vcf:
+	"""	Filter vcf with a bed file """
+	input: rules.merge_vcf.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unnorm.vcf.gz")
+	params: config['BED_FILE']
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.bedtoolsfilter.log"
+	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output}"
+
+# normalize vcf & tabix
+rule vcf_normalisation:
+	input: rules.filter_vcf.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
+	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
+
+# split raw design into samples & tabix
+rule split_vcf:
+	"""
+	Split vcf into each individual sample with bcftools
+	-s {sample}: comma-separated list of samples to include
+	-Oz: output vcf compressed
+	-c1: minimum allele count (INFO/AC) of sites to be printed
+	"""
+	input: rules.vcf_normalisation.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz"
+	params: config['DUMMY_FILES']
+	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 
 rule AnnotSV:
 	"""
@@ -543,26 +567,30 @@ rule AnnotSV:
 	- txtFile: path to a file containing a list of preferred genes transcripts for annotation
 	- genomeBuild must be specified if not hg38
 	"""
-	input: rules.bcftools_filter.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.tsv"
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.log"
+	input: rules.vcf_normalisation.output
+	output: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.tsv"
+	log: f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.log"
 	params:
-		outputfile=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full",
 		genome=config['genomeBuild'],
 		overlap=config['overlap'],
 		mode=config['annotationMode'],
-		dummypath = config['DUMMY_FILES'],
 		annotation=config['annotationdir'],
 		hpo=lambda wildcards: runDict[wildcards.sample]['hpo'],
 		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in a multisample vcf
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log}
 		"""
+
+rule split_tsv:
+	input: rules.AnnotSV.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
+	params:	config['PY_SCRIPTS']
+	shell: " python {params}/split_tsv.py -i {input} -o {output} -s {wildcards.sample} "
 
 rule correct_tsv:
 	input: rules.AnnotSV.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_unfix.tsv")
+	output: temp(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSVcorr.Design.tsv")
 	shell: 
 		""" 
 		sed '1s/[()/\\]/_/g' {input} > {output}
@@ -574,7 +602,23 @@ rule correct_chr:
 	Add chr to the SV_chrom column
 	"""
 	input: rules.correct_tsv.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_chrfix.tsv")
+	output: temp(f"{resultDir}/{serviceName}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSVcorr_chr.Design.tsv")
+	shell:
+		"""
+		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input} > {output}
+		"""
+
+rule correct_tsv:
+	input: rules.AnnotSV.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design_fix.tsv")
+	shell: " sed '1s/[()/\\]/_/g' {input} > {output} "
+
+rule correct_chr:
+	"""
+	Add chr to the SV_chrom column
+	"""
+	input: rules.correct_tsv.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design_chrfix.tsv")
 	shell:
 		"""
 		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input} > {output}
@@ -582,129 +626,82 @@ rule correct_chr:
 
 rule variantconvert:
 	input: rules.correct_chr.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_fix.vcf")
-	params:
-			VARIANT_CONVERT_CONFIG=config['VARIANT_CONVERT_CONFIG'],
-			dummypath=config['DUMMY_FILES']
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.varianconvert.log"
-	shell:
-		"""
-		variantconvert convert -i {input} -o {output} -c {params.VARIANT_CONVERT_CONFIG}/annotsv3_from_vcf.json 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
-		"""
-
-rule correct_vcf_bis:
-	input: rules.variantconvert.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_correct.vcf")
-	shell:
-		""" 
-		sed 's/SAMPLENAME/{wildcards.sample}/g' {input} > {output}
-		"""
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design_unfix.vcf")
+	params: config['VARIANT_CONVERT_ANNOTSV']
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.varianconvert.log"
+	shell:"	variantconvert convert -i {input} -o {output} -c {params} 2> {log} "
 
 rule sort_vcf:
-	input: rules.correct_vcf_bis.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full_sort.vcf")
-	params: config['DUMMY_FILES']
-	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
+	input: rules.variantconvert.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design_sort.vcf")
+	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
-rule fix_vcf_full:
+rule fix_vcf:
 	input: rules.sort_vcf.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz"
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design_unnorm.vcf.gz")
 	params:	config['PY_SCRIPTS']
-	shell: " python {params}/multifix_vcf.py -i {input} -o {output} -z ; tabix {output}"
+	shell: "python {params}/multifix_vcf.py -i {input} -o {output} -z ; tabix {output}"
 
-rule merge_vcf_full:
-	"""	Copy or merge vcfs with bcftools """
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.vcf.gz"
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.bcftoolsmerge.log"
-	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
+use rule vcf_normalisation as vcf_normalisation_design with:
+	input: rules.fix_vcf.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.vcf.gz"
 
-rule filter_vcf_design:
-	input: rules.merge_vcf_full.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
-	params: bed=config['BED_FILE'],
-			dummypath=config['DUMMY_FILES']
-	shell: " bedtools intersect -header -a {input} -b {params.bed} | bgzip > {output} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf | bgzip > {output} ; tabix {output} "
-
-use rule filter_vcf_design as filter_vcf_panel with:
-	input: rules.filter_vcf_design.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel_unnorm.{{panel}}.vcf.gz")
-	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
-			dummypath=config['DUMMY_FILES']
-
-rule vcf_normalisation_panel:
-	input: rules.filter_vcf_panel.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
-	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
-
-rule vcf2tsv:
-	""" vcf to tsv conversion """
-	input: rules.merge_vcf_full.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Full.tsv"
-	shell:
-		"""
-		if [ $(gunzip -c {input} | wc -c) -eq 0 ]; then
-			echo -e "No data available in the input file" > {output}
-		else
-			vcf2tsvpy --keep_rejected_calls --input_vcf {input} --out_tsv {output}.tmp
-			grep -v '^#' {output}.tmp > {output}
-		fi
-		"""
-
-use rule vcf2tsv as vcf2tsv_full with:
-	input: rules.filter_vcf_design.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv"
-
-use rule vcf2tsv as vcf2tsv_panel with:
-	input: rules.vcf_normalisation_panel.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.tsv"
-
-use rule vcf2tsv as vcf2tsv_full_sample with:
-	input: rules.fix_vcf_full.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Full.tsv"
-
-rule split_vcf_design:
-	input: rules.filter_vcf_design.output
+use rule split_vcf as split_vcf_design_annotsv with:
+	input: rules.vcf_normalisation_design.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
-	params: config['DUMMY_FILES']
-	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 
-use rule vcf2tsv as vcf2tsv_design_sample with:
-	input: rules.split_vcf_design.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
+# Panel part
+use rule filter_vcf as filter_vcf_panel with:
+	input: rules.filter_vcf_panel.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
+	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bedtoolsfilter.log"
 
-use rule split_vcf_design as split_vcf_panel with:
-	input: rules.split_vcf_design.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_unnorm.{{panel}}.vcf.gz")
+use rule vcf_normalisation as vcf_normalisation_panel with:
+	input: rules.filter_vcf_panel.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 
-use rule vcf_normalisation_panel as vcf_normalisation_panel_sample with:
-	input: rules.split_vcf_panel.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
+use rule split_vcf as split_vcf_panel with:
+	input: rules.vcf_normalisation_panel.output
+	output:f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
 
-use rule vcf2tsv as vcf2tsv_panel_sample with:
-	input: rules.vcf_normalisation_panel_sample.output
+use rule AnnotSV as AnnotSV_panel with:
+	input: rules.filter_vcf_panel.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.log"
+
+use rule split_tsv as split_tsv_panel with:
+	input: rules.AnnotSV_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
-use rule merge_vcf_full as merge_vcf_full_noannot with:
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz", aligner=aligner_list, sample=sample_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Full.vcf.gz"
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Full.bcftoolsmerge.log"
+use correct_tsv	as correct_tsv_panel with:
+	input: rules.AnnotSV_panel.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}_fix.tsv")
 
-use rule filter_vcf_design as filter_vcf_design_noannot with:
-	input: rules.merge_vcf_full_noannot.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-	params: bed=config['BED_FILE'],
-			dummypath=config['DUMMY_FILES']
+use rule correct_chr as correct_chr_panel with:
+	input: rules.correct_tsv_panel.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}_chrfix.tsv")
 
-use rule filter_vcf_design as filter_vcf_panel_noannot with:
-	input: rules.filter_vcf_design_noannot.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
-	params: bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
-			dummypath=config['DUMMY_FILES']
+use rule variantconvert as variantconvert_panel with:
+	input: rules.correct_chr_panel.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf")
 
-use rule vcf_normalisation_panel as vcf_normalisation_panel_all_noannot with:
-	input: rules.filter_vcf_panel_noannot.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+use sort_vcf as sort_vcf_panel with:
+	input: rules.variantconvert_panel.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.sort.vcf")
+
+use rule fix_vcf as fix_vcf_panel with:
+	input: rules.sort_vcf_panel.output
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.unnorm.vcf.gz")
+
+use rule vcf_normalisation as vcf_normalisation_panel with:
+	input: rules.fix_vcf_panel.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
+
+use rule split_vcf as split_vcf_panel_annotsv with:
+	input: rules.vcf_normalisation_panel.output
+	output:f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}AnnotSV.Panel.{{panel}}.vcf.gz"
+
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")

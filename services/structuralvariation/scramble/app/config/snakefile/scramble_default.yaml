@@ -88,8 +88,8 @@ REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 DUMMY_FILES: "/app/scripts/dummy"
 R_SCRIPTS: "/app/scripts/R"
 PY_SCRIPTS: "/app/scripts/python"
-# Path of the fileconversion json
-VARIANT_CONVERT_CONFIG: "/app/config/fileconversion"
+# Fileconversion json for variantconvert
+VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf.json"
 
 # Path to Scramble R directory scripts
 SCRAMBLE_PATH: "/opt/conda/share/scramble/bin" # installed via conda
