@@ -487,7 +487,7 @@ print(dict(runDict))
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > split_vcf > fix_vcf_sample > vcf_normalization > merge_vcf > correct_chr > AnnotSV > merge_tsv > fix_vcf_panel > vcf_normalisation_panel
+ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > split_vcf > fix_vcf_sample > vcf_normalization > merge_vcf > correct_chr > AnnotSV > merge_tsv > fix_vcf_panel > vcf_normalisation_panel > correct_1based > merge_tsv
 
 rule all:
 	"""Output a design vcf.gz with the bams and the bed provided, optionally using a reference set and generating plots if specified"""
@@ -671,7 +671,7 @@ rule split_tsv:
 	shell:
 		"""
 		python {params} -i {input} --sample_column 'Sample' --output_template '{output}'
-		""
+		"""
 
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
@@ -772,7 +772,7 @@ rule correct_chr:
 		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input} > {output}
 		"""
 
-rule variantconvert_annotsv:
+rule variantconvert:
 	input: rules.correct_chr.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unfix.vcf")
 	params:
@@ -785,7 +785,7 @@ rule variantconvert_annotsv:
 		"""
 
 rule correct_vcf:
-	input: rules.variantconvert_annotsv.output
+	input: rules.variantconvert.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.vcf")
 	shell:
 		""" 
@@ -840,23 +840,23 @@ use rule merge_tsv as merge_tsv_panel with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
-use rule variantconvert_annotsv as variantconvert_annotsv_panel with:
+use rule variantconvert as variantconvert_panel with:
 	input: rules.AnnotSV_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_uncorr.{{panel}}.vcf")
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.varianconvert.log"
 
 use rule correct_vcf as correct_vcf_panel with:
-	input: rules.variantconvert_annotsv_panel.output
+	input: rules.variantconvert_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_unfix.{{panel}}.vcf")
 
 
-use rule sortvcf_sample as sortvcf_sample_panel with:
+use rule sortvcf as sortvcf_panel with:
 	input: rules.correct_vcf_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_sort.{{panel}}.vcf")
 
 # Panel vcf.gz individual samples AnnotSV
 use rule fix_vcf as fix_vcf_panel with:
-	input: rules.sortvcf_sample_panel.output
+	input: rules.sortvcf_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 
 # Panel vcf.gz all samples AnnotSV
