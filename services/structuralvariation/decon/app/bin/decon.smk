@@ -782,7 +782,6 @@ rule makeCNVcalls:
 	input: rules.ReadInBams.output
 	params:
 		prob=config['transProb'],
-		output=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results",
 		analysisfailure=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVCalledFailed",
 		bamlist=f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
 		chromosome="{gender}",
@@ -800,7 +799,6 @@ rule makeCNVcalls:
 		"""
  
 rule merge_makeCNVcalls:
-	""" Merge all CNV call results """
 	input: expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv", gender=gender_list, aligner=aligner_list)
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_uncorr.tsv")
 	shell: "cat {input} | sort -u | sort -r >> {output}"
@@ -809,11 +807,14 @@ rule merge_makeCNVcalls:
 rule fix_makeCNVcalls:
 	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.tsv"
-	shell: "awk -F'\\t' -v OFS='\\t' 'NR == 1 {{print; next}} {{ $12 = \"chr\" $12; print }}' {input} > {output}"
+	shell: 
+		"""
+		awk -F'\t' -v OFS='\t ' 'NR == 1 {print; next} {$12 = "chr" $12; print}' {input} > {output}
+		"""
 
 # Design tsv individual samples no annotation
 rule split_tsv:
-	input: rule.fix_makeCNVcalls.output
+	input: rules.fix_makeCNVcalls.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.tsv"
 	params: config['SPLIT_SCRIPT']
 	shell: 

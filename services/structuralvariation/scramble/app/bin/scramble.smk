@@ -545,7 +545,7 @@ rule bcftools_filter:
 # Design individual samples vcf.gz no annotation
 rule filter_vcf:
 	"""	Filter vcf with a bed file """
-	input: rule.bcftools_filter.output
+	input: rules.bcftools_filter.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz"
 	params: config['BED_FILE']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.bedtoolsfilter.log"
