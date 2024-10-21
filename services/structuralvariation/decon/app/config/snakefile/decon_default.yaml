@@ -115,7 +115,10 @@ KMER: ""
 # Path for scripts and dummy files folders
 DUMMY_FILES: "/app/scripts/dummy"
 R_SCRIPTS: "/app/scripts/R"
-PY_SCRIPTS: "/app/scripts/python"
+# Scripts py
+SPLIT_SCRIPT: "/app/scripts/python/split_tsv.py"
+MULTIFIX_SCRIPT: "/app/scripts/python/multifix_vcf.py"
+MERGE_SCRIPT: "/app/scripts/python/merge_tsv.py"
 # Fileconversion json for variant convert
 VARIANT_CONVERT_DECON: "/app/config/fileconversion/config_decon.json"
 VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf.json"

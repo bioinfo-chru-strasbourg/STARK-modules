@@ -677,21 +677,22 @@ print('[INFO] Starting DECON pipeline')
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > merge_tsv > correct_tsv
+ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > merge_tsv > correct_tsv merge_tsv_panel > variantconvert_annotsv_panel
 
 rule all:
 	""" Output a design vcf.gz with the bams list and the bed provided """
 	input:
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.bam", aligner=aligner_list, sample=sample_list) +
-		expand(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai", aligner=aligner_list, sample=sample_list) +
-		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv", aligner=aligner_list) +
+		# Design AnnotSV
+		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list) +
+		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.tsv", aligner=aligner_list) +
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list) +
-		[expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.tsv", sample=sample_list, aligner=aligner_list) ] +
-		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
-		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list,panel=panels_list) if config['GENES_FILE'] else []) +
-		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else [])
-
-
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list) +
+		# Panels AnnotSV
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else [])
+		# Plots
 		#(expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess", aligner=aligner_list, gender=gender_list) if config['DECON_PLOT'] else []) +
 
 rule help:
@@ -745,15 +746,15 @@ rule ReadInBams:
 		bai=expand(f"{resultDir}/{{sample}}.{{aligner}}.bam.bai", sample=sample_list, aligner=aligner_list),
 		allbamlist=f"{resultDir}/{serviceName}.{date_time}.A.list.txt"
 	output:
-		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.ReadInBams.RData"
+		f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.ReadInBams.RData"
 	params:
 		refbamlist=config['REF_BAM_LIST'],
 		decondir=config['R_SCRIPTS'],
 		refgene=config['REFGENEFA_PATH'],
 		mcores=config['MCORES']
 	log:
-		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.ReadInBams.log",
-		err=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.ReadInBams.err"
+		log=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.ReadInBams.log",
+		err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.ReadInBams.err"
 	shell:
 		"""
 		Rscript {params.decondir}/ReadInBams.R --maxcores {params.mcores} --bams {input.allbamlist} --bed {deconbed_file} --fasta {params.refgene} --rdata {output} {params.refbamlist} 1> {log.log} 2> {log.err}
@@ -765,12 +766,12 @@ rule IdentifyFailures:
 	params:
 		mincorr=config['mincorr'],
 		mincov=config['mincov'],
-		analysisfailure=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.MetricsFailed",
+		analysisfailure=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.MetricsFailed",
 		decondir=config['R_SCRIPTS']
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv"
 	log:
-		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.Metrics.log",
-		err=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.Metrics.err"
+		log=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.log",
+		err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.err"
 	shell: 
 		"""
 		Rscript {params.decondir}/IdentifyFailures.R --rdata {input} --mincorr {params.mincorr} --mincov {params.mincov} --tsv {output} 1> {log.log} 2> {log.err} && [[ -s {output} ]] || touch {params.analysisfailure} ; [[ -s {output} ]] || touch {output}
@@ -781,18 +782,18 @@ rule makeCNVcalls:
 	input: rules.ReadInBams.output
 	params:
 		prob=config['transProb'],
-		output=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design_results",
-		analysisfailure=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCalledFailed",
+		output=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results",
+		analysisfailure=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVCalledFailed",
 		bamlist=f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
 		chromosome="{gender}",
 		refbamlist=config['REF_BAM_LIST'],
 		decondir=config['R_SCRIPTS']
 	output:
-		calltsv=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design_results_all.tsv",
-		rdata=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVcalls.RData"
+		temp(calltsv=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv"),
+		rdata=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVcalls.RData"
 	log:
-		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.makeCNVcalls.log",
-		err=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.makeCNVcalls.err"
+		log=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.log",
+		err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.err"
 	shell:
 		"""
 		Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} {params.refbamlist} --tsv {output.calltsv} --outrdata {output.rdata} 1> {log.log} 2> {log.err} && [[ -s {output.calltsv} ]] || touch {params.analysisfailure} ; [[ -s {output.calltsv} ]] || touch {output.calltsv}
@@ -800,7 +801,7 @@ rule makeCNVcalls:
  
 rule merge_makeCNVcalls:
 	""" Merge all CNV call results """
-	input: expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design_results_all.tsv", gender=gender_list, aligner=aligner_list)
+	input: expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv", gender=gender_list, aligner=aligner_list)
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_uncorr.tsv")
 	shell: "cat {input} | sort -u | sort -r >> {output}"
 
@@ -814,12 +815,11 @@ rule fix_makeCNVcalls:
 rule split_tsv:
 	input: rule.fix_makeCNVcalls.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.tsv"
-	params: config['PY_SCRIPTS']
+	params: config['SPLIT_SCRIPT']
 	shell: 
 		"""
-		python {params}/split_tsv.py -i {input} --sample_column 'Sample' --output_template '{output}'
+		python {params} -i {input} --sample_column 'Sample' --output_template '{output}'
 		"""
-
 
 rule variantconvert:
 	""" Convert tsv to a vcf """
@@ -852,15 +852,15 @@ rule vcf2gz:
 	params: config['DUMMY_FILES']
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
-rule fix_svlen:
+rule fix_vcf:
 	input: rules.vcf2gz.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unnorm.vcf.gz")
-	params:	config['PY_SCRIPTS']
-	shell: " python {params}/multifix_vcf.py -i {input} -o {output} -z ; tabix {output} "
+	params:	config['MULTIFIX_SCRIPT']
+	shell: " python {params} -i {input} -o {output} -z ; tabix {output} "
 
 # Design vcf.gz all samples no annotation
 rule vcf_normalization:
-	input: rules.fix_svlen.output
+	input: rules.fix_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
 
@@ -890,7 +890,7 @@ rule AnnotSV:
 	"""
 	input: rules.split_vcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.log"
+	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"
 	params:
 		dummypath=config['DUMMY_FILES'],
 		outputfile=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design",
@@ -909,8 +909,8 @@ rule AnnotSV:
 rule merge_tsv:
 	input: rules.AnnotSV.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.tsv"
-	params:	config['PY_SCRIPTS']
-	shell: " python {params}/merge_tsv.py -i {input} -o {output} "
+	params:	config['MERGE_SCRIPT']
+	shell: " python {params} -i {input} -o {output} "
 
 
 rule correct_tsv:
@@ -953,25 +953,24 @@ rule correct_vcf:
 		sed 's/SAMPLENAME/{wildcards.sample}/g' {input} > {output}
 		"""
 
-rule sortvcf_sample:
+rule sort_vcf_sample:
 	input: rules.correct_vcf.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_sort.vcf")
 	params: config['DUMMY_FILES']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 # Design vcf.gz individual samples AnnotSV
-rule fix_vcf:
-	input: rules.sortvcf_sample.output
+use rule fix_vcf as fix_vcf_sample:
+	input: rules.sort_vcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
-	params:	config['PY_SCRIPTS']
-	shell: " python {params}/multifix_vcf.py -i {input} -o {output} -z ; tabix {output} "
+
 
 # Design vcf.gz all samples AnnotSV
 rule merge_vcf:
 	""" Copy or merge multiple vcfs using bcftools """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.vcf.gz"
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.bcftoolsmerge.log"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.vcf.gz"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.bcftoolsmerge.log"
 	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
 
 
@@ -1002,7 +1001,6 @@ use rule merge_tsv as merge_tsv_panel with:
 	input: rules.AnnotSV_panel.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
-
 use rule variantconvert_annotsv as variantconvert_annotsv_panel with:
 	input: rules.AnnotSV_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_uncorr.{{panel}}.vcf")
@@ -1025,8 +1023,8 @@ use rule fix_vcf as fix_vcf_panel with:
 # Panel vcf.gz all samples AnnotSV
 use rule merge_vcf as merge_vcf_panel with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.vcf.gz"
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Panel.{{panel}}.bcftoolsmerge.log"
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.bcftoolsmerge.log"
 
 
 rule plot:
