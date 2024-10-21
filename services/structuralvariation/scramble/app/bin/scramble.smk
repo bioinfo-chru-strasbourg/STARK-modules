@@ -355,6 +355,7 @@ if file_source:
 			file = os.path.join(os.path.dirname(file_source), file)
 		
 		# Process the gene list and accumulate results
+		res_list = []
 		res_list = process_gene_list(file, resultDir, res_list)
 		panels_list.extend(res_list)  # Append results to panels_list
 
@@ -615,7 +616,7 @@ rule variantconvert_annotsv:
 		variantconvert convert -i {input} -o {output} -c {params.variantconvertannotsv} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
-rule correct_vcf:
+rule correct_vcf_name:
 	input: rules.variantconvert_annotsv.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.vcf")
 	shell:
@@ -624,7 +625,7 @@ rule correct_vcf:
 		"""
 
 rule sort_vcf_sample:
-	input: rules.correct_vcf.output
+	input: rules.correct_vcf_name.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_sort.vcf")
 	params: config['DUMMY_FILES']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "

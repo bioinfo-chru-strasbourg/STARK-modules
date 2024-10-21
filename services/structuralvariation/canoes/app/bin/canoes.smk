@@ -422,6 +422,7 @@ if file_source:
 			file = os.path.join(os.path.dirname(file_source), file)
 		
 		# Process the gene list and accumulate results
+		res_list = []
 		res_list = process_gene_list(file, resultDir, res_list)
 		panels_list.extend(res_list)  # Append results to panels_list
 
@@ -574,18 +575,18 @@ rule bam_to_multicov:
 		bam=f"{resultDir}/{{sample}}.{{aligner}}.bam",
 		bai=f"{resultDir}/{{sample}}.{{aligner}}.bam.bai"
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv"
-	params: pyscripts = config['PY_SCRIPTS']
+	params: config['BEDCOV_SCRIPT']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"
-	shell:" python {params.pyscripts}/pybedtools.py --bam {input.bam} --bed {canoesbed_file} -q 20 -o {output} 1> {log} "
+	shell:" python {params} --bam {input.bam} --bed {canoesbed_file} -q 20 -o {output} 1> {log} "
 
 
 rule bam_to_multicov_for_refbam:
 	""" From a tsv list of bams generate a coverage file filtered with the bed provided, including the header """
 	input: config['REF_BAM_LIST']
 	output:	f"{resultDir}/{serviceName}.{date_time}.refsamples.{{aligner}}.reads.tsv"
-	params: pyscripts = config['PY_SCRIPTS']
+	params: config['BEDCOV_SCRIPT']
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.log"
-	shell:" python {params.pyscripts}/pybedtools.py --tsv {input} --bed {canoesbed_file} -q 20 -o {output} 1> {log} "
+	shell:" python {params} --tsv {input} --bed {canoesbed_file} -q 20 -o {output} 1> {log} "
 
 
 rule merge_multicov:
@@ -593,16 +594,16 @@ rule merge_multicov:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.reads.tsv"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.reads.log"
-	params: config['PY_SCRIPTS']
-	shell: " python {params}/merge_multicov.py {input} -o {output} "
+	params: config['MERGEMULTICOV_SCRIPT']
+	shell: " python {params} {input} -o {output} "
 
 
 rule plot_coverage_stats:
 	""" Generate coverage calculation """
 	input:  rules.merge_multicov.output
 	output:	f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.multicoverage_stats.tsv"
-	params: config['PY_SCRIPTS']
-	shell: " python {params}/plot_coverage_stats.py {input} {output} "
+	params: config['PLOT_COVERAGE_SCRIPT']
+	shell: " python {params} {input} {output} "
 
 
 rule plot_coverage:

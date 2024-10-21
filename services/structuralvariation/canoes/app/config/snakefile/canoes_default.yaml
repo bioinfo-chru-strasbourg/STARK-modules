@@ -64,10 +64,13 @@ DUMMY_FILES: "/app/scripts/dummy"
 SPLIT_SCRIPT: "/app/scripts/python/split_tsv.py"
 MULTIFIX_SCRIPT: "/app/scripts/python/multifix_vcf.py"
 MERGE_SCRIPT: "/app/scripts/python/merge_tsv.py"
+BEDCOV_SCRIPT: "/app/scripts/python/pybedtools.py"
+MERGEMULTICOV_SCRIPT: "/app/scripts/python/merge_multicov.py"
+PLOT_COVERAGE_SCRIPT: "/app/scripts/python/plot_coverage_stats.py
 
 # Fileconversion json for variant convert
 VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf.json"
-VARIANT_CONVERT_CANOES: "/app/config/fileconversion/config_canoes_bed.json
+VARIANT_CONVERT_CANOES: "/app/config/fileconversion/config_canoes_bed.json"
 
 # Path folder of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
