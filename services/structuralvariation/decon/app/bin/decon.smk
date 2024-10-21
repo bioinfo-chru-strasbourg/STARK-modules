@@ -677,17 +677,15 @@ print('[INFO] Starting DECON pipeline')
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > merge_tsv > correct_tsv merge_tsv_panel > variantconvert_annotsv_panel
+ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > merge_tsv > correct_tsv > merge_tsv_panel > variantconvert_annotsv_panel
 
 rule all:
 	""" Output a design vcf.gz with the bams list and the bed provided """
 	input:
-		# Design AnnotSV
 		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list) +
 		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.tsv", aligner=aligner_list) +
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list) +
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list) +
-		# Panels AnnotSV
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
@@ -737,7 +735,12 @@ rule indexing:
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai'],
 		process_file_str=" ".join(config['PROCESS_FILE']) 
 	threads: workflow.cores
-	shell: "[[ \"{params.process_file_str}\" =~ \"bam.bai\" ]] && ( [ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output} ) || samtools index -b -@ {threads} {input} {output}"
+	shell: 
+	"""
+		[[ \"{params.process_file_str}\" =~ \"bam.bai\" ]] && (
+			[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}
+		) || samtools index -b -@ {threads} {input} {output}
+	"""
 
 rule ReadInBams:
 	""" DECoN calculates FPKM for each exon in each samples BAM file, using a list of BAM files and a BED file """
@@ -772,7 +775,7 @@ rule IdentifyFailures:
 	log:
 		log=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.log",
 		err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.err"
-	shell: 
+	shell:
 		"""
 		Rscript {params.decondir}/IdentifyFailures.R --rdata {input} --mincorr {params.mincorr} --mincov {params.mincov} --tsv {output} 1> {log.log} 2> {log.err} && [[ -s {output} ]] || touch {params.analysisfailure} ; [[ -s {output} ]] || touch {output}
 		"""
@@ -807,7 +810,7 @@ rule merge_makeCNVcalls:
 rule fix_makeCNVcalls:
 	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.tsv"
-	shell: 
+	shell:
 		"""
 		awk -F'\t' -v OFS='\t ' 'NR == 1 {print; next} {$12 = "chr" $12; print}' {input} > {output}
 		"""
@@ -817,7 +820,7 @@ rule split_tsv:
 	input: rules.fix_makeCNVcalls.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.tsv"
 	params: config['SPLIT_SCRIPT']
-	shell: 
+	shell:
 		"""
 		python {params} -i {input} --sample_column 'Sample' --output_template '{output}'
 		"""
@@ -829,7 +832,7 @@ rule variantconvert:
 	params:
 		variantconvertdecon=config['VARIANT_CONVERT_DECON'],
 		dummypath=config['DUMMY_FILES']
-	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.variantconvert.log"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.variantconvert.log"
 	shell: "variantconvert convert -i {input} -o {output} -c {params.variantconvertdecon} 2> {log}"
 
 rule correct_vcf_svtype:
@@ -851,7 +854,7 @@ rule vcf2gz:
 	input: rules.sortvcf.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_svlen.vcf.gz")
 	params: config['DUMMY_FILES']
-	shell: "bgzip -c {input} > {output} ; tabix {output}"
+	shell: "bgzip -c {input} > {output}"
 
 rule fix_vcf:
 	input: rules.vcf2gz.output
@@ -961,7 +964,7 @@ rule sort_vcf_sample:
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 # Design vcf.gz individual samples AnnotSV
-use rule fix_vcf as fix_vcf_sample:
+use rule fix_vcf as fix_vcf_sample with:
 	input: rules.sort_vcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 

@@ -486,7 +486,7 @@ print(dict(runDict))
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > merge_tsv > correct_tsv merge_tsv_panel > variantconvert_annotsv_panel
+ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > merge_tsv > correct_tsv > merge_tsv_panel > variantconvert_annotsv_panel
 
 rule all:
 	"""Output a design vcf.gz with the bams and the bed provided, optionally using a reference set and generating plots if specified"""
@@ -790,7 +790,7 @@ rule sort_vcf_sample:
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 # Design vcf.gz individual samples AnnotSV
-use rule fix_vcf as fix_vcf_sample:
+use rule fix_vcf as fix_vcf_sample with:
 	input: rules.sort_vcf_sample.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 
