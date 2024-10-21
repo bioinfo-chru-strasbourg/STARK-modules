@@ -677,7 +677,7 @@ print('[INFO] Starting DECON pipeline')
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > merge_tsv > correct_tsv > merge_tsv_panel > variantconvert_annotsv_panel
+ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > split_vcf > fix_vcf_sample > vcf_normalization > merge_vcf > split_tsv > correct_chr > split_tsv > AnnotSV > fix_makeCNVcalls > merge_tsv > fix_vcf_panel > vcf_normalisation_panel
 
 rule all:
 	""" Output a design vcf.gz with the bams list and the bed provided """
@@ -735,12 +735,7 @@ rule indexing:
 		download_link=lambda wildcards: runDict[wildcards.sample]['.bam.bai'],
 		process_file_str=" ".join(config['PROCESS_FILE']) 
 	threads: workflow.cores
-	shell: 
-	"""
-		[[ \"{params.process_file_str}\" =~ \"bam.bai\" ]] && (
-			[ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output}
-		) || samtools index -b -@ {threads} {input} {output}
-	"""
+	shell: "[[ \"{params.process_file_str}\" =~ \"bam.bai\" ]] && ( [ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output} ) || samtools index -b -@ {threads} {input} {output}"
 
 rule ReadInBams:
 	""" DECoN calculates FPKM for each exon in each samples BAM file, using a list of BAM files and a BED file """
@@ -791,7 +786,7 @@ rule makeCNVcalls:
 		refbamlist=config['REF_BAM_LIST'],
 		decondir=config['R_SCRIPTS']
 	output:
-		temp(calltsv=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv"),
+		calltsv=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv",
 		rdata=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVcalls.RData"
 	log:
 		log=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.log",
@@ -911,7 +906,7 @@ rule AnnotSV:
 
 # Design tsv all samples AnnotSV
 rule merge_tsv:
-	input: rules.AnnotSV.output
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.tsv"
 	params:	config['MERGE_SCRIPT']
 	shell: " python {params} -i {input} -o {output} "
@@ -1002,7 +997,7 @@ use rule AnnotSV as AnnotSV_panel with:
 
 # Panel tsv all samples AnnotSV
 use rule merge_tsv as merge_tsv_panel with:
-	input: rules.AnnotSV_panel.output
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
 use rule variantconvert_annotsv as variantconvert_annotsv_panel with:
@@ -1015,41 +1010,40 @@ use rule correct_vcf as correct_vcf_panel with:
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_unfix.{{panel}}.vcf")
 
 
-use rule sortvcf_sample as sortvcf_sample_panel with:
+use rule sortvcf as sortvcf_panel with:
 	input: rules.correct_vcf_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_sort.{{panel}}.vcf")
 
 # Panel vcf.gz individual samples AnnotSV
 use rule fix_vcf as fix_vcf_panel with:
-	input: rules.sortvcf_sample_panel.output
+	input: rules.sortvcf_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 
 # Panel vcf.gz all samples AnnotSV
 use rule merge_vcf as merge_vcf_panel with:
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list)
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.bcftoolsmerge.log"
 
-
-rule plot:
-	""" This step inputs the CNVcall.Rdata file to output the plot files in pdf format """
-	input:
-		rules.makeCNVcalls.output.rdata
-	params:
-		folder=f"{resultDir}/pdfs/", # should be by design/panels
-		decondir=config['R_SCRIPTS'],
-		bed_file: lambda wildcards: f"{resultDir}/{wildcards.panel}"
-	output:
-		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess"
-	log:
-		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plots.log",
-		err=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plots.err"
-	shell:
-		"""
-		mkdir -p {params.folder} &&
-		Rscript {params.decondir}/DECONplot.R --rdata {input} --out {params.folder} --prefix {date_time} 1> {log.log} 2> {log.err} &&
-		touch {output}
-		"""
+#rule plot:
+#	""" This step inputs the CNVcall.Rdata file to output the plot files in pdf format """
+#	input:
+#		rules.makeCNVcalls.output.rdata
+#	params:
+#		folder=f"{resultDir}/pdfs/", # should be by design/panels
+#		decondir=config['R_SCRIPTS'],
+#		bed_file: lambda wildcards: f"{resultDir}/{wildcards.panel}"
+#	output:
+#		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess"
+#	log:
+#		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plots.log",
+#		err=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plots.err"
+#	shell:
+#		"""
+#		mkdir -p {params.folder} &&
+#		Rscript {params.decondir}/DECONplot.R --rdata {input} --out {params.folder} --prefix {date_time} 1> {log.log} 2> {log.err} &&
+#		touch {output}
+#		"""
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
