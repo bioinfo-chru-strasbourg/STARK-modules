@@ -389,7 +389,7 @@ print(dict(runDict))
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > split_vcf > fix_vcf_sample > vcf_normalization > merge_vcf > split_tsv > correct_chr > split_tsv > AnnotSV > merge_tsv > fix_vcf_panel > vcf_normalisation_panel
+ruleorder: copy_bam > copy_cram > cramtobam > indexing > variantconvert > vcf_normalization > merge_vcf > correct_chr > AnnotSV > merge_tsv > fix_vcf_panel
 
 rule all:
 	"""Rule will create an unfiltered vcf.gz and corresponding tsv, with an optional design/panel vcf.gz & tsv if a bed/gene file is provided"""
@@ -656,14 +656,14 @@ rule filter_vcf_panel:
 
 
 # Panel vcf.gz individual samples no annotation
-use rule vcf_normalization as vcf_normalisation_panel with:
+rule vcf_normalization:
 	input: rules.filter_vcf_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
-
+	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
 
 # Panel tsv individual samples AnnotSV
 use rule AnnotSV as AnnotSV_panel with:
-	input: rules.vcf_normalisation_panel.output
+	input: rules.vcf_normalisation.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.log"
 
@@ -682,13 +682,17 @@ use rule correct_vcf as correct_vcf_panel with:
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_unfix.{{panel}}.vcf")
 
 
-use rule sortvcf_sample as sortvcf_sample_panel with:
+rule sortvcf:
+	""" Sort vcf """
 	input: rules.correct_vcf_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_sort.{{panel}}.vcf")
+	params: dummypath=config['DUMMY_FILES']
+	shell: "{{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output}"
+
 
 # Panel vcf.gz individual samples AnnotSV
 use rule fix_vcf as fix_vcf_panel with:
-	input: rules.sortvcf_sample_panel.output
+	input: rules.sortvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 
 # Panel vcf.gz all samples AnnotSV

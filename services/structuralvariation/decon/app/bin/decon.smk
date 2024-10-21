@@ -677,7 +677,7 @@ print('[INFO] Starting DECON pipeline')
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > split_vcf > fix_vcf_sample > vcf_normalization > merge_vcf > split_tsv > correct_chr > split_tsv > AnnotSV > fix_makeCNVcalls > merge_tsv > fix_vcf_panel > vcf_normalisation_panel
+ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > split_vcf > fix_vcf_sample > vcf_normalization > merge_vcf > correct_chr > AnnotSV > fix_makeCNVcalls > merge_tsv > fix_vcf_panel > vcf_normalisation_panel
 
 rule all:
 	""" Output a design vcf.gz with the bams list and the bed provided """

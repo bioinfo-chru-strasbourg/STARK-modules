@@ -66,7 +66,7 @@ MULTIFIX_SCRIPT: "/app/scripts/python/multifix_vcf.py"
 MERGE_SCRIPT: "/app/scripts/python/merge_tsv.py"
 BEDCOV_SCRIPT: "/app/scripts/python/pybedtools.py"
 MERGEMULTICOV_SCRIPT: "/app/scripts/python/merge_multicov.py"
-PLOT_COVERAGE_SCRIPT: "/app/scripts/python/plot_coverage_stats.py
+PLOT_COVERAGE_SCRIPT: "/app/scripts/python/plot_coverage_stats.py"
 
 # Fileconversion json for variant convert
 VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf.json"

@@ -487,7 +487,7 @@ print(dict(runDict))
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > split_vcf > fix_vcf_sample > vcf_normalization > merge_vcf > split_tsv > correct_chr > split_tsv > AnnotSV > merge_tsv > fix_vcf_panel > vcf_normalisation_panel
+ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > split_vcf > fix_vcf_sample > vcf_normalization > merge_vcf > correct_chr > AnnotSV > merge_tsv > fix_vcf_panel > vcf_normalisation_panel
 
 rule all:
 	"""Output a design vcf.gz with the bams and the bed provided, optionally using a reference set and generating plots if specified"""
@@ -663,6 +663,16 @@ rule correct_1based:
 		awk 'BEGIN {{FS=OFS="\\t"}} NR==1 {{print $0}} NR>1 {{split($6,a,":|-"); $2=$2+1; $6=a[1]":"a[2]+1"-"a[3]; print $0}}' {input} > {output}
 		"""
 
+# Design tsv individual samples no annotation
+rule split_tsv:
+	input: rules.correct_1based.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.tsv"
+	params: config['SPLIT_SCRIPT']
+	shell:
+		"""
+		python {params} -i {input} --sample_column 'Sample' --output_template '{output}'
+		""
+
 rule bedtovcf:
 	""" Convert CANOES bed to vcf """
 	input: rules.correct_1based.output
@@ -685,7 +695,7 @@ rule add_chr_to_vcf:
 	shell: "awk -F '\\t' 'BEGIN {{OFS=\"\\t\"}} /^##/ {{print}} /^#CHROM/ {{print}} /^[^#]/ {{$1 = \"chr\" $1; print}}' {input} > {output}"
 
 rule fix_vcf:
-	input: rules.vcf2gz.output
+	input: rules.add_chr_to_vcf.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unorm.vcf.gz")
 	params:	config['MULTIFIX_SCRIPT']
 	shell: " python {params} -i {input} -o {output} -z ; tabix {output} "
