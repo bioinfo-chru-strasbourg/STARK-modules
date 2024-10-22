@@ -403,7 +403,6 @@ rule all:
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else [])
 
-
 rule help:
 	"""
 	General help for SCRAMBLE module
@@ -647,7 +646,7 @@ rule merge_vcf:
 # We filter non annoted design to get panels
 rule filter_vcf_panel:
 	"""	Filter vcf with a bed file """
-	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz"
+	input: rules.filter_vcf.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.bedtoolsfilter.{{panel}}.log"
