@@ -86,7 +86,7 @@ def run_initialisation(run_informations):
         shutil.rmtree(run_informations["tmp_analysis_folder"])
         os.mkdir(run_informations["tmp_analysis_folder"])
     else:
-        os.mkdir(run_informations["tmp_analysis_folder"])
+        os.mkdir(osj(run_informations["tmp_analysis_folder"]))
 
     log.info("Copying vcf files to temporary folder")
     for processed_vcf_file in vcf_file_list:
@@ -102,14 +102,15 @@ def run_initialisation(run_informations):
     vcf_file_to_analyse = glob.glob(
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
-    for vcf_file in vcf_file_to_analyse:
-        # output_exomiser = osj(run_informations["tmp_analysis_folder"], "exomized_" + os.path.basename(vcf_file))
-        # vannotplus_config = osj(os.environ["DOCKER_MODULE_CONFIG"], "vannotplus.yml")
-        # main_exomiser(vcf_file, output_exomiser, "WES_AGILENT", load_config(vannotplus_config))
 
-        fixed_vcf_file = info_to_format_script(vcf_file, run_informations)
+    for vcf_file in vcf_file_to_analyse:
+        output_exomiser = osj(run_informations["tmp_analysis_folder"], "exomized_" + os.path.basename(vcf_file))
+        vannotplus_config = osj(os.environ["DOCKER_MODULE_CONFIG"], "vannotplus.yml")
+        main_exomiser(vcf_file, output_exomiser, "WES_AGILENT", load_config(vannotplus_config))
+        os.remove(vcf_file)
+
+        fixed_vcf_file = info_to_format_script(output_exomiser, run_informations)
         cleaning_annotations(fixed_vcf_file, run_informations)
-        
 
     
 def cleaning_annotations(vcf_file, run_informations):

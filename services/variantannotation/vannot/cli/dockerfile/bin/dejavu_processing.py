@@ -48,6 +48,13 @@ def convert_vcf_parquet(run_informations, args):
         subprocess.call(["rsync", "-rvt", vcf_file, run_informations["tmp_analysis_folder"]], universal_newlines=True)
     
     for vcf_file in glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz")):
+        tmp_output = osj(os.path.dirname(vcf_file), "tmp_" + os.path.basename(vcf_file))
+        cmd = ["bcftools", "annotate", "-x", "INFO", vcf_file]
+        with open(tmp_output, "w") as writefile:
+            subprocess.call(cmd, universal_newlines=True, stdout=writefile)
+        os.remove(vcf_file)
+        os.rename(tmp_output, vcf_file)
+        
         exact_time = time.time() + 7200
         local_time = time.localtime(exact_time)
         actual_time = time.strftime("%H%M%S", local_time)
