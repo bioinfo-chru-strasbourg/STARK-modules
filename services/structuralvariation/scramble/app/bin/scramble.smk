@@ -695,7 +695,7 @@ use rule correct_vcf as correct_vcf_panel with:
 	input: rules.variantconvert_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_unfix.{{panel}}.vcf")
 
-use rule sortvcf as sort_vcf_panel with:
+use rule sort_vcf as sort_vcf_panel with:
 	input: rules.correct_vcf_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_sort.{{panel}}.vcf")
 
@@ -709,6 +709,12 @@ use rule merge_vcf as merge_vcf_panel with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.bcftoolsmerge.log"
+
+# Panel vcf.gz all samples no annotation
+use rule merge_vcf as merge_vcf_panel_noannotation with:
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
