@@ -805,10 +805,7 @@ rule merge_makeCNVcalls:
 rule fix_makeCNVcalls:
 	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.tsv"
-	shell:
-		"""
-		awk -F'\t' -v OFS='\t ' 'NR == 1 {print; next} {$12 = "chr" $12; print}' {input} > {output}
-		"""
+	shell: "awk -F'\\t' -v OFS='\\t' 'NR == 1 {{print; next}} {{ $12 = \"chr\" $12; print }}' {input} > {output}"
 
 # Design tsv individual samples no annotation
 rule split_tsv:
@@ -892,7 +889,6 @@ rule AnnotSV:
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"
 	params:
 		dummypath=config['DUMMY_FILES'],
-		outputfile=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design",
 		genome=config['genomeBuild'],
 		overlap=config['overlap'],
 		mode=config['annotationMode'],
@@ -901,7 +897,7 @@ rule AnnotSV:
 		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in the vcf
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
 # Design tsv all samples AnnotSV
@@ -1009,10 +1005,11 @@ use rule correct_vcf as correct_vcf_panel with:
 	input: rules.variantconvert_annotsv_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_unfix.{{panel}}.vcf")
 
-
-use rule sortvcf as sortvcf_panel with:
+rule sortvcf_panel:
 	input: rules.correct_vcf_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_sort.{{panel}}.vcf")
+	params: config['DUMMY_FILES']
+	shell: " {{ grep '^#' {input} && grep -v '^#' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]]  || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 # Panel vcf.gz individual samples AnnotSV
 use rule fix_vcf as fix_vcf_panel with:

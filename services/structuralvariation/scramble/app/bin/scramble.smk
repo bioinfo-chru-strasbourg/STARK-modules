@@ -389,7 +389,7 @@ print(dict(runDict))
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > filter_vcf > fix_vcf > AnnotSV > correct_chr > fix_vcf_panel > vcf_normalization
+ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
 rule all:
 	"""Rule will create an unfiltered vcf.gz and corresponding tsv, with an optional design/panel vcf.gz & tsv if a bed/gene file is provided"""
@@ -493,9 +493,9 @@ rule scramble:
 		mode = config['scramble_mode'],
 		refgene = config['REFGENEFA_PATH'],
 		dummypath = config['DUMMY_FILES'],
-		output = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.raw"
+		output = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_raw"
 	output:
-		f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.raw.vcf"
+		temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_raw.vcf")
 	log: 
 		log = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.ScrambleR.log", 
 		err = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.ScrambleR.err"
@@ -514,7 +514,7 @@ rule scramble:
 rule correct_vcf:
 	"""	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification """
 	input: rules.scramble.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.corr.vcf")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_corr.vcf")
 	params:
 		mode = config['scramble_mode'],
 		dummypath = config['DUMMY_FILES']
@@ -534,7 +534,7 @@ rule bcftools_filter:
 	"""	Filter with bcftools """
 	input: rules.vcf2gz.output	
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz"
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.filter.log"
+	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.bcftoolsfilter.log"
 	params: bed=config['BCFTOOLS_FILTER'],
 			dummy=config['DUMMY_FILES']
 	shell: "bcftools view {params.bed} {input} -o {output}  2> {log} && [[ -s {output} ]] || cat {params.dummy}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}" 
@@ -564,7 +564,6 @@ rule AnnotSV:
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"
 	params:
 		dummypath=config['DUMMY_FILES'],
-		outputfile=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design",
 		genome=config['genomeBuild'],
 		overlap=config['overlap'],
 		mode=config['annotationMode'],
@@ -573,7 +572,7 @@ rule AnnotSV:
 		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in the vcf
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
 # Design tsv all samples AnnotSV
@@ -598,7 +597,7 @@ rule correct_chr:
 	Add chr to the SV_chrom column
 	"""
 	input: rules.correct_tsv.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_chr.tsv")
 	shell:
 		"""
 		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input} > {output}
@@ -610,7 +609,7 @@ rule variantconvert:
 	params:
 			variantconvertannotsv=config['VARIANT_CONVERT_ANNOTSV'],
 			dummypath=config['DUMMY_FILES']
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.varianconvert.log"
+	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.variantconvert.log"
 	shell:
 		"""
 		variantconvert convert -i {input} -o {output} -c {params.variantconvertannotsv} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
@@ -686,8 +685,8 @@ rule sortvcf:
 	""" Sort vcf """
 	input: rules.correct_vcf_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_sort.{{panel}}.vcf")
-	params: dummypath=config['DUMMY_FILES']
-	shell: "{{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output}"
+	params: config['DUMMY_FILES']
+	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]]  || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 
 # Panel vcf.gz individual samples AnnotSV

@@ -558,11 +558,11 @@ rule gc_percent:
 	"""
 	input: config['REFGENEFA_PATH']
 	output: 
-		gc_percent_header=temp(f"{resultDir}/GCpercent_header.tsv"),
-		gc_percent = f"{resultDir}/GCpercent.tsv"
+		gc_percent_header=temp(f"{resultDir}/{serviceName}.{date_time}.GCpercent_header.tsv"),
+		gc_percent = f"{resultDir}/{serviceName}.{date_time}.{date_time}.GCpercent.tsv"
 	params: 
 		java_option = config['JAVA_OPTION']
-	log: f"{resultDir}/GCpercent.log"
+	log: f"{resultDir}/{serviceName}.{date_time}.{date_time}.GCpercent.log"
 	shell: 
 		"""
 			gatk --java-options {params.java_option} AnnotateIntervals -L {canoesbed_file} -R {input} -imr OVERLAPPING_ONLY -O {output.gc_percent_header} 2> {log}
@@ -732,7 +732,6 @@ rule AnnotSV:
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"
 	params:
 		dummypath=config['DUMMY_FILES'],
-		outputfile=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design",
 		genome=config['genomeBuild'],
 		overlap=config['overlap'],
 		mode=config['annotationMode'],
@@ -741,7 +740,7 @@ rule AnnotSV:
 		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in the vcf
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {params.outputfile} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
 # Design tsv all samples AnnotSV
@@ -850,9 +849,11 @@ use rule correct_vcf as correct_vcf_panel with:
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_unfix.{{panel}}.vcf")
 
 
-use rule sortvcf as sortvcf_panel with:
+rule sortvcf_panel:
 	input: rules.correct_vcf_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_sort.{{panel}}.vcf")
+	params: config['DUMMY_FILES']
+	shell: " {{ grep '^#' {input} && grep -v '^#' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]]  || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 # Panel vcf.gz individual samples AnnotSV
 use rule fix_vcf as fix_vcf_panel with:
