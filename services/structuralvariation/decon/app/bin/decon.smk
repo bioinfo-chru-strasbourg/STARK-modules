@@ -811,10 +811,12 @@ rule fix_makeCNVcalls:
 rule split_tsv:
 	input: rules.fix_makeCNVcalls.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.tsv"
-	params: config['SPLIT_SCRIPT']
+	params: 
+		split_script = config['SPLIT_SCRIPT'],
+		specific_sample = "{sample}" 
 	shell:
 		"""
-		python {params} -i {input} --sample_column 'Sample' --output_template '{output}'
+		python {params.split_script} -i {input} --sample_column 'Sample' --output {output} --specific_sample {params.specific_sample}
 		"""
 
 rule variantconvert:
@@ -850,9 +852,11 @@ rule vcf2gz:
 
 rule fix_vcf:
 	input: rules.vcf2gz.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unnorm.vcf.gz")
+	output: 
+			vcfgz=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unnorm.vcf.gz"),
+			vcfgztbi=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unnorm.vcf.gz.tbi")
 	params:	config['MULTIFIX_SCRIPT']
-	shell: " python {params} -i {input} -o {output} -z ; tabix {output} "
+	shell: " python {params} -i {input} -o {output.vcfgz} -z ; tabix {output.vcfgz} "
 
 # Design vcf.gz all samples no annotation
 rule vcf_normalization:
@@ -957,7 +961,9 @@ rule sort_vcf_sample:
 # Design vcf.gz individual samples AnnotSV
 use rule fix_vcf as fix_vcf_sample with:
 	input: rules.sort_vcf_sample.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
+	output: 
+			vcfgz=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz",
+			vcfgztbi=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz.tbi"
 
 
 # Design vcf.gz all samples AnnotSV
@@ -1022,13 +1028,21 @@ rule sortvcf_panel:
 # Panel vcf.gz individual samples AnnotSV
 use rule fix_vcf as fix_vcf_panel with:
 	input: rules.sortvcf_panel.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
+	output: 
+			vcfgz=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz",
+			vcfgzbti=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz.tbi"
 
 # Panel vcf.gz all samples AnnotSV
 use rule merge_vcf as merge_vcf_panel with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.bcftoolsmerge.log"
+
+# Panel vcf.gz all samples no annotation
+use rule merge_vcf as merge_vcf_panel_noannotation with:
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
 
 #rule plot:
 #	""" This step inputs the CNVcall.Rdata file to output the plot files in pdf format """

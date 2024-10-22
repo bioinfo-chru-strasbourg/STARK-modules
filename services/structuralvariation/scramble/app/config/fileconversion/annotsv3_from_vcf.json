@@ -163,7 +163,37 @@
 			"AnnotSV_ranking_score": "AnnotSV_ranking_score",
 			"AnnotSV_ranking_criteria": "AnnotSV_ranking_criteria",
 			"ACMG_class": "ACMG_class",
-			"MEINFO": "MEINFO"
+			"MEINFO": "MEINFO",
+			"COUNTS": "COUNTS",
+			"CLIPPED_READS_IN_CLUSTER": "CLIPPED_READS_IN_CLUSTER",
+			"ALIGNMENT_PERCENT_LENGHT": "ALIGNMENT_PERCENT_LENGHT",
+			"ALIGNMENT_PERCENT_IDENTITY": "ALIGNMENT_PERCENT_IDENTITY",
+			"CLIPPED_SEQUENCE": "CLIPPED_SEQUENCE",
+			"CLIPPED_SIDE": "CLIPPED_SIDE",
+			"Start_In_MEI": "Start_In_MEI",
+			"Stop_In_MEI": "Stop_In_MEI",
+			"polyA_Position": "polyA_Position",
+			"polyA_Seq": "polyA_Seq",
+			"polyA_SupportingReads": "polyA_SupportingReads",
+			"TSD": "TSD",
+			"TSD_length": "TSD_length",
+			"REF_ANCHOR_BASE": "REF_ANCHOR_BASE",
+			"RIGHT_CLUSTER": "RIGHT_CLUSTER",
+			"RIGHT_CLUSTER_COUNTS": "RIGHT_CLUSTER_COUNTS",
+			"LEFT_CLUSTER": "LEFT_CLUSTER",
+			"LEFT_CLUSTER_COUNTS": "LEFT_CLUSTER_COUNTS",
+			"LEN_RIGHT_ALIGNMENT": "LEN_RIGHT_ALIGNMENT",
+			"SCORE_RIGHT_ALIGNMENT": "SCORE_RIGHT_ALIGNMENT",
+			"PCT_COV_RIGHT_ALIGNMENT": "PCT_COV_RIGHT_ALIGNMENT",
+			"PCT_IDENTITY_RIGHT_ALIGNMENT": "PCT_IDENTITY_RIGHT_ALIGNMENT",
+			"LEN_LEFT_ALIGNMENT": "LEN_LEFT_ALIGNMENT",
+			"SCORE_LEFT_ALIGNMENT": "SCORE_LEFT_ALIGNMENT",
+			"PCT_COV_LEFT_ALIGNMENT": "PCT_COV_LEFT_ALIGNMENT",
+			"PCT_IDENTITY_LEFT_ALIGNMENT": "PCT_IDENTITY_LEFT_ALIGNMENT",
+			"INS_SIZE": "INS_SIZE",
+			"INS_SEQ": "INS_SEQ",
+			"RIGHT_CLIPPED_SEQ": "RIGHT_CLIPPED_SEQ",
+			"LEFT_CLIPPED_SEQ": "LEFT_CLIPPED_SEQ"
 		},
 		"FORMAT": "FORMAT",
 		"SAMPLE": "Samples_ID"
@@ -752,6 +782,156 @@
 				"Type": "String",
 				"Number": ".",
 				"Description": "SV ranking class into 1 of 5: class 1 (benign), class 2 (likely benign), class 3 (variant of unknown significance), class 4 (likely pathogenic), class 5 (pathogenic)"
+			},
+			"COUNTS": {
+				"Type": "Integer",
+				"Number": ".",
+				"Description": "Number of supporting reads for the MEI"
+			},
+			"CLIPPED_READS_IN_CLUSTER": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Number of supporting reads in cluster"
+			},
+			"ALIGNMENT_PERCENT_LENGHT": {
+				"Type": "Float",
+				"Number": ".",
+				"Description": "Percent of clipped read consensus sequence involved in alignment to MEI reference sequence"
+			},
+			"ALIGNMENT_PERCENT_IDENTITY": {
+				"Type": "Float",
+				"Number": ".",
+				"Description": "Percent identity of alignment of clipped read consensus sequence with MEI reference sequence"
+			},
+			"CLIPPED_SEQUENCE": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Clipped cluster consensus sequences"
+			},
+			"CLIPPED_SIDE": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Left or right, side of read where soft-clipping occurred"
+			},
+			"Start_In_MEI": {
+				"Type": "Integer",
+				"Number": ".",
+				"Description": "Left-most position of alignment to MEI reference sequence"
+			},
+			"Stop_In_MEI": {
+				"Type": "Integer",
+				"Number": ".",
+				"Description": "Right-most position of alignment to MEI reference sequence"
+			},
+			"polyA_Position": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Position of polyA clipped read cluster if found"
+			},
+			"polyA_Seq": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Clipped cluster consensus sequences of polyA clipped read cluster if found"
+			},
+			"polyA_SupportingReads": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Number of supporting reads in polyA clipped read cluster if found"
+			},
+			"TSD": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Target site duplication sequence if polyA clipped read cluster found"
+			},
+			"TSD_length": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Length of target site duplication if polyA clipped read cluster found"
+			},
+			"REF_ANCHOR_BASE": {
+				"Type": "Integer",
+				"Number": ".",
+				"Description": "Reference based at deletion start"
+			},
+			"RIGHT_CLUSTER": {
+				"Type": "Integer",
+				"Number": ".",
+				"Description": "Name of right cluster"
+			},
+			"RIGHT_CLUSTER_COUNTS": {
+				"Type": "Integer",
+				"Number": ".",
+				"Description": "Number of supporting reads in right cluster"
+			},
+			"LEFT_CLUSTER": {
+				"Type": "Integer",
+				"Number": ".",
+				"Description": "Name of left cluster"
+			},
+			"LEFT_CLUSTER_COUNTS": {
+				"Type": "Integer",
+				"Number": ".",
+				"Description": "Number of supporting reads in left cluster"
+			},
+			"LEN_RIGHT_ALIGNMENT": {
+				"Type": "Integer",
+				"Number": ".",
+				"Description": "Length of right-clipped consensus sequence involved in alignment"
+			},
+			"SCORE_RIGHT_ALIGNMENT": {
+				"Type": "Float",
+				"Number": ".",
+				"Description": "BLAST alignment bitscore for right-clipped consensus"
+			},
+			"PCT_COV_RIGHT_ALIGNMENT": {
+				"Type": "Float",
+				"Number": ".",
+				"Description": "Percent length of right-clipped consensus involved in alignment"
+			},
+			"PCT_IDENTITY_RIGHT_ALIGNMENT": {
+				"Type": "Float",
+				"Number": ".",
+				"Description": "Percent identity of right-clipped consensus in alignment"
+			},
+			"LEN_LEFT_ALIGNMENT": {
+				"Type": "Integer",
+				"Number": ".",
+				"Description": "Length of left-clipped consensus sequence involved in alignment"
+			},
+			"SCORE_LEFT_ALIGNMENT": {
+				"Type": "Float",
+				"Number": ".",
+				"Description": "BLAST alignment bitscore for left-clipped consensus"
+			},
+			"PCT_COV_LEFT_ALIGNMENT": {
+				"Type": "Float",
+				"Number": ".",
+				"Description": "Percent length of left-clipped consensus involved in alignment"
+			},
+			"PCT_IDENTITY_LEFT_ALIGNMENT": {
+				"Type": "Float",
+				"Number": ".",
+				"Description": "Percent identity of right-clipped consensus in alignment"
+			},
+			"INS_SIZE": {
+				"Type": "Integer",
+				"Number": ".",
+				"Description": "Length of insert within deleted sequence (for two-end deletions only)"
+			},
+			"INS_SEQ": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Inserted sequence (for two-end deletions only)"
+			},
+			"RIGHT_CLIPPED_SEQ": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Clipped consensus sequence for right-clipped cluster"
+			},
+			"LEFT_CLIPPED_SEQ": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "Clipped consensus sequence for left-clipped cluster"
 			}
 		},
 		"FORMAT": {

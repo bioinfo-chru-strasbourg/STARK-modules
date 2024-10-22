@@ -559,10 +559,10 @@ rule gc_percent:
 	input: config['REFGENEFA_PATH']
 	output: 
 		gc_percent_header=temp(f"{resultDir}/{serviceName}.{date_time}.GCpercent_header.tsv"),
-		gc_percent = f"{resultDir}/{serviceName}.{date_time}.{date_time}.GCpercent.tsv"
+		gc_percent = f"{resultDir}/{serviceName}.{date_time}.GCpercent.tsv"
 	params: 
 		java_option = config['JAVA_OPTION']
-	log: f"{resultDir}/{serviceName}.{date_time}.{date_time}.GCpercent.log"
+	log: f"{resultDir}/{serviceName}.{date_time}.GCpercent.log"
 	shell: 
 		"""
 			gatk --java-options {params.java_option} AnnotateIntervals -L {canoesbed_file} -R {input} -imr OVERLAPPING_ONLY -O {output.gc_percent_header} 2> {log}
@@ -665,12 +665,14 @@ rule correct_1based:
 
 # Design tsv individual samples no annotation
 rule split_tsv:
-	input: rules.correct_1based.output
+	input: rules.fix_makeCNVcalls.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.tsv"
-	params: config['SPLIT_SCRIPT']
+	params: 
+		split_script = config['SPLIT_SCRIPT'],
+		specific_sample = "{sample}" 
 	shell:
 		"""
-		python {params} -i {input} --sample_column 'SAMPLE' --output_template '{output}'
+		python {params.split_script} -i {input} --sample_column 'Sample' --output {output} --specific_sample {params.specific_sample}
 		"""
 
 rule bedtovcf:
@@ -874,6 +876,11 @@ use rule merge_vcf as merge_vcf_panel with:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.bcftoolsmerge.log"
 
+# Panel vcf.gz all samples no annotation
+use rule merge_vcf as merge_vcf_panel_noannotation with:
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")

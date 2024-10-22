@@ -547,7 +547,7 @@ rule filter_vcf:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Noannotation.Design.vcf.gz"
 	params: config['BED_FILE']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.bedtoolsfilter.log"
-	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output}"
+	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output}"
 
 
 rule AnnotSV:
