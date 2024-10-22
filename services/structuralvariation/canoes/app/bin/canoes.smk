@@ -489,6 +489,9 @@ sample_count = len(sample_list)
 # Priority order
 ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > split_vcf > fix_vcf_sample > vcf_normalization > merge_vcf > correct_chr > AnnotSV > merge_tsv > fix_vcf_panel > vcf_normalisation_panel > correct_1based > merge_tsv
 
+wildcard_constraints:
+	aligner="|".join(aligner_list)
+
 rule all:
 	"""Output a design vcf.gz with the bams and the bed provided, optionally using a reference set and generating plots if specified"""
 	input:
@@ -665,7 +668,7 @@ rule correct_1based:
 
 # Design tsv individual samples no annotation
 rule split_tsv:
-	input: rules.fix_makeCNVcalls.output
+	input: rules.merge_makeCNVcalls.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.tsv"
 	params: 
 		split_script = config['SPLIT_SCRIPT'],
@@ -721,6 +724,8 @@ rule split_vcf:
 	params: config['DUMMY_FILES']
 	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 
+
+# Design tsv individual samples AnnotSV
 rule AnnotSV:
 	"""
 	Annotate and rank Structural Variations from a vcf file
@@ -761,13 +766,12 @@ rule correct_tsv:
 		sed '1s/[()/\\]/_/g' {input} > {output}
 		"""
 
-# Design tsv individual samples AnnotSV
 rule correct_chr:
 	"""
 	Add chr to the SV_chrom column
 	"""
 	input: rules.correct_tsv.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_chr.tsv")
 	shell:
 		"""
 		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input} > {output}
