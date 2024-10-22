@@ -670,7 +670,7 @@ rule split_tsv:
 	params: config['SPLIT_SCRIPT']
 	shell:
 		"""
-		python {params} -i {input} --sample_column 'Sample' --output_template '{output}'
+		python {params} -i {input} --sample_column 'SAMPLE' --output_template '{output}'
 		"""
 
 rule bedtovcf:

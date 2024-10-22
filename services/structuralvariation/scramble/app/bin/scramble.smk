@@ -389,7 +389,7 @@ print(dict(runDict))
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > variantconvert > vcf_normalization > merge_vcf > correct_chr > AnnotSV > merge_tsv > fix_vcf_panel > filter_vcf > fix_vcf
+ruleorder: copy_bam > copy_cram > cramtobam > indexing > filter_vcf > fix_vcf > AnnotSV > correct_chr > fix_vcf_panel > vcf_normalization
 
 rule all:
 	"""Rule will create an unfiltered vcf.gz and corresponding tsv, with an optional design/panel vcf.gz & tsv if a bed/gene file is provided"""

@@ -353,10 +353,6 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 		elif config['GENES_FILE']:
 			cat_panels_bed = f"/tmp/catpanel.bed"
 			shell(f"xargs --delimiter='\\t' cat < {config['GENES_FILE']} >> {cat_panels_bed}")
-			concatenated_df = pd.read_csv(cat_panels_bed,  sep='\t')
-			concatenated_df = concatenated_df.drop_duplicates()
-			input_df = pd.read_csv(inputbed_file, sep='\t',header=None)
-			intersected_df = intersectbed(input_df, concatenated_df)
 		
 		else:
 			raise SystemExit("[ERROR] No valid configuration for LIST_GENES or GENES_FILE was provided. Stopping execution.")
@@ -367,7 +363,11 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 		else:
 			headers = ["Chr", "Start", "End", "4", "5", "6", "7", "8", "9", "Gene", "11", "12"]
 			columns_to_drop = ['4', '5', '6', '7', '8', '9', '11', '12']
-
+		
+		concatenated_df = pd.read_csv(cat_panels_bed,  sep='\t')
+		concatenated_df = concatenated_df.drop_duplicates()
+		input_df = pd.read_csv(inputbed_file, sep='\t',header=None)
+		intersected_df = intersectbed(input_df, concatenated_df)
 		intersected_df.columns = headers
 		df = intersected_df.drop(columns=columns_to_drop)
 
