@@ -996,8 +996,16 @@ use rule merge_tsv as merge_tsv_panel with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
-use rule variantconvert_annotsv as variantconvert_annotsv_panel with:
+use rule correct_tsv as correct_tsv_panel with:
 	input: rules.AnnotSV_panel.output
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_corr.{{panel}}.tsv")
+
+use rule correct_chr as correct_chr_panel with:
+	input: rules.correct_tsv_panel.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_chr.{{panel}}.tsv"
+
+use rule variantconvert_annotsv as variantconvert_annotsv_panel with:
+	input: rules.correct_chr_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_uncorr.{{panel}}.vcf")
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.varianconvert.log"
 
@@ -1060,27 +1068,28 @@ onsuccess:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
 	# Move pdfs into sample's directories
-	print('[INFO] Processing pdfs')
-	pdf_list = os.listdir(f"{resultDir}/pdfs")
-	pdf_path_list = [f"{resultDir}/pdfs/{pdf}" for pdf in pdf_list]	
-	
-	output_pdf_list = []
-	for sample in sample_list:
-		matching_pdfs = [pdf for pdf in pdf_path_list if sample in pdf]
+	if config['DECON_PLOT']:
+		print('[INFO] Processing pdfs')
+		pdf_list = os.listdir(f"{resultDir}/pdfs")
+		pdf_path_list = [f"{resultDir}/pdfs/{pdf}" for pdf in pdf_list]	
 		
-		if matching_pdfs:
-			output_pdf = f"{resultDir}/pdfs/{serviceName}.{date_time}.{sample}.merge.pdf"
-			output_pdf_list.append(os.path.basename(output_pdf))
-			merge_pdfs(matching_pdfs, output_pdf)
+		output_pdf_list = []
+		for sample in sample_list:
+			matching_pdfs = [pdf for pdf in pdf_path_list if sample in pdf]
+			
+			if matching_pdfs:
+				output_pdf = f"{resultDir}/pdfs/{serviceName}.{date_time}.{sample}.merge.pdf"
+				output_pdf_list.append(os.path.basename(output_pdf))
+				merge_pdfs(matching_pdfs, output_pdf)
 
-	pdf_list.extend(output_pdf_list)
+		pdf_list.extend(output_pdf_list)
 
-	for sample in sample_list:
-		for pdf in pdf_list:
-			if sample in pdf:
-				shell(f"mv {resultDir}/pdfs/{pdf} {resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/")
-	shell(f"rm -rf {resultDir}/pdfs")
-	print('[INFO] Processing pdfs done')
+		for sample in sample_list:
+			for pdf in pdf_list:
+				if sample in pdf:
+					shell(f"mv {resultDir}/pdfs/{pdf} {resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/")
+		shell(f"rm -rf {resultDir}/pdfs")
+		print('[INFO] Processing pdfs done')
 
 	# Generate dictionary for results
 	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*/*", "/*"]]

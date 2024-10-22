@@ -492,9 +492,9 @@ rule scramble:
 		mode = config['scramble_mode'],
 		refgene = config['REFGENEFA_PATH'],
 		dummypath = config['DUMMY_FILES'],
-		output = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_raw"
+		output = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Noannotation.Full_raw"
 	output:
-		temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_raw.vcf")
+		temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Noannotation.Full_raw.vcf")
 	log: 
 		log = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.ScrambleR.log", 
 		err = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.ScrambleR.err"
@@ -513,7 +513,7 @@ rule scramble:
 rule correct_vcf:
 	"""	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification """
 	input: rules.scramble.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_corr.vcf")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Noannotation.Full_corr.vcf")
 	params:
 		mode = config['scramble_mode'],
 		dummypath = config['DUMMY_FILES']
@@ -524,7 +524,7 @@ rule correct_vcf:
 
 rule vcf2gz:
 	input: rules.correct_vcf.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Noannotation.Full_unfiltered.vcf.gz")
 	params: config['DUMMY_FILES']
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
@@ -532,7 +532,7 @@ rule vcf2gz:
 rule bcftools_filter:
 	"""	Filter with bcftools """
 	input: rules.vcf2gz.output	
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Noannotation.Full.vcf.gz"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.bcftoolsfilter.log"
 	params: bed=config['BCFTOOLS_FILTER'],
 			dummy=config['DUMMY_FILES']
@@ -544,7 +544,7 @@ rule bcftools_filter:
 rule filter_vcf:
 	"""	Filter vcf with a bed file """
 	input: rules.bcftools_filter.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Noannotation.Design.vcf.gz"
 	params: config['BED_FILE']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.bedtoolsfilter.log"
 	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output}"
@@ -647,16 +647,16 @@ rule merge_vcf:
 rule filter_vcf_panel:
 	"""	Filter vcf with a bed file """
 	input: rules.filter_vcf.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Noannotation.Panel_unnorm.{{panel}}.vcf.gz")
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.bedtoolsfilter.{{panel}}.log"
+	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Noannotation.Panel.bedtoolsfilter.{{panel}}.log"
 	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output}"
 
 
 # Panel vcf.gz individual samples no annotation
 rule vcf_normalization:
 	input: rules.filter_vcf_panel.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Noannotation.Panel.{{panel}}.vcf.gz"
 	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
 
 # Panel tsv individual samples AnnotSV
@@ -670,8 +670,16 @@ use rule merge_tsv as merge_tsv_panel with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
-use rule variantconvert as variantconvert_panel with:
+use rule correct_tsv as correct_tsv_panel with:
 	input: rules.AnnotSV_panel.output
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_corr.{{panel}}.tsv")
+
+use rule correct_chr as correct_chr_panel with:
+	input: rules.correct_tsv_panel.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_chr.{{panel}}.tsv"
+
+use rule variantconvert as variantconvert_panel with:
+	input: rules.correct_chr_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_uncorr.{{panel}}.vcf")
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.varianconvert.log"
 
