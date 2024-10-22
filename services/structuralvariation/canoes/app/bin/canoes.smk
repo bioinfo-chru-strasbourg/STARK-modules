@@ -487,8 +487,9 @@ print(dict(runDict))
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > split_tsv > variantconvert > split_vcf > fix_vcf_sample > vcf_normalization > merge_vcf > correct_chr > AnnotSV > merge_tsv > fix_vcf_panel > vcf_normalisation_panel > correct_1based > merge_tsv
+ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
+# To avoid expansion of aligner into bwamem.AnnotSV for some weird reason we constraint the wildcard
 wildcard_constraints:
 	aligner="|".join(aligner_list)
 
@@ -503,6 +504,7 @@ rule all:
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz", aligner=aligner_list) if config['GENES_FILE'] else []) +
 		# Ref samples
 		(expand(f"{resultDir}/{serviceName}.{date_time}.refsamples.{{aligner}}.reads.tsv", aligner=aligner_list) if config['REF_BAM_LIST'] else []) +
 		# Plots
@@ -520,7 +522,7 @@ rule help:
 	Use option --configfile another.yaml to replace and merge existing default config.yaml file variables
 	Use -p to display shell commands, use --lt to display docstrings of rules, use -n for a dry run
 	Input file = bam or cram files (if bai is needed, it will be generate)
-	Output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of vcf files by design/panel
+	Output file = tsv & vcf annoted with AnnotSV 3.x for each sample/bam, and a global tsv & vcf file will all the samples ; a set of tsv & vcf files by design/panel
 	"""
 
 rule copy_bam:
@@ -701,9 +703,11 @@ rule add_chr_to_vcf:
 
 rule fix_vcf:
 	input: rules.add_chr_to_vcf.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unorm.vcf.gz")
+	output: 
+			vcfgz=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unorm.vcf.gz"),
+			vcfgztbi=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unorm.vcf.gz.tbi")
 	params:	config['MULTIFIX_SCRIPT']
-	shell: " python {params} -i {input} -o {output} -z ; tabix {output} "
+	shell: "python {params} -i {input} -o {output.vcfgz} -z ; tabix {output.vcfgz}"
 
 # Design vcf.gz all samples no annotation
 rule vcf_normalization:
@@ -747,7 +751,9 @@ rule AnnotSV:
 		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in the vcf
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && \
+		([[ -s {output} ]] || (cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output})) && \
+		touch {output}
 		"""
 
 # Design tsv all samples AnnotSV
@@ -806,7 +812,9 @@ rule sort_vcf_sample:
 # Design vcf.gz individual samples AnnotSV
 use rule fix_vcf as fix_vcf_sample with:
 	input: rules.sort_vcf_sample.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
+	output: 
+			vcfgz=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz",
+			vcfgztbi=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz.tbi"
 
 
 # Design vcf.gz all samples AnnotSV
@@ -821,7 +829,7 @@ rule merge_vcf:
 # We filter non annoted design to get panels
 rule filter_vcf:
 	"""	Filter vcf with a bed file """
-	input: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz"
+	input: rules.split_vcf.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.bedtoolsfilter.{{panel}}.log"
@@ -851,7 +859,7 @@ use rule correct_tsv as correct_tsv_panel with:
 
 use rule correct_chr as correct_chr_panel with:
 	input: rules.correct_tsv_panel.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_chr.{{panel}}.tsv"
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_chr.{{panel}}.tsv")
 
 use rule variantconvert as variantconvert_panel with:
 	input: rules.correct_chr_panel.output
@@ -872,7 +880,9 @@ rule sortvcf_panel:
 # Panel vcf.gz individual samples AnnotSV
 use rule fix_vcf as fix_vcf_panel with:
 	input: rules.sortvcf_panel.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
+	output: 
+			vcfgz=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz",
+			vcfgzbti=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz.tbi"
 
 # Panel vcf.gz all samples AnnotSV
 use rule merge_vcf as merge_vcf_panel with:

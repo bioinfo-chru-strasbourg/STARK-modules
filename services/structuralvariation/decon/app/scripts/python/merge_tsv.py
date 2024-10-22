@@ -9,9 +9,13 @@ def merge_tsv(input_files, output_file):
 	# Read and merge TSV files
 	dfs = [pd.read_csv(file, sep='\t') for file in input_files]
 	merged_df = pd.concat(dfs, ignore_index=True, sort=False)
-	
-	# Fill missing values with NA
-	merged_df.fillna('NA', inplace=True)
+
+	# Fill missing values with 'NA' for non-numeric columns
+	for col in merged_df.columns:
+		if merged_df[col].dtype == 'float64':
+			merged_df[col] = merged_df[col].fillna(pd.NA)
+		else:
+			merged_df[col] = merged_df[col].fillna('NA')
 	
 	# Write the merged DataFrame to the output file
 	merged_df.to_csv(output_file, sep='\t', index=False)

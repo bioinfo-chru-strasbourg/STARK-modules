@@ -391,6 +391,7 @@ sample_count = len(sample_list)
 # Priority order
 ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
+# To avoid expansion of aligner into bwamem.AnnotSV for some weird reason we constraint the wildcard
 wildcard_constraints:
 	aligner="|".join(aligner_list)
 
@@ -404,7 +405,9 @@ rule all:
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
-		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else [])
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] 
+		else []) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz", aligner=aligner_list) if config['GENES_FILE'] else [])
 
 rule help:
 	"""
@@ -418,7 +421,7 @@ rule help:
 	Use --lt to display docstrings of rules
 	Use -n for a dry run
 	Input file = cram or bam files (if bai is needed, it will be generate)
-	Output file = vcf annoted with AnnotSV 3.x for each sample/bam, and a global vcf file will all the samples ; a set of vcf files by design/panel
+	Output file = tsv & vcf annoted with AnnotSV 3.x for each sample/bam, and a global tsv & vcf file will all the samples ; a set of tsv & vcf files by design/panel
 	"""
 
 rule copy_bam:
@@ -513,7 +516,7 @@ rule scramble:
 		--mei-score {params.meiscore} --nCluster {params.nCluster} --poly-a-dist {params.polyadist} --poly-a-frac {params.polyafrac} {params.mode} > {log.log} 2> {log.err} && [[ -s {output} ]] || cat {params.dummypath}/empty.vcf > {output}
 		"""
 
-rule correct_vcf:
+rule correct_vcf_scramble:
 	"""	Correction of vcf output, add sample name and genotype to be consistent with the vcf format specification """
 	input: rules.scramble.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_corr.vcf")
@@ -526,7 +529,7 @@ rule correct_vcf:
 		"""
 
 rule vcf2gz:
-	input: rules.correct_vcf.output
+	input: rules.correct_vcf_scramble.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz")
 	params: config['DUMMY_FILES']
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
@@ -574,7 +577,9 @@ rule AnnotSV:
 		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in the vcf
 	shell: 
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && [[ -s {output} ]]  || cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && \
+		([[ -s {output} ]] || (cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output})) && \
+		touch {output}
 		"""
 
 # Design tsv all samples AnnotSV
@@ -617,7 +622,7 @@ rule variantconvert:
 		variantconvert convert -i {input} -o {output} -c {params.variantconvertannotsv} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		"""
 
-rule correct_vcf_name:
+rule correct_vcf:
 	input: rules.variantconvert.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.vcf")
 	shell:
@@ -625,17 +630,17 @@ rule correct_vcf_name:
 		sed 's/SAMPLENAME/{wildcards.sample}/g' {input} > {output}
 		"""
 
-rule sort_vcf_sample:
-	input: rules.correct_vcf_name.output
+rule sort_vcf:
+	input: rules.correct_vcf.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_sort.vcf")
 	params: config['DUMMY_FILES']
 	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
 
 rule fix_vcf:
-	input: rules.sort_vcf_sample.output
+	input: rules.sort_vcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz"
 	params:	config['MULTIFIX_SCRIPT']
-	shell: " python {params} -i {input} -o {output} -z ; tabix {output} "
+	shell: "python {params} -i {input} -o {output} -z ; tabix {output}"
 
 # Design vcf.gz all samples AnnotSV
 rule merge_vcf:
@@ -679,7 +684,7 @@ use rule correct_tsv as correct_tsv_panel with:
 
 use rule correct_chr as correct_chr_panel with:
 	input: rules.correct_tsv_panel.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_chr.{{panel}}.tsv"
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_chr.{{panel}}.tsv")
 
 use rule variantconvert as variantconvert_panel with:
 	input: rules.correct_chr_panel.output
@@ -690,18 +695,13 @@ use rule correct_vcf as correct_vcf_panel with:
 	input: rules.variantconvert_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_unfix.{{panel}}.vcf")
 
-
-rule sortvcf:
-	""" Sort vcf """
+sue rule sortvcf as sort_vcf_panel with:
 	input: rules.correct_vcf_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_sort.{{panel}}.vcf")
-	params: config['DUMMY_FILES']
-	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} && [[ -s {output} ]]  || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} "
-
 
 # Panel vcf.gz individual samples AnnotSV
 use rule fix_vcf as fix_vcf_panel with:
-	input: rules.sortvcf.output
+	input: rules.sort_vcf_panel.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 
 # Panel vcf.gz all samples AnnotSV
