@@ -534,12 +534,12 @@ rule vcf2gz:
 		vcfgz=temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz"),
 		vcfgztbi=temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz.tbi")
 	params: config['DUMMY_FILES']
-	shell: "bgzip -c {input} > {output} ; tabix {output}"
+	shell: "bgzip -c {input} > {output.vcfgz} ; tabix {output.vcfgz}"
 
 
 rule bcftools_filter:
 	"""	Filter with bcftools """
-	input: rules.vcf2gz.output	
+	input: rules.vcf2gz.output.vcfgz	
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.bcftoolsfilter.log"
 	params: bed=config['BCFTOOLS_FILTER'],
@@ -696,7 +696,7 @@ rule filter_vcf_panel:
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.bedtoolsfilter.{{panel}}.log"
-	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output}"
+	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output}"
 
 
 # Panel vcf.gz individual samples no annotation

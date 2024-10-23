@@ -754,8 +754,7 @@ rule AnnotSV:
 	shell: 
 		"""
 		AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && \
-		([[ -s {output} ]] || (cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output})) && \
-		touch {output}
+		([[ -s {output} ]] || (cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}))
 		"""
 
 rule wait_for_AnnotSV:
