@@ -13,17 +13,16 @@ def find_samplesheet(run_informations):
     samplesheet = glob.glob(osj(samples[0], "STARK", "*.SampleSheet.csv"))
     return samplesheet[0]
     
-def find_controls(samplesheet):
-    word = "CQI#"
-    controls_samples = []
+def find_tag(samplesheet, word):
+    tagged_samples = []
     with open(samplesheet, "r") as read_file:
         for line in read_file:
             line = line.strip()
             if word in line:
                 line = line.split(",")
-                controls_samples.append(line[0])
+                tagged_samples.append(line[0])
             
-    return controls_samples
+    return tagged_samples
 
 def vcf_synchronizer(run_informations):
     run_repository = run_informations["run_repository"]
@@ -34,8 +33,9 @@ def vcf_synchronizer(run_informations):
         data = json.load(read_file)
         ignored_samples = data["ignored_samples"]
     samplesheet = find_samplesheet(run_informations)
-    control_samples = find_controls(samplesheet)
-    ignored_samples = ignored_samples + control_samples
+    control_samples = find_tag(samplesheet, "CQI#")
+    pool_samples = find_tag(samplesheet, "POOL#")
+    ignored_samples = ignored_samples + control_samples + pool_samples
     log.info("Ignoring following sample patterns for the analysis and dejavu generation : " + ", ".join(ignored_samples))
 
     if os.path.isdir(run_informations["archives_run_folder"]):
