@@ -690,12 +690,6 @@ use rule merge_vcf as merge_vcf_noannotation with:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.bcftoolsmerge.log"
 
-rule vcf_validator:
-	input: rules.merge_vcf_noannotation.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.validation"
-	shell: "vcf_validator -i {input}"
-
-
 # We filter non annoted design to get panels
 rule filter_vcf_panel:
 	"""	Filter vcf with a bed file """
