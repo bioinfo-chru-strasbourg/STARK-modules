@@ -402,6 +402,7 @@ rule all:
 		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.tsv", aligner=aligner_list) +
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list) +
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list) +
+		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz", aligner=aligner_list) +
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
@@ -689,19 +690,27 @@ use rule merge_vcf as merge_vcf_noannotation with:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.bcftoolsmerge.log"
 
+rule vcf_validator:
+	input: rules.merge_vcf_noannotation.output
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.validation"
+	shell: "vcf_validator -i {input}"
+
+
 # We filter non annoted design to get panels
 rule filter_vcf_panel:
 	"""	Filter vcf with a bed file """
 	input: rules.filter_vcf.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
+	output: 
+		vcfgz=temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz"),
+		vcfgztbi=temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz.tbi")
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.bedtoolsfilter.{{panel}}.log"
-	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output}"
+	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output.vcfgz} ; tabix {output.vcfgz}"
 
 
 # Panel vcf.gz individual samples no annotation
 rule vcf_normalization:
-	input: rules.filter_vcf_panel.output
+	input: rules.filter_vcf_panel.output.vcfgz
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
 	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
 
