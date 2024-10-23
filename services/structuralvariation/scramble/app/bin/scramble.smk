@@ -402,6 +402,7 @@ rule all:
 		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.tsv", aligner=aligner_list) +
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list) +
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list) +
+		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list) +
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
@@ -530,7 +531,9 @@ rule correct_vcf_scramble:
 
 rule vcf2gz:
 	input: rules.correct_vcf_scramble.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz")
+	output: 
+			vcfgz=temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz")
+			vcfgztbi=temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_unfiltered.vcf.gz.tbi"
 	params: config['DUMMY_FILES']
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
@@ -564,22 +567,52 @@ rule AnnotSV:
 	- txtFile: path to a file containing a list of preferred genes transcripts for annotation
 	- genomeBuild must be specified if not hg38
 	"""
-	input: rules.filter_vcf.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"
-	params:
-		dummypath=config['DUMMY_FILES'],
-		genome=config['genomeBuild'],
-		overlap=config['overlap'],
-		mode=config['annotationMode'],
-		annotation=config['annotationdir'],
-		hpo=lambda wildcards: runDict[wildcards.sample]['hpo'],
-		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in the vcf
-	shell: 
+		input: rules.filter_vcf.output
+		output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv"
+		log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"
+		params:
+			dummypath=config['DUMMY_FILES'],
+			genome=config['genomeBuild'],
+			overlap=config['overlap'],
+			mode=config['annotationMode'],
+			annotation=config['annotationdir'],
+			hpo=lambda wildcards: runDict[wildcards.sample]['hpo'],
+			samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension]
+		resources:
+			AnnotSVjobs=1
+		shell:
+			"""
+			AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} \
+					-annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} \
+					-genomeBuild {params.genome} -overlap {params.overlap} > {log} && \
+					([[ -s {output} ]] || (cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}))
+			"""
+
+rule wait_for_AnnotSV:
+	input:
+		output_from_AnnotSV=rules.AnnotSV.output,
+		log_file= f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"
+	output:
+		ready=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.ready"
+	shell:
 		"""
-		AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && \
-		([[ -s {output} ]] || (cat {params.dummypath}/emptyAnnotSV.tsv | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output})) && \
-		touch {output}
+		count=0
+		limit=30
+		while true; do
+			if grep -q "Exit without error" {input.log_file} || grep -q "AnnotSV is done with the analysis" {input.log_file}; then
+				touch {output.ready}
+				break
+			fi
+
+			count=$((count + 1))
+
+			if [ $count -ge $limit ]; then
+				echo "[ERROR] AnnotSV failed to annotate {wildcards.sample} after $limit attempts. Check the log file for more information."
+				exit 1
+			fi
+			
+			sleep 10  # in sec
+		done
 		"""
 
 # Design tsv all samples AnnotSV
@@ -591,11 +624,13 @@ rule merge_tsv:
 
 
 rule correct_tsv:
-	input: rules.AnnotSV.output
+	input: 
+		AnnotSV=rules.AnnotSV.output,
+		ready=rules.wait_for_AnnotSV.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.tsv")
 	shell: 
-		""" 
-		sed '1s/[()/\\]/_/g' {input} > {output}
+		"""
+		sed '1s/[()/\\]/_/g' {input.AnnotSV} > {output}
 		"""
 
 # Design tsv individual samples AnnotSV
@@ -669,9 +704,17 @@ rule vcf_normalization:
 
 # Panel tsv individual samples AnnotSV
 use rule AnnotSV as AnnotSV_panel with:
-	input: rules.vcf_normalization.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.log"
+		input: rules.vcf_normalization.output
+		output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv",
+		log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.log"
+
+use rule wait_for_AnnotSV as wait_for_AnnotSV_panel with:
+	input:
+		output_from_AnnotSV=rules.AnnotSV.output,
+		log_file=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.log"
+	output:
+		ready=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.ready"
+
 
 # Panel tsv all samples AnnotSV
 use rule merge_tsv as merge_tsv_panel with:
@@ -679,7 +722,9 @@ use rule merge_tsv as merge_tsv_panel with:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
 use rule correct_tsv as correct_tsv_panel with:
-	input: rules.AnnotSV_panel.output
+	input:
+		AnnotSV=rules.AnnotSV_panel.output,
+		ready=rules.wait_for_AnnotSV_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_corr.{{panel}}.tsv")
 
 use rule correct_chr as correct_chr_panel with:

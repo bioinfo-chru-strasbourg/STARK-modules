@@ -904,6 +904,8 @@ rule AnnotSV:
 		annotation=config['annotationdir'],
 		hpo=lambda wildcards: runDict[wildcards.sample]['hpo'],
 		samplevcf=lambda wildcards: runDict[wildcards.sample][vcf_extension] # -snvIndelSamples to specify samples in the vcf
+	resources:
+		AnnotSVjobs=1
 	shell: 
 		"""
 		AnnotSV -SVinputFile {input} -outputFile {output} -snvIndelFiles {params.samplevcf} -annotationMode {params.mode} -annotationsDir {params.annotation} -hpo {params.hpo} -txFile {annotation_file} -genomeBuild {params.genome} -overlap {params.overlap} > {log} && \
@@ -918,13 +920,41 @@ rule merge_tsv:
 	params:	config['MERGE_SCRIPT']
 	shell: " python {params} -i {input} -o {output} "
 
+rule wait_for_AnnotSV:
+	input:
+		output_from_AnnotSV=rules.AnnotSV.output,
+		log_file= f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"
+	output:
+		ready=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.ready"
+	shell:
+		"""
+		count=0
+		limit=30
+		while true; do
+			if grep -q "Exit without error" {input.log_file} || grep -q "AnnotSV is done with the analysis" {input.log_file}; then
+				touch {output.ready}
+				break
+			fi
+
+			count=$((count + 1))
+
+			if [ $count -ge $limit ]; then
+				echo "[ERROR] AnnotSV failed to annotate {wildcards.sample} after $limit attempts. Check the log file for more information."
+				exit 1
+			fi
+			
+			sleep 10  # in sec
+		done
+		"""
 
 rule correct_tsv:
-	input: rules.AnnotSV.output
+	input: 
+		AnnotSV=rules.AnnotSV.output,
+		ready=rules.wait_for_AnnotSV.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.tsv")
 	shell: 
-		""" 
-		sed '1s/[()/\\]/_/g' {input} > {output}
+		"""
+		sed '1s/[()/\\]/_/g' {input.AnnotSV} > {output}
 		"""
 
 rule correct_chr:
@@ -968,8 +998,8 @@ rule sort_vcf_sample:
 use rule fix_vcf as fix_vcf_sample with:
 	input: rules.sort_vcf_sample.output
 	output: 
-			vcfgz=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz",
-			vcfgztbi=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz.tbi"
+		vcfgz=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz",
+		vcfgztbi=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz.tbi"
 
 
 # Design vcf.gz all samples AnnotSV
@@ -1003,13 +1033,22 @@ use rule AnnotSV as AnnotSV_panel with:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.log"
 
+use rule wait_for_AnnotSV as wait_for_AnnotSV_panel with:
+	input:
+		output_from_AnnotSV=rules.AnnotSV.output,
+		log_file=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.log"
+	output:
+		ready=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.ready"
+
 # Panel tsv all samples AnnotSV
 use rule merge_tsv as merge_tsv_panel with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 
 use rule correct_tsv as correct_tsv_panel with:
-	input: rules.AnnotSV_panel.output
+	input:
+		AnnotSV=rules.AnnotSV_panel.output,
+		ready=rules.wait_for_AnnotSV_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_corr.{{panel}}.tsv")
 
 use rule correct_chr as correct_chr_panel with:
@@ -1035,8 +1074,8 @@ rule sortvcf_panel:
 use rule fix_vcf as fix_vcf_panel with:
 	input: rules.sortvcf_panel.output
 	output: 
-			vcfgz=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz",
-			vcfgzbti=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz.tbi"
+		vcfgz=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz",
+		vcfgzbti=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz.tbi"
 
 # Panel vcf.gz all samples AnnotSV
 use rule merge_vcf as merge_vcf_panel with:
