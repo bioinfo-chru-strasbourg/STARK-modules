@@ -182,15 +182,18 @@ def merge_vcf(run_informations):
 def unmerge_vcf(input, run_informations):
     vcf_file_to_unmerge = input
     sample_list = subprocess.run(["bcftools", "query", "-l", vcf_file_to_unmerge], universal_newlines=True, stdout=subprocess.PIPE).stdout.strip().split("\n")
-    for sample in sample_list:
-        if run_informations["type"] == "run":
-            output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"VANNOT_{sample}.design.vcf")
-        else:
-            output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"VANNOT_{sample}.vcf")
-        cmd = ["bcftools", "view", "-s", sample, vcf_file_to_unmerge]
-        with open(output_file, "w") as writefile:
-            subprocess.call(cmd, universal_newlines=True, stdout=writefile)
-        subprocess.call(["bgzip", output_file], universal_newlines=True)
+    if len(sample_list) > 1:
+        for sample in sample_list:
+            if run_informations["type"] == "run":
+                output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"VANNOT_{sample}.design.vcf")
+            elif run_informations["type"] == "dejavu":
+                output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"{sample}.vcf")
+            else:
+                output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"VANNOT_{sample}.vcf")
+            cmd = ["bcftools", "view", "-s", sample, vcf_file_to_unmerge]
+            with open(output_file, "w") as writefile:
+                subprocess.call(cmd, universal_newlines=True, stdout=writefile)
+            subprocess.call(["bgzip", output_file], universal_newlines=True)
 
 
 def info_to_format_script(vcf_file, run_informations):

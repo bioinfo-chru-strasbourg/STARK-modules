@@ -8,8 +8,8 @@ import commons
 import time
 
 import howard_launcher
-
-
+import howard_processing
+    
 def convert_vcf_parquet(run_informations, args):
     threads = commons.get_threads("threads_dejavu")
     memory = commons.get_memory("memory_dejavu")
@@ -46,6 +46,9 @@ def convert_vcf_parquet(run_informations, args):
 
     for vcf_file in vcf_files:
         subprocess.call(["rsync", "-rvt", vcf_file, run_informations["tmp_analysis_folder"]], universal_newlines=True)
+        
+    for vcf_file in glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz")):
+        howard_processing.unmerge_vcf(vcf_file, run_informations)
     
     for vcf_file in glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz")):
         tmp_output = osj(os.path.dirname(vcf_file), "tmp_" + os.path.basename(vcf_file))
