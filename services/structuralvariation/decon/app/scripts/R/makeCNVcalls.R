@@ -107,11 +107,11 @@ process_samplebams <- function(samples.file) {
 filter_data_by_chromosome <- function(ExomeCount, bed.file, counts, mode.chrom) {
   if (mode.chrom == "A") {
     ExomeCount <- subset(ExomeCount, !chromosome %in% c("X", "Y"))
-    bed.file <- subset(bed.file, !chromosome %in% c("chrX", "chrY"))
+    bed.file <- subset(bed.file, !chromosome %in% c("X", "Y"))
     counts <- subset(counts, !chromosome %in% c("chrX", "chrY"))
   } else if (mode.chrom %in% c("XX", "XY")) {
     ExomeCount <- subset(ExomeCount, chromosome == "X")
-    bed.file <- subset(bed.file, chromosome == "chrX")
+    bed.file <- subset(bed.file, chromosome == "X")
     counts <- subset(counts, chromosome == "chrX")
   }
   list(ExomeCount = ExomeCount, bed.file = bed.file, counts = counts)
@@ -245,38 +245,43 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   
   trim <- function (x) gsub("^\\s+|\\s+$", "", x)
   
+  new_cnv_calls <- data.frame()  # Initialize an empty dataframe to store results
+
   for (i in 1:nrow(cnv.calls_ids)) {
-    if (length(grep(',', cnv.calls_ids$Gene[i])) > 0) {
+    if (grepl(',', cnv.calls_ids$Gene[i])) {  # Check if there is a comma in the Gene column
       temp <- cnv.calls_ids[i, ]
-      genes <- unlist(strsplit(cnv.calls_ids$Gene[i], split = ','))
-      temp <- temp[rep(seq_len(nrow(temp)), each = length(genes)), ]
-      temp$Gene <- genes
+      genes <- unlist(strsplit(cnv.calls_ids$Gene[i], split = ','))  # Split the genes by comma
       
-      gene.index <- which(bed.file[, 4] %in% genes)
-      whole.index <- which(bed.file[, 4] == genes[1])
+      temp <- temp[rep(seq_len(nrow(temp)), each = length(genes)), ]  # Replicate the row for each gene
+      temp$Gene <- genes  # Replace Gene with the individual gene names
       
+      # Process each gene to adjust Start and End positions
       for (j in 1:length(genes)) {
         gene.index <- which(bed.file[, 4] == genes[j])
-        overlap <- gene.index[gene.index %in% whole.index]
-        temp[j, ]$Start.p <- min(overlap)
-        temp[j, ]$End.p <- max(overlap)
+        overlap <- gene.index[gene.index %in% which(bed.file[, 4] == genes[1])]  # Adjust overlap logic
+        temp$Start.p[j] <- min(bed.file[overlap, 2])  # Set Start.p to the minimum overlap start
+        temp$End.p[j] <- max(bed.file[overlap, 3])  # Set End.p to the maximum overlap end
       }
       
-      if (i == 1) {
-        cnv.calls_ids <- rbind(temp, cnv.calls_ids[(i + 1):nrow(cnv.calls_ids), ])
-      } else if (i == nrow(cnv.calls_ids)) {
-        cnv.calls_ids <- rbind(cnv.calls_ids[1:(i - 1), ], temp)
-      } else {
-        cnv.calls_ids <- rbind(cnv.calls_ids[1:(i - 1), ], temp, cnv.calls_ids[(i + 1):nrow(cnv.calls_ids), ])
-      }
+      # Append to the new dataframe
+      new_cnv_calls <- rbind(new_cnv_calls, temp)
+      
+    } else {
+      new_cnv_calls <- rbind(new_cnv_calls, cnv.calls_ids[i, ])  # If no comma, just append the row
     }
   }
+
+  # Assign the final result back to cnv.calls_ids
+  cnv.calls_ids <- new_cnv_calls
+
   
   # for debug
-  prefix <- "debug_" 
-  full_output_filename <- paste0(prefix, rdata_output)
-  save.image(file = full_output_filename)
-  
+  #prefix <- "_debug" 
+  #rdata_output = options$outdata
+  #full_output_filename <- paste0(rdata_output, prefix)
+  #save(bed.file,counts,sample.names,bams,cnv.calls_ids,cnv.calls, refs, models, fasta, file=full_output_filename)
+  ####
+
   cnv.calls_ids <- add_custom_exon_numbers(cnv.calls_ids, bed.file, counts)
   
   cnv.calls_ids$Gene <- trim(cnv.calls_ids$Gene)
@@ -308,13 +313,8 @@ save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.na
     cnv.calls_ids$Sample <- as.character(cnv.calls_ids$Sample)
     cnv.calls_ids <- cbind(cnv.calls_ids, calculate_confidence(cnv.calls_ids, bed.file))
     colnames(cnv.calls_ids)[ncol(cnv.calls_ids)] <- "Confidence"
-    
-    # Handle exon numbers if present
-    if (colnames(counts)[5] == "exon_number") {
-      cnv.calls_ids <- cnv.calls_ids[, c(1:4, 14, 15, 5:13, 16:17)]
-    }
-    
-   write.table(cnv.calls_ids, file = output, sep = "\t", row.names = FALSE, quote = FALSE)
+      
+    write.table(cnv.calls_ids, file = output, sep = "\t", row.names = FALSE, quote = FALSE)
   }
   
   save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls_ids,cnv.calls, refs, models, fasta, file=output.rdata)

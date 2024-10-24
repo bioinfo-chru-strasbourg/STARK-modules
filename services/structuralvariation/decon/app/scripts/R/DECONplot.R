@@ -71,8 +71,8 @@ opt <- parse_args(OptionParser(option_list = option_list))
 rdata_output = opt$outdata
 # Load R workspace with all the results saved : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
 count_data=opt$datas
-if(count_data=="NULL"){count_data=NULL}
-if(is.null(count_data)){
+# Check if count_data is NULL or an empty string
+if(is.null(count_data) || count_data == "") {
     print("ERROR: no RData summary file provided -- Execution halted")
     quit()
 }
@@ -95,8 +95,8 @@ current_datetime <- Sys.time()
 # Format date and time as "YYYYMMDD-HHMMSS"
 formatted_datetime <- format(current_datetime, "%Y%m%d-%H%M%S")
 
-if(prefixfile=="NULL"){prefixfile=NULL}
-if(is.null(prefixfile)){
+# Check if prefixfile is NULL or an empty string
+if (is.null(prefixfile) || prefixfile == "") {
     prefixfile <- formatted_datetime
 }
 
@@ -117,6 +117,7 @@ if (!is.null(opt$bedfile)) {
     Exomecount <- filter_df(Exomecount, bed.file)
     save.image(file = rdata_output)
 }
+
 
 #################### Plots ####################################
 message('Start generating plots')
