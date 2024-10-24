@@ -704,9 +704,11 @@ rule filter_vcf_panel:
 
 # Panel vcf.gz individual samples no annotation
 rule vcf_normalization:
-	input: rules.filter_vcf_panel.output.vcfgz
+	input: 
+		vcfgz=rules.filter_vcf_panel.output.vcfgz,
+		vcfgztbi=rules.filter_vcf_panel.output.vcfgztbi
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
-	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
+	shell: "bcftools norm -d all -o {output} -Oz {input.vcfgz} ; tabix {output}"
 
 # Panel tsv individual samples AnnotSV
 use rule AnnotSV as AnnotSV_panel with:
