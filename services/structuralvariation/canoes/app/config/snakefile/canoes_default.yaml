@@ -135,6 +135,11 @@ homdel: "0.2" # threeshold for homozygous deletion
 # REF_BAM_LIST: "--refbams /app/res/list.tsv"
 REF_BAM_LIST: ""
 
+# Limit AnnotSV jobs & define cores
+resources:
+  AnnotSVjobs: 1
+  cores: 16
+
 # AnnotSV needs the "CosmicCompleteCNA.tsv.gz" file from https://cancer.sanger.ac.uk/cosmic/download (Copy Number Variants part, Download Whole file)
 # Put the "CosmicCompleteCNA.tsv.gz" file in the corresponding directory: "$ANNOTSV/share/AnnotSV/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/
 # create the directory is necessary (./Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/)

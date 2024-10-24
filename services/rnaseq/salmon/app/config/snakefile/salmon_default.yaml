@@ -96,3 +96,7 @@ FASTP_UMI: "" #  -U --umi_loc=per_read --umi_len=5 for XTHS2
 # For Salmon quantification fastq mode, path to the index file
 REFSALMONQUANTFASTQ_PATH: "/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
 MISC_SALMON_OPTIONS: ""
+
+# Define cores
+resources:
+  cores: 16

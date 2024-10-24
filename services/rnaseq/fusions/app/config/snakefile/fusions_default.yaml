@@ -126,3 +126,7 @@ GENCODE_README_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/
 #GENCODE_GENOME_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/{ASSEMBLY}.p14.genome.fa.gz"
 #GENCODE_TRANSCRIPTS_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.transcripts.fa.gz"
 #GENCODE_README_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/_README.TXT"
+
+# Define cores
+resources:
+  cores: 16

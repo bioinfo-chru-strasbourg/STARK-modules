@@ -87,3 +87,7 @@ ASSEMBLY: "hg19"
 NGS_TYPE: "HC"
 # Min of reads to considere an ITD
 MINREADS: "5"
+
+# Define cores
+resources:
+  cores: 16
