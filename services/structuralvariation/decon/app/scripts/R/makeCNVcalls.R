@@ -225,8 +225,8 @@ add_custom_exon_numbers <- function(cnv.calls_ids, bed.file, counts) {
       }
       
       # identifies the first and last Custom exon in the deletion/duplication.
-      first_exon <- unlist(lapply(a, function(a, b) min(b[a,]$Custom), exons))
-      last_exon <- unlist(lapply(a, function(a, b) max(b[a,]$Custom), exons))
+      first_exon <- unlist(lapply(a, function(a, b) min(b[a,]$exon), exons))
+      last_exon <- unlist(lapply(a, function(a, b) max(b[a,]$exon), exons))
       Custom.first[exonlist] <- first_exon
       Custom.last[exonlist] <- last_exon
     }
@@ -272,6 +272,11 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
     }
   }
   
+  # for debug
+  prefix <- "debug_" 
+  full_output_filename <- paste0(prefix, rdata_output)
+  save.image(file = full_output_filename)
+  
   cnv.calls_ids <- add_custom_exon_numbers(cnv.calls_ids, bed.file, counts)
   
   cnv.calls_ids$Gene <- trim(cnv.calls_ids$Gene)
@@ -306,7 +311,7 @@ save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.na
     
     # Handle exon numbers if present
     if (colnames(counts)[5] == "exon_number") {
-      cnv.calls_ids <- cnv.calls_ids[, c(1:4, 14, 15, 5:13, 16)]
+      cnv.calls_ids <- cnv.calls_ids[, c(1:4, 14, 15, 5:13, 16:17)]
     }
     
    write.table(cnv.calls_ids, file = output, sep = "\t", row.names = FALSE, quote = FALSE)

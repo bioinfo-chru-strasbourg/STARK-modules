@@ -1088,25 +1088,36 @@ use rule merge_vcf as merge_vcf_panel_noannotation with:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
 
-#rule plot:
-#	""" This step inputs the CNVcall.Rdata file to output the plot files in pdf format """
-#	input:
-#		rules.makeCNVcalls.output.rdata
-#	params:
-#		folder=f"{resultDir}/pdfs/", # should be by design/panels
-#		decondir=config['R_SCRIPTS'],
-#		bed_file: lambda wildcards: f"{resultDir}/{wildcards.panel}"
-#	output:
-#		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess"
-#	log:
-#		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plots.log",
-#		err=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plots.err"
-#	shell:
-#		"""
-#		mkdir -p {params.folder} &&
-#		Rscript {params.decondir}/DECONplot.R --rdata {input} --out {params.folder} --prefix {date_time} 1> {log.log} 2> {log.err} &&
-#		touch {output}
-#		"""
+rule plot:
+	""" This step inputs the CNVcall.Rdata file to output the plot files in pdf format """
+	input:
+		rules.makeCNVcalls.output.rdata
+	params:
+		folder=f"{resultDir}/pdfs/", # should be by design/panels ?
+		decondir=config['R_SCRIPTS'],
+		bed=config['BED_FILE'],
+		prefix= f"Design.{date_time}"
+	output:
+		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess"
+	log:
+		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plots.log",
+		err=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plots.err"
+	shell:
+		"""
+		mkdir -p {params.folder} &&
+		Rscript {params.decondir}/DECONplot.R --rdata {input} --bedfile {params.bed} --out {params.folder} --prefix {params.prefix} 1> {log.log} 2> {log.err} &&
+		touch {output}
+		"""
+
+use rule plot as plot_panel with:
+	input:
+		rules.makeCNVcalls.output.rdata
+	params:
+		folder=f"{resultDir}/pdfs/", # should be by design/panels ?
+		decondir=config['R_SCRIPTS'],
+		bed_file=lambda wildcards: f"{resultDir}/{wildcards.panel}",
+		prefix= f"Panel.{date_time}"
+
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
