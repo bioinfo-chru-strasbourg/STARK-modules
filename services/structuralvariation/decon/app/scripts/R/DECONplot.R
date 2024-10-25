@@ -49,12 +49,9 @@ filter_df <- function(input_df, filtering_df) {
   if (!all(required_cols %in% filtering_cols)) {
     stop("BED file data frame must contain the following columns: chromosome, start, end")
   }
-    # for debug
-    rdata_file <- "/app/res/input_and_filtering_data.RData"
-    save(input_df, filtering_df, file = rdata_file)
-
-# Load necessary library
-library(GenomicRanges)
+    #for debug
+    #rdata_file <- "/app/res/input_and_filtering_data.RData"
+    #save(input_df, filtering_df, file = rdata_file)
 
     # Detect the chromosome, start, and end columns and their original cases in input_df
     chrom_column <- if ("chromosome" %in% colnames(input_df)) "chromosome" else "Chromosome"
@@ -111,7 +108,7 @@ library(GenomicRanges)
     input_df_filtered$Original_End <- NULL
 
 
-  return(filtered_input_df)
+  return(input_df_filtered)
 }
 
 
@@ -178,7 +175,7 @@ if (!is.null(opt$bedfile)) {
 
     # Filtering
     counts <- filter_df(counts, bed.file)
-    Exomecount <- filter_df(Exomecount, bed.file)
+    ExomeCount <- filter_df(Exomecount, bed.file)
     cnv.calls <- filter_df(cnv.calls, bed.file)
     cnv.calls_ids <- filter_df(cnv.calls_ids, bed.file)
     save.image(file = rdata_output)

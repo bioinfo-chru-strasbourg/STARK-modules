@@ -30,7 +30,7 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     vcf2tsvpy~=0.6 pyfasta~=0.5 fasta~=36.3 \
     natsort~=8.3 pyfaidx~=0.8 pypdf~=4.1 \
     r-exomedepth~=1.1.16 r-r.utils~=2.12 r-optparse~=1.7 r-reshape~=0.8 \
-    r-ggplot2~=3.5 r-doparallel~=1.0 r-foreach~=1.5 r-reshape2~=1.4 && bioconductor-genomicranges~=1.54\
+    r-ggplot2~=3.5 r-doparallel~=1.0 r-foreach~=1.5 r-reshape2~=1.4 bioconductor-genomicranges~=1.54 && \
     mamba clean -afy
 
 # Clone and install variantconvert
