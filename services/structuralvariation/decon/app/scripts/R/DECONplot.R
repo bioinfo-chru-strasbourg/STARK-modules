@@ -104,10 +104,18 @@ if (is.null(prefixfile) || prefixfile == "") {
 if (!is.null(opt$bedfile)) {
     # Load the specified BED file
     message('Loading specified BED file: ', opt$bedfile)
-    bed.file <- read.table(opt$bedfile, header = FALSE, sep = "\t", colClasses = c("character", "integer", "integer", "character"))
-    
-    # Keep only the first four columns and assign the required column names
+    # Check and read the BED file, ensuring it has at least four columns
+    bed.file <- read.table(opt$bedfile, header = FALSE, sep = "\t",
+                        colClasses = c("character", "integer", "integer", "character"))
+
+    # Ensure at least four columns are present
+    if (ncol(bed.file) < 4) {
+        stop("Error: The BED file must have at least four columns (chromosome, start, end, gene).")
+    }
+
+    # Keep only the first four columns
     bed.file <- bed.file[, 1:4]
+    # Assign the required column names
     colnames(bed.file) <- c("chromosome", "start", "end", "gene")
 
     # Filtering

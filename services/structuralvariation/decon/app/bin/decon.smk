@@ -1095,7 +1095,7 @@ rule plot:
 	params:
 		folder=f"{resultDir}/pdfs/", # should be by design/panels ?
 		decondir=config['R_SCRIPTS'],
-		bed=config['BED_FILE'],
+		bed=lambda wildcards: f"{resultDir}/{serviceName}.{date_time}.bed",
 		prefix= f"Design.{date_time}"
 	output:
 		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess"
