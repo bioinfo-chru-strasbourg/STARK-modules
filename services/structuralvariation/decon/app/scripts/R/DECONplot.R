@@ -175,7 +175,7 @@ if (!is.null(opt$bedfile)) {
 
     # Filtering
     counts <- filter_df(counts, bed.file)
-    ExomeCount <- filter_df(Exomecount, bed.file)
+    ExomeCount <- filter_df(ExomeCount, bed.file)
     cnv.calls <- filter_df(cnv.calls, bed.file)
     cnv.calls_ids <- filter_df(cnv.calls_ids, bed.file)
     save.image(file = rdata_output)
