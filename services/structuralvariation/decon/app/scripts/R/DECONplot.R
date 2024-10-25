@@ -205,6 +205,7 @@ for(i in 2:nrow(bed.file)){
 }
 
 if(colnames(counts)[5]=="exon_number"){
+    exons <- bed.file[, c("chromosome", "start", "end", "exon")]
     for(i in 1:nrow(exons)){
         x=which(paste(bed.file[,4])==paste(exons[i,4]) & bed.file[,2]<=exons[i,3] & bed.file[,3]>=exons[i,2])
         Index[x]=exons[i,5]

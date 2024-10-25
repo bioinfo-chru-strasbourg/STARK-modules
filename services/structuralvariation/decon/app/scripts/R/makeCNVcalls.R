@@ -352,7 +352,6 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
   
   # Split multi-gene calls
   cnv.calls_ids <- split_multi_gene_calls(cnv.calls, bed.file, counts)
-  
   save_results(cnv.calls, cnv.calls_ids, ExomeCount, output_file, sample.names, bams, rdata_output, bed.file, counts, refs, models, fasta)
 
   warnings()
