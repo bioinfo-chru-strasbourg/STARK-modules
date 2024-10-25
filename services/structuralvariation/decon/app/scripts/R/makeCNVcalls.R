@@ -63,6 +63,9 @@ prepare_bed_file <- function(bed.file) {
     return(bed.file)
 }
 
+# Function to remove space in a string
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+
 multi_strsplit <- function(x, splits, y) {
   for (i in seq_along(splits)) {
     x <- strsplit(x, splits[i], fixed = TRUE)[[1]][y[i]]
@@ -203,77 +206,69 @@ calculate_confidence <- function(cnv.calls, bed.file) {
 
 # Function to add custom exon numbers
 add_custom_exon_numbers <- function(cnv.calls_ids, bed.file, counts) {
-  if (colnames(counts)[5] == "exon_number") {
-    Custom.first <- rep(NA, nrow(cnv.calls_ids))
-    Custom.last <- rep(NA, nrow(cnv.calls_ids))
-    exons <- bed.file
-    exonnumber <- sapply(cnv.calls_ids$Gene, '==', exons$gene)
-    
-    for (i in 1:nrow(exonnumber)) {
-      for (j in 1:ncol(exonnumber)) {
-        temp <- cnv.calls_ids$Start[j] <= exons$end[i] & cnv.calls_ids$End[j] >= exons$start[i]
-        exonnumber[i, j] <- exonnumber[i, j] & temp
-      }
-    }
-    
-    exonlist <- which(colSums(exonnumber) != 0)
-    
-    if (length(exonlist) > 0) {
-      a <- list(length = length(exonlist))
-      for (i in 1:length(exonlist)) {
-        a[[i]] <- which(exonnumber[, exonlist[i]])
-      }
-      
-      # identifies the first and last Custom exon in the deletion/duplication.
-      first_exon <- unlist(lapply(a, function(a, b) min(b[a,]$exon), exons))
-      last_exon <- unlist(lapply(a, function(a, b) max(b[a,]$exon), exons))
-      Custom.first[exonlist] <- first_exon
-      Custom.last[exonlist] <- last_exon
-    }
-    
-    cnv.calls_ids <- cbind(cnv.calls_ids, Custom.first, Custom.last)
-  }
+  Custom.first <- Custom.last <- rep(NA, nrow(cnv.calls_ids))
+  exons <- bed.file
+  exonnumber <- sapply(cnv.calls_ids$Gene, '==', exons$gene)
   
+  for (i in 1:nrow(exonnumber)) {
+    for (j in 1:ncol(exonnumber)) {
+      temp <- cnv.calls_ids$Start[j] <= exons$end[i] & cnv.calls_ids$End[j] >= exons$start[i]
+      exonnumber[i, j] <- exonnumber[i, j] & temp
+    }
+  }
+  exonlist <- which(colSums(exonnumber) != 0)
+
+  if (length(exonlist) > 0) {
+    a <- list(length = length(exonlist))
+    for (i in 1:length(exonlist)) {
+      a[[i]] <- which(exonnumber[, exonlist[i]])
+    }
+    
+    # identifies the first and last Custom exon in the deletion/duplication.
+    first_exon <- unlist(lapply(a, function(a, b) min(b[a,]$exon), exons))
+    last_exon <- unlist(lapply(a, function(a, b) max(b[a,]$exon), exons))
+    Custom.first[exonlist] <- first_exon
+    Custom.last[exonlist] <- last_exon
+  }
+  cnv.calls_ids <- cbind(cnv.calls_ids, Custom.first, Custom.last)
   return(cnv.calls_ids)
 }
 
 # Replaces single calls involving multiple genes with multiple calls with a single call ID/gene
 split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
-  
   # Add a new column named "CNV.ID" with increasing numbers from 1 to the number of rows in cnv.calls
   cnv.calls_ids <- cbind(CNV.ID = 1:nrow(cnv.calls), cnv.calls)
-  
-  trim <- function (x) gsub("^\\s+|\\s+$", "", x)
-  
-  new_cnv_calls <- data.frame()  # Initialize an empty dataframe to store results
-
-  for (i in 1:nrow(cnv.calls_ids)) {
-    if (grepl(',', cnv.calls_ids$Gene[i])) {  # Check if there is a comma in the Gene column
-      temp <- cnv.calls_ids[i, ]
-      genes <- unlist(strsplit(cnv.calls_ids$Gene[i], split = ','))  # Split the genes by comma
-      
-      temp <- temp[rep(seq_len(nrow(temp)), each = length(genes)), ]  # Replicate the row for each gene
-      temp$Gene <- genes  # Replace Gene with the individual gene names
-      
-      # Process each gene to adjust Start and End positions
-      for (j in 1:length(genes)) {
-        gene.index <- which(bed.file[, 4] == genes[j])
-        overlap <- gene.index[gene.index %in% which(bed.file[, 4] == genes[1])]  # Adjust overlap logic
-        temp$Start.p[j] <- min(bed.file[overlap, 2])  # Set Start.p to the minimum overlap start
-        temp$End.p[j] <- max(bed.file[overlap, 3])  # Set End.p to the maximum overlap end
+  # Replaces single calls involving multiple genes with multiple calls with single call ID
+  for(i in 1:nrow(cnv.calls_ids)){                        
+      genes <- strsplit(paste(cnv.calls_ids[i,]$Gene),",")[[1]]
+      genes <- trim(genes)
+      whole.index <- cnv.calls_ids[i,]$Start.p:cnv.calls_ids[i,]$End.p
+      if(length(genes)>1){
+          temp <- cnv.calls_ids[rep(i,length(genes)),]
+          temp$Gene <- genes
+          for(j in 1:length(genes)){
+              gene.index <- which(bed.file[,4]==genes[j])
+              overlap <- gene.index[gene.index%in%whole.index]
+              temp[j,]$Start.p <- min(overlap)
+              temp[j,]$End.p <- max(overlap)
+          }
+          if(i==1){
+              cnv.calls_ids <- rbind(temp,cnv.calls_ids[(i+1):nrow(cnv.calls_ids),])
+          }else if(i==nrow(cnv.calls_ids)){
+              cnv.calls_ids <- rbind(cnv.calls_ids[1:(i-1),],temp)
+          }else{
+              cnv.calls_ids <- rbind(cnv.calls_ids[1:(i-1),],temp,cnv.calls_ids[(i+1):nrow(cnv.calls_ids),])
+          }
       }
-      
-      # Append to the new dataframe
-      new_cnv_calls <- rbind(new_cnv_calls, temp)
-      
-    } else {
-      new_cnv_calls <- rbind(new_cnv_calls, cnv.calls_ids[i, ])  # If no comma, just append the row
-    }
   }
-
-  # Assign the final result back to cnv.calls_ids
-  cnv.calls_ids <- new_cnv_calls
-
+  # Remove leading/trailing whitespaces from the Gene column
+  cnv.calls_ids$Gene <- trim(cnv.calls_ids$Gene)
+  # Filter unique genes
+  Gene.index <- vector()
+  genes_unique <- unique(bed.file[, 4])
+  for (i in 1:length(genes_unique)) {
+    Gene.index <- c(Gene.index, 1:sum(bed.file[, 4] == genes_unique[i]))
+  }
   
   # for debug
   #prefix <- "_debug" 
@@ -282,28 +277,25 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   #save(bed.file,counts,sample.names,bams,cnv.calls_ids,cnv.calls, refs, models, fasta, file=full_output_filename)
   ####
 
-  cnv.calls_ids <- add_custom_exon_numbers(cnv.calls_ids, bed.file, counts)
-  
-  cnv.calls_ids$Gene <- trim(cnv.calls_ids$Gene)
-  Gene.index <- vector()
-  genes_unique <- unique(bed.file[, 4])
-  
-  for (i in 1:length(genes_unique)) {
-    Gene.index <- c(Gene.index, 1:sum(bed.file[, 4] == genes_unique[i]))
+  # Add custom exon numbers
+  if (colnames(counts)[5] == "exon_number") {
+    cnv.calls_ids <- add_custom_exon_numbers(cnv.calls_ids, bed.file, counts)
   }
-  
-# Check if Start.p or End.p is empty or not nuemric
-if (length(cnv.calls_ids$Start.p) == 0 || length(cnv.calls_ids$End.p) == 0) {
-  Start.b <- End.b <- NULL
-} else {
-  if (!is.numeric(cnv.calls_ids$Start.p) || !is.numeric(cnv.calls_ids$End.p)) {
-  Start.b <- End.b <- Start.p <- End.p <- NULL
+ 
+  # Check if Start.p or End.p is empty or not nuemric
+  if (length(cnv.calls_ids$Start.p) == 0 || length(cnv.calls_ids$End.p) == 0) {
+    Start.b <- End.b <- NULL
   } else {
-    Start.b <- Gene.index[cnv.calls_ids$Start.p]
-    End.b <- Gene.index[cnv.calls_ids$End.p]
+    if (!is.numeric(cnv.calls_ids$Start.p) || !is.numeric(cnv.calls_ids$End.p)) {
+    Start.b <- End.b <- Start.p <- End.p <- NULL
+    } else {
+      Start.b <- Gene.index[cnv.calls_ids$Start.p]
+      End.b <- Gene.index[cnv.calls_ids$End.p]
+    }
   }
-}
   cnv.calls_ids <- cbind(cnv.calls_ids, Start.b, End.b)
+  
+  # Return result
   return(cnv.calls_ids)
 }
 

@@ -70,7 +70,7 @@ opt <- parse_args(OptionParser(option_list = option_list))
 
 rdata_output = opt$outdata
 # Load R workspace with all the results saved : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
-count_data=opt$datas
+count_data=opt$data
 # Check if count_data is NULL or an empty string
 if(is.null(count_data) || count_data == "") {
     print("ERROR: no RData summary file provided -- Execution halted")
