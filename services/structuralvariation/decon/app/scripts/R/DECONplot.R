@@ -22,6 +22,8 @@ suppressPackageStartupMessages({
     library(grid)
     library(reshape)
     library(ggplot2)
+    library(dplyr)
+    library(GenomicRanges)
 })
 
 # Function to sanitize gene names for file naming
@@ -32,27 +34,83 @@ sanitize_filename <- function(name) {
 
 # Function to filter df based on overlapping intervals
 filter_df <- function(input_df, filtering_df) {
-  # Example usage:
-  # filtered_df <- filter_df(cnv.calls_ids, bed.file)
   
   # Ensure the required columns exist in both data frames
-  required_cols <- c("Chromosome", "Start", "End")
-  if (!all(required_cols %in% colnames(input_df))) {
-    stop("CNV calls data frame must contain the following columns: Chromosome, Start, End")
-  }
-  
-  if (!all(required_cols %in% colnames(filtering_df))) {
-    stop("BED file data frame must contain the following columns: Chromosome, Start, End")
-  }
+  required_cols <- c("chromosome", "start", "end")
 
-  # Use a filter to find overlapping intervals between dfs
-  filtered_input_df <- input_df %>%
-    filter(
-      Chromosome %in% filtering_df[[grep("^Chromosome$", names(filtering_df), ignore.case = TRUE)]] &  # Matching chromosomes
-      Start >= filtering_df[[grep("^Start$", names(filtering_df), ignore.case = TRUE)]][match(Chromosome, filtering_df[[grep("^Chromosome$", names(filtering_df), ignore.case = TRUE)]])] &  # Start falls within the interval
-      End <= filtering_df[[grep("^End$", names(filtering_df), ignore.case = TRUE)]][match(Chromosome, filtering_df[[grep("^Chromosome$", names(filtering_df), ignore.case = TRUE)]])]  # End falls within the interval
-    )
+  # Check if the required columns exist (case-insensitive)
+  input_cols <- tolower(colnames(input_df))
+  filtering_cols <- tolower(colnames(filtering_df))
   
+  if (!all(required_cols %in% input_cols)) {
+    stop("CNV calls data frame must contain the following columns: chromosome, start, end")
+  }
+  
+  if (!all(required_cols %in% filtering_cols)) {
+    stop("BED file data frame must contain the following columns: chromosome, start, end")
+  }
+    # for debug
+    rdata_file <- "/app/res/input_and_filtering_data.RData"
+    save(input_df, filtering_df, file = rdata_file)
+
+# Load necessary library
+library(GenomicRanges)
+
+    # Detect the chromosome, start, and end columns and their original cases in input_df
+    chrom_column <- if ("chromosome" %in% colnames(input_df)) "chromosome" else "Chromosome"
+    start_column <- if ("Start" %in% colnames(input_df)) "Start" else "start"
+    end_column <- if ("End" %in% colnames(input_df)) "End" else "end"
+
+    # Save the original Chromosome, Start, and End values to restore later
+    input_df$Original_Chromosome <- input_df[[chrom_column]]
+    input_df$Original_Start <- input_df[[start_column]]
+    input_df$Original_End <- input_df[[end_column]]
+
+    # Standardize chromosome format in input_df
+    input_df[[chrom_column]] <- ifelse(grepl("^chr", input_df[[chrom_column]], ignore.case = TRUE),
+                                    input_df[[chrom_column]],
+                                    paste0("chr", input_df[[chrom_column]]))
+
+    # If `Start` and `End` columns were uppercase, temporarily rename them for processing
+    if (start_column == "Start") colnames(input_df)[colnames(input_df) == "Start"] <- "start"
+    if (end_column == "End") colnames(input_df)[colnames(input_df) == "End"] <- "end"
+
+    # Standardize filtering_df column names and chromosome format
+    colnames(filtering_df) <- tolower(colnames(filtering_df))  # Ensure lowercase column names
+    filtering_df$chromosome <- ifelse(grepl("^chr", filtering_df$chromosome, ignore.case = TRUE),
+                                    filtering_df$chromosome,
+                                    paste0("chr", filtering_df$chromosome))
+
+    # Convert input_df to GRanges using standardized column names
+    input_gr <- GRanges(
+    seqnames = input_df[[chrom_column]],
+    ranges = IRanges(start = input_df$start, end = input_df$end),
+    CNV.type = input_df$CNV.type
+    )
+
+    # Convert filtering_df to GRanges
+    filter_gr <- GRanges(
+    seqnames = filtering_df$chromosome,
+    ranges = IRanges(start = filtering_df$start, end = filtering_df$end)
+    )
+
+    # Find overlaps
+    overlaps <- findOverlaps(input_gr, filter_gr)
+
+    # Filter input_df based on overlaps and remove duplicates
+    input_df_filtered <- input_df[unique(queryHits(overlaps)), ]
+
+    # Revert Chromosome, Start, and End columns to original values
+    input_df_filtered[[chrom_column]] <- input_df_filtered$Original_Chromosome
+    input_df_filtered[[start_column]] <- input_df_filtered$Original_Start
+    input_df_filtered[[end_column]] <- input_df_filtered$Original_End
+
+    # Drop temporary columns
+    input_df_filtered$Original_Chromosome <- NULL
+    input_df_filtered$Original_Start <- NULL
+    input_df_filtered$Original_End <- NULL
+
+
   return(filtered_input_df)
 }
 
@@ -119,10 +177,10 @@ if (!is.null(opt$bedfile)) {
     colnames(bed.file) <- c("chromosome", "start", "end", "gene")
 
     # Filtering
-    cnv.calls <- filter_df(cnv.calls, bed.file)
-    cnv.calls_ids <- filter_df(cnv.calls_ids, bed.file)
     counts <- filter_df(counts, bed.file)
     Exomecount <- filter_df(Exomecount, bed.file)
+    cnv.calls <- filter_df(cnv.calls, bed.file)
+    cnv.calls_ids <- filter_df(cnv.calls_ids, bed.file)
     save.image(file = rdata_output)
 }
 
