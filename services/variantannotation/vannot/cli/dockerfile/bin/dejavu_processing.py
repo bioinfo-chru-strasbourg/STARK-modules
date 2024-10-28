@@ -43,12 +43,13 @@ def convert_vcf_parquet(run_informations, args):
             run_dict[run] = previous_value
         else:
             run_dict[run] = [vcf_name]
-
+            
     for vcf_file in vcf_files:
         subprocess.call(["rsync", "-rvt", vcf_file, run_informations["tmp_analysis_folder"]], universal_newlines=True)
-        
-    for vcf_file in glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz")):
-        howard_processing.unmerge_vcf(vcf_file, run_informations)
+
+    if "dejavu" in args:
+        for vcf_file in glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz")):
+            howard_processing.unmerge_vcf(vcf_file, run_informations)
     
     for vcf_file in glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz")):
         tmp_output = osj(os.path.dirname(vcf_file), "tmp_" + os.path.basename(vcf_file))
@@ -80,12 +81,12 @@ def convert_vcf_parquet(run_informations, args):
             parquet_file = osj(run_informations["tmp_analysis_folder"], sample_name + ".parquet")
             parquet_file_hdr = osj(run_informations["tmp_analysis_folder"], parquet_file + ".hdr")
             sample_dejavu_db_folder = osj(run_informations["parquet_db_project_folder"], f"RUN={key}", f"SAMPLE={sample_name}", "")
-        if not os.path.isdir(sample_dejavu_db_folder):
-            os.makedirs(sample_dejavu_db_folder)
-        subprocess.call(["rsync", "-rvt", parquet_file, sample_dejavu_db_folder], universal_newlines=True)
-        subprocess.call(["rsync", "-rvt", parquet_file_hdr, sample_dejavu_db_folder], universal_newlines=True)
+            if not os.path.isdir(sample_dejavu_db_folder):
+                os.makedirs(sample_dejavu_db_folder)
+            subprocess.call(["rsync", "-rvt", parquet_file, sample_dejavu_db_folder], universal_newlines=True)
+            subprocess.call(["rsync", "-rvt", parquet_file_hdr, sample_dejavu_db_folder], universal_newlines=True)
 
-    shutil.rmtree(run_informations["tmp_analysis_folder"])
+    # shutil.rmtree(run_informations["tmp_analysis_folder"])
 
 def calculate_dejavu(run_informations):
     threads = commons.get_threads("threads_dejavu")

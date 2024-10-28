@@ -63,8 +63,6 @@ def launch_dejavu(args):
 
     dejavu_processing.convert_vcf_parquet(run_informations, args)
     dejavu_processing.calculate_dejavu(run_informations)
-    if os.path.isdir(run_informations["tmp_analysis_folder"]):
-        os.remove(run_informations["tmp_analysis_folder"])
 
     log.info(
         f"vannot dejavu analysis for folder {run_informations['run_name']} ended well"

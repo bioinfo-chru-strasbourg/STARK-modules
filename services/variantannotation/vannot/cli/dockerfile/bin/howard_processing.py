@@ -41,11 +41,13 @@ def project_folder_initialisation(run_informations):
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
     for vcf_file in vcf_file_to_analyse:
-        if os.path.basename(vcf_file).split(".")[1] == "POOL":
-            fixed_vcf_file = info_to_format_script(vcf_file, run_informations)
-        # exomiser_annotation()
-        else:
-            fixed_vcf_file = vcf_file
+        output_exomiser = osj(run_informations["tmp_analysis_folder"], "exomized_" + os.path.basename(vcf_file))
+        vannotplus_config = osj(os.environ["DOCKER_MODULE_CONFIG"], "vannotplus.yml")
+        if run_informations["run_application"] != "":
+            main_exomiser(vcf_file, output_exomiser, run_informations["run_application"], load_config(vannotplus_config))
+            os.remove(vcf_file)
+
+        fixed_vcf_file = info_to_format_script(output_exomiser, run_informations)
         cleaning_annotations(fixed_vcf_file, run_informations)
     
 def folder_initialisation(run_informations):
@@ -74,7 +76,6 @@ def folder_initialisation(run_informations):
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
     for vcf_file in vcf_file_to_analyse:
-        # exomiser_annotation()
         cleaning_annotations(vcf_file, run_informations)
 
 def run_initialisation(run_informations):
@@ -108,8 +109,9 @@ def run_initialisation(run_informations):
         vannotplus_config = osj(os.environ["DOCKER_MODULE_CONFIG"], "vannotplus.yml")
         main_exomiser(vcf_file, output_exomiser, "WES_AGILENT", load_config(vannotplus_config))
         os.remove(vcf_file)
+        os.rename(output_exomiser, vcf_file)
 
-        fixed_vcf_file = info_to_format_script(output_exomiser, run_informations)
+        fixed_vcf_file = info_to_format_script(vcf_file, run_informations)
         cleaning_annotations(fixed_vcf_file, run_informations)
 
     
@@ -194,7 +196,8 @@ def unmerge_vcf(input, run_informations):
             with open(output_file, "w") as writefile:
                 subprocess.call(cmd, universal_newlines=True, stdout=writefile)
             subprocess.call(["bgzip", output_file], universal_newlines=True)
-
+        if run_informations["type"] == "dejavu":
+            os.remove(vcf_file_to_unmerge)
 
 def info_to_format_script(vcf_file, run_informations):
     log.info(f"Moving desired columns to FORMAT column for {os.path.basename(vcf_file)}")
@@ -204,7 +207,6 @@ def info_to_format_script(vcf_file, run_informations):
     tmp_annot = osj(os.path.dirname(vcf_file), "annot.txt.tmp")
     tmp_annot_fixed = osj(os.path.dirname(vcf_file), "annot.fixed.txt.tmp")
     tmp_hdr = osj(os.path.dirname(vcf_file), "hdr.txt.tmp")
-        
     with open(module_config, "r") as read_file:
         data = json.load(read_file)
         info_to_format_columns = data["info_to_format"][run_informations["run_platform_application"]]
@@ -223,12 +225,10 @@ def info_to_format_script(vcf_file, run_informations):
             for line in lines:
                 line = line.strip()
                 writefile.write(line.replace(":", ",") + "\n")
-
     subprocess.call(["bgzip", tmp_annot_fixed], universal_newlines=True)
     tmp_annot_fixed = tmp_annot_fixed + ".gz"
     cmd = ["tabix", "-s1", "-b2", "-e2", tmp_annot_fixed]
     subprocess.call(cmd, universal_newlines=True)
-
     vcf_file_gunzip = vcf_file[:-3]
     subprocess.call(["gunzip", vcf_file])
     with open(vcf_file_gunzip, "r") as readfile:
@@ -239,7 +239,6 @@ def info_to_format_script(vcf_file, run_informations):
                     if line.startswith("##INFO=<ID=" + column):
                         writefile.write(line.replace("INFO", "FORMAT"))
     subprocess.call(["bgzip", vcf_file_gunzip], universal_newlines=True)
-
     info_to_format_columns_annotate = ",FORMAT/".join(info_to_format_columns)
     info_to_format_columns_annotate = "CHROM,POS,REF,ALT,FORMAT/" + info_to_format_columns_annotate
 
@@ -247,7 +246,6 @@ def info_to_format_script(vcf_file, run_informations):
     log.debug(" ".join(cmd))
     with open(output_file, "a") as writefile:
         subprocess.call(cmd, universal_newlines=True, stdout=writefile)
-    
     shutil.copy(output_file, output_file + ".unzipped")
     unzipped_output_file = output_file + ".unzipped"
     subprocess.call(["bgzip", output_file], universal_newlines=True)
@@ -257,7 +255,6 @@ def info_to_format_script(vcf_file, run_informations):
     os.remove(tmp_annot_fixed)
     os.remove(tmp_annot_fixed + ".tbi")
     os.remove(tmp_hdr)
-
     if os.stat(unzipped_output_file).st_size == 0:
         os.remove(unzipped_output_file)
         os.remove(output_file)
