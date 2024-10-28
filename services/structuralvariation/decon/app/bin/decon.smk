@@ -334,7 +334,7 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 		if chr_list_restrict:
 			intersected_df = intersected_df[~intersected_df['Chr'].isin(chr_list_restrict)]
 
-		df = intersected_df.drop(columns=['4', '5', '6', 'Tosplit', '9']).drop_duplicates()
+		df = intersected_df.drop(columns=['4', '5', '6', 'Tosplit', '9']).drop_duplicates(subset=['Chr', 'Start', 'End'])
 
 	# Case: STANDARD - Intersect bed design with panel
 	elif bed_process == 'STANDARD':
