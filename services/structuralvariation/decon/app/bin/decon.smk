@@ -345,7 +345,11 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene=None, tran
 		if chr_list_restrict:
 			intersected_df = intersected_df[~intersected_df['Chr'].isin(chr_list_restrict)]
 		df = intersected_df.drop(columns=['4', '5', '6', 'Strand', 'NM']).drop_duplicates(subset=['Chr', 'Start', 'End'])
-
+		# Remove 'exon' prefix in Custom.Exon
+		df['Custom.Exon'] = df['Custom.Exon'].str.replace('exon', '', regex=False)
+		# Remove rows where Gene or Custom.Exon is empty (dot)
+		df = df[(df['Gene'] != '.') & (df['Custom.Exon'] != '.')]
+	
 	# Case: STANDARD - Intersect bed design with panel
 	elif bed_process == 'STANDARD':
 		print("[INFO] Starting generating DECON bed with the bed files detected.")
