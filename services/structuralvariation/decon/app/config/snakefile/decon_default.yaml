@@ -87,7 +87,7 @@ REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 # path to Refgene file containing custom exon numbers  
 # http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/
 # archive formated_refgene for hg19 avalaible in /app/database
-REFSEQGENE_PATH: "/databases/refGene/current/formated_refgene.tsv"
+REFSEQGENE: "/databases/refGene/current/formated_refgene.tsv"
 
 ### DECON BED processing ###
 # Regen exon number with IntersectBed and a refseqgene reference (REGEN) containing a column with the exon number

@@ -309,21 +309,32 @@ def intersectbed(input_df, ref_df):
 		os.remove(output_path)
 		return result_df
 
-def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None, transcripts_file=None, unknown_gene=False, gene_list_restrict=None, chr_list_restrict=None, old_bed=False, exon_sep=None, kmer=None, customexon=False, list_genes=None, genes_file=None):
+def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene=None, transcripts_file=None, unknown_gene=False, gene_list_restrict=None, chr_list_restrict=None, old_bed=False, exon_sep=None, kmer=None, customexon=False, list_genes=None, genes_file=None):
 	
 	# Case: REGEN - Generate custom exon file and intersect with refseqgene
 	if bed_process == 'REGEN':
 		print("[INFO] Starting generating DECON bed with external reference.")
 		df = pd.read_csv(inputbed_file, sep='\t', names=["Chr", "Start", "End"], index_col=False)
-		ref_df = pd.read_csv(refseqgene_path, sep='\t')
-		intersected_df = intersectbed(df, ref_df)
-		intersected_df.columns = ["Chr", "Start", "End", "4", "5", "6", "Tosplit", "Gene", "9"]
-		intersected_df['Custom.Exon'] = intersected_df['Tosplit'].str.split(',').str[-1].str.replace('exon', '')
-
+		# Load the tab-separated file with 6 columns
+		ref_df = pd.read_csv(refseqgene, sep='\t', header=None, names=['Chromosome', 'Start', 'End', 'NM_Exon', 'Gene', 'Strand'])
+		# Split the 'NM_Exon' column into separate 'NM' and 'Exon' columns
+		ref_df[['NM', 'Exon']] = ref_df['NM_Exon'].str.split(',', expand=True)
+		ref_df = ref_df.drop(columns=['NM_Exon'])
+		# Check if the transcripts file exists and is not empty
 		if transcripts_file and os.path.exists(transcripts_file) and os.path.getsize(transcripts_file) != 0:
+			# Load the list of NM identifiers to include
 			NM_list = pd.read_csv(transcripts_file, header=None).squeeze().tolist()
-			intersected_df['NM'] = intersected_df['Tosplit'].str.split(',').str[0]
+			# Filter to keep only rows with NM identifiers in NM_list
 			intersected_df = intersected_df[intersected_df['NM'].isin(NM_list)].drop(columns=['NM'])
+		else:
+			# Sort by Gene and NM number
+			ref_df = ref_df.sort_values(by=['Gene', 'NM'])
+			# Find the lowest NM number for each gene
+			lowest_nm_df = ref_df.groupby('Gene', as_index=False).first()[['Gene', 'NM']]
+			# Merge to keep only rows with the lowest NM number for each gene and retain all exons of that NM
+			canonical_exons_df = pd.merge(ref_df, lowest_nm_df, on=['Gene', 'NM'])
+			intersected_df = intersectbed(df, canonical_exons_df)
+			intersected_df.columns = ["Chr", "Start", "End", "4", "5", "6", "Gene", "Strand", "NM", "Custom.Exon"]
 
 		if not unknown_gene:
 			intersected_df = intersected_df[intersected_df.Gene != '-1']
@@ -333,8 +344,7 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene_path=None,
 			intersected_df = intersected_df[intersected_df['Gene'].isin(gene_list_restrict)]
 		if chr_list_restrict:
 			intersected_df = intersected_df[~intersected_df['Chr'].isin(chr_list_restrict)]
-
-		df = intersected_df.drop(columns=['4', '5', '6', 'Tosplit', '9']).drop_duplicates(subset=['Chr', 'Start', 'End'])
+		df = intersected_df.drop(columns=['4', '5', '6', 'Strand', 'NM']).drop_duplicates(subset=['Chr', 'Start', 'End'])
 
 	# Case: STANDARD - Intersect bed design with panel
 	elif bed_process == 'STANDARD':
@@ -616,7 +626,7 @@ else:
 # ex	:	chr17	4511	4889	BCRA1	26
 print('[INFO] Start processing bed')
 deconbed_file=f"{resultDir}/{serviceName}.{date_time}.bed"
-process_bed_file(bed_file=deconbed_file,inputbed_file=config['BED_FILE'],bed_process=config['BED_PROCESS'],refseqgene_path=config['REFSEQGENE_PATH'],transcripts_file=config['TRANSCRIPTS_FILE'],unknown_gene=config['KEEP_UNKNOWN'],gene_list_restrict=config['GENE_LIST_RESTRICT'],chr_list_restrict=config['CHR_LIST_RESTRICT'],old_bed=config['OLD_BED'],exon_sep=config['EXON_SEP'],kmer=config['KMER'],customexon=config['customexon'],list_genes=config['LIST_GENES'],genes_file=config['GENES_FILE'])
+process_bed_file(bed_file=deconbed_file,inputbed_file=config['BED_FILE'],bed_process=config['BED_PROCESS'],refseqgene=config['REFSEQGENE'],transcripts_file=config['TRANSCRIPTS_FILE'],unknown_gene=config['KEEP_UNKNOWN'],gene_list_restrict=config['GENE_LIST_RESTRICT'],chr_list_restrict=config['CHR_LIST_RESTRICT'],old_bed=config['OLD_BED'],exon_sep=config['EXON_SEP'],kmer=config['KMER'],customexon=config['customexon'],list_genes=config['LIST_GENES'],genes_file=config['GENES_FILE'])
 print('[INFO] Processing bed complete')
 
 # Create file_list of bam by gender with the runDict, depending on the gender_list

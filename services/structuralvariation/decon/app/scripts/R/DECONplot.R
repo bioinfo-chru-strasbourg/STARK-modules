@@ -49,17 +49,18 @@ prepare_bed_file <- function(bed.file) {
 
 
 filter_data_by_chromosome <- function(file, modechrom) {
+  message(sprintf("Start filtering by chromosome with mode: %s", modechrom))
   # Ensure chromosomes have a "chr" prefix
   file$chromosome <- ifelse(grepl("^chr", file$chromosome), file$chromosome, paste0("chr", file$chromosome))
-  
+
   # Apply mode-based filtering
   if (modechrom == "A") {
     file <- subset(file, !chromosome %in% c("chrX", "chrY"))
   } else if (modechrom %in% c("XX", "XY")) {
     file <- subset(file, chromosome == "chrX")
   }
-  
-  list(file = file)
+    message(sprintf("Filtering by chromosome with mode: %s done", modechrom))
+  return(file)
 }
 
 
@@ -158,7 +159,11 @@ option_list <- list(
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
-modechrom = options$chromosome
+# Get current date and time & format date and time as "YYYYMMDD-HHMMSS"
+current_datetime <- Sys.time()
+formatted_datetime <- format(current_datetime, "%Y%m%d-%H%M%S")
+
+# set output
 rdata_output = opt$outdata
 # Load R workspace with all the results saved : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
 count_data=opt$data
@@ -181,16 +186,12 @@ if(!file.exists(plotFolder)){dir.create(plotFolder)}
 
 # Set the prefix for file names
 prefixfile=opt$prefix
-# Get current date and time
-current_datetime <- Sys.time()
-# Format date and time as "YYYYMMDD-HHMMSS"
-formatted_datetime <- format(current_datetime, "%Y%m%d-%H%M%S")
-
 # Check if prefixfile is NULL or an empty string
 if (is.null(prefixfile) || prefixfile == "") {
     prefixfile <- formatted_datetime
 }
 
+modechrom = opt$chromosome
 ###### Handling BED file option ########
 if (!is.null(opt$bedfile)) {
     # Load the specified BED file
@@ -208,6 +209,13 @@ if (!is.null(opt$bedfile)) {
     bed.filtering <- bed.filtering[, 1:4]
     # Assign the required column names
     colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
+    
+     # Filtering by chr
+    bed.filtering <- filter_data_by_chromosome(bed.filtering, modechrom)
+    
+    # for debug
+    rdata_file <- sprintf("/app/res/filtering_data_%s.RData", modechrom)
+    save(bed.filtering, file = rdata_file)
 
     # Filtering
     counts <- filter_df(counts, bed.filtering)
@@ -248,9 +256,10 @@ if(colnames(counts)[5]=="exon_number"){
         }
     }
 }
-#for debug
-rdata_file <- "/app/res/plot_data.RData"
-save(bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, exons, file = rdata_file)
+
+# for debug
+rdata_file <- sprintf("/app/res/plot_data_%s.RData", modechrom)
+save(counts, ExomeCount, cnv.calls, cnv.calls_ids, exons, file = rdata_file)
 
 for(call_index in 1:nrow(cnv.calls_plot)){
     Sample<-cnv.calls_plot[call_index,]$Sample
@@ -273,12 +282,21 @@ for(call_index in 1:nrow(cnv.calls_plot)){
         exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$chr]
     }
 
+
+
+
     ###### Part of plot containing the coverage points ###############
     message('Starting drawing coverage')
     VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$Sample==Sample,]$Start.p,cnv.calls[cnv.calls$Sample==Sample,]$End.p))
     refs_sample<-refs[[Sample]]
     Data<-cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
     Data[,-ncol(Data)]=log(Data[,-ncol(Data)])
+    
+    # for debug
+    rdata_file <- sprintf("/app/res/drawdata_%s_%s.RData", modechrom, call_index)
+    save(bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
+    
+    
     Data1<-melt(Data,id=c("exonRange"))
     testref<-rep("gray",nrow(Data1))
     testref[Data1$variable==Sample]="blue"
