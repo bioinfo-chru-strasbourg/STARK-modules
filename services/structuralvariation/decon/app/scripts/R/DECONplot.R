@@ -26,6 +26,43 @@ suppressPackageStartupMessages({
     library(GenomicRanges)
 })
 
+# Function to prepare bed file (sorting by chromosome)
+prepare_bed_file <- function(bed.file) {
+    # Remove 'chr' prefix
+    bed.file$chromosome <- gsub('chr', '', bed.file$chromosome)
+    
+    # Split numeric and non-numeric chromosomes
+    numeric_chromosomes <- bed.file[!is.na(as.numeric(bed.file$chromosome)), ]
+    non_numeric_chromosomes <- bed.file[is.na(as.numeric(bed.file$chromosome)), ]
+    
+    # Sort numeric chromosomes
+    numeric_chromosomes <- numeric_chromosomes[order(as.numeric(numeric_chromosomes$chromosome)), ]
+    
+    # Optionally, sort non-numeric chromosomes as well (X, Y, MT)
+    non_numeric_chromosomes <- non_numeric_chromosomes[order(factor(non_numeric_chromosomes$chromosome, levels = c("X", "Y", "MT"))), ]
+    
+    # Combine back the sorted data
+    bed.file <- rbind(numeric_chromosomes, non_numeric_chromosomes)
+    
+    return(bed.file)
+}
+
+
+filter_data_by_chromosome <- function(file, modechrom) {
+  # Ensure chromosomes have a "chr" prefix
+  file$chromosome <- ifelse(grepl("^chr", file$chromosome), file$chromosome, paste0("chr", file$chromosome))
+  
+  # Apply mode-based filtering
+  if (modechrom == "A") {
+    file <- subset(file, !chromosome %in% c("chrX", "chrY"))
+  } else if (modechrom %in% c("XX", "XY")) {
+    file <- subset(file, chromosome == "chrX")
+  }
+  
+  list(file = file)
+}
+
+
 # Function to sanitize gene names for file naming
 sanitize_filename <- function(name) {
     # Replace forbidden characters with an underscore
@@ -49,9 +86,6 @@ filter_df <- function(input_df, filtering_df) {
   if (!all(required_cols %in% filtering_cols)) {
     stop("BED file data frame must contain the following columns: chromosome, start, end")
   }
-    #for debug
-    #rdata_file <- "/app/res/input_and_filtering_data.RData"
-    #save(input_df, filtering_df, file = rdata_file)
 
     # Detect the chromosome, start, and end columns and their original cases in input_df
     chrom_column <- if ("chromosome" %in% colnames(input_df)) "chromosome" else "Chromosome"
@@ -117,12 +151,14 @@ filter_df <- function(input_df, filtering_df) {
 option_list <- list(
     make_option('--rdata', help = 'Input summary RData file (required)', dest = 'data'),
     make_option('--out', default = './plots', help = 'Output directory, default=./plots', dest = 'pfolder'),
+      make_option("--chromosome", default="A", help='Perform calling for autosomes or chr XX or chr XY', dest='chromosome'),
     make_option('--prefix', default = '', help = 'Prefix for the files, default=None', dest = 'prefix'),
     make_option('--bedfile', default = NULL, help = 'Specify a BED file. Default is the one in RData', dest = 'bedfile'), # BED file option
     make_option("--outrdata", default="./DECONplot.Rdata", help="Output Rdata file, default: ./DECONplot.Rdata", dest='outdata')
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
+modechrom = options$chromosome
 rdata_output = opt$outdata
 # Load R workspace with all the results saved : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
 count_data=opt$data
@@ -160,25 +196,25 @@ if (!is.null(opt$bedfile)) {
     # Load the specified BED file
     message('Loading specified BED file: ', opt$bedfile)
     # Check and read the BED file, ensuring it has at least four columns
-    bed.file <- read.table(opt$bedfile, header = FALSE, sep = "\t",
+    bed.filtering <- read.table(opt$bedfile, header = FALSE, sep = "\t",
                         colClasses = c("character", "integer", "integer", "character"))
 
     # Ensure at least four columns are present
-    if (ncol(bed.file) < 4) {
+    if (ncol(bed.filtering) < 4) {
         stop("Error: The BED file must have at least four columns (chromosome, start, end, gene).")
     }
 
     # Keep only the first four columns
-    bed.file <- bed.file[, 1:4]
+    bed.filtering <- bed.filtering[, 1:4]
     # Assign the required column names
-    colnames(bed.file) <- c("chromosome", "start", "end", "gene")
+    colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
 
     # Filtering
-    counts <- filter_df(counts, bed.file)
-    ExomeCount <- filter_df(ExomeCount, bed.file)
-    cnv.calls <- filter_df(cnv.calls, bed.file)
-    cnv.calls_ids <- filter_df(cnv.calls_ids, bed.file)
-    save.image(file = rdata_output)
+    counts <- filter_df(counts, bed.filtering)
+    ExomeCount <- filter_df(ExomeCount, bed.filtering)
+    cnv.calls <- filter_df(cnv.calls, bed.filtering)
+    cnv.calls_ids <- filter_df(cnv.calls_ids, bed.filtering)
+    
 }
 
 
@@ -192,25 +228,29 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
 }
 
 cnv.calls_plot$chr=paste('chr',cnv.calls_plot$Chromosome,sep='')
-
-
 Index=vector(length=nrow(bed.file))
 Index[1]=1
-for(i in 2:nrow(bed.file)){
-    if(bed.file[i,4]==bed.file[i-1,4]){
-        Index[i]=Index[i-1]+1
-    }else{
-        Index[i]=1
-    }
-}
 
 if(colnames(counts)[5]=="exon_number"){
+    message('Exon numbers detected')
     exons <- bed.file[, c("chromosome", "start", "end", "exon")]
     for(i in 1:nrow(exons)){
         x=which(paste(bed.file[,4])==paste(exons[i,4]) & bed.file[,2]<=exons[i,3] & bed.file[,3]>=exons[i,2])
         Index[x]=exons[i,5]
     }
+ } else {
+    message('No exon numbers detected')
+    for(i in 1:nrow(bed.file)){ # or 2:nrow(bed.file) ?
+        if(bed.file[i,4]==bed.file[i-1,4]){
+            Index[i]=Index[i-1]+1
+        }else{
+            Index[i]=1
+        }
+    }
 }
+#for debug
+rdata_file <- "/app/res/plot_data.RData"
+save(bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, exons, file = rdata_file)
 
 for(call_index in 1:nrow(cnv.calls_plot)){
     Sample<-cnv.calls_plot[call_index,]$Sample
@@ -234,6 +274,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     }
 
     ###### Part of plot containing the coverage points ###############
+    message('Starting drawing coverage')
     VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$Sample==Sample,]$Start.p,cnv.calls[cnv.calls$Sample==Sample,]$End.p))
     refs_sample<-refs[[Sample]]
     Data<-cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
@@ -256,7 +297,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     levels(Data1$testref)=c("Test Sample","Reference Sample","Affected exon")
     new_cols=c("blue","gray","red")
     A1<-ggplot(data=Data1,aes(x=exonRange,y=value,group=variable,colour=testref))
-    A1<-A1 + geom_point(cex=2.5,size=1.5)                        #Have to set up points with scale to get correct legend, then re-plot in correct order etc.
+    A1<-A1 + geom_point(cex=2.5,size=1.5) # Have to set up points with scale to get correct legend, then re-plot in correct order etc.
     A1<-A1 + scale_colour_manual(values=new_cols)  
     A1<-A1 + geom_line(data=subset(Data1,testref=="Reference Sample"),lty="dashed",lwd=1.5,col="grey") 
     A1<-A1 + geom_point(data=subset(Data1,testref=="Reference Sample"),cex=2.5,col="grey")   
@@ -278,6 +319,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 
 
     ############## Part of plot containing the gene names ###########
+    message('Adding gene names')
     genes_sel = unique(bed.file[exonRange,4])
     temp<-cbind(1:nrow(bed.file),bed.file)[exonRange,]
     len<-table(temp$gene)
@@ -303,6 +345,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     GenesPlot<-GenesPlot + theme(axis.text.x=element_blank(),axis.ticks.x=element_blank())
 
     ####### Part of the plot containing the normalized ratio of the coverage #############
+    message('Adding normalized ratio')
     Totals<-rowSums(ExomeCount[exonRange,c(Sample,refs_sample)])
     ratio = (ExomeCount[exonRange,Sample]/Totals)/models[[Sample]][1]
     mins <- vector(length=length(exonRange))
@@ -333,6 +376,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     }else{CIPlot<-CIPlot + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
 
     ######### Save plot in pdf format ###########
+    message('Saving plots in pdf format')
     cnv_genes_sample=cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$Gene
     cleaned_gene <- sanitize_filename(Gene)
     if (sum(cnv_genes_sample == cleaned_gene) == 1) {
@@ -345,7 +389,6 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     if (sum(cnv_genes_sample == cleaned_gene) > 2) {
         print(paste("WARNING: more than 2 calls in ", cleaned_gene, ", could affect plotting", sep = ""))
     }
-
  
     grid.newpage()
     pushViewport(viewport(layout = grid.layout(6, 1)))
