@@ -40,6 +40,30 @@ stop_if_missing <- function(val, message) {
     }
 }
 
+# Function to sort a bed file by chromosome (any file with a chromosome column)
+prepare_bed_file <- function(df) {
+    # Remove 'chr' prefix
+    df$chromosome <- gsub('chr', '', df$chromosome)
+    
+    # Convert to numeric and create a logical vector for numeric chromosomes
+    is_numeric <- !is.na(as.numeric(df$chromosome))
+
+    # Split numeric and non-numeric chromosomes
+    numeric_chromosomes <- df[is_numeric, ]
+    non_numeric_chromosomes <-df[!is_numeric, ]
+    
+    # Sort numeric chromosomes
+    numeric_chromosomes <- numeric_chromosomes[order(as.numeric(numeric_chromosomes$chromosome)), ]
+    
+    # Optionally, sort non-numeric chromosomes as well (X, Y, MT)
+    non_numeric_chromosomes <- non_numeric_chromosomes[order(factor(non_numeric_chromosomes$chromosome, levels = c("X", "Y", "MT"))), ]
+    
+    # Combine back the sorted data
+    df <- rbind(numeric_chromosomes, non_numeric_chromosomes)
+    
+    return(df)
+}
+
 process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     bams <- read_bam_files(bamfiles)
     
@@ -50,6 +74,8 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     
     sample.names <- get_sample_names(bams)
     bed.file <- read_bed_file(bed)
+    prepare_bed_file(bed.file)
+    bed.file$chromosome <- paste0("chr", bed.file$chromosome)
     
     nfiles <- length(bams)
     message(paste('Parse', nfiles, 'BAM files'))

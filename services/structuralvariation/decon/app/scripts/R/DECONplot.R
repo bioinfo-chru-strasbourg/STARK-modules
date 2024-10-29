@@ -27,13 +27,16 @@ suppressPackageStartupMessages({
 })
 
 # Function to sort a bed file by chromosome (any file with a chromosome column)
-prepare_bed_file <- function(bed.file) {
+prepare_bed_file <- function(df) {
     # Remove 'chr' prefix
-    bed.file$chromosome <- gsub('chr', '', bed.file$chromosome)
+    df$chromosome <- gsub('chr', '', df$chromosome)
     
+    # Convert to numeric and create a logical vector for numeric chromosomes
+    is_numeric <- !is.na(as.numeric(df$chromosome))
+
     # Split numeric and non-numeric chromosomes
-    numeric_chromosomes <- bed.file[!is.na(as.numeric(bed.file$chromosome)), ]
-    non_numeric_chromosomes <- bed.file[is.na(as.numeric(bed.file$chromosome)), ]
+    numeric_chromosomes <- df[is_numeric, ]
+    non_numeric_chromosomes <-df[!is_numeric, ]
     
     # Sort numeric chromosomes
     numeric_chromosomes <- numeric_chromosomes[order(as.numeric(numeric_chromosomes$chromosome)), ]
@@ -42,9 +45,9 @@ prepare_bed_file <- function(bed.file) {
     non_numeric_chromosomes <- non_numeric_chromosomes[order(factor(non_numeric_chromosomes$chromosome, levels = c("X", "Y", "MT"))), ]
     
     # Combine back the sorted data
-    bed.file <- rbind(numeric_chromosomes, non_numeric_chromosomes)
+    df <- rbind(numeric_chromosomes, non_numeric_chromosomes)
     
-    return(bed.file)
+    return(df)
 }
 
 
@@ -223,7 +226,7 @@ if (!is.null(opt$bedfile)) {
     # for debug
     rdata_file <- sprintf("/app/res/filtering_data_%s.RData", modechrom)
     save(bed.filtering, file = rdata_file)
-    
+
     # Filtering
     counts <- filter_df(counts, bed.filtering)
     ExomeCount <- filter_df(ExomeCount, bed.filtering)
