@@ -105,24 +105,26 @@ def launch_run(args):
     with open(variantannotation_running_log, "w") as write_file:
         pass
 
-    # synchronizer.vcf_synchronizer(run_informations)
-    # dejavu_processing.convert_vcf_parquet(run_informations, args)
-    # dejavu_processing.calculate_dejavu(run_informations)
-    # howard_processing.run_initialisation(run_informations)
-    # merged_vcf = howard_processing.merge_vcf(run_informations)
+    synchronizer.vcf_synchronizer(run_informations)
+    dejavu_processing.convert_vcf_parquet(run_informations, args)
+    dejavu_processing.calculate_dejavu(run_informations)
+    howard_processing.run_initialisation(run_informations)
+    merged_vcf = howard_processing.merge_vcf(run_informations)
     fambarcode_vcf = howard_processing.fambarcode_vcf(
         run_informations,
-        "/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/merged_230908_NB551027_0178_AHW7KLBGXT.vcf.gz",
+        merged_vcf,
     )
-    # annotated_merged_vcf = howard_processing.howard_proc(run_informations, fambarcode_vcf)
-    # howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
-    # if run_informations["run_panels"] != "":
-    #     howard_processing.panel_filtering(run_informations)
-    # howard_processing.convert_to_final_tsv(run_informations)
-    # non_redundant.generate(run_informations)
+    annotated_merged_vcf = howard_processing.howard_proc(
+        run_informations, fambarcode_vcf
+    )
+    howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
+    if run_informations["run_panels"] != "":
+        howard_processing.panel_filtering(run_informations)
+    howard_processing.convert_to_final_tsv(run_informations)
+    non_redundant.generate(run_informations)
 
-    # howard_processing.cleaner(run_informations)
-    # results_provider.distribute(run_informations)
+    howard_processing.cleaner(run_informations)
+    results_provider.distribute(run_informations)
 
     lock_file = osj(run_repository, "VANNOTComplete.txt")
     with open(lock_file, "w") as write_file:
