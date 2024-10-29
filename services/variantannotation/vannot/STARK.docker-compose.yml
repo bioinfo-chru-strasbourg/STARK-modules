@@ -73,6 +73,7 @@ services:
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATA}:${DOCKER_STARK_INNER_FOLDER_DATA}:rw
             # Volume for Docker to work inside a container
             - /var/run/docker.sock:/var/run/docker.sock
+            - /tmp/:/tmp/
             # Volumes for vannot configuration
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG}:rw
             # Volumes for databases

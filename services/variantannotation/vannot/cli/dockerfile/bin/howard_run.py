@@ -8,6 +8,7 @@ import results_provider
 import dejavu_processing
 import non_redundant
 
+
 def launch_run(args):
     run_repository = args.run
     if run_repository.endswith("/"):
@@ -91,7 +92,10 @@ def launch_run(args):
             os.environ["DOCKER_TMP"],
             f"tmp_{run_repository_list[-1]}/",
         ),
-        "module_config": osj(os.environ["DOCKER_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json"),
+        "module_config": osj(
+            os.environ["DOCKER_CONFIG"],
+            f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
+        ),
     }
     checker.depository_checker(run_informations)
     checker.pattern_checker(run_informations)
@@ -101,28 +105,30 @@ def launch_run(args):
     with open(variantannotation_running_log, "w") as write_file:
         pass
 
-    synchronizer.vcf_synchronizer(run_informations)
-    dejavu_processing.convert_vcf_parquet(run_informations, args)
-    dejavu_processing.calculate_dejavu(run_informations)
-    howard_processing.run_initialisation(run_informations)
-    merged_vcf = howard_processing.merge_vcf(run_informations)
-    annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
-    howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
-    if run_informations["run_panels"] != "":
-        howard_processing.panel_filtering(run_informations)
-    howard_processing.convert_to_final_tsv(run_informations)
-    non_redundant.generate(run_informations)
+    # synchronizer.vcf_synchronizer(run_informations)
+    # dejavu_processing.convert_vcf_parquet(run_informations, args)
+    # dejavu_processing.calculate_dejavu(run_informations)
+    # howard_processing.run_initialisation(run_informations)
+    # merged_vcf = howard_processing.merge_vcf(run_informations)
+    fambarcode_vcf = howard_processing.fambarcode_vcf(
+        run_informations,
+        "/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/merged_230908_NB551027_0178_AHW7KLBGXT.vcf.gz",
+    )
+    # annotated_merged_vcf = howard_processing.howard_proc(run_informations, fambarcode_vcf)
+    # howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
+    # if run_informations["run_panels"] != "":
+    #     howard_processing.panel_filtering(run_informations)
+    # howard_processing.convert_to_final_tsv(run_informations)
+    # non_redundant.generate(run_informations)
 
-    howard_processing.cleaner(run_informations)
-    results_provider.distribute(run_informations)
+    # howard_processing.cleaner(run_informations)
+    # results_provider.distribute(run_informations)
 
     lock_file = osj(run_repository, "VANNOTComplete.txt")
     with open(lock_file, "w") as write_file:
         pass
 
-    log.info(
-        f"vannot analysis for run {run_informations['run_name']} ended well"
-    )
+    log.info(f"vannot analysis for run {run_informations['run_name']} ended well")
 
 
 if __name__ == "__main__":
