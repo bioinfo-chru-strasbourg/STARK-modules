@@ -26,7 +26,7 @@ suppressPackageStartupMessages({
     library(GenomicRanges)
 })
 
-# Function to prepare bed file (sorting by chromosome)
+# Function to sort a bed file by chromosome (any file with a chromosome column)
 prepare_bed_file <- function(bed.file) {
     # Remove 'chr' prefix
     bed.file$chromosome <- gsub('chr', '', bed.file$chromosome)
@@ -210,13 +210,20 @@ if (!is.null(opt$bedfile)) {
     # Assign the required column names
     colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
     
-     # Filtering by chr
+    # Prepare the BED file
+    bed.filtering <- prepare_bed_file(bed.filtering) 
+    
+    # Filtering by chr
     bed.filtering <- filter_data_by_chromosome(bed.filtering, modechrom)
     
+    ExomeCount <- prepare_bed_file(ExomeCount)
+    counts <- prepare_bed_file(counts)
+    counts$chromosome <- paste0("chr", counts$chromosome)
+
     # for debug
     rdata_file <- sprintf("/app/res/filtering_data_%s.RData", modechrom)
     save(bed.filtering, file = rdata_file)
-
+    
     # Filtering
     counts <- filter_df(counts, bed.filtering)
     ExomeCount <- filter_df(ExomeCount, bed.filtering)
@@ -264,13 +271,17 @@ save(counts, ExomeCount, cnv.calls, cnv.calls_ids, exons, file = rdata_file)
 for(call_index in 1:nrow(cnv.calls_plot)){
     Sample<-cnv.calls_plot[call_index,]$Sample
     Gene<-unlist(strsplit(cnv.calls_plot[call_index,]$Gene,split=", "))
+    
+    # exonRange identifies rows in bed.file that match the current Gene. The range may be adjusted by expanding it to include padding of 5 bases on either side of the CNV region (Start.p and End.p values). If the adjusted range extends beyond the available data, it is truncated to fit the data boundaries. This ensures that the plot includes all relevant exons for the CNV region, with a small margin for context.
     exonRange<-which(bed.file[,4]%in%Gene)
     if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)>=1)){exonRange=(cnv.calls_plot[call_index,]$Start.p-5):max(exonRange)}
     if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)<=0)){exonRange=1:max(exonRange)}
     if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)<=nrow(bed.file))){exonRange=min(exonRange):(cnv.calls_plot[call_index,]$End.p+5)}
     if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)>nrow(bed.file))){exonRange=min(exonRange):nrow(bed.file)}
+    
+    # Check if the exonRange spans multiple chromosomes. If it does, the range is adjusted to include only the exons on the chromosome of the CNV call. This ensures that the plot is generated for a single chromosome at a time, which is necessary for the plotting function to work correctly. If the adjusted range is empty (i.e., there are no exons on the chromosome of the CNV call), an error message is printed and the loop continues to the next CNV call. If the adjusted range is not empty, the plot is generated for the exons on the chromosome of the CNV call.
     singlechr=length(unique(bed.file[exonRange,1]))==1
-
+    # If singlechr is FALSE, meaning multiple chromosomes are detected within exonRange, the code isolates the correct chromosome entries. It sets prev to track whether the current region matches the chromosome of the CNV call and sets newchr to the chromosome being   assessed.
     if(!singlechr){
         if(bed.file[exonRange[1],1]!=cnv.calls_plot[call_index,]$chr){
             prev=TRUE
