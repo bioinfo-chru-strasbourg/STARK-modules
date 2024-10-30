@@ -59,16 +59,6 @@ chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
 
 filter_data_by_chromosome <- function(file, modechrom) {
   message(sprintf("Start filtering by chromosome with mode: %s", modechrom))
-  # Ensure chromosomes have a "chr" prefix
-  #file$chromosome <- ifelse(
-  #  grepl("^chr", file$chromosome), 
-  #  file$chromosome, 
-  #  ifelse(file$chromosome %in% c("X", "Y"), 
-  #         paste0("chr", file$chromosome), 
-  #         paste0("chr", as.numeric(file$chromosome)))
-  #  )
-
-  # Apply mode-based filtering
   if (modechrom == "A") {
     file <- subset(file, !chromosome %in% c("chrX", "chrY"))
   } else if (modechrom %in% c("XX", "XY")) {
