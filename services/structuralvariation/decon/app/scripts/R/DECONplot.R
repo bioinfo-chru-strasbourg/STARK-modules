@@ -60,7 +60,13 @@ chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
 filter_data_by_chromosome <- function(file, modechrom) {
   message(sprintf("Start filtering by chromosome with mode: %s", modechrom))
   # Ensure chromosomes have a "chr" prefix
-  file$chromosome <- ifelse(grepl("^chr", file$chromosome), file$chromosome, paste0("chr", file$chromosome))
+  file$chromosome <- ifelse(
+    grepl("^chr", file$chromosome), 
+    file$chromosome, 
+    ifelse(file$chromosome %in% c("X", "Y"), 
+           paste0("chr", file$chromosome), 
+           paste0("chr", as.numeric(file$chromosome)))
+)
 
   # Apply mode-based filtering
   if (modechrom == "A") {
@@ -99,8 +105,8 @@ filter_df <- function(input_df, filtering_df) {
 
     # Detect the chromosome, start, and end columns and their original cases in input_df
     chrom_column <- if ("chromosome" %in% colnames(input_df)) "chromosome" else "Chromosome"
-    start_column <- if ("Start" %in% colnames(input_df)) "Start" else "start"
-    end_column <- if ("End" %in% colnames(input_df)) "End" else "end"
+    start_column <- if ("start" %in% colnames(input_df)) "start" else "Start"
+    end_column <- if ("end" %in% colnames(input_df)) "end" else "End"
 
     # Save the original Chromosome, Start, and End values to restore later
     input_df$Original_Chromosome <- input_df[[chrom_column]]
