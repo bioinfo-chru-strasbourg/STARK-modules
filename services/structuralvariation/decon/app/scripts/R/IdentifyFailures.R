@@ -44,25 +44,35 @@ load_data <- function(rdata_file) {
 }
 
 # Function to prepare bed file (sorting by chromosome)
-prepare_bed_file <- function(bed.file) {
-    # Remove 'chr' prefix
-    bed.file$chromosome <- gsub('chr', '', bed.file$chromosome)
+chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
+    # Remove "chr" prefix temporarily
+    chromosomes <- gsub("chr", "", df[[col_name]])
+
+    # Separate numeric and non-numeric chromosomes
+    numeric_chromosomes <- suppressWarnings(as.numeric(chromosomes))
+    non_numeric_chromosomes <- chromosomes[is.na(numeric_chromosomes)]
+    numeric_chromosomes <- numeric_chromosomes[!is.na(numeric_chromosomes)]
     
-    # Split numeric and non-numeric chromosomes
-    numeric_chromosomes <- bed.file[!is.na(as.numeric(bed.file$chromosome)), ]
-    non_numeric_chromosomes <- bed.file[is.na(as.numeric(bed.file$chromosome)), ]
+    # Sort numeric chromosomes and non-numeric chromosomes separately
+    sorted_numeric <- sort(unique(numeric_chromosomes), na.last = TRUE)
+    sorted_non_numeric <- sort(unique(non_numeric_chromosomes))
     
-    # Sort numeric chromosomes
-    numeric_chromosomes <- numeric_chromosomes[order(as.numeric(numeric_chromosomes$chromosome)), ]
+    # Combine sorted numeric and non-numeric chromosomes
+    sorted_chromosomes <- c(sorted_numeric, sorted_non_numeric)
     
-    # Optionally, sort non-numeric chromosomes as well (X, Y, MT)
-    non_numeric_chromosomes <- non_numeric_chromosomes[order(factor(non_numeric_chromosomes$chromosome, levels = c("X", "Y", "MT"))), ]
+    # Reapply the "chr" prefix if needed
+    if (add_prefix) {
+        sorted_chromosomes <- paste0("chr", sorted_chromosomes)
+    }
+
+    # Reorder the data frame based on the sorted chromosome order
+    df[[col_name]] <- factor(df[[col_name]], levels = unique(sorted_chromosomes))
+    df <- df[order(df[[col_name]]), ]
     
-    # Combine back the sorted data
-    bed.file <- rbind(numeric_chromosomes, non_numeric_chromosomes)
-    
-    return(bed.file)
+    return(df)
 }
+
+
 
 # Function to calculate metrics from coverage data
 calculate_metrics <- function(count, sample.names, min_corr, min_cov, bed.file) {
@@ -161,7 +171,7 @@ main <- function(rdata_file, min_corr, min_cov, output_file) {
     colnames(counts)[1:length(sample.names)+5] <- sample.names
 
     # Prepare bed file (sorting by chromosome)
-    bed.file <- prepare_bed_file(bed.file)
+    bed.file <- chr_sort_df(bed.file, "chromosome")
     
     # Calculate metrics
     metrics <- calculate_metrics(counts, sample.names, min_corr, min_cov, bed.file)

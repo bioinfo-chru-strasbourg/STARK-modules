@@ -42,29 +42,37 @@ stop_if_missing <- function(val, message) {
     }
 }
 
-# Function to sort a bed file by chromosome (any file with a chromosome column)
-prepare_bed_file <- function(df) {
-    # Remove 'chr' prefix
-    df$chromosome <- gsub('chr', '', df$chromosome)
-    
-    # Convert to numeric and create a logical vector for numeric chromosomes
-    is_numeric <- !is.na(as.numeric(df$chromosome))
+# Function to sort a file by chromosome (any file with a chromosome column)
+# usage sorted_df <- chr_sort_df(df, "chromosome")
+chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
+    # Remove "chr" prefix temporarily
+    chromosomes <- gsub("chr", "", df[[col_name]])
 
-    # Split numeric and non-numeric chromosomes
-    numeric_chromosomes <- df[is_numeric, ]
-    non_numeric_chromosomes <-df[!is_numeric, ]
+    # Separate numeric and non-numeric chromosomes
+    numeric_chromosomes <- suppressWarnings(as.numeric(chromosomes))
+    non_numeric_chromosomes <- chromosomes[is.na(numeric_chromosomes)]
+    numeric_chromosomes <- numeric_chromosomes[!is.na(numeric_chromosomes)]
     
-    # Sort numeric chromosomes
-    numeric_chromosomes <- numeric_chromosomes[order(as.numeric(numeric_chromosomes$chromosome)), ]
+    # Sort numeric chromosomes and non-numeric chromosomes separately
+    sorted_numeric <- sort(unique(numeric_chromosomes), na.last = TRUE)
+    sorted_non_numeric <- sort(unique(non_numeric_chromosomes))
     
-    # Optionally, sort non-numeric chromosomes as well (X, Y, MT)
-    non_numeric_chromosomes <- non_numeric_chromosomes[order(factor(non_numeric_chromosomes$chromosome, levels = c("X", "Y", "MT"))), ]
+    # Combine sorted numeric and non-numeric chromosomes
+    sorted_chromosomes <- c(sorted_numeric, sorted_non_numeric)
     
-    # Combine back the sorted data
-    df <- rbind(numeric_chromosomes, non_numeric_chromosomes)
+    # Reapply the "chr" prefix if needed
+    if (add_prefix) {
+        sorted_chromosomes <- paste0("chr", sorted_chromosomes)
+    }
+
+    # Reorder the data frame based on the sorted chromosome order
+    df[[col_name]] <- factor(df[[col_name]], levels = unique(sorted_chromosomes))
+    df <- df[order(df[[col_name]]), ]
     
     return(df)
 }
+
+
 
 # Function to remove space in a string
 trim <- function (x) gsub("^\\s+|\\s+$", "", x)
@@ -113,11 +121,11 @@ process_samplebams <- function(samples.file) {
 filter_data_by_chromosome <- function(ExomeCount, bed.file, counts, mode.chrom) {
   if (mode.chrom == "A") {
     ExomeCount <- subset(ExomeCount, !chromosome %in% c("X", "Y"))
-    bed.file <- subset(bed.file, !chromosome %in% c("X", "Y"))
+    bed.file <- subset(bed.file, !chromosome %in% c("chrX", "chrY"))
     counts <- subset(counts, !chromosome %in% c("chrX", "chrY"))
   } else if (mode.chrom %in% c("XX", "XY")) {
     ExomeCount <- subset(ExomeCount, chromosome == "X")
-    bed.file <- subset(bed.file, chromosome == "X")
+    bed.file <- subset(bed.file, chromosome == "chrX")
     counts <- subset(counts, chromosome == "chrX")
   }
   list(ExomeCount = ExomeCount, bed.file = bed.file, counts = counts)
@@ -274,10 +282,9 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   }
   
   # for debug
-  #prefix <- "_debug" 
-  #rdata_output = options$outdata
-  #full_output_filename <- paste0(rdata_output, prefix)
-  #save(bed.file,counts,sample.names,bams,cnv.calls_ids,cnv.calls, refs, models, fasta, file=full_output_filename)
+  modechrom = options$chromosome
+  rdata_file <- sprintf("/app/res/debug_cnvcalldata_%s.RData", modechrom)
+  save(bed.file,counts,cnv.calls_ids,cnv.calls, file=rdata_file)
   ####
 
   # Add custom exon numbers
@@ -329,7 +336,7 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
     dir.create(dirname(output_file))
   }
 
-  bed.file <- prepare_bed_file(bed.file)
+  bed.file <- chr_sort_df(bed.file, "chromosome")
   ExomeCount <- as.data.frame(counts)
   # Check if 'exon' column exists in ExomeCount
   if ("exon_number" %in% colnames(ExomeCount)) {

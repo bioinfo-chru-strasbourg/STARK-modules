@@ -26,26 +26,32 @@ suppressPackageStartupMessages({
     library(GenomicRanges)
 })
 
-# Function to sort a bed file by chromosome (any file with a chromosome column)
-prepare_bed_file <- function(df) {
-    # Remove 'chr' prefix
-    df$chromosome <- gsub('chr', '', df$chromosome)
-    
-    # Convert to numeric and create a logical vector for numeric chromosomes
-    is_numeric <- !is.na(as.numeric(df$chromosome))
+# Function to sort a file by chromosome (any file with a chromosome column)
+# usage sorted_df <- chr_sort_df(df, "chromosome")
+chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
+    # Remove "chr" prefix temporarily
+    chromosomes <- gsub("chr", "", df[[col_name]])
 
-    # Split numeric and non-numeric chromosomes
-    numeric_chromosomes <- df[is_numeric, ]
-    non_numeric_chromosomes <-df[!is_numeric, ]
+    # Separate numeric and non-numeric chromosomes
+    numeric_chromosomes <- suppressWarnings(as.numeric(chromosomes))
+    non_numeric_chromosomes <- chromosomes[is.na(numeric_chromosomes)]
+    numeric_chromosomes <- numeric_chromosomes[!is.na(numeric_chromosomes)]
     
-    # Sort numeric chromosomes
-    numeric_chromosomes <- numeric_chromosomes[order(as.numeric(numeric_chromosomes$chromosome)), ]
+    # Sort numeric chromosomes and non-numeric chromosomes separately
+    sorted_numeric <- sort(unique(numeric_chromosomes), na.last = TRUE)
+    sorted_non_numeric <- sort(unique(non_numeric_chromosomes))
     
-    # Optionally, sort non-numeric chromosomes as well (X, Y, MT)
-    non_numeric_chromosomes <- non_numeric_chromosomes[order(factor(non_numeric_chromosomes$chromosome, levels = c("X", "Y", "MT"))), ]
+    # Combine sorted numeric and non-numeric chromosomes
+    sorted_chromosomes <- c(sorted_numeric, sorted_non_numeric)
     
-    # Combine back the sorted data
-    df <- rbind(numeric_chromosomes, non_numeric_chromosomes)
+    # Reapply the "chr" prefix if needed
+    if (add_prefix) {
+        sorted_chromosomes <- paste0("chr", sorted_chromosomes)
+    }
+
+    # Reorder the data frame based on the sorted chromosome order
+    df[[col_name]] <- factor(df[[col_name]], levels = unique(sorted_chromosomes))
+    df <- df[order(df[[col_name]]), ]
     
     return(df)
 }
@@ -213,16 +219,13 @@ if (!is.null(opt$bedfile)) {
     # Assign the required column names
     colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
     
-    # Prepare the BED file
-    bed.filtering <- prepare_bed_file(bed.filtering) 
-    
+    # Sort by chr
+    bed.filtering <- chr_sort_df(bed.filtering, "chromosome")
+    ExomeCount <- chr_sort_df(ExomeCount, "chromosome", add_prefix = FALSE)
+    counts <- chr_sort_df(counts, "chromosome")
     # Filtering by chr
     bed.filtering <- filter_data_by_chromosome(bed.filtering, modechrom)
-    
-    ExomeCount <- prepare_bed_file(ExomeCount)
-    counts <- prepare_bed_file(counts)
-    counts$chromosome <- paste0("chr", counts$chromosome)
-
+   
     # for debug
     rdata_file <- sprintf("/app/res/filtering_data_%s.RData", modechrom)
     save(bed.filtering, file = rdata_file)
