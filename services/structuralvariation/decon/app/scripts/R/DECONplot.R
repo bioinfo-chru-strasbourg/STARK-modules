@@ -76,6 +76,21 @@ sanitize_filename <- function(name) {
     gsub("[[:punct:] ]+", "_", name)
 }
 
+# Function to uppercase column names after a specific column
+uppercase_after_colname <- function(df, specific_colname) {
+  # Check if the specified column name exists in the data frame
+  if (!specific_colname %in% colnames(df)) {
+    stop("The specified column name does not exist in the data frame.")
+  }
+  
+  # Get the index of the specific column name
+  specific_index <- which(colnames(df) == specific_colname)
+  
+  # Uppercase column names after the specific index
+  colnames(df)[(specific_index + 1):ncol(df)] <- toupper(colnames(df)[(specific_index + 1):ncol(df)])
+  
+  return(df)
+}
 
 # Function to capitalize the first letter of the first part of a string
 capitalize_first_part <- function(colname) {
@@ -235,8 +250,8 @@ if (!is.null(opt$bedfile)) {
     bed.filtering <- filter_data_by_chromosome(bed.filtering, modechrom)
    
     # for debug
-    #rdata_file <- sprintf("/app/res/debug_prefiltering_data_%s.RData", modechrom)
-    #save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+    rdata_file <- sprintf("/app/res/debug_prefiltering_data_%s.RData", modechrom)
+    save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 
     # Filtering
     counts <- filter_df(counts, bed.filtering)
@@ -244,9 +259,18 @@ if (!is.null(opt$bedfile)) {
     cnv.calls <- filter_df(cnv.calls, bed.filtering)
     cnv.calls_ids <- filter_df(cnv.calls_ids, bed.filtering)
     
+    # Check for the existence of "Exon_number" or use "Gene"
+    if ("Exon_number" %in% colnames(counts)) {
+    counts <- uppercase_after_colname(counts, "Exon_number")
+    ExomeCount <- uppercase_after_colname(ExomeCount, "Exon_number")
+    } else {
+    counts <- uppercase_after_colname(counts, "Gene")
+    ExomeCount <- uppercase_after_colname(ExomeCount, "Gene")
+    }
+
     # for debug
-    #rdata_file <- sprintf("/app/res/debug_postfiltering_data_%s.RData", modechrom)
-    #save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+    rdata_file <- sprintf("/app/res/debug_postfiltering_data_%s.RData", modechrom)
+    save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 
 }
 
@@ -255,13 +279,13 @@ if (!is.null(opt$bedfile)) {
 message('Start generating plots')
 
 if ("Custom.first" %in% colnames(cnv.calls_ids)){
-    message('Exon detected')
+    message('Custom.first colum detected')
     cnv.calls_plot=cnv.calls_ids[!is.na(cnv.calls_ids$Custom.first),] # filter NA
-    message('CNV plot initiating with exons numbers')
+    message('CNV plot initiating with custom exons numbers')
 }else{
-    message('No exons detected')
+    message('Custom.first colum not detected')
     cnv.calls_plot=cnv.calls_ids
-     message('CNV plot initiating')
+     message('CNV plot initiating without custom exon numbers')
 }
 
 # for debug
@@ -275,7 +299,7 @@ message('Initiating index')
 Index=vector(length=nrow(bed.file))
 Index[1]=1
 
-if(colnames(counts)[5]=="exon_number"){
+if(colnames(counts)[5]=="Exon_number"){
     message('Exon numbers detected')
     exons <- bed.file[, c("chromosome", "start", "end", "exon")]
     for(i in 1:nrow(exons)){
