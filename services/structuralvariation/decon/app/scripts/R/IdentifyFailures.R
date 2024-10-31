@@ -65,12 +65,18 @@ chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
         sorted_chromosomes <- paste0("chr", sorted_chromosomes)
     }
 
-    # Reorder the data frame based on the sorted chromosome order
-    df[[col_name]] <- factor(df[[col_name]], levels = unique(sorted_chromosomes))
+    # Keep only levels that are actually present in the data
+    actual_levels <- intersect(sorted_chromosomes, unique(df[[col_name]]))
+    df[[col_name]] <- factor(df[[col_name]], levels = actual_levels)
+    
+    # Order by the factor levels
     df <- df[order(df[[col_name]]), ]
+    rownames(df) <- NULL  # Reset row indices if needed
     
     return(df)
 }
+
+
 
 
 

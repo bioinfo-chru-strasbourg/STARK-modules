@@ -49,12 +49,18 @@ chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
         sorted_chromosomes <- paste0("chr", sorted_chromosomes)
     }
 
-    # Reorder the data frame based on the sorted chromosome order
-    df[[col_name]] <- factor(df[[col_name]], levels = unique(sorted_chromosomes))
+    # Keep only levels that are actually present in the data
+    actual_levels <- intersect(sorted_chromosomes, unique(df[[col_name]]))
+    df[[col_name]] <- factor(df[[col_name]], levels = actual_levels)
+    
+    # Order by the factor levels
     df <- df[order(df[[col_name]]), ]
+    rownames(df) <- NULL  # Reset row indices if needed
     
     return(df)
 }
+
+
 
 
 filter_data_by_chromosome <- function(file, modechrom) {
@@ -289,7 +295,7 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
 }
 
 # add chr prefix
-cnv.calls_plot$chromosome=paste('chr',cnv.calls_plot$chromosome,sep='')
+cnv.calls_plot$chromosome=paste('chr',cnv.calls_plot$Chromosome,sep='')
 
 message('Sorting bed.file')
 bed.file <- chr_sort_df(bed.file, "chromosome")
@@ -339,14 +345,14 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     singlechr=length(unique(bed.file[exonRange,1]))==1
     # If singlechr is FALSE, meaning multiple chromosomes are detected within exonRange, the code isolates the correct chromosome entries. It sets prev to track whether the current region matches the chromosome of the CNV call and sets newchr to the chromosome being   assessed.
     if(!singlechr){
-        if(bed.file[exonRange[1],1]!=cnv.calls_plot[call_index,]$chr){
+        if(bed.file[exonRange[1],1]!=cnv.calls_plot[call_index,]$Chromosome){
             prev=TRUE
             newchr=bed.file[exonRange[1],1]
         }else{
             prev=FALSE
             newchr=bed.file[exonRange[length(exonRange)],1]
         }
-        exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$chr]
+        exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$Chromosome]
     }
 
     ###### Part of plot containing the coverage points ###############
