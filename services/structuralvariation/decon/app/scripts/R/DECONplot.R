@@ -81,76 +81,64 @@ filter_df <- function(input_df, filtering_df) {
   
   # Ensure the required columns exist in both data frames
   required_cols <- c("chromosome", "start", "end")
-
-  # Check if the required columns exist (case-insensitive)
-  input_cols <- tolower(colnames(input_df))
-  filtering_cols <- tolower(colnames(filtering_df))
-  
-  if (!all(required_cols %in% input_cols)) {
-    stop("CNV calls data frame must contain the following columns: chromosome, start, end")
+  if (!all(required_cols %in% tolower(colnames(input_df)))) {
+    stop("CNV calls data frame must contain columns: chromosome, start, end")
+  }
+  if (!all(required_cols %in% tolower(colnames(filtering_df)))) {
+    stop("BED file data frame must contain columns: chromosome, start, end")
   }
   
-  if (!all(required_cols %in% filtering_cols)) {
-    stop("BED file data frame must contain the following columns: chromosome, start, end")
+  message('Start filtering')
+
+  # Standardize column names and chromosome format in both data frames
+  colnames(input_df) <- tolower(colnames(input_df))
+  colnames(filtering_df) <- tolower(colnames(filtering_df))
+  
+  # Add "chr" prefix if missing and convert specific chromosomes (chrX -> chr23, chrY -> chr24)
+  format_chromosome <- function(df) {
+    df$chromosome <- ifelse(grepl("^chr", df$chromosome, ignore.case = TRUE),
+                            tolower(df$chromosome),
+                            paste0("chr", df$chromosome))
+    df$chromosome <- gsub("^chrx$", "chr23", df$chromosome, ignore.case = TRUE)
+    df$chromosome <- gsub("^chry$", "chr24", df$chromosome, ignore.case = TRUE)
+    return(df)
   }
+  
+  input_df <- format_chromosome(input_df)
+  filtering_df <- format_chromosome(filtering_df)
 
-    # Detect the chromosome, start, and end columns and their original cases in input_df
-    chrom_column <- if ("chromosome" %in% colnames(input_df)) "chromosome" else "Chromosome"
-    start_column <- if ("start" %in% colnames(input_df)) "start" else "Start"
-    end_column <- if ("end" %in% colnames(input_df)) "end" else "End"
-
-    # Save the original Chromosome, Start, and End values to restore later
-    input_df$Original_Chromosome <- input_df[[chrom_column]]
-    input_df$Original_Start <- input_df[[start_column]]
-    input_df$Original_End <- input_df[[end_column]]
-
-    # Standardize chromosome format in input_df
-    input_df[[chrom_column]] <- ifelse(grepl("^chr", input_df[[chrom_column]], ignore.case = TRUE),
-                                    input_df[[chrom_column]],
-                                    paste0("chr", input_df[[chrom_column]]))
-
-    # If `Start` and `End` columns were uppercase, temporarily rename them for processing
-    if (start_column == "Start") colnames(input_df)[colnames(input_df) == "Start"] <- "start"
-    if (end_column == "End") colnames(input_df)[colnames(input_df) == "End"] <- "end"
-
-    # Standardize filtering_df column names and chromosome format
-    colnames(filtering_df) <- tolower(colnames(filtering_df))  # Ensure lowercase column names
-    filtering_df$chromosome <- ifelse(grepl("^chr", filtering_df$chromosome, ignore.case = TRUE),
-                                    filtering_df$chromosome,
-                                    paste0("chr", filtering_df$chromosome))
-
-    # Convert input_df to GRanges using standardized column names
-    input_gr <- GRanges(
-    seqnames = input_df[[chrom_column]],
+  # Convert data frames to GRanges objects
+  input_gr <- GRanges(
+    seqnames = input_df$chromosome,
     ranges = IRanges(start = input_df$start, end = input_df$end),
     CNV.type = input_df$CNV.type
-    )
-
-    # Convert filtering_df to GRanges
-    filter_gr <- GRanges(
+  )
+  filter_gr <- GRanges(
     seqnames = filtering_df$chromosome,
     ranges = IRanges(start = filtering_df$start, end = filtering_df$end)
-    )
+  )
 
-    # Find overlaps
-    overlaps <- findOverlaps(input_gr, filter_gr)
+  # Find overlaps
+  overlaps <- findOverlaps(input_gr, filter_gr)
+  
+  # Filter input_df and filtering_df based on overlaps
+  input_df_filtered <- input_df[queryHits(overlaps), ]
+  filtering_df_filtered <- filtering_df[subjectHits(overlaps), ]
+  
+  # Identify and exclude any overlapping columns (except chromosome, start, and end)
+  overlap_columns <- intersect(colnames(input_df_filtered), colnames(filtering_df_filtered))
+  filtering_df_filtered <- filtering_df_filtered[, !colnames(filtering_df_filtered) %in% overlap_columns]
 
-    # Filter input_df based on overlaps and remove duplicates
-    input_df_filtered <- input_df[unique(queryHits(overlaps)), ]
+  # Combine the filtered data frames
+  result <- cbind(input_df_filtered, filtering_df_filtered)
 
-    # Revert Chromosome, Start, and End columns to original values
-    input_df_filtered[[chrom_column]] <- input_df_filtered$Original_Chromosome
-    input_df_filtered[[start_column]] <- input_df_filtered$Original_Start
-    input_df_filtered[[end_column]] <- input_df_filtered$Original_End
+  # Restore original chromosome values (chr23 -> X, chr24 -> Y)
+  result$chromosome <- gsub("^chr23$", "X", result$chromosome, ignore.case = TRUE)
+  result$chromosome <- gsub("^chr24$", "Y", result$chromosome, ignore.case = TRUE)
 
-    # Drop temporary columns
-    input_df_filtered$Original_Chromosome <- NULL
-    input_df_filtered$Original_Start <- NULL
-    input_df_filtered$Original_End <- NULL
-
-
-  return(input_df_filtered)
+  return(result)
 }
+
 
 
 
@@ -224,8 +212,8 @@ if (!is.null(opt$bedfile)) {
     bed.filtering <- filter_data_by_chromosome(bed.filtering, modechrom)
    
     # for debug
-    rdata_file <- sprintf("/app/res/debug_filtering_data_%s.RData", modechrom)
-    save(bed.filtering, ExomeCount, counts, file = rdata_file)
+    rdata_file <- sprintf("/app/res/debug_prefiltering_data_%s.RData", modechrom)
+    save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 
     # Filtering
     counts <- filter_df(counts, bed.filtering)
@@ -233,6 +221,11 @@ if (!is.null(opt$bedfile)) {
     cnv.calls <- filter_df(cnv.calls, bed.filtering)
     cnv.calls_ids <- filter_df(cnv.calls_ids, bed.filtering)
     
+    # for debug
+    rdata_file <- sprintf("/app/res/debug_postfiltering_data_%s.RData", modechrom)
+    save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+
+
 }
 
 
@@ -240,12 +233,21 @@ if (!is.null(opt$bedfile)) {
 message('Start generating plots')
 
 if ("Custom.first" %in% colnames(cnv.calls_ids)){
+    message('Exon detected')
     cnv.calls_plot=cnv.calls_ids[!is.na(cnv.calls_ids$Custom.first),] # filter NA
+    message('CNV plot initiating with exons numbers')
 }else{
+    message('No exons detected')
     cnv.calls_plot=cnv.calls_ids
+     message('CNV plot initiating')
 }
 
+# for debug
+rdata_file <- sprintf("/app/res/debugplot_data_%s.RData", modechrom)
+save(counts, ExomeCount, cnv.calls, cnv.calls_ids, exons, cnv.calls_plot, file = rdata_file)
+
 cnv.calls_plot$chr=paste('chr',cnv.calls_plot$Chromosome,sep='')
+message('Initiating index')
 Index=vector(length=nrow(bed.file))
 Index[1]=1
 
@@ -268,7 +270,7 @@ if(colnames(counts)[5]=="exon_number"){
 }
 
 # for debug
-rdata_file <- sprintf("/app/res/plot_data_%s.RData", modechrom)
+rdata_file <- sprintf("/app/res/debugplot_data_%s.RData", modechrom)
 save(counts, ExomeCount, cnv.calls, cnv.calls_ids, exons, file = rdata_file)
 
 for(call_index in 1:nrow(cnv.calls_plot)){

@@ -282,9 +282,9 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   }
   
   # for debug
-  modechrom = options$chromosome
-  rdata_file <- sprintf("/app/res/debug_cnvcalldata_%s.RData", modechrom)
-  save(bed.file,counts,cnv.calls_ids,cnv.calls, file=rdata_file)
+  #modechrom = options$chromosome
+  #rdata_file <- sprintf("/app/res/debug_cnvcalldata_%s.RData", modechrom)
+  #save(bed.file,counts,cnv.calls_ids,cnv.calls, file=rdata_file)
   ####
 
   # Add custom exon numbers
