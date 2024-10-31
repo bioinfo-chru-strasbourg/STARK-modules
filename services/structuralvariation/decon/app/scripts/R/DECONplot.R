@@ -288,12 +288,14 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
      message('CNV plot initiating without custom exon numbers')
 }
 
-# for debug
-#rdata_file <- sprintf("/app/res/debugpreplot_data_%s.RData", modechrom)
-#save(counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
-
 # add chr prefix
 cnv.calls_plot$chromosome=paste('chr',cnv.calls_plot$chromosome,sep='')
+
+message('Sorting bed.file')
+bed.file <- chr_sort_df(bed.file, "chromosome")
+# for debug
+rdata_file <- sprintf("/app/res/debugpreplot_data_%s.RData", modechrom)
+save(bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
 
 message('Initiating index')
 Index=vector(length=nrow(bed.file))
@@ -318,8 +320,8 @@ if(colnames(counts)[5]=="Exon_number"){
 }
 
 # for debug
-rdata_file <- sprintf("/app/res/debugplot_data_%s.RData", modechrom)
-save(counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+rdata_file <- sprintf("/app/res/debugplotpost_data_%s.RData", modechrom)
+save(bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
 
 message('Start compiling datas for each cnv cals plot row')
 for(call_index in 1:nrow(cnv.calls_plot)){
