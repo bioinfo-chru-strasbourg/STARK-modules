@@ -236,7 +236,8 @@ if (!is.null(opt$bedfile)) {
     message('Loading specified BED file: ', opt$bedfile)
     # Check and read the BED file, ensuring it has at least four columns
     bed.filtering <- read.table(opt$bedfile, header = FALSE, sep = "\t",
-                        colClasses = c("character", "integer", "integer", "character"))
+                            colClasses = c("character", "integer", "integer", "character"),
+                            fill = TRUE)[, 1:4]
 
     # Ensure at least four columns are present
     if (ncol(bed.filtering) < 4) {
