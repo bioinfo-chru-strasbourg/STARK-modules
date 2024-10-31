@@ -76,6 +76,17 @@ sanitize_filename <- function(name) {
     gsub("[[:punct:] ]+", "_", name)
 }
 
+
+# Function to capitalize the first letter of each word
+capitalize <- function(x) {
+  sapply(strsplit(x, " "), function(y) {
+    paste(toupper(substring(y, 1, 1)), substring(y, 2), sep = "", collapse = " ")
+  })
+}
+
+
+
+
 # Function to filter df based on overlapping intervals
 filter_df <- function(input_df, filtering_df) {
   
@@ -135,11 +146,12 @@ filter_df <- function(input_df, filtering_df) {
   # Restore original chromosome values (chr23 -> X, chr24 -> Y)
   result$chromosome <- gsub("^chr23$", "X", result$chromosome, ignore.case = TRUE)
   result$chromosome <- gsub("^chr24$", "Y", result$chromosome, ignore.case = TRUE)
-
+  
+  # Capitalize first letter of each column name
+  colnames(result) <- capitalize(colnames(result))
+  
   return(result)
 }
-
-
 
 
 ###### Parsing input options and setting defaults ########
@@ -159,9 +171,9 @@ formatted_datetime <- format(current_datetime, "%Y%m%d-%H%M%S")
 
 # set output
 rdata_output = opt$outdata
-# Load R workspace with all the results saved : save(ExomeCount,bed.file,counts,fasta,sample.names,bams,cnv.calls,cnv.calls_ids,refs,models,exon_numbers,exons)
-count_data=opt$data
+
 # Check if count_data is NULL or an empty string
+count_data=opt$data
 if(is.null(count_data) || count_data == "") {
     print("ERROR: no RData summary file provided -- Execution halted")
     quit()
@@ -212,8 +224,8 @@ if (!is.null(opt$bedfile)) {
     bed.filtering <- filter_data_by_chromosome(bed.filtering, modechrom)
    
     # for debug
-    rdata_file <- sprintf("/app/res/debug_prefiltering_data_%s.RData", modechrom)
-    save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+    #rdata_file <- sprintf("/app/res/debug_prefiltering_data_%s.RData", modechrom)
+    #save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 
     # Filtering
     counts <- filter_df(counts, bed.filtering)
@@ -222,9 +234,8 @@ if (!is.null(opt$bedfile)) {
     cnv.calls_ids <- filter_df(cnv.calls_ids, bed.filtering)
     
     # for debug
-    rdata_file <- sprintf("/app/res/debug_postfiltering_data_%s.RData", modechrom)
-    save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
-
+    #rdata_file <- sprintf("/app/res/debug_postfiltering_data_%s.RData", modechrom)
+    #save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 
 }
 
@@ -243,10 +254,12 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
 }
 
 # for debug
-rdata_file <- sprintf("/app/res/debugplot_data_%s.RData", modechrom)
-save(counts, ExomeCount, cnv.calls, cnv.calls_ids, exons, cnv.calls_plot, file = rdata_file)
+#rdata_file <- sprintf("/app/res/debugpreplot_data_%s.RData", modechrom)
+#save(counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
 
-cnv.calls_plot$chr=paste('chr',cnv.calls_plot$Chromosome,sep='')
+# add chr prefix
+cnv.calls_plot$chromosome=paste('chr',cnv.calls_plot$chromosome,sep='')
+
 message('Initiating index')
 Index=vector(length=nrow(bed.file))
 Index[1]=1
@@ -271,8 +284,9 @@ if(colnames(counts)[5]=="exon_number"){
 
 # for debug
 rdata_file <- sprintf("/app/res/debugplot_data_%s.RData", modechrom)
-save(counts, ExomeCount, cnv.calls, cnv.calls_ids, exons, file = rdata_file)
+save(counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
 
+message('Start compiling datas for each cnv cals plot row')
 for(call_index in 1:nrow(cnv.calls_plot)){
     Sample<-cnv.calls_plot[call_index,]$Sample
     Gene<-unlist(strsplit(cnv.calls_plot[call_index,]$Gene,split=", "))
@@ -297,9 +311,6 @@ for(call_index in 1:nrow(cnv.calls_plot)){
         }
         exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$chr]
     }
-
-
-
 
     ###### Part of plot containing the coverage points ###############
     message('Starting drawing coverage')
