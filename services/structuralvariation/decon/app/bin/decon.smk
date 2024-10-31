@@ -1133,7 +1133,7 @@ use rule plot as plot_panel with:
 	params:
 		folder=f"{resultDir}/pdfs/", # should be by design/panels ?
 		decondir=config['R_SCRIPTS'],
-		bed_file=lambda wildcards: f"{resultDir}/{wildcards.panel}",
+		bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
 		prefix= f"Panel.{date_time}",
 		chromosome="{gender}"
 	output:
