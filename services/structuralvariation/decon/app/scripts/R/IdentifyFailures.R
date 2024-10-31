@@ -177,7 +177,7 @@ main <- function(rdata_file, min_corr, min_cov, output_file) {
     colnames(counts)[1:length(sample.names)+5] <- sample.names
 
     # Prepare bed file (sorting by chromosome)
-    bed.file <- chr_sort_df(bed.file, "chromosome")
+    #bed.file <- chr_sort_df(bed.file, "chromosome")
     
     # Calculate metrics
     metrics <- calculate_metrics(counts, sample.names, min_corr, min_cov, bed.file)

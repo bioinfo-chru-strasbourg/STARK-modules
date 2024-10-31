@@ -342,7 +342,7 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
     dir.create(dirname(output_file))
   }
 
-  bed.file <- chr_sort_df(bed.file, "chromosome")
+  #bed.file <- chr_sort_df(bed.file, "chromosome")
   ExomeCount <- as.data.frame(counts)
   # Check if 'exon' column exists in ExomeCount
   if ("exon_number" %in% colnames(ExomeCount)) {

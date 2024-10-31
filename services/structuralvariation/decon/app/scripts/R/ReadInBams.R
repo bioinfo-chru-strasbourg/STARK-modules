@@ -89,8 +89,8 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     
     sample.names <- get_sample_names(bams)
     bed.file <- read_bed_file(bed)
-    bed.file <- chr_sort_df(bed.file, "chromosome", add_prefix = TRUE)
-    head(bed.file)
+    #bed.file <- chr_sort_df(bed.file, "chromosome", add_prefix = TRUE)
+
     nfiles <- length(bams)
     message(paste('Parse', nfiles, 'BAM files'))
     numCores <- min(detectCores(), maxcores)

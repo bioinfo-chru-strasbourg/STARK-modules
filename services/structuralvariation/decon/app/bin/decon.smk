@@ -709,8 +709,10 @@ rule all:
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz", panel=panels_list, aligner=aligner_list) if config['GENES_FILE'] else []) +
-		# Plots
-		(expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess", aligner=aligner_list, gender=gender_list) if config['DECON_PLOT'] else [])
+		(expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design.plotSuccess", aligner=aligner_list, gender=gender_list) if config['DECON_PLOT'] else []) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Panel.{{panel}}.plotSuccess", panel=panels_list, aligner=aligner_list, gender=gender_list) if config['DECON_PLOT'] and config['GENES_FILE'] else [])
+
+
 
 rule help:
 	"""
@@ -1114,7 +1116,7 @@ rule plot:
 		prefix= f"Design.{date_time}",
 		chromosome="{gender}"
 	output:
-		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plotSuccess"
+		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design.plotSuccess"
 	log:
 		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plots.log",
 		err=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.plots.err"
@@ -1134,6 +1136,11 @@ use rule plot as plot_panel with:
 		bed_file=lambda wildcards: f"{resultDir}/{wildcards.panel}",
 		prefix= f"Panel.{date_time}",
 		chromosome="{gender}"
+	output:
+		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Panel.{{panel}}.plotSuccess"
+	log:
+		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Panel.{{panel}}.plots.log",
+		err=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Panel.{{panel}}.plots.err"
 
 
 onstart:

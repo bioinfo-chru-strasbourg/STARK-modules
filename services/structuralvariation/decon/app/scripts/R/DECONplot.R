@@ -249,9 +249,9 @@ if (!is.null(opt$bedfile)) {
     colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
     
     # Sort by chr
-    bed.filtering <- chr_sort_df(bed.filtering, "chromosome")
-    ExomeCount <- chr_sort_df(ExomeCount, "chromosome", add_prefix = FALSE)
-    counts <- chr_sort_df(counts, "chromosome")
+    #bed.filtering <- chr_sort_df(bed.filtering, "chromosome")
+    #ExomeCount <- chr_sort_df(ExomeCount, "chromosome", add_prefix = FALSE)
+    #counts <- chr_sort_df(counts, "chromosome")
     # Filtering by chr
     bed.filtering <- filter_data_by_chromosome(bed.filtering, modechrom)
    
@@ -297,8 +297,8 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
 # add chr prefix
 cnv.calls_plot$chromosome=paste('chr',cnv.calls_plot$Chromosome,sep='')
 
-message('Sorting bed.file')
-bed.file <- chr_sort_df(bed.file, "chromosome")
+#message('Sorting bed.file')
+#bed.file <- chr_sort_df(bed.file, "chromosome")
 # for debug
 rdata_file <- sprintf("/app/res/debugpreplot_data_%s.RData", modechrom)
 save(bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
@@ -313,6 +313,9 @@ if(colnames(counts)[5]=="Exon_number"){
     for(i in 1:nrow(exons)){
         x=which(paste(bed.file[,4])==paste(exons[i,4]) & bed.file[,2]<=exons[i,3] & bed.file[,3]>=exons[i,2])
         Index[x]=exons[i,5]
+        # for debug
+    rdata_file <- sprintf("/app/res/debugexonsplotpost_data_%s.RData", modechrom)
+    save(exons, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
     }
  } else {
     message('No exon numbers detected')
@@ -322,12 +325,14 @@ if(colnames(counts)[5]=="Exon_number"){
         }else{
             Index[i]=1
         }
+    
+    # for debug
+    rdata_file <- sprintf("/app/res/debugplotpost_data_%s.RData", modechrom)
+    save(bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
     }
 }
 
-# for debug
-rdata_file <- sprintf("/app/res/debugplotpost_data_%s.RData", modechrom)
-save(bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+
 
 message('Start compiling datas for each cnv cals plot row')
 for(call_index in 1:nrow(cnv.calls_plot)){
