@@ -77,14 +77,25 @@ sanitize_filename <- function(name) {
 }
 
 
-# Function to capitalize the first letter of each word
-capitalize <- function(x) {
-  sapply(strsplit(x, " "), function(y) {
-    paste(toupper(substring(y, 1, 1)), substring(y, 2), sep = "", collapse = " ")
-  })
+# Function to capitalize the first letter of the first part of a string
+capitalize_first_part <- function(colname) {
+  # Split the string at the first dot (.)
+  parts <- unlist(strsplit(colname, "\\.", fixed = TRUE))
+  
+  # Capitalize the first letter of the first part
+  parts[1] <- paste(toupper(substring(parts[1], 1, 1)), substring(parts[1], 2), sep = "")
+  
+  # Rejoin the parts with the dot (.)
+  capitalized_colname <- paste(parts, collapse = ".")
+  
+  return(capitalized_colname)
 }
 
-
+# Function to apply to all column names in a data frame
+capitalize_df_colnames <- function(df) {
+  colnames(df) <- sapply(colnames(df), capitalize_first_part)
+  return(df)
+}
 
 
 # Function to filter df based on overlapping intervals
@@ -148,8 +159,8 @@ filter_df <- function(input_df, filtering_df) {
   result$chromosome <- gsub("^chr24$", "Y", result$chromosome, ignore.case = TRUE)
   
   # Capitalize first letter of each column name
-  colnames(result) <- capitalize(colnames(result))
-  
+  result <- capitalize_df_colnames(result)
+
   return(result)
 }
 
