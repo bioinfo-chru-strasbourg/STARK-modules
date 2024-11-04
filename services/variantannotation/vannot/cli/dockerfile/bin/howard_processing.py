@@ -89,7 +89,7 @@ def folder_initialisation(run_informations):
 
 
 def run_initialisation(run_informations):
-    vcf_file_list = glob.glob(osj(run_informations["archives_run_folder"], "*vcf*"))
+    vcf_file_list = glob.glob(osj(run_informations["archives_run_folder"], "*.vcf*"))
     if os.path.isdir(run_informations["tmp_analysis_folder"]):
         log.info("Cleaning temporary analysis folder")
         shutil.rmtree(run_informations["tmp_analysis_folder"])
@@ -109,7 +109,7 @@ def run_initialisation(run_informations):
         )
 
     vcf_file_to_analyse = glob.glob(
-        osj(run_informations["tmp_analysis_folder"], "*vcf*")
+        osj(run_informations["tmp_analysis_folder"], "*.vcf*")
     )
 
     for vcf_file in vcf_file_to_analyse:
@@ -201,9 +201,9 @@ def fambarcode_vcf(run_informations, input_vcf):
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
     howard_config_container = osj(
-        os.environ["DOCKER_MODULE_CONFIG"], "howard_config.json"
+        os.environ["DOCKER_MODULE_CONFIG"], "howard", "howard_config.json"
     )
-    howard_config_host = osj(os.environ["HOST_CONFIG"], "howard_config.json")
+    howard_config_host = osj(os.environ["HOST_CONFIG"], "howard", "howard_config.json")
 
     if not os.path.isfile(module_config):
         log.error(f"{module_config} do not exist, primordial file, check its existence")
@@ -237,6 +237,15 @@ def fambarcode_vcf(run_informations, input_vcf):
         run_informations["run_application"],
         fambarcode_config,
     )
+
+    os.rename(
+        output,
+        osj(os.path.dirname(output), "_".join(os.path.basename(output).split("_")[1:])),
+    )
+    output = osj(
+        os.path.dirname(output), "_".join(os.path.basename(output).split("_")[1:])
+    )
+    return output
 
 
 def merge_vcf(run_informations):
@@ -417,13 +426,13 @@ def howard_proc(run_informations, vcf_file):
         ]:
             configfile = osj(
                 os.environ["DOCKER_MODULE_CONFIG"],
-                "configfiles",
+                "paramfiles",
                 f"param.{option}.json",
             )
             if os.path.isfile(configfile):
                 break
             elif configfile == osj(
-                os.environ["DOCKER_MODULE_CONFIG"], "configfiles", "param.none.json"
+                os.environ["DOCKER_MODULE_CONFIG"], "paramfiles", "param.none.json"
             ):
                 log.error(
                     "Missing parameter file for your analysis, didn't find application nor platform not default parameters"
@@ -446,6 +455,7 @@ def howard_proc(run_informations, vcf_file):
     local_time = time.localtime(exact_time)
     actual_time = time.strftime("%H%M%S", local_time)
     start = actual_time
+
     container_name = f"VANNOT_annotate_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
     launch_annotate_arguments = [
         "annotation",
@@ -464,10 +474,70 @@ def howard_proc(run_informations, vcf_file):
     ]
 
     log.info("Annotating input files with HOWARD")
-
     howard_launcher.launch(container_name, launch_annotate_arguments)
     os.remove(vcf_file)
+
     return output_file
+
+
+def howard_score_transcripts(run_informations):
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    threads = commons.get_threads("threads_annotation")
+    memory = commons.get_memory("memory_annotation")
+
+    exact_time = time.time() + 7200
+    local_time = time.localtime(exact_time)
+    actual_time = time.strftime("%H%M%S", local_time)
+    start = actual_time
+
+    for vcf_file in vcf_files:
+        output_file_bonus_calculation = osj(
+            run_informations["tmp_analysis_folder"], "output_bonus_calculation.vcf.gz"
+        )
+
+        container_name = f"VANNOT_calculation_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+        launch_annotate_arguments = [
+            "calculation",
+            "--input",
+            vcf_file,
+            "--output",
+            output_file_bonus_calculation,
+            "--param",
+            "/STARK/config/variantannotation/vannot/howard/param.calculation.json",
+            "--assembly",
+            run_informations["assembly"],
+            "--memory",
+            memory,
+            "--threads",
+            threads,
+            "--calculations='PZTSCORE_BONUS,SNPEFF_ANN_EXPLODE'",
+        ]
+
+        log.info("Calculation of bonus scores")
+        howard_launcher.launch(container_name, launch_annotate_arguments)
+        os.remove(vcf_file)
+
+        container_name = f"VANNOT_transcripts_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+        launch_annotate_arguments = [
+            "calculation",
+            "--input",
+            output_file_bonus_calculation,
+            "--output",
+            vcf_file,
+            "--param",
+            "/STARK/config/variantannotation/vannot/howard/param.transcripts.json",
+            "--assembly",
+            run_informations["assembly"],
+            "--memory",
+            memory,
+            "--threads",
+            threads,
+            "--calculations='SNPEFF_ANN_EXPLODE,TRANSCRIPTS_ANNOTATIONS,TRANSCRIPTS_PRIORITIZATION,TRANSCRIPTS_EXPORT'",
+        ]
+
+        log.info("Prioritization of transcripts")
+        howard_launcher.launch(container_name, launch_annotate_arguments)
+        os.remove(output_file_bonus_calculation)
 
 
 def merge_vcf_files(run_informations):

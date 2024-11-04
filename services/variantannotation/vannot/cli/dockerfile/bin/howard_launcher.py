@@ -11,9 +11,9 @@ def launch(container_name, launch_arguments):
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
     howard_config_container = osj(
-        os.environ["DOCKER_MODULE_CONFIG"], "howard_config.json"
+        os.environ["DOCKER_MODULE_CONFIG"], "howard", "howard_config.json"
     )
-    howard_config_host = osj(os.environ["HOST_CONFIG"], "howard_config.json")
+    howard_config_host = osj(os.environ["HOST_CONFIG"], "howard", "howard_config.json")
 
     if not os.path.isfile(module_config):
         log.error(f"{module_config} do not exist, primordial file, check its existence")
