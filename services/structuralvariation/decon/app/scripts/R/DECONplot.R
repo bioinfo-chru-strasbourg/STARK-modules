@@ -55,6 +55,7 @@ chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
     
     # Order by the factor levels
     df <- df[order(df[[col_name]]), ]
+    df <- unique(df)
     rownames(df) <- NULL  # Reset row indices if needed
     
     return(df)
@@ -236,7 +237,7 @@ if (!is.null(opt$bedfile)) {
     message('Loading specified BED file: ', opt$bedfile)
     # Check and read the BED file, ensuring it has at least four columns
     bed.filtering <- read.table(opt$bedfile, header = FALSE, sep = "\t",
-                            colClasses = c("character", "integer", "integer", "character"),
+                            colClasses = c("character", "integer", "integer", "character", "integer", "character"),
                             fill = TRUE)[, 1:4]
 
     # Ensure at least four columns are present
@@ -250,21 +251,30 @@ if (!is.null(opt$bedfile)) {
     colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
     
     # Sort by chr
-    #bed.filtering <- chr_sort_df(bed.filtering, "chromosome")
-    #ExomeCount <- chr_sort_df(ExomeCount, "chromosome", add_prefix = FALSE)
-    #counts <- chr_sort_df(counts, "chromosome")
+    bed.filtering <- chr_sort_df(bed.filtering, "chromosome")
+    ExomeCount <- chr_sort_df(ExomeCount, "chromosome", add_prefix = FALSE)
+    counts <- chr_sort_df(counts, "chromosome")
     # Filtering by chr
     bed.filtering <- filter_data_by_chromosome(bed.filtering, modechrom)
    
     # for debug
     rdata_file <- sprintf("/app/res/debug_prefiltering_data_%s.RData", modechrom)
-    save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+    save(models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 
     # Filtering
     counts <- filter_df(counts, bed.filtering)
     ExomeCount <- filter_df(ExomeCount, bed.filtering)
     cnv.calls <- filter_df(cnv.calls, bed.filtering)
     cnv.calls_ids <- filter_df(cnv.calls_ids, bed.filtering)
+
+    # for debug
+    rdata_file <- sprintf("/app/res/debug_postfiltering_data_%s.RData", modechrom)
+    save(models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+
+    # Remove duplicates based on specific columns
+    cnv.calls <- cnv.calls[!duplicated(cnv.calls[, c("Sample", "Start", "End", "Chromosome")]), ]
+    cnv.calls_ids <- cnv.calls_ids[!duplicated(cnv.calls_ids[, c("Cnv.id", "Sample", "Start", "End", "Chromosome")]), ]
+
     
     # Check for the existence of "Exon_number" or use "Gene"
     if ("Exon_number" %in% colnames(counts)) {
@@ -276,8 +286,8 @@ if (!is.null(opt$bedfile)) {
     }
 
     # for debug
-    rdata_file <- sprintf("/app/res/debug_postfiltering_data_%s.RData", modechrom)
-    save(bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+    rdata_file <- sprintf("/app/res/debug_preplot_data_%s.RData", modechrom)
+    save(models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 
 }
 
@@ -296,13 +306,13 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
 }
 
 # add chr prefix
-cnv.calls_plot$chromosome=paste('chr',cnv.calls_plot$Chromosome,sep='')
+cnv.calls_plot$Chromosome=paste('chr',cnv.calls_plot$Chromosome,sep='')
 
-#message('Sorting bed.file')
-#bed.file <- chr_sort_df(bed.file, "chromosome")
+message('Sorting bed.file')
+bed.file <- chr_sort_df(bed.file, "chromosome")
 # for debug
-rdata_file <- sprintf("/app/res/debugpreplot_data_%s.RData", modechrom)
-save(bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+rdata_file <- sprintf("/app/res/debug_pre_plot_data_%s.RData", modechrom)
+save(models, refs, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
 
 message('Initiating index')
 Index=vector(length=nrow(bed.file))
@@ -315,8 +325,8 @@ if(colnames(counts)[5]=="Exon_number"){
         x=which(paste(bed.file[,4])==paste(exons[i,4]) & bed.file[,2]<=exons[i,3] & bed.file[,3]>=exons[i,2])
         Index[x]=exons[i,5]
         # for debug
-    rdata_file <- sprintf("/app/res/debugexonsplotpost_data_%s.RData", modechrom)
-    save(exons, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+    rdata_file <- sprintf("/app/res/debug_exons_post_plot_data_%s.RData", modechrom)
+    save(models, refs, exons, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
     }
  } else {
     message('No exon numbers detected')
@@ -328,8 +338,8 @@ if(colnames(counts)[5]=="Exon_number"){
         }
     
     # for debug
-    rdata_file <- sprintf("/app/res/debugplotpost_data_%s.RData", modechrom)
-    save(bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+    rdata_file <- sprintf("/app/res/debug_post_plot_data_%s.RData", modechrom)
+    save(models, refs, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
     }
 }
 
@@ -370,7 +380,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     
     # for debug
     rdata_file <- sprintf("/app/res/drawdata_%s_%s.RData", modechrom, call_index)
-    save(bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
+    save(models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
     
     
     Data1<-melt(Data,id=c("exonRange"))
@@ -444,13 +454,33 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     ratio = (ExomeCount[exonRange,Sample]/Totals)/models[[Sample]][1]
     mins <- vector(length=length(exonRange))
     maxs <-vector(length=length(exonRange))
-    for(i in 1:length(exonRange)){
-        temp = qbetabinom(p=0.025,Totals[i],models[[Sample]][2],models[[Sample]][1])
-        mins[i] = (temp/Totals[i])/models[[Sample]][1]
-        temp = qbetabinom(p=0.975,Totals[i],models[[Sample]][2],models[[Sample]][1])
-        maxs[i] = (temp/Totals[i])/models[[Sample]][1]
-    }       
 
+    # for debug
+    rdata_file <- sprintf("/app/res/debug_beforeqbeteabinom_data_%s.RData", modechrom)
+    save(exonRange, Totals, ratio, mins, maxs, models, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+
+    for(i in 1:length(exonRange)) {
+        print(paste("Iteration:", i))
+        print(paste("Totals[i]:", Totals[i]))
+        print(paste("Model parameters:", models[[Sample]][2], models[[Sample]][1]))
+        
+        # Check for NA/NaN before calling qbetabinom
+        if (is.na(Totals[i]) || is.na(models[[Sample]][2]) || is.na(models[[Sample]][1])) {
+            stop("Found NA or NaN in inputs to qbetabinom")
+        }
+        
+        temp = qbetabinom(p=0.025, Totals[i], models[[Sample]][2], models[[Sample]][1])
+        mins[i] = (temp / Totals[i]) / models[[Sample]][1]
+        
+        temp = qbetabinom(p=0.975, Totals[i], models[[Sample]][2], models[[Sample]][1])
+        maxs[i] = (temp / Totals[i]) / models[[Sample]][1]
+    }  
+        
+    # for debug
+    rdata_file <- sprintf("/app/res/debug_ratio_plot_data_%s.RData", modechrom)
+    save(exonRange, Totals, ratio, mins, maxs, models, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+    
+    
     CIData<-data.frame(exonRange,ratio,mins,maxs)
     names(CIData)<-c("Exon","Ratio","Min","Max")
     CIPlot<-ggplot(CIData,aes(x=Exon,y=Ratio))+geom_ribbon(aes(ymin=Min,ymax=Max),fill="grey")+geom_point(col="blue",cex=3.5) + theme_bw() +xlab("")+ylab("Observed/Expected")
@@ -468,11 +498,16 @@ for(call_index in 1:nrow(cnv.calls_plot)){
         if(prev){CIPlot<- CIPlot + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange),labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange)))
         }else{CIPlot<-CIPlot + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75))}
     }else{CIPlot<-CIPlot + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
+ 
+    # for debug
+    rdata_file <- sprintf("/app/res/debug_end_plot_data_%s.RData", modechrom)
+    save(models, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
 
     ######### Save plot in pdf format ###########
     message('Saving plots in pdf format')
     cnv_genes_sample=cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$Gene
     cleaned_gene <- sanitize_filename(Gene)
+    
     if (sum(cnv_genes_sample == cleaned_gene) == 1) {
         pdf(file = paste(plotFolder, "/DECON.", prefixfile, ".", Sample, ".", cleaned_gene, ".pdf", sep = ""), useDingbats = FALSE)
     } else {

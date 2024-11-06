@@ -69,6 +69,7 @@ chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
     
     # Order by the factor levels
     df <- df[order(df[[col_name]]), ]
+    df <- unique(df)
     rownames(df) <- NULL  # Reset row indices if needed
     
     return(df)
@@ -89,7 +90,7 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     
     sample.names <- get_sample_names(bams)
     bed.file <- read_bed_file(bed)
-    #bed.file <- chr_sort_df(bed.file, "chromosome", add_prefix = TRUE)
+    bed.file <- chr_sort_df(bed.file, "chromosome", add_prefix = TRUE)
 
     nfiles <- length(bams)
     message(paste('Parse', nfiles, 'BAM files'))

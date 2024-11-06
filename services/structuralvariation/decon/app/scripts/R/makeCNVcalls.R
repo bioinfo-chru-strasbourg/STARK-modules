@@ -71,6 +71,7 @@ chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
     
     # Order by the factor levels
     df <- df[order(df[[col_name]]), ]
+    df <- unique(df)
     rownames(df) <- NULL  # Reset row indices if needed
     
     return(df)
@@ -139,9 +140,8 @@ filter_data_by_chromosome <- function(ExomeCount, bed.file, counts, mode.chrom) 
 
 perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans.prob, bed.file) {
   cnv.calls <- NULL
-  refs <- list()
-  models <- list()
-  
+  refs <- models <- list()
+
   for (i in seq_along(sample.names)) {
     print(paste("Processing sample:", sample.names[i], i, "/", length(sample.names)))
     my.test <- ExomeCount[, sample.names[i]]
@@ -186,25 +186,25 @@ perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans
     cnv.calls$Sample = paste(cnv.calls$Sample)
     names(cnv.calls)[2] <- "Correlation"
     names(cnv.calls)[3] <- "N.comp"
-    colnames(cnv.calls)[colnames(cnv.calls) == "start.p"] <- "Start.p"
-    colnames(cnv.calls)[colnames(cnv.calls) == "end.p"] <- "End.p"
-    colnames(cnv.calls)[colnames(cnv.calls) == "type"] <- "CNV.type"
     colnames(cnv.calls)[colnames(cnv.calls) == "nexons"] <- "N.exons"
+    colnames(cnv.calls)[colnames(cnv.calls) == "id"] <- "Genomic.ID"
+    colnames(cnv.calls)[colnames(cnv.calls) == "type"] <- "CNV.type"
+    
+    colnames(cnv.calls)[colnames(cnv.calls) == "chromosome"] <- "Chromosome"
     colnames(cnv.calls)[colnames(cnv.calls) == "start"] <- "Start"
     colnames(cnv.calls)[colnames(cnv.calls) == "end"] <- "End"
-    colnames(cnv.calls)[colnames(cnv.calls) == "chromosome"] <- "Chromosome"
-    colnames(cnv.calls)[colnames(cnv.calls) == "id"] <- "Genomic.ID"
+    colnames(cnv.calls)[colnames(cnv.calls) == "start.p"] <- "Start.p"
+    colnames(cnv.calls)[colnames(cnv.calls) == "end.p"] <- "End.p"
     colnames(cnv.calls)[colnames(cnv.calls) == "reads.expected"] <- "Reads.expected"
     colnames(cnv.calls)[colnames(cnv.calls) == "reads.observed"] <- "Reads.observed"
     colnames(cnv.calls)[colnames(cnv.calls) == "reads.ratio"] <- "Reads.ratio"
-     
+    
         if(ncol(bed.file)>=4){
         genes <- apply(cnv.calls, 1, function(x) {paste(unique(bed.file[x['Start.p']:x['End.p'], 4]), collapse = ", ")})
         cnv.calls<-cbind(cnv.calls,genes)
         names(cnv.calls)[ncol(cnv.calls)] <- "Gene"
         }
-  
-  
+    
   }else{
     print('No CNV detected')
     cnv.calls=NULL
@@ -342,7 +342,7 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
     dir.create(dirname(output_file))
   }
 
-  #bed.file <- chr_sort_df(bed.file, "chromosome")
+  bed.file <- chr_sort_df(bed.file, "chromosome")
   ExomeCount <- as.data.frame(counts)
   # Check if 'exon' column exists in ExomeCount
   if ("exon_number" %in% colnames(ExomeCount)) {
