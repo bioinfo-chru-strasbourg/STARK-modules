@@ -75,11 +75,6 @@ chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
     return(df)
 }
 
-
-
-
-
-
 process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     bams <- read_bam_files(bamfiles)
     
@@ -120,6 +115,8 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
         colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
     }
     
+    counts <- counts[!duplicated(counts[, c("chromosome", "start", "end", "gene")]), ]
+
     save(counts, bams, bed.file, sample.names, fasta, file=output)
     warnings()
 }
