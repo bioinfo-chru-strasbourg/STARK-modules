@@ -47,6 +47,78 @@ filter_chromosomes <- function(df, include.chrom = NULL, exclude.chrom = NULL) {
   return(df)
 }
 
+# Function to lowercase the specified columns if necessary
+lowercase_required_cols <- function(df, cols) {
+  for (col in cols) {
+    if (col %in% colnames(df)) {
+      df[[col]] <- tolower(df[[col]])
+    }
+  }
+  return(df)
+}
+
+# Function to standardize the chromosome format
+standardize_chromosome <- function(df) {
+  df$chromosome <- gsub("^chr(.*)$", "chr\\1", tolower(df$chromosome))
+  df$chromosome[df$chromosome == "chrx"] <- "chr23"
+  df$chromosome[df$chromosome == "chry"] <- "chr24"
+  return(df)
+}
+
+# Function to remove duplicate columns based on column names
+remove_duplicate_columns <- function(df) {
+  df <- df[, !duplicated(colnames(df))]
+  return(df)
+}
+
+# Function to capitalize the first letter of specific columns
+capitalize_first_letter <- function(df, cols) {
+  colnames(df)[colnames(df) %in% cols] <- sub("^(.)", "\\U\\1", colnames(df)[colnames(df) %in% cols], perl = TRUE)
+  return(df)
+}
+
+# Main function to filter the data frame based on overlaps
+filter_df <- function(input_df, filtering_df) {
+  
+  # Define required columns
+  required_cols <- c("chromosome", "start", "end")
+  
+  # Ensure the required columns are present and lowercase them if needed
+  input_df <- lowercase_required_cols(input_df, required_cols)
+  filtering_df <- lowercase_required_cols(filtering_df, required_cols)
+
+  # Standardize chromosome format
+  input_df <- standardize_chromosome(input_df)
+  filtering_df <- standardize_chromosome(filtering_df)
+
+  # Convert to GRanges objects
+  input_gr <- GRanges(seqnames = input_df$chromosome, ranges = IRanges(start = input_df$start, end = input_df$end))
+  filter_gr <- GRanges(seqnames = filtering_df$chromosome, ranges = IRanges(start = filtering_df$start, end = filtering_df$end))
+
+  # Find overlaps
+  overlaps <- findOverlaps(input_gr, filter_gr)
+  input_df_filtered <- input_df[queryHits(overlaps), ]
+  filtering_df_filtered <- filtering_df[subjectHits(overlaps), ]
+
+  # Remove overlapping columns (except required ones) and combine data
+  overlapping_cols <- intersect(colnames(input_df_filtered), colnames(filtering_df_filtered))
+  filtering_df_filtered <- filtering_df_filtered[, !(colnames(filtering_df_filtered) %in% overlapping_cols)]
+
+  # Combine filtered data
+  result <- cbind(input_df_filtered, filtering_df_filtered)
+
+  # Remove duplicate columns (except for required ones)
+  result <- remove_duplicate_columns(result)
+
+  # Restore chromosome labels (chr23 -> X, chr24 -> Y)
+  result$chromosome[result$chromosome == "chr23"] <- "X"
+  result$chromosome[result$chromosome == "chr24"] <- "Y"
+  
+  # Capitalize the first letter of required columns (chromosome, start, end)
+  result <- capitalize_first_letter(result, required_cols)
+
+  return(result)
+}
 
 
 print("BEGIN DECONPlot script")
@@ -108,6 +180,7 @@ if (is.null(prefixfile) || prefixfile == "") {
 
 # Chromosome filtering
 modechrom = opt$chromosome
+
 ###### Handling BED file option ########
 if (!is.null(opt$bedfiltering)) {
 	# Load and validate the BED file
@@ -129,7 +202,11 @@ if (!is.null(opt$bedfiltering)) {
 	if modechrom == "A" {
 		bed.filtering <- filter_chromosomes(bed.filtering, exclude.chrom = c("chrX", "chrY"))
 	}
-
+    bed.file <- filter_df(bed.file, bed.filtering)
+    counts <- filter_df(counts, bed.filtering)
+    ExomeCount <- filter_df(ExomeCount, bed.filtering)
+    cnv.calls <- filter_df(cnv.calls, bed.filtering)
+    cnv.calls_ids <- filter_df(cnv.calls_ids, bed.filtering)
 
 }
 
