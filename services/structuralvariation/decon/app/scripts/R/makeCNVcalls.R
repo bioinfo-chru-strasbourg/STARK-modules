@@ -313,13 +313,13 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
     dir.create(dirname(output_file))
   }
 
-  if modechrom == "XX" or "XY" {
-    filter_chromosomes(bed.file, include.chrom = c("chrX"))
-    filter_chromosomes(counts, include.chrom = c("chrX"))
+  if (modechrom == "XX" || modechrom == "XY") {
+    bed.file <- filter_chromosomes(bed.file, include.chrom = c("chrX")) # we don't call Y
+    counts <- filter_chromosomes(counts, include.chrom = c("chrX")) # we don't call Y
   }
   if modechrom == "A" {
-    filter_chromosomes(bed.file, exclude.chrom = c("chrX", "chrY"))
-    filter_chromosomes(counts, exclude.chrom = c("chrX", "chrY"))
+    bed.file <- filter_chromosomes(bed.file, exclude.chrom = c("chrX", "chrY"))
+    counts <- filter_chromosomes(counts, exclude.chrom = c("chrX", "chrY"))
   }
 
   ExomeCount <- as.data.frame(counts)

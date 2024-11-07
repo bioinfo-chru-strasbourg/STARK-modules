@@ -67,7 +67,7 @@ suppressPackageStartupMessages({
 option_list <- list(
     make_option('--rdata', help = 'Input summary RData file (required)', dest = 'data'),
     make_option('--out', default = './plots', help = 'Output directory, default=./plots', dest = 'pfolder'),
-    make_option("--chromosome", default="A", help='Perform calling for autosomes or chr XX or chr XY', dest='chromosome'),
+    make_option("--chromosome", default="A", help='Perform plots for autosomes or chrX', dest='chromosome'),
     make_option('--prefix', default = '', help = 'Prefix for the files, default=None', dest = 'prefix'),
     make_option('--bedfiltering', default = NULL, help = 'Specify a BED for filtering datas, default=None', dest = 'bedfiltering'),
     make_option("--outrdata", default="./DECONplot.Rdata", help="Output Rdata file, default: ./DECONplot.Rdata", dest='outdata')
@@ -106,10 +106,35 @@ if (is.null(prefixfile) || prefixfile == "") {
     prefixfile <- formatted_datetime
 }
 
-# Chrom filtering
+# Chromosome filtering
 modechrom = opt$chromosome
+###### Handling BED file option ########
+if (!is.null(opt$bedfiltering)) {
+	# Load and validate the BED file
+	message('Loading specified BED file: ', opt$bedfiltering)
+	# Read the BED file, ensuring it has at least four columns and keep only the first four
+	bed.filtering <- read.table(opt$bedfiltering, header = FALSE, sep = "\t",
+								colClasses = c("character", "integer", "integer", "character", "integer", "character"),
+								fill = TRUE)[, 1:4]
 
-# Check 
+	# Check if the file has at least 4 columns
+	if (ncol(bed.filtering) < 4) stop("Error: The BED file must have at least four columns.")
+
+	# Assign column names
+	colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
+
+	if (modechrom == "XX" || modechrom == "XY") {
+		bed.filtering <- filter_chromosomes(bed.filtering, include.chrom = c("chrX")) # we don't call Y
+	}
+	if modechrom == "A" {
+		bed.filtering <- filter_chromosomes(bed.filtering, exclude.chrom = c("chrX", "chrY"))
+	}
+
+
+}
+
+
+# Check custom exons
 if ("Custom.first" %in% colnames(cnv.calls_ids)){
 	message('Custom.first column detected')
 	cnv.calls_plot=cnv.calls_ids[!is.na(cnv.calls_ids$Custom.first),]
