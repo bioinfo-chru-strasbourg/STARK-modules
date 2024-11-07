@@ -89,7 +89,7 @@ def launch_run(args):
             "dejavu.partition.parquet",
         ),
         "tmp_analysis_folder": osj(
-            os.environ["DOCKER_TMP"],
+            os.environ["HOST_TMP"],
             f"tmp_{run_repository_list[-1]}/",
         ),
         "module_config": osj(
@@ -114,10 +114,10 @@ def launch_run(args):
         run_informations,
         merged_vcf,
     )
-    annotated_merged_vcf = howard_processing.howard_proc(
-        run_informations, fambarcode_vcf
-    )
-    howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
+    # annotated_merged_vcf = howard_processing.howard_proc(
+    #     run_informations, fambarcode_vcf
+    # )
+    # howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
     # howard_processing.howard_score_transcripts(run_informations)
     # if run_informations["run_panels"] != "":
     #     howard_processing.panel_filtering(run_informations)

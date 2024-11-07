@@ -55,7 +55,7 @@ def launch_dejavu(args):
             "dejavu.partition.parquet",
         ),
         "tmp_analysis_folder": osj(
-            os.environ["DOCKER_TMP"],
+            os.environ["HOST_TMP"],
             f"tmp_dejavu_{analysis_project_name[-1]}/",
         ),
         "module_config": "",

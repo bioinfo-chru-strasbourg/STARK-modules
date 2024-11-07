@@ -228,7 +228,7 @@ def fambarcode_vcf(run_informations, input_vcf):
         howard_image = data["howard_image"]
     log.info(f"Using {howard_image}")
 
-    howard_bin = f"docker run --rm --name {container_name} --env http_proxy={os.environ["http_proxy"]} --env ftp_proxy={os.environ["ftp_proxy"]} --env https_proxy={os.environ["https_proxy"]} -v /tmp/:/tmp/ -v {os.environ["HOST_TMP"]}:{os.environ["DOCKER_TMP"]} -v {os.environ["HOST_DATABASES"]}:/databases/ -v {os.environ["HOST_SERVICES"]}:{os.environ["DOCKER_SERVICES"]} -v {os.environ["HOST_CONFIG"]}:{os.environ["DOCKER_CONFIG"]} -v {howard_config_host}:/tools/howard/current/config/config.json -v /var/run/docker.sock:/var/run/docker.sock {howard_image} calculation"
+    howard_bin = f"docker run --rm --name {container_name} --env http_proxy={os.environ["http_proxy"]} --env ftp_proxy={os.environ["ftp_proxy"]} --env https_proxy={os.environ["https_proxy"]} -v /tmp/:/tmp/ -v {os.environ["HOST_TMP"]}:{os.environ["HOST_TMP"]} -v {os.environ["HOST_DATABASES"]}:/databases/ -v {os.environ["HOST_SERVICES"]}:{os.environ["DOCKER_SERVICES"]} -v {os.environ["HOST_CONFIG"]}:{os.environ["DOCKER_CONFIG"]} -v {howard_config_host}:/tools/howard/current/config/config.json -v /var/run/docker.sock:/var/run/docker.sock {howard_image} calculation"
 
     fambarcode_config["howard"]["bin"] = howard_bin
     main_barcode(
@@ -448,6 +448,9 @@ def howard_proc(run_informations, vcf_file):
         log.error("param.default.json not found, please check your config directory")
         raise ValueError(configfile)
 
+    howard_config = osj(
+        os.environ["DOCKER_MODULE_CONFIG"], "howard", "howard_config.json"
+    )
     threads = commons.get_threads("threads_annotation")
     memory = commons.get_memory("memory_annotation")
 
@@ -471,6 +474,8 @@ def howard_proc(run_informations, vcf_file):
         memory,
         "--threads",
         threads,
+        "--config",
+        howard_config,
     ]
 
     log.info("Annotating input files with HOWARD")
@@ -502,10 +507,8 @@ def howard_score_transcripts(run_informations):
             vcf_file,
             "--output",
             output_file_bonus_calculation,
-            "--param",
+            "--calculation_config",
             "/STARK/config/variantannotation/vannot/howard/param.calculation.json",
-            "--assembly",
-            run_informations["assembly"],
             "--memory",
             memory,
             "--threads",
@@ -515,29 +518,27 @@ def howard_score_transcripts(run_informations):
 
         log.info("Calculation of bonus scores")
         howard_launcher.launch(container_name, launch_annotate_arguments)
-        os.remove(vcf_file)
+        # os.remove(vcf_file)
 
-        container_name = f"VANNOT_transcripts_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
-        launch_annotate_arguments = [
-            "calculation",
-            "--input",
-            output_file_bonus_calculation,
-            "--output",
-            vcf_file,
-            "--param",
-            "/STARK/config/variantannotation/vannot/howard/param.transcripts.json",
-            "--assembly",
-            run_informations["assembly"],
-            "--memory",
-            memory,
-            "--threads",
-            threads,
-            "--calculations='SNPEFF_ANN_EXPLODE,TRANSCRIPTS_ANNOTATIONS,TRANSCRIPTS_PRIORITIZATION,TRANSCRIPTS_EXPORT'",
-        ]
+        # container_name = f"VANNOT_transcripts_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+        # launch_annotate_arguments = [
+        #     "calculation",
+        #     "--input",
+        #     output_file_bonus_calculation,
+        #     "--output",
+        #     vcf_file,
+        #     "--param",
+        #     "/STARK/config/variantannotation/vannot/howard/param.transcripts.json",
+        #     "--memory",
+        #     memory,
+        #     "--threads",
+        #     threads,
+        #     "--calculations='SNPEFF_ANN_EXPLODE,TRANSCRIPTS_ANNOTATIONS,TRANSCRIPTS_PRIORITIZATION,TRANSCRIPTS_EXPORT'",
+        # ]
 
-        log.info("Prioritization of transcripts")
-        howard_launcher.launch(container_name, launch_annotate_arguments)
-        os.remove(output_file_bonus_calculation)
+        # log.info("Prioritization of transcripts")
+        # howard_launcher.launch(container_name, launch_annotate_arguments)
+        # os.remove(output_file_bonus_calculation)
 
 
 def merge_vcf_files(run_informations):
