@@ -199,7 +199,7 @@ if (!is.null(opt$bedfiltering)) {
 	if (modechrom == "XX" || modechrom == "XY") {
 		bed.filtering <- filter_chromosomes(bed.filtering, include.chrom = c("chrX")) # we don't call Y
 	}
-	if modechrom == "A" {
+	if (modechrom == "A") {
 		bed.filtering <- filter_chromosomes(bed.filtering, exclude.chrom = c("chrX", "chrY"))
 	}
     bed.file <- filter_df(bed.file, bed.filtering)
