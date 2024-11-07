@@ -42,58 +42,6 @@ stop_if_missing <- function(val, message) {
     }
 }
 
-# Function to sort a file by chromosome (any file with a chromosome column)
-# usage sorted_df <- chr_sort_df(df, "chromosome")
-chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
-    # Remove "chr" prefix temporarily
-    chromosomes <- gsub("chr", "", df[[col_name]])
-
-    # Identify numeric chromosomes
-    numeric_chromosomes <- suppressWarnings(as.numeric(chromosomes))
-    is_numeric <- !is.na(numeric_chromosomes)
-    
-    # Separate numeric chromosomes and non-numeric chromosomes ("X", "Y", etc.)
-    numeric_chromosomes <- numeric_chromosomes[is_numeric]
-    non_numeric_chromosomes <- chromosomes[!is_numeric]
-    
-    # Manually handle "X" and "Y" chromosomes
-    special_chromosomes <- c("X", "Y")
-    sorted_special <- special_chromosomes[special_chromosomes %in% non_numeric_chromosomes]
-    
-    # If there's only one chromosome type in the data, handle it directly
-    if (length(numeric_chromosomes) == 0 && length(sorted_special) == 0) {
-        # Only non-numeric chromosomes exist (e.g., "chrX", "chrY", or custom ones)
-        sorted_chromosomes <- unique(non_numeric_chromosomes)
-    } else {
-        # Sort numeric chromosomes
-        sorted_numeric <- sort(unique(numeric_chromosomes), na.last = TRUE)
-        
-        # Sort other non-numeric chromosomes (not "X" or "Y")
-        other_non_numeric <- sort(setdiff(non_numeric_chromosomes, special_chromosomes))
-        
-        # Combine sorted chromosomes: numeric, special (X, Y), other non-numeric
-        sorted_chromosomes <- c(sorted_numeric, sorted_special, other_non_numeric)
-    }
-    
-    # Reapply the "chr" prefix if needed
-    if (add_prefix) {
-        sorted_chromosomes <- paste0("chr", sorted_chromosomes)
-    }
-
-    # Keep only levels that are actually present in the data
-    actual_levels <- intersect(sorted_chromosomes, unique(df[[col_name]]))
-    
-    # Convert the Chromosome column to a factor with sorted levels
-    df[[col_name]] <- factor(df[[col_name]], levels = actual_levels, ordered = TRUE)
-    
-    # Order by the factor levels
-    df <- df[order(df[[col_name]]), ]
-    df <- unique(df)
-    rownames(df) <- NULL  # Reset row indices if needed
-    
-    return(df)
-}
-
 # Function to remove space in a string
 trim <- function (x) gsub("^\\s+|\\s+$", "", x)
 
@@ -138,18 +86,34 @@ process_samplebams <- function(samples.file) {
   return(sample.names)
 }
 
-filter_data_by_chromosome <- function(ExomeCount, bed.file, counts, mode.chrom) {
-  if (mode.chrom == "A") {
-    ExomeCount <- subset(ExomeCount, !chromosome %in% c("X", "Y"))
-    bed.file <- subset(bed.file, !chromosome %in% c("chrX", "chrY"))
-    counts <- subset(counts, !chromosome %in% c("chrX", "chrY"))
-  } else if (mode.chrom %in% c("XX", "XY")) {
-    ExomeCount <- subset(ExomeCount, chromosome == "X")
-    bed.file <- subset(bed.file, chromosome == "chrX")
-    counts <- subset(counts, chromosome == "chrX")
+# To exclude "X" and "Y" chromosomes: filtered_df <- filter_chromosomes(df, exclude.chrom = c("X", "Y"))
+# To include only chromosome "X": filtered_df <- filter_chromosomes(df, include.chrom = c("X"))
+# Work if chromosome is "chrX" or "X" in the df
+filter_chromosomes <- function(df, include.chrom = NULL, exclude.chrom = NULL) {
+  # Check if the dataframe has a "chromosome" column
+  if (!"chromosome" %in% colnames(df)) {
+    stop("Data frame must contain a 'chromosome' column.")
   }
-  list(ExomeCount = ExomeCount, bed.file = bed.file, counts = counts)
+  
+  # Create versions of include/exclude lists with and without "chr" prefix
+  if (!is.null(include.chrom)) {
+    include.chrom <- unique(c(include.chrom, sub("^chr", "", include.chrom), paste0("chr", include.chrom)))
+  }
+  if (!is.null(exclude.chrom)) {
+    exclude.chrom <- unique(c(exclude.chrom, sub("^chr", "", exclude.chrom), paste0("chr", exclude.chrom)))
+  }
+  
+  # Apply inclusion and exclusion filters
+  if (!is.null(include.chrom)) {
+    df <- subset(df, chromosome %in% include.chrom)
+  }
+  if (!is.null(exclude.chrom)) {
+    df <- subset(df, !chromosome %in% exclude.chrom)
+  }
+  
+  return(df)
 }
+
 
 perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans.prob, bed.file) {
   cnv.calls <- NULL
@@ -300,12 +264,6 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
     Gene.index <- c(Gene.index, 1:sum(bed.file[, 4] == genes_unique[i]))
   }
   
-  # for debug
-  #modechrom = options$chromosome
-  #rdata_file <- sprintf("/app/res/debug_cnvcalldata_%s.RData", modechrom)
-  #save(bed.file,counts,cnv.calls_ids,cnv.calls, file=rdata_file)
-  ####
-
   # Add custom exon numbers
   if (colnames(counts)[5] == "exon_number") {
     cnv.calls_ids <- add_custom_exon_numbers(cnv.calls_ids, bed.file, counts)
@@ -337,7 +295,7 @@ save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.na
       
     write.table(cnv.calls_ids, file = output, sep = "\t", row.names = FALSE, quote = FALSE)
   }
-  
+  chromosome
   save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls_ids,cnv.calls, refs, models, fasta, file=output.rdata)
 }
 
@@ -355,8 +313,18 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
     dir.create(dirname(output_file))
   }
 
-  #bed.file <- chr_sort_df(bed.file, "chromosome")
+  if modechrom == "XX" or "XY" {
+    filter_chromosomes(bed.file, include.chrom = c("chrX"))
+    filter_chromosomes(counts, include.chrom = c("chrX"))
+  }
+  if modechrom == "A" {
+    filter_chromosomes(bed.file, exclude.chrom = c("chrX", "chrY"))
+    filter_chromosomes(counts, exclude.chrom = c("chrX", "chrY"))
+  }
+
   ExomeCount <- as.data.frame(counts)
+  ExomeCount$chromosome <- gsub('chr', '', as.character(ExomeCount$chromosome))
+
   # Check if 'exon' column exists in ExomeCount
   if ("exon_number" %in% colnames(ExomeCount)) {
     colnames(ExomeCount)[1:length(sample.names) + 6] <- sample.names
@@ -364,12 +332,6 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
     colnames(ExomeCount)[1:length(sample.names) + 5] <- sample.names
   }
 
-  ExomeCount$chromosome <- gsub('chr', '', as.character(ExomeCount$chromosome))
-  
-  filtered.data <- filter_data_by_chromosome(ExomeCount, bed.file, counts, modechrom)
-  ExomeCount <- filtered.data$ExomeCount
-  bed.file <- filtered.data$bed.file
-  counts <- filtered.data$counts
   
   refsample.names <- process_refbams(refbams_file, modechrom)
   sample.names <- process_samplebams(samples)

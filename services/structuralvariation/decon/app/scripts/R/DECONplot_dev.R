@@ -19,6 +19,36 @@ sanitize_filename <- function(name) {
     gsub("[[:punct:] ]+", "_", name)
 }
 
+# To exclude "X" and "Y" chromosomes: filtered_df <- filter_chromosomes(df, exclude.chrom = c("X", "Y"))
+# To include only chromosome "X": filtered_df <- filter_chromosomes(df, include.chrom = c("X"))
+# Work if chromosome is "chrX" or "X" in the df
+filter_chromosomes <- function(df, include.chrom = NULL, exclude.chrom = NULL) {
+  # Check if the dataframe has a "chromosome" column
+  if (!"chromosome" %in% colnames(df)) {
+    stop("Data frame must contain a 'chromosome' column.")
+  }
+  
+  # Create versions of include/exclude lists with and without "chr" prefix
+  if (!is.null(include.chrom)) {
+    include.chrom <- unique(c(include.chrom, sub("^chr", "", include.chrom), paste0("chr", include.chrom)))
+  }
+  if (!is.null(exclude.chrom)) {
+    exclude.chrom <- unique(c(exclude.chrom, sub("^chr", "", exclude.chrom), paste0("chr", exclude.chrom)))
+  }
+  
+  # Apply inclusion and exclusion filters
+  if (!is.null(include.chrom)) {
+    df <- subset(df, chromosome %in% include.chrom)
+  }
+  if (!is.null(exclude.chrom)) {
+    df <- subset(df, !chromosome %in% exclude.chrom)
+  }
+  
+  return(df)
+}
+
+
+
 print("BEGIN DECONPlot script")
 
 suppressPackageStartupMessages({
@@ -75,6 +105,8 @@ prefixfile=opt$prefix
 if (is.null(prefixfile) || prefixfile == "") {
     prefixfile <- formatted_datetime
 }
+
+# Chrom filtering
 modechrom = opt$chromosome
 
 # Check 
@@ -88,7 +120,7 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
 	message('CNV plot initiating without custom exon numbers')
 }
 
-cnv.calls_plot$chr=paste('chr',cnv.calls_plot$chromosome,sep='')
+cnv.calls_plot$chr=paste('chr',cnv.calls_plot$Chromosome,sep='')
 
 Index=vector(length=nrow(bed.file))
 Index[1]=1
@@ -100,25 +132,28 @@ for(i in 2:nrow(bed.file)){
 	}   
 }   
 
-if(colnames(counts)[5]=="Exon_number"){
-
-	for(i in 1:nrow(exons)){
-		x=which(paste(bed.file[,4])==paste(exons[i,4]) & bed.file[,2]<=exons[i,3] & bed.file[,3]>=exons[i,2])
-		Index[x]=exons[i,5]
-	}
+if (colnames(counts)[5] == "exon_number") {
+    message('Exon numbers detected')
+    exons <- bed.file[, c("chromosome", "start", "end", "gene", "exon_number")]
+    for (i in 1:nrow(exons)) {
+        x = which(paste(bed.file[,5]) == paste(exons[i,5]) & 
+                  bed.file[,2] <= exons[i,3] & 
+                  bed.file[,3] >= exons[i,2])
+        Index[x] = exons[i,5]
+    }
 }
 
 
 for(call_index in 1:nrow(cnv.calls_plot)){
 	
-	Sample<-cnv.calls_plot[call_index,]$sample
+	Sample<-cnv.calls_plot[call_index,]$Sample
 	Gene<-unlist(strsplit(cnv.calls_plot[call_index,]$Gene,split=", "))
 	exonRange<-which(bed.file[,4]%in%Gene)
 
-	if((cnv.calls_plot[call_index,]$start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$start.p-5)>=1)){exonRange=(cnv.calls_plot[call_index,]$start.p-5):max(exonRange)}
-	if((cnv.calls_plot[call_index,]$start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$start.p-5)<=0)){exonRange=1:max(exonRange)}
-	if((cnv.calls_plot[call_index,]$end.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$end.p+5)<=nrow(bed.file))){exonRange=min(exonRange):(cnv.calls_plot[call_index,]$end.p+5)}
-	if((cnv.calls_plot[call_index,]$end.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$end.p+5)>nrow(bed.file))){exonRange=min(exonRange):nrow(bed.file)}
+	if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)>=1)){exonRange=(cnv.calls_plot[call_index,]$Start.p-5):max(exonRange)}
+	if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)<=0)){exonRange=1:max(exonRange)}
+	if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)<=nrow(bed.file))){exonRange=min(exonRange):(cnv.calls_plot[call_index,]$End.p+5)}
+	if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)>nrow(bed.file))){exonRange=min(exonRange):nrow(bed.file)}
 
 	singlechr=length(unique(bed.file[exonRange,1]))==1
 
@@ -134,7 +169,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	}
 
 	###### Part of plot containing the coverage points (upper part) ###############
-	VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$sample==Sample,]$start.p,cnv.calls[cnv.calls$sample==Sample,]$end.p))
+	VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$Sample==Sample,]$Start.p,cnv.calls[cnv.calls$Sample==Sample,]$End.p))
 	refs_sample<-refs[[Sample]]
 	
 	Data<-cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
@@ -185,7 +220,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	############## Part of plot containing the gene names as legend ###########
 	genes_sel = unique(bed.file[exonRange,4])
 	temp<-cbind(1:nrow(bed.file),bed.file)[exonRange,]
-	len<-table(temp$name)
+	len<-table(temp$gene) 	#old was len<-table(temp$name)
 	mp<-tapply(exonRange,temp[,5],mean)
 	mp<-mp[genes_sel]
 	len<-len[genes_sel]
@@ -222,12 +257,12 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	CIData<-data.frame(exonRange,ratio,mins,maxs)
 	names(CIData)<-c("Exon","Ratio","Min","Max")
 	CIPlot<-ggplot(CIData,aes(x=Exon,y=Ratio))+geom_ribbon(aes(ymin=Min,ymax=Max),fill="grey")+geom_point(col="blue",cex=3.5) + theme_bw() +xlab("")+ylab("Observed/Expected")
-	temp = cnv.calls[cnv.calls$sample==Sample,]
-	if(sum(temp$start.p%in%exonRange |temp$end.p%in%exonRange)>0){
-		temp = temp[temp$start.p%in%exonRange|temp$end.p%in%exonRange,]
+	temp = cnv.calls[cnv.calls$Sample==Sample,]
+	if(sum(temp$Start.p%in%exonRange |temp$End.p%in%exonRange)>0){
+		temp = temp[temp$Start.p%in%exonRange|temp$End.p%in%exonRange,]
 		for(i in 1:nrow(temp)){
-			start.temp = temp[i,]$start.p
-			end.temp = temp[i,]$end.p
+			start.temp = temp[i,]$Start.p
+			end.temp = temp[i,]$End.p
 			CIPlot<-CIPlot + geom_point(data=CIData[CIData$Exon%in%start.temp:end.temp,], aes(x=Exon,y=Ratio),color="red",cex=3.5)
 		}
 	}

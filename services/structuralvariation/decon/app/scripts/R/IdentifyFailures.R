@@ -43,61 +43,6 @@ load_data <- function(rdata_file) {
     return(list(counts = counts, bed.file = bed.file, sample.names = sample.names))
 }
 
-# Function to prepare bed file (sorting by chromosome)
-chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
-    # Remove "chr" prefix temporarily
-    chromosomes <- gsub("chr", "", df[[col_name]])
-
-    # Identify numeric chromosomes
-    numeric_chromosomes <- suppressWarnings(as.numeric(chromosomes))
-    is_numeric <- !is.na(numeric_chromosomes)
-    
-    # Separate numeric chromosomes and non-numeric chromosomes ("X", "Y", etc.)
-    numeric_chromosomes <- numeric_chromosomes[is_numeric]
-    non_numeric_chromosomes <- chromosomes[!is_numeric]
-    
-    # Manually handle "X" and "Y" chromosomes
-    special_chromosomes <- c("X", "Y")
-    sorted_special <- special_chromosomes[special_chromosomes %in% non_numeric_chromosomes]
-    
-    # If there's only one chromosome type in the data, handle it directly
-    if (length(numeric_chromosomes) == 0 && length(sorted_special) == 0) {
-        # Only non-numeric chromosomes exist (e.g., "chrX", "chrY", or custom ones)
-        sorted_chromosomes <- unique(non_numeric_chromosomes)
-    } else {
-        # Sort numeric chromosomes
-        sorted_numeric <- sort(unique(numeric_chromosomes), na.last = TRUE)
-        
-        # Sort other non-numeric chromosomes (not "X" or "Y")
-        other_non_numeric <- sort(setdiff(non_numeric_chromosomes, special_chromosomes))
-        
-        # Combine sorted chromosomes: numeric, special (X, Y), other non-numeric
-        sorted_chromosomes <- c(sorted_numeric, sorted_special, other_non_numeric)
-    }
-    
-    # Reapply the "chr" prefix if needed
-    if (add_prefix) {
-        sorted_chromosomes <- paste0("chr", sorted_chromosomes)
-    }
-
-    # Keep only levels that are actually present in the data
-    actual_levels <- intersect(sorted_chromosomes, unique(df[[col_name]]))
-    
-    # Convert the Chromosome column to a factor with sorted levels
-    df[[col_name]] <- factor(df[[col_name]], levels = actual_levels, ordered = TRUE)
-    
-    # Order by the factor levels
-    df <- df[order(df[[col_name]]), ]
-    df <- unique(df)
-    rownames(df) <- NULL  # Reset row indices if needed
-    
-    return(df)
-}
-
-
-
-
-
 
 # Function to calculate metrics from coverage data
 calculate_metrics <- function(count, sample.names, min_corr, min_cov, bed.file) {
@@ -181,8 +126,6 @@ write_metrics <- function(metrics, output_file, bed.file) {
     }
 }
 
-
-# Main function to orchestrate the process
 main <- function(rdata_file, min_corr, min_cov, output_file) {
     print("BEGIN IdentifyFailures script")
     
@@ -195,13 +138,8 @@ main <- function(rdata_file, min_corr, min_cov, output_file) {
     # Assign column names to each sample
     colnames(counts)[1:length(sample.names)+5] <- sample.names
 
-    # Prepare bed file (sorting by chromosome)
-    #bed.file <- chr_sort_df(bed.file, "chromosome")
-    
-    # Calculate metrics
+    # Calculate metrics & write file
     metrics <- calculate_metrics(counts, sample.names, min_corr, min_cov, bed.file)
-    
-    # Write metrics to output file
     write_metrics(metrics, output_file, bed.file)
     warnings()
     print("END IdentifyFailures script")
