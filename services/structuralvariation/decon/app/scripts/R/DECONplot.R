@@ -191,9 +191,9 @@ filter_df <- function(input_df, filtering_df) {
 option_list <- list(
     make_option('--rdata', help = 'Input summary RData file (required)', dest = 'data'),
     make_option('--out', default = './plots', help = 'Output directory, default=./plots', dest = 'pfolder'),
-      make_option("--chromosome", default="A", help='Perform calling for autosomes or chr XX or chr XY', dest='chromosome'),
+    make_option("--chromosome", default="A", help='Perform calling for autosomes or chr XX or chr XY', dest='chromosome'),
     make_option('--prefix', default = '', help = 'Prefix for the files, default=None', dest = 'prefix'),
-    make_option('--bedfiltering', default = NULL, help = 'Specify a BED for filtering datas, default=None', dest = 'bedfiltering'), # BED file option
+    make_option('--bedfiltering', default = NULL, help = 'Specify a BED for filtering datas, default=None', dest = 'bedfiltering'),
     make_option("--outrdata", default="./DECONplot.Rdata", help="Output Rdata file, default: ./DECONplot.Rdata", dest='outdata')
 )
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -279,7 +279,7 @@ if (!is.null(opt$bedfiltering)) {
     cnv.calls_ids <- cnv.calls_ids[!duplicated(cnv.calls_ids[, c("Cnv.id", "Sample", "Start", "End", "Chromosome")]), ]
     counts <- counts[!duplicated(counts[, c("Chromosome", "Start", "End", "Gene")]), ]
     ExomeCount <- counts[!duplicated(ExomeCount[, c("Chromosome", "Start", "End", "Gene")]), ]
-    bed.file <- counts[!duplicated(bed.file[, c("chromosome", "start", "end", "gene")]), ]
+    bed.file <- counts[!duplicated(bed.file[, c("Chromosome", "Start", "End", "Gene")]), ]
 
     # Check for the existence of "Exon_number" or use "Gene"
     if ("Exon_number" %in% colnames(counts)) {
@@ -314,9 +314,10 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
 #cnv.calls_plot$Chromosome=paste('chr',cnv.calls_plot$Chromosome,sep='')
 
 message('Sorting bed.file')
-bed.file <- chr_sort_df(bed.file, "chromosome")
+bed.file <- capitalize_df_colnames(bed.file)
+bed.file <- chr_sort_df(bed.file, "Chromosome")
 # for debug
-rdata_file <- sprintf("/app/res/debug_pre_plot_data_%s.RData", modechrom)
+rdata_file <- sprintf("/app/res/debug_sorting_plot_data_%s.RData", modechrom)
 save(models, refs, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
 
 message('Initiating index')

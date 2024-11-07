@@ -1123,7 +1123,7 @@ rule plot:
 	shell:
 		"""
 		mkdir -p {params.folder} &&
-		Rscript {params.decondir}/DECONplot.R --rdata {input} --bedfile {params.bed} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} 1> {log.log} 2> {log.err} &&
+		Rscript {params.decondir}/DECONplot.R --rdata {input} --bedfiltering {params.bed} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} 1> {log.log} 2> {log.err} &&
 		touch {output}
 		"""
 
