@@ -32,17 +32,32 @@ chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
     # Remove "chr" prefix temporarily
     chromosomes <- gsub("chr", "", df[[col_name]])
 
-    # Separate numeric and non-numeric chromosomes
+    # Identify numeric chromosomes
     numeric_chromosomes <- suppressWarnings(as.numeric(chromosomes))
-    non_numeric_chromosomes <- chromosomes[is.na(numeric_chromosomes)]
-    numeric_chromosomes <- numeric_chromosomes[!is.na(numeric_chromosomes)]
+    is_numeric <- !is.na(numeric_chromosomes)
     
-    # Sort numeric chromosomes and non-numeric chromosomes separately
-    sorted_numeric <- sort(unique(numeric_chromosomes), na.last = TRUE)
-    sorted_non_numeric <- sort(unique(non_numeric_chromosomes))
+    # Separate numeric chromosomes and non-numeric chromosomes ("X", "Y", etc.)
+    numeric_chromosomes <- numeric_chromosomes[is_numeric]
+    non_numeric_chromosomes <- chromosomes[!is_numeric]
     
-    # Combine sorted numeric and non-numeric chromosomes
-    sorted_chromosomes <- c(sorted_numeric, sorted_non_numeric)
+    # Manually handle "X" and "Y" chromosomes
+    special_chromosomes <- c("X", "Y")
+    sorted_special <- special_chromosomes[special_chromosomes %in% non_numeric_chromosomes]
+    
+    # If there's only one chromosome type in the data, handle it directly
+    if (length(numeric_chromosomes) == 0 && length(sorted_special) == 0) {
+        # Only non-numeric chromosomes exist (e.g., "chrX", "chrY", or custom ones)
+        sorted_chromosomes <- unique(non_numeric_chromosomes)
+    } else {
+        # Sort numeric chromosomes
+        sorted_numeric <- sort(unique(numeric_chromosomes), na.last = TRUE)
+        
+        # Sort other non-numeric chromosomes (not "X" or "Y")
+        other_non_numeric <- sort(setdiff(non_numeric_chromosomes, special_chromosomes))
+        
+        # Combine sorted chromosomes: numeric, special (X, Y), other non-numeric
+        sorted_chromosomes <- c(sorted_numeric, sorted_special, other_non_numeric)
+    }
     
     # Reapply the "chr" prefix if needed
     if (add_prefix) {
@@ -51,7 +66,9 @@ chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
 
     # Keep only levels that are actually present in the data
     actual_levels <- intersect(sorted_chromosomes, unique(df[[col_name]]))
-    df[[col_name]] <- factor(df[[col_name]], levels = actual_levels)
+    
+    # Convert the Chromosome column to a factor with sorted levels
+    df[[col_name]] <- factor(df[[col_name]], levels = actual_levels, ordered = TRUE)
     
     # Order by the factor levels
     df <- df[order(df[[col_name]]), ]
@@ -60,7 +77,6 @@ chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
     
     return(df)
 }
-
 
 
 
@@ -251,10 +267,10 @@ if (!is.null(opt$bedfiltering)) {
     colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
     
     # Sort by chr
-    bed.filtering <- chr_sort_df(bed.filtering, "chromosome")
-    ExomeCount <- chr_sort_df(ExomeCount, "chromosome", add_prefix = FALSE)
-    counts <- chr_sort_df(counts, "chromosome")
-    bed.file <- chr_sort_df(bed.file, "chromosome")
+    #bed.filtering <- chr_sort_df(bed.filtering, "chromosome")
+    #ExomeCount <- chr_sort_df(ExomeCount, "chromosome", add_prefix = FALSE)
+    #counts <- chr_sort_df(counts, "chromosome")
+    #bed.file <- chr_sort_df(bed.file, "chromosome")
     # Filtering by chr
     bed.filtering <- filter_data_by_chromosome(bed.filtering, modechrom)
     bed.file <- filter_data_by_chromosome(bed.file, modechrom)
@@ -283,11 +299,11 @@ if (!is.null(opt$bedfiltering)) {
 
     # Check for the existence of "Exon_number" or use "Gene"
     if ("Exon_number" %in% colnames(counts)) {
-    counts <- uppercase_after_colname(counts, "Exon_number")
-    ExomeCount <- uppercase_after_colname(ExomeCount, "Exon_number")
+        counts <- uppercase_after_colname(counts, "Exon_number")
+        ExomeCount <- uppercase_after_colname(ExomeCount, "Exon_number")
     } else {
-    counts <- uppercase_after_colname(counts, "Gene")
-    ExomeCount <- uppercase_after_colname(ExomeCount, "Gene")
+        counts <- uppercase_after_colname(counts, "Gene")
+        ExomeCount <- uppercase_after_colname(ExomeCount, "Gene")
     }
 
     # for debug
@@ -315,7 +331,7 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
 
 message('Sorting bed.file')
 bed.file <- capitalize_df_colnames(bed.file)
-bed.file <- chr_sort_df(bed.file, "Chromosome")
+#bed.file <- chr_sort_df(bed.file, "Chromosome")
 # for debug
 rdata_file <- sprintf("/app/res/debug_sorting_plot_data_%s.RData", modechrom)
 save(models, refs, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
@@ -326,7 +342,7 @@ Index[1]=1
 
 if(colnames(counts)[5]=="Exon_number"){
     message('Exon numbers detected')
-    exons <- bed.file[, c("chromosome", "start", "end", "exon")]
+    exons <- bed.file[, c("Chromosome", "Start", "End", "Exon_number")]
     for(i in 1:nrow(exons)){
         x=which(paste(bed.file[,4])==paste(exons[i,4]) & bed.file[,2]<=exons[i,3] & bed.file[,3]>=exons[i,2])
         Index[x]=exons[i,5]
@@ -348,8 +364,6 @@ if(colnames(counts)[5]=="Exon_number"){
     save(Index, models, refs, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
     }
 }
-
-
 
 message('Start compiling datas for each cnv calls plot row')
 for(call_index in 1:nrow(cnv.calls_plot)){
@@ -388,7 +402,6 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     rdata_file <- sprintf("/app/res/drawdata_%s_%s.RData", modechrom, call_index)
     save(Index, singlechr, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
     
-    
     Data1<-melt(Data,id=c("exonRange"))
     testref<-rep("gray",nrow(Data1))
     testref[Data1$variable==Sample]="blue"
@@ -414,8 +427,8 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     A1<-A1+ geom_line(data=subset(Data1,testref=="Test Sample"),lty="dashed",lwd=1.5,col="blue")  
     A1<-A1 + geom_point(data=subset(Data1,testref=="Test Sample"),cex=2.5,col="blue") 
     A1<-A1 + geom_point(data=subset(Data1,testref=="Affected exon"),cex=3.5,col="red") 
-    #A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position="none")+ xlab(" ")
-    A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position= "top") + xlab(" ") + guides(color = guide_legend(nrow = 1, title = NULL))
+    A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position="none")+ xlab(" ")
+    #A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position= "top") + xlab(" ") + guides(color = guide_legend(nrow = 1, title = NULL))
     Data2<-Data1[Data1$testref=="Affected exon",]
     
     if(nrow(Data2)>1){
@@ -495,9 +508,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
         temp = qbetabinom(p=0.975, Totals[i], models[[Sample]][2], models[[Sample]][1])
         maxs[i] = (temp / Totals[i]) / models[[Sample]][1]
     }
-
-        
-        
+       
     CIData<-data.frame(exonRange,ratio,mins,maxs)
     names(CIData)<-c("Exon","Ratio","Min","Max")
     

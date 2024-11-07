@@ -1111,7 +1111,7 @@ rule plot:
 		rules.makeCNVcalls.output.rdata
 	params:
 		folder=f"{resultDir}/pdfs/", # should be by design/panels ?
-		decondir=config['R_SCRIPTS'],
+		deconplotscript=config['DECON_PLOT_SCRIPT'],
 		bed=lambda wildcards: f"{resultDir}/{serviceName}.{date_time}.bed",
 		prefix= f"Design.{date_time}",
 		chromosome="{gender}"
@@ -1123,7 +1123,7 @@ rule plot:
 	shell:
 		"""
 		mkdir -p {params.folder} &&
-		Rscript {params.decondir}/DECONplot.R --rdata {input} --bedfiltering {params.bed} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} 1> {log.log} 2> {log.err} &&
+		Rscript {params.deconplotscript} --rdata {input} --bedfiltering {params.bed} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} 1> {log.log} 2> {log.err} &&
 		touch {output}
 		"""
 
@@ -1132,7 +1132,7 @@ use rule plot as plot_panel with:
 		rules.makeCNVcalls.output.rdata
 	params:
 		folder=f"{resultDir}/pdfs/", # should be by design/panels ?
-		decondir=config['R_SCRIPTS'],
+		deconplotscript=config['DECON_PLOT_SCRIPT'],
 		bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
 		prefix= f"Panel.{date_time}",
 		chromosome="{gender}"

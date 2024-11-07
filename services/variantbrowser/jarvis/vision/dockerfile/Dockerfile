@@ -37,7 +37,7 @@
 # FROM #
 ########
 
-FROM centos:7
+FROM almalinux:8
 MAINTAINER Antony Le Bechec <antony.lebechec@gmail.com>
 LABEL Software="VISION" \
 	Version="1.0.3" \
@@ -99,59 +99,102 @@ RUN yum install -y wget && \
 # add webtatic for php55
 #COPY conf/webtatic.repo /etc/yum.repos.d/webtatic.repo
 
+
 # install necessary packages
 RUN yum upgrade -y && \
-	yum updateinfo -y && \
-	yum install -y \
-	autoconf \
-	curl \
-	curl-devel \
-	cyrus-sasl-lib \
-	gcc \
-	g++ \
-	httpd \
-	libc-dev \
-	libedit2 \
-	libxml2 \
-	make \
-	php55w \
-	php55w-gd \
-	php55w-ldap \
-	php55w-mysql \
-	php55w-pdo \
-	php55w-pecl-apcu \
-	php55w-pgsql \
-	pkg-config \
-	which \
-	xz-utils \
-	openssl-devel \
-	psmisc \
-	postfix \
-	ImageMagick \
-	ImageMagick-devel \
-	bc \
-	make \
-	wget \
-	ghostscript \
-	libgomp \
-	java \
-	enscript \
-	perl-Switch \
-	perl-Digest-MD5 \
-	perl-Data-Dumper \
-	which \
-	rsync \
-	wine \
-	zlib-devel zlib \
-    zlib2-devel zlib2 \
-    bzip2-devel bzip2 \
-    lzma-devel lzma \
-    xz-devel xz \
+    yum updateinfo -y && \
+    yum install -y \
+    autoconf \
+    curl \
+    curl-devel \
+    cyrus-sasl-lib \
+    gcc \
+    gcc-c++ \
+    httpd \
+    glibc-devel \
+    libedit \
+    libxml2 \
+    make \
+    php \
+    php-gd \
+    php-ldap \
+    php-mysqlnd \
+    php-pdo \
+    php-pecl-apcu \
+    php-pgsql \
+    pkg-config \
+    which \
+    xz \
+    openssl-devel \
+    psmisc \
+    postfix \
+    bc \
+    wget \
+    ghostscript \
+    libgomp \
+    java \
+    enscript \
+    perl-Digest-MD5 \
+    perl-Data-Dumper \
+    rsync \
+    zlib-devel \
+    zlib \
+    bzip2-devel \
+    bzip2 \
+    xz-devel \
     ncurses-devel \
-	$YUM_INSTALL \
-    && \
+    epel-release && \
+    yum install -y \
+    ImageMagick \
+    ImageMagick-devel && \
+    # Install perl-Switch via CPAN
+    yum install -y perl-CPAN && \
+    cpan Switch && \
     yum clean all
 
+
+# Install necessary dependencies
+RUN yum groupinstall "Development Tools" -y && \
+    yum install -y \
+    epel-release \
+    wget \
+    curl \
+    bzip2-devel \
+    freetype-devel \
+    fontconfig-devel \
+    libX11-devel \
+    libXcomposite-devel \
+    libXcursor-devel \
+    libXi-devel \
+    libXrandr-devel \
+    libXrender-devel \
+    libxslt-devel \
+    zlib-devel \
+    libjpeg-devel \
+    libpng-devel \
+    libtiff-devel \
+    libgphoto2-devel \
+    gnutls-devel \
+    wine-mono-devel \
+    wine-gecko-devel \
+    libpcap-devel \
+    gtk3-devel \
+    gstreamer1-devel \
+    gstreamer1-plugins-base-devel
+
+# Download and extract Wine source
+RUN wget https://dl.winehq.org/wine/source/8.x/wine-8.0.tar.xz && \
+    tar -xvf wine-8.0.tar.xz && \
+    cd wine-8.0
+
+# Compile Wine
+RUN cd wine-8.0 && \
+    ./configure && \
+    make && \
+    make install
+
+# Verify Wine installation
+RUN wine --version
 
 
 ################
