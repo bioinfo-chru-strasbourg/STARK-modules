@@ -295,7 +295,7 @@ save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.na
       
     write.table(cnv.calls_ids, file = output, sep = "\t", row.names = FALSE, quote = FALSE)
   }
-  chromosome
+  
   save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls_ids,cnv.calls, refs, models, fasta, file=output.rdata)
 }
 
