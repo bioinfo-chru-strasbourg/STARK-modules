@@ -317,7 +317,7 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
     bed.file <- filter_chromosomes(bed.file, include.chrom = c("chrX")) # we don't call Y
     counts <- filter_chromosomes(counts, include.chrom = c("chrX")) # we don't call Y
   }
-  if modechrom == "A" {
+  if (modechrom == "A") {
     bed.file <- filter_chromosomes(bed.file, exclude.chrom = c("chrX", "chrY"))
     counts <- filter_chromosomes(counts, exclude.chrom = c("chrX", "chrY"))
   }
