@@ -127,6 +127,7 @@ VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf.json"
 # Plots for DECON True/False
 DECON_PLOT: False
 DECON_PLOT_SCRIPT: "/app/scripts/R/DECONplot.R"
+PLOT_DEBUG: False
 
 ############# ReadInbams params ##############
 # path to the tsv file containing 2 columns : bam for the list of reference bams for CNV calling (full path of bams), and gender (F/M)

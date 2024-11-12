@@ -1114,7 +1114,8 @@ rule plot:
 		deconplotscript=config['DECON_PLOT_SCRIPT'],
 		bed=lambda wildcards: f"{resultDir}/{serviceName}.{date_time}.bed",
 		prefix= f"Design.{date_time}",
-		chromosome="{gender}"
+		chromosome="{gender}",
+		
 	output:
 		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design.plotSuccess"
 	log:
@@ -1123,7 +1124,7 @@ rule plot:
 	shell:
 		"""
 		mkdir -p {params.folder} &&
-		Rscript {params.deconplotscript} --rdata {input} --bedfiltering {params.bed} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} 1> {log.log} 2> {log.err} &&
+		Rscript {params.deconplotscript} --rdata {input} --bedfiltering {params.bed} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} --debug [params.plotdebug} 1> {log.log} 2> {log.err} &&
 		touch {output}
 		"""
 
@@ -1135,7 +1136,8 @@ use rule plot as plot_panel with:
 		deconplotscript=config['DECON_PLOT_SCRIPT'],
 		bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
 		prefix= f"Panel.{date_time}",
-		chromosome="{gender}"
+		chromosome="{gender}",
+		plotdebug=config['PLOT_DEBUG']
 	output:
 		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Panel.{{panel}}.plotSuccess"
 	log:

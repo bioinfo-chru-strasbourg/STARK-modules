@@ -186,7 +186,9 @@ option_list <- list(
     make_option("--chromosome", default="A", help='Perform plots for autosomes or chrX', dest='chromosome'),
     make_option('--prefix', default = '', help = 'Prefix for the files, default=None', dest = 'prefix'),
     make_option('--bedfiltering', default = NULL, help = 'Specify a BED for filtering datas, default=None', dest = 'bedfiltering'),
-    make_option("--outrdata", default="./DECONplot.Rdata", help="Output Rdata file, default: ./DECONplot.Rdata", dest='outdata')
+    make_option("--outrdata", default="./DECONplot.Rdata", help="Output Rdata file, default: ./DECONplot.Rdata", dest='outdata'),
+	make_option('--debug', action="store_true", default=FALSE, help="Enable debug mode to save intermediate RData files", dest="debug")
+
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
@@ -235,7 +237,7 @@ if (!is.null(opt$bedfiltering)) {
 								fill = TRUE)
 
 	# Check if the file has at least 4 columns
-	if (ncol(bed.filtering) < 4) stop("Error: The BED file must have at least four columns.")
+	if (ncol(bed.filtering) < 4) stop("Error: The BED file must have four columns.")
 
 	# Assign column names
 	colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
@@ -262,7 +264,11 @@ if (!is.null(opt$bedfiltering)) {
     cnv.calls_ids <- filter_df(cnv.calls_ids, bed.filtering)
 	cnv.calls_ids <- modify_prefix(cnv.calls_ids, "Chromosome", action = "remove", prefix = "chr")
 
-
+	# Debug
+    if (opt$debug) {
+    rdata_file <- sprintf("%s/debug_filtering_data_%s.RData", plotFolder, modechrom)
+    save(bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+	}
 }
 
 
@@ -301,6 +307,11 @@ if (colnames(counts)[5] == "exon_number") {
 }
 
 
+    if (opt$debug) {
+    rdata_file <- sprintf("%s/debug_start_plot_%s.RData", plotFolder, modechrom)
+    save(exons, cnv.calls_plot, bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+	}
+
 for(call_index in 1:nrow(cnv.calls_plot)){
 	
 	Sample<-cnv.calls_plot[call_index,]$Sample
@@ -326,6 +337,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	}
 
 	###### Part of plot containing the coverage points (upper part) ###############
+	message('Starting drawing coverage')
 	VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$Sample==Sample,]$Start.p,cnv.calls[cnv.calls$Sample==Sample,]$End.p))
 	refs_sample<-refs[[Sample]]
 	
@@ -358,7 +370,9 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	A1<-A1+ geom_line(data=subset(Data1,testref=="Test Sample"),lty="dashed",lwd=1.5,col="blue")  
 	A1<-A1 + geom_point(data=subset(Data1,testref=="Test Sample"),cex=2.5,col="blue") 
 	A1<-A1 + geom_point(data=subset(Data1,testref=="Affected exon"),cex=3.5,col="red") 
-	A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position="none")+ xlab(" ")
+	A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position="none") + xlab(" ")
+    #A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position= "top") + xlab(" ") + guides(color = guide_legend(nrow = 1, title = NULL))
+
 
 	Data2<-Data1[Data1$testref=="Affected exon",]
 	if(nrow(Data2)>1){
@@ -400,7 +414,14 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	GenesPlot<-ggplot(data=Genes, aes(x=MP,y=Ind,fill=Gene,width=Length,label=Gene)) +geom_tile() + geom_text() + theme_bw() + theme(legend.position="None",panel.grid.major = element_blank(), panel.grid.minor = element_blank(),axis.text.y = element_blank(),axis.ticks.y=element_blank(),plot.margin=unit(c(.5,.5,.5,.55),"cm")) + ylab(" ") + xlab(" ")
 	GenesPlot<-GenesPlot + theme(axis.text.x=element_blank(),axis.ticks.x=element_blank())
 
+    # Debug
+	if (opt$debug) {
+	rdata_file <- sprintf("%s/debug_after_adding_genes_names_%s_%s.RData", plotFolder, modechrom, call_index)
+    save(Index, singlechr, genes_sel, temp, len, mp, Genes, GenesPlot, A1, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
+	}
+
 	####### Part of the plot containing the normalized ratio of the coverage (lower part) #############
+	message('Adding normalized ratio')
 	Totals<-rowSums(ExomeCount[exonRange,c(Sample,refs_sample)])
 	ratio = (ExomeCount[exonRange,Sample]/Totals)/models[[Sample]][1]
 	mins <- vector(length=length(exonRange))
@@ -429,6 +450,12 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 		if(prev){CIPlot<- CIPlot + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange),labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange)))
 		}else{CIPlot<-CIPlot + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75))}
 	}else{CIPlot<-CIPlot + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
+
+	# Debug
+	if (opt$debug) {
+	rdata_file <- sprintf("%s/debug_end_plot_data_%s_%s.RData", plotFolder, modechrom, call_index)
+    save(singlechr, A1, Index, CIPlot, CIData, GenesPlot, exonRange, Totals, ratio, mins, maxs, models, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+	}
 
     ######### Save plot in pdf format ###########
     message('Saving plots in pdf format')
