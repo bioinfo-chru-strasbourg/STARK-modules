@@ -12,7 +12,159 @@
 #   - separate plot script from makeCNVcall, refactor code, remove install systemn, update ExomeDepth 1.16
 #   - optparse script
 ########################################################################################################
- 
+
+# Function to sanitize gene names for file naming
+sanitize_filename <- function(name) {
+    # Replace forbidden characters with an underscore
+    gsub("[[:punct:] ]+", "_", name)
+}
+
+# To exclude "X" and "Y" chromosomes: filtered_df <- filter_chromosomes(df, exclude.chrom = c("X", "Y"))
+# To include only chromosome "X": filtered_df <- filter_chromosomes(df, include.chrom = c("X"))
+# Work if chromosome is "chrX" or "X" in the df
+filter_chromosomes <- function(df, include.chrom = NULL, exclude.chrom = NULL) {
+  # Check if the dataframe has a "chromosome" column
+  if (!"chromosome" %in% colnames(df)) {
+    stop("Data frame must contain a 'chromosome' column.")
+  }
+  
+  # Create versions of include/exclude lists with and without "chr" prefix
+  if (!is.null(include.chrom)) {
+    include.chrom <- unique(c(include.chrom, sub("^chr", "", include.chrom), paste0("chr", include.chrom)))
+  }
+  if (!is.null(exclude.chrom)) {
+    exclude.chrom <- unique(c(exclude.chrom, sub("^chr", "", exclude.chrom), paste0("chr", exclude.chrom)))
+  }
+  
+  # Apply inclusion and exclusion filters
+  if (!is.null(include.chrom)) {
+    df <- subset(df, chromosome %in% include.chrom)
+  }
+  if (!is.null(exclude.chrom)) {
+    df <- subset(df, !chromosome %in% exclude.chrom)
+  }
+  
+  return(df)
+}
+
+# Function to lowercase the specified columns name if necessary
+lowercase_required_cols <- function(df, cols) {
+  # Convert the column names and the specified columns to lowercase for case-insensitive matching
+  colnames_lower <- tolower(colnames(df))
+  cols_lower <- tolower(cols)
+  
+  # Find which columns should be lowercased by matching case-insensitively
+  matching_cols <- colnames(df)[colnames_lower %in% cols_lower]
+  
+  # Lowercase the matching column names
+  colnames(df)[colnames(df) %in% matching_cols] <- tolower(colnames(df)[colnames(df) %in% matching_cols])
+  
+  return(df)
+}
+
+# Function to standardize the chromosome format
+standardize_chromosome <- function(df) {
+  df$chromosome <- gsub("^chr(.*)$", "chr\\1", tolower(df$chromosome))
+  df$chromosome[df$chromosome == "chrx"] <- "chr23"
+  df$chromosome[df$chromosome == "chry"] <- "chr24"
+  return(df)
+}
+
+remove_duplicate_rows <- function(df, subset_cols) {
+  # Convert subset_cols to lower case
+  subset_cols_lower <- tolower(subset_cols)
+  
+  # Find matching columns in the data frame (case-insensitive)
+  matched_cols <- tolower(colnames(df)) %in% subset_cols_lower
+  
+  # If no matching columns are found, stop with an error
+  if (all(!matched_cols)) {
+    stop("None of the specified columns were found in the data frame.")
+  }
+  
+  # Select the columns that match (case-insensitive)
+  df_matched <- df[, matched_cols, drop = FALSE]
+  
+  # Remove duplicate rows based on only the matched columns
+  df <- df[!duplicated(df_matched), ]
+  
+  return(df)
+}
+
+# Function to capitalize the first letter of specific columns
+capitalize_first_letter <- function(df, cols) {
+  colnames(df)[colnames(df) %in% cols] <- sub("^(.)", "\\U\\1", colnames(df)[colnames(df) %in% cols], perl = TRUE)
+  return(df)
+}
+
+# Main function to filter the data frame based on overlaps
+filter_df <- function(input_df, filtering_df) {
+  
+  # Define required columns
+  required_cols <- c("chromosome", "start", "end", "gene")
+  
+  # Ensure the required columns are present and lowercase them if needed
+  input_df <- lowercase_required_cols(input_df, required_cols)
+  filtering_df <- lowercase_required_cols(filtering_df, required_cols)
+
+  # Standardize chromosome format
+  input_df <- standardize_chromosome(input_df)
+  filtering_df <- standardize_chromosome(filtering_df)
+
+  # Convert start and end columns to numeric
+  input_df$start <- as.numeric(input_df$start)
+  input_df$end <- as.numeric(input_df$end)
+  filtering_df$start <- as.numeric(filtering_df$start)
+  filtering_df$end <- as.numeric(filtering_df$end)
+
+  # Convert to GRanges objects
+  input_gr <- GRanges(seqnames = input_df$chromosome, ranges = IRanges(start = input_df$start, end = input_df$end))
+  filter_gr <- GRanges(seqnames = filtering_df$chromosome, ranges = IRanges(start = filtering_df$start, end = filtering_df$end))
+
+  # Find overlaps
+  overlaps <- findOverlaps(input_gr, filter_gr)
+  input_df_filtered <- input_df[queryHits(overlaps), ]
+  filtering_df_filtered <- filtering_df[subjectHits(overlaps), ]
+
+  # Remove overlapping columns (except required ones) and combine data
+  overlapping_cols <- intersect(colnames(input_df_filtered), colnames(filtering_df_filtered))
+  filtering_df_filtered <- filtering_df_filtered[, !(colnames(filtering_df_filtered) %in% overlapping_cols)]
+
+  # Combine filtered data
+  result <- cbind(input_df_filtered, filtering_df_filtered)
+
+  # Remove duplicate rows 
+  result <- remove_duplicate_rows(result, required_cols)
+
+  # Restore chromosome labels (chr23 -> X, chr24 -> Y)
+  result$chromosome[result$chromosome == "chr23"] <- "X"
+  result$chromosome[result$chromosome == "chr24"] <- "Y"
+  
+  # Capitalize the first letter of required columns (chromosome, start, end)
+  result <- capitalize_first_letter(result, required_cols)
+
+  return(result)
+}
+
+# Function to add or remove a prefix from a specific column in a dataframe
+modify_prefix <- function(df, column_name, action = "remove", prefix = "chr") {
+  # Check if the column exists in the dataframe
+  if (!(column_name %in% colnames(df))) {
+    stop("The specified column does not exist in the dataframe.")
+  }
+  
+  # Perform the action based on the user's choice
+  if (action == "remove") {
+    df[[column_name]] <- sub(paste0("^", prefix), "", df[[column_name]])
+  } else if (action == "add") {
+    df[[column_name]] <- paste0(prefix, df[[column_name]])
+  } else {
+    stop("Invalid action. Choose 'remove' or 'add'.")
+  }
+  
+  return(df)
+}
+
 print("BEGIN DECONPlot script")
 
 suppressPackageStartupMessages({
@@ -26,188 +178,12 @@ suppressPackageStartupMessages({
     library(GenomicRanges)
 })
 
-# Function to sort a file by chromosome (any file with a chromosome column)
-# usage sorted_df <- chr_sort_df(df, "chromosome")
-chr_sort_df <- function(df, col_name, add_prefix = TRUE) {
-    # Remove "chr" prefix temporarily
-    chromosomes <- gsub("chr", "", df[[col_name]])
-
-    # Identify numeric chromosomes
-    numeric_chromosomes <- suppressWarnings(as.numeric(chromosomes))
-    is_numeric <- !is.na(numeric_chromosomes)
-    
-    # Separate numeric chromosomes and non-numeric chromosomes ("X", "Y", etc.)
-    numeric_chromosomes <- numeric_chromosomes[is_numeric]
-    non_numeric_chromosomes <- chromosomes[!is_numeric]
-    
-    # Manually handle "X" and "Y" chromosomes
-    special_chromosomes <- c("X", "Y")
-    sorted_special <- special_chromosomes[special_chromosomes %in% non_numeric_chromosomes]
-    
-    # If there's only one chromosome type in the data, handle it directly
-    if (length(numeric_chromosomes) == 0 && length(sorted_special) == 0) {
-        # Only non-numeric chromosomes exist (e.g., "chrX", "chrY", or custom ones)
-        sorted_chromosomes <- unique(non_numeric_chromosomes)
-    } else {
-        # Sort numeric chromosomes
-        sorted_numeric <- sort(unique(numeric_chromosomes), na.last = TRUE)
-        
-        # Sort other non-numeric chromosomes (not "X" or "Y")
-        other_non_numeric <- sort(setdiff(non_numeric_chromosomes, special_chromosomes))
-        
-        # Combine sorted chromosomes: numeric, special (X, Y), other non-numeric
-        sorted_chromosomes <- c(sorted_numeric, sorted_special, other_non_numeric)
-    }
-    
-    # Reapply the "chr" prefix if needed
-    if (add_prefix) {
-        sorted_chromosomes <- paste0("chr", sorted_chromosomes)
-    }
-
-    # Keep only levels that are actually present in the data
-    actual_levels <- intersect(sorted_chromosomes, unique(df[[col_name]]))
-    
-    # Convert the Chromosome column to a factor with sorted levels
-    df[[col_name]] <- factor(df[[col_name]], levels = actual_levels, ordered = TRUE)
-    
-    # Order by the factor levels
-    df <- df[order(df[[col_name]]), ]
-    df <- unique(df)
-    rownames(df) <- NULL  # Reset row indices if needed
-    
-    return(df)
-}
-
-
-
-filter_data_by_chromosome <- function(file, modechrom) {
-  message(sprintf("Start filtering by chromosome with mode: %s", modechrom))
-  if (modechrom == "A") {
-    file <- subset(file, !chromosome %in% c("chrX", "chrY"))
-  } else if (modechrom %in% c("XX", "XY")) {
-    file <- subset(file, chromosome == "chrX")
-  }
-    message(sprintf("Filtering by chromosome with mode: %s done", modechrom))
-  
-  return(file)
-}
-
-
-# Function to sanitize gene names for file naming
-sanitize_filename <- function(name) {
-    # Replace forbidden characters with an underscore
-    gsub("[[:punct:] ]+", "_", name)
-}
-
-# Function to uppercase column names after a specific column
-uppercase_after_colname <- function(df, specific_colname) {
-  # Check if the specified column name exists in the data frame
-  if (!specific_colname %in% colnames(df)) {
-    stop("The specified column name does not exist in the data frame.")
-  }
-  
-  # Get the index of the specific column name
-  specific_index <- which(colnames(df) == specific_colname)
-  
-  # Uppercase column names after the specific index
-  colnames(df)[(specific_index + 1):ncol(df)] <- toupper(colnames(df)[(specific_index + 1):ncol(df)])
-  
-  return(df)
-}
-
-# Function to capitalize the first letter of the first part of a string
-capitalize_first_part <- function(colname) {
-  # Split the string at the first dot (.)
-  parts <- unlist(strsplit(colname, "\\.", fixed = TRUE))
-  
-  # Capitalize the first letter of the first part
-  parts[1] <- paste(toupper(substring(parts[1], 1, 1)), substring(parts[1], 2), sep = "")
-  
-  # Rejoin the parts with the dot (.)
-  capitalized_colname <- paste(parts, collapse = ".")
-  
-  return(capitalized_colname)
-}
-
-# Function to apply to all column names in a data frame
-capitalize_df_colnames <- function(df) {
-  colnames(df) <- sapply(colnames(df), capitalize_first_part)
-  return(df)
-}
-
-
-# Function to filter df based on overlapping intervals
-filter_df <- function(input_df, filtering_df) {
-  
-  # Ensure the required columns exist in both data frames
-  required_cols <- c("chromosome", "start", "end")
-  if (!all(required_cols %in% tolower(colnames(input_df)))) {
-    stop("CNV calls data frame must contain columns: chromosome, start, end")
-  }
-  if (!all(required_cols %in% tolower(colnames(filtering_df)))) {
-    stop("BED file data frame must contain columns: chromosome, start, end")
-  }
-  
-  message('Start filtering')
-
-  # Standardize column names and chromosome format in both data frames
-  colnames(input_df) <- tolower(colnames(input_df))
-  colnames(filtering_df) <- tolower(colnames(filtering_df))
-  
-  # Add "chr" prefix if missing and convert specific chromosomes (chrX -> chr23, chrY -> chr24)
-  format_chromosome <- function(df) {
-    df$chromosome <- ifelse(grepl("^chr", df$chromosome, ignore.case = TRUE),
-                            tolower(df$chromosome),
-                            paste0("chr", df$chromosome))
-    df$chromosome <- gsub("^chrx$", "chr23", df$chromosome, ignore.case = TRUE)
-    df$chromosome <- gsub("^chry$", "chr24", df$chromosome, ignore.case = TRUE)
-    return(df)
-  }
-  
-  input_df <- format_chromosome(input_df)
-  filtering_df <- format_chromosome(filtering_df)
-
-  # Convert data frames to GRanges objects
-  input_gr <- GRanges(
-    seqnames = input_df$chromosome,
-    ranges = IRanges(start = input_df$start, end = input_df$end),
-    CNV.type = input_df$CNV.type
-  )
-  filter_gr <- GRanges(
-    seqnames = filtering_df$chromosome,
-    ranges = IRanges(start = filtering_df$start, end = filtering_df$end)
-  )
-
-  # Find overlaps
-  overlaps <- findOverlaps(input_gr, filter_gr)
-  
-  # Filter input_df and filtering_df based on overlaps
-  input_df_filtered <- input_df[queryHits(overlaps), ]
-  filtering_df_filtered <- filtering_df[subjectHits(overlaps), ]
-  
-  # Identify and exclude any overlapping columns (except chromosome, start, and end)
-  overlap_columns <- intersect(colnames(input_df_filtered), colnames(filtering_df_filtered))
-  filtering_df_filtered <- filtering_df_filtered[, !colnames(filtering_df_filtered) %in% overlap_columns]
-
-  # Combine the filtered data frames
-  result <- cbind(input_df_filtered, filtering_df_filtered)
-
-  # Restore original chromosome values (chr23 -> X, chr24 -> Y)
-  result$chromosome <- gsub("^chr23$", "X", result$chromosome, ignore.case = TRUE)
-  result$chromosome <- gsub("^chr24$", "Y", result$chromosome, ignore.case = TRUE)
-  
-  # Capitalize first letter of each column name
-  result <- capitalize_df_colnames(result)
-
-  return(result)
-}
-
 
 ###### Parsing input options and setting defaults ########
 option_list <- list(
     make_option('--rdata', help = 'Input summary RData file (required)', dest = 'data'),
     make_option('--out', default = './plots', help = 'Output directory, default=./plots', dest = 'pfolder'),
-    make_option("--chromosome", default="A", help='Perform calling for autosomes or chr XX or chr XY', dest='chromosome'),
+    make_option("--chromosome", default="A", help='Perform plots for autosomes or chrX', dest='chromosome'),
     make_option('--prefix', default = '', help = 'Prefix for the files, default=None', dest = 'prefix'),
     make_option('--bedfiltering', default = NULL, help = 'Specify a BED for filtering datas, default=None', dest = 'bedfiltering'),
     make_option("--outrdata", default="./DECONplot.Rdata", help="Output Rdata file, default: ./DECONplot.Rdata", dest='outdata')
@@ -246,298 +222,213 @@ if (is.null(prefixfile) || prefixfile == "") {
     prefixfile <- formatted_datetime
 }
 
+# Chromosome filtering
 modechrom = opt$chromosome
+
 ###### Handling BED file option ########
 if (!is.null(opt$bedfiltering)) {
-    # Load the specified BED file
-    message('Loading specified BED file: ', opt$bedfiltering)
-    # Check and read the BED file, ensuring it has at least four columns
-    bed.filtering <- read.table(opt$bedfiltering, header = FALSE, sep = "\t",
-                            colClasses = c("character", "integer", "integer", "character", "integer", "character"),
-                            fill = TRUE)[, 1:4]
+	# Load and validate the BED file
+	message('Loading specified BED file: ', opt$bedfiltering)
+	# Read the BED file, ensuring it has at least four columns and keep only the first four
+	bed.filtering <- read.table(opt$bedfiltering, header = FALSE, sep = "\t",
+								colClasses = c("character", "integer", "integer", "character", rep("NULL", 100)),
+								fill = TRUE)
 
-    # Ensure at least four columns are present
-    if (ncol(bed.filtering) < 4) {
-        stop("Error: The BED file must have at least four columns (chromosome, start, end, gene).")
-    }
+	# Check if the file has at least 4 columns
+	if (ncol(bed.filtering) < 4) stop("Error: The BED file must have at least four columns.")
 
-    # Keep only the first four columns
-    bed.filtering <- bed.filtering[, 1:4]
-    # Assign the required column names
-    colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
-    
-    # Sort by chr
-    #bed.filtering <- chr_sort_df(bed.filtering, "chromosome")
-    #ExomeCount <- chr_sort_df(ExomeCount, "chromosome", add_prefix = FALSE)
-    #counts <- chr_sort_df(counts, "chromosome")
-    #bed.file <- chr_sort_df(bed.file, "chromosome")
-    # Filtering by chr
-    bed.filtering <- filter_data_by_chromosome(bed.filtering, modechrom)
-    bed.file <- filter_data_by_chromosome(bed.file, modechrom)
+	# Assign column names
+	colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
 
-    # for debug
-    rdata_file <- sprintf("/app/res/debug_prefiltering_data_%s.RData", modechrom)
-    save(models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
-
-    # Filtering
+	if (modechrom == "XX" || modechrom == "XY") {
+		bed.filtering <- filter_chromosomes(bed.filtering, include.chrom = c("chrX")) # we don't call Y
+	}
+	if (modechrom == "A") {
+		bed.filtering <- filter_chromosomes(bed.filtering, exclude.chrom = c("chrX", "chrY"))
+	}
     bed.file <- filter_df(bed.file, bed.filtering)
+
     counts <- filter_df(counts, bed.filtering)
+
+	ExomeCount <- modify_prefix(ExomeCount, "chromosome", action = "add", prefix = "chr")
     ExomeCount <- filter_df(ExomeCount, bed.filtering)
-    cnv.calls <- filter_df(cnv.calls, bed.filtering)
+    ExomeCount <- modify_prefix(ExomeCount, "Chromosome", action = "remove", prefix = "chr")
+
+	cnv.calls <- modify_prefix(cnv.calls, "Chromosome", action = "add", prefix = "chr")
+	cnv.calls <- filter_df(cnv.calls, bed.filtering)
+	cnv.calls <- modify_prefix(cnv.calls, "Chromosome", action = "remove", prefix = "chr")
+
+	cnv.calls_ids <- modify_prefix(cnv.calls_ids, "Chromosome", action = "add", prefix = "chr")
     cnv.calls_ids <- filter_df(cnv.calls_ids, bed.filtering)
+	cnv.calls_ids <- modify_prefix(cnv.calls_ids, "Chromosome", action = "remove", prefix = "chr")
 
-    # for debug
-    rdata_file <- sprintf("/app/res/debug_postfiltering_data_%s.RData", modechrom)
-    save(bed.file, models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
-
-    # Remove duplicates based on specific columns
-    cnv.calls <- cnv.calls[!duplicated(cnv.calls[, c("Sample", "Start", "End", "Chromosome")]), ]
-    cnv.calls_ids <- cnv.calls_ids[!duplicated(cnv.calls_ids[, c("Cnv.id", "Sample", "Start", "End", "Chromosome")]), ]
-    counts <- counts[!duplicated(counts[, c("Chromosome", "Start", "End", "Gene")]), ]
-    ExomeCount <- counts[!duplicated(ExomeCount[, c("Chromosome", "Start", "End", "Gene")]), ]
-    bed.file <- counts[!duplicated(bed.file[, c("Chromosome", "Start", "End", "Gene")]), ]
-
-    # Check for the existence of "Exon_number" or use "Gene"
-    if ("Exon_number" %in% colnames(counts)) {
-        counts <- uppercase_after_colname(counts, "Exon_number")
-        ExomeCount <- uppercase_after_colname(ExomeCount, "Exon_number")
-    } else {
-        counts <- uppercase_after_colname(counts, "Gene")
-        ExomeCount <- uppercase_after_colname(ExomeCount, "Gene")
-    }
-
-    # for debug
-    rdata_file <- sprintf("/app/res/debug_preplot_data_%s.RData", modechrom)
-    save(bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 
 }
 
 
-#################### Plots ####################################
-message('Start generating plots')
-
+# Check custom exons
 if ("Custom.first" %in% colnames(cnv.calls_ids)){
-    message('Custom.first column detected')
-    cnv.calls_plot=cnv.calls_ids[!is.na(cnv.calls_ids$Custom.first),] # filter NA
-    message('CNV plot initiating with custom exon numbers')
+	message('Custom.first column detected')
+	cnv.calls_plot=cnv.calls_ids[!is.na(cnv.calls_ids$Custom.first),]
+	message('CNV plot initiating with custom exon numbers')
 }else{
-    message('Custom.first column not detected')
-    cnv.calls_plot=cnv.calls_ids
-     message('CNV plot initiating without custom exon numbers')
+	message('Custom.first column not detected')
+	cnv.calls_plot=cnv.calls_ids
+	message('CNV plot initiating without custom exon numbers')
 }
 
-# add chr prefix
-#cnv.calls_plot$Chromosome=paste('chr',cnv.calls_plot$Chromosome,sep='')
+cnv.calls_plot$chr=paste('chr',cnv.calls_plot$Chromosome,sep='')
 
-message('Sorting bed.file')
-bed.file <- capitalize_df_colnames(bed.file)
-#bed.file <- chr_sort_df(bed.file, "Chromosome")
-# for debug
-rdata_file <- sprintf("/app/res/debug_sorting_plot_data_%s.RData", modechrom)
-save(models, refs, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
-
-message('Initiating index')
 Index=vector(length=nrow(bed.file))
 Index[1]=1
+for(i in 2:nrow(bed.file)){
+	if(bed.file[i,4]==bed.file[i-1,4]){
+		Index[i]=Index[i-1]+1
+	}else{
+		Index[i]=1
+	}   
+}   
 
-if(colnames(counts)[5]=="Exon_number"){
+if (colnames(counts)[5] == "exon_number") {
     message('Exon numbers detected')
-    exons <- bed.file[, c("Chromosome", "Start", "End", "Exon_number")]
-    for(i in 1:nrow(exons)){
-        x=which(paste(bed.file[,4])==paste(exons[i,4]) & bed.file[,2]<=exons[i,3] & bed.file[,3]>=exons[i,2])
-        Index[x]=exons[i,5]
-        # for debug
-    rdata_file <- sprintf("/app/res/debug_exons_post_plot_data_%s.RData", modechrom)
-    save(x, Index, models, refs, exons, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
-    }
- } else {
-    message('No exon numbers detected')
-    for(i in 2:nrow(bed.file)){
-        if(bed.file[i,4]==bed.file[i-1,4]){
-            Index[i]=Index[i-1]+1
-        }else{
-            Index[i]=1
-        }
-    
-    # for debug
-    rdata_file <- sprintf("/app/res/debug_post_plot_data_%s.RData", modechrom)
-    save(Index, models, refs, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+    exons <- bed.file
+    for (i in 1:nrow(exons)) {
+        x = which(paste(bed.file[,5]) == paste(exons[i,5]) & 
+                  bed.file[,2] <= exons[i,3] & 
+                  bed.file[,3] >= exons[i,2])
+        Index[x] = exons[i,5]
     }
 }
 
-message('Start compiling datas for each cnv calls plot row')
+
 for(call_index in 1:nrow(cnv.calls_plot)){
-    Sample<-cnv.calls_plot[call_index,]$Sample
-    Gene<-unlist(strsplit(cnv.calls_plot[call_index,]$Gene,split=", "))
-    
-    # exonRange identifies rows in bed.file that match the current Gene. The range may be adjusted by expanding it to include padding of 5 bases on either side of the CNV region (Start.p and End.p values). If the adjusted range extends beyond the available data, it is truncated to fit the data boundaries. This ensures that the plot includes all relevant exons for the CNV region, with a small margin for context.
-    exonRange<-which(bed.file[,4]%in%Gene)
-    if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)>=1)){exonRange=(cnv.calls_plot[call_index,]$Start.p-5):max(exonRange)}
-    if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)<=0)){exonRange=1:max(exonRange)}
-    if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)<=nrow(bed.file))){exonRange=min(exonRange):(cnv.calls_plot[call_index,]$End.p+5)}
-    if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)>nrow(bed.file))){exonRange=min(exonRange):nrow(bed.file)}
-    
-    # Check if the exonRange spans multiple chromosomes. If it does, the range is adjusted to include only the exons on the chromosome of the CNV call. This ensures that the plot is generated for a single chromosome at a time, which is necessary for the plotting function to work correctly. If the adjusted range is empty (i.e., there are no exons on the chromosome of the CNV call), an error message is printed and the loop continues to the next CNV call. If the adjusted range is not empty, the plot is generated for the exons on the chromosome of the CNV call.
-    singlechr=length(unique(bed.file[exonRange,1]))==1
-    # If singlechr is FALSE, meaning multiple chromosomes are detected within exonRange, the code isolates the correct chromosome entries. It sets prev to track whether the current region matches the chromosome of the CNV call and sets newchr to the chromosome being assessed.
-    if(!singlechr){
-        if(bed.file[exonRange[1],1]!=cnv.calls_plot[call_index,]$Chromosome){
-            prev=TRUE
-            newchr=bed.file[exonRange[1],1]
-        }else{
-            prev=FALSE
-            newchr=bed.file[exonRange[length(exonRange)],1]
-        }
-        exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$Chromosome]
-    }
+	
+	Sample<-cnv.calls_plot[call_index,]$Sample
+	Gene<-unlist(strsplit(cnv.calls_plot[call_index,]$Gene,split=", "))
+	exonRange<-which(bed.file[,4]%in%Gene)
 
-    ###### Part of plot containing the coverage points (upper part) ###############
-    message('Starting drawing coverage')
-    VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$Sample==Sample,]$Start.p,cnv.calls[cnv.calls$Sample==Sample,]$End.p))
-    refs_sample<-refs[[Sample]]
-    Data<-cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
-    Data[,-ncol(Data)]=log(Data[,-ncol(Data)])
-    
-    # for debug
-    rdata_file <- sprintf("/app/res/drawdata_%s_%s.RData", modechrom, call_index)
-    save(Index, singlechr, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
-    
-    Data1<-melt(Data,id=c("exonRange"))
-    testref<-rep("gray",nrow(Data1))
-    testref[Data1$variable==Sample]="blue"
-    Data1<-data.frame(Data1,testref)
-    levels(Data1$variable)=c(levels(Data1$variable),"VAR")
-    Data1$testref=as.factor(Data1$testref)
-    levels(Data1$testref)=c(levels(Data1$testref),"red")
-    data_temp<-Data1[Data1$variable==Sample & Data1$exonRange%in%VariantExon,]
+	if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)>=1)){exonRange=(cnv.calls_plot[call_index,]$Start.p-5):max(exonRange)}
+	if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)<=0)){exonRange=1:max(exonRange)}
+	if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)<=nrow(bed.file))){exonRange=min(exonRange):(cnv.calls_plot[call_index,]$End.p+5)}
+	if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)>nrow(bed.file))){exonRange=min(exonRange):nrow(bed.file)}
 
-    if(nrow(data_temp)>0){
-        data_temp$variable="VAR"
-        data_temp$testref="red"
-        Data1<-rbind(Data1,data_temp)
-    }
+	singlechr=length(unique(bed.file[exonRange,1]))==1
 
-    levels(Data1$testref)=c("Test Sample","Reference Sample","Affected exon")
-    new_cols=c("blue","gray","red")
-    A1<-ggplot(data=Data1,aes(x=exonRange,y=value,group=variable,colour=testref))
-    A1<-A1 + geom_point(cex=2.5,size=1.5) # Have to set up points with scale to get correct legend, then re-plot in correct order etc.
-    A1<-A1 + scale_colour_manual(values=new_cols)  
-    A1<-A1 + geom_line(data=subset(Data1,testref=="Reference Sample"),lty="dashed",lwd=1.5,col="grey") 
-    A1<-A1 + geom_point(data=subset(Data1,testref=="Reference Sample"),cex=2.5,col="grey")   
-    A1<-A1+ geom_line(data=subset(Data1,testref=="Test Sample"),lty="dashed",lwd=1.5,col="blue")  
-    A1<-A1 + geom_point(data=subset(Data1,testref=="Test Sample"),cex=2.5,col="blue") 
-    A1<-A1 + geom_point(data=subset(Data1,testref=="Affected exon"),cex=3.5,col="red") 
-    A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position="none")+ xlab(" ")
-    #A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position= "top") + xlab(" ") + guides(color = guide_legend(nrow = 1, title = NULL))
-    Data2<-Data1[Data1$testref=="Affected exon",]
-    
-    if(nrow(Data2)>1){
-        for(i in 1:(nrow(Data2)-1)){
-            if((Data2$exonRange[i]+1)==Data2$exonRange[i+1]){A1<-A1 + geom_line(data=Data2[i:(i+1),],aes(x=exonRange,y=value,group=1),lwd=1.5,col="red")}
-        }
-    }
+	if(!singlechr){
+		if(bed.file[exonRange[1],1]!=cnv.calls_plot[call_index,]$Chromosome){
+			prev=TRUE
+			newchr=bed.file[exonRange[1],1]
+		}else{
+			prev=FALSE
+			newchr=bed.file[exonRange[length(exonRange)],1]
+		}
+		exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$Chromosome]
+	}
 
-    if(!singlechr){
-        if(prev){A1<-A1 + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange),labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange)))
-        } else {
-        A1<-A1 + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75))}
-    } else {
-        A1<-A1 + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
+	###### Part of plot containing the coverage points (upper part) ###############
+	VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$Sample==Sample,]$Start.p,cnv.calls[cnv.calls$Sample==Sample,]$End.p))
+	refs_sample<-refs[[Sample]]
+	
+	Data<-cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
+	Data[,-ncol(Data)]=log(Data[,-ncol(Data)])
+	Data1<-melt(Data,id=c("exonRange"))
 
-    # for debug
-    rdata_file <- sprintf("/app/res/before_adding_genes_names_%s_%s.RData", modechrom, call_index)
-    save(Index, singlechr, Index, A1, Data1, Data2, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
+	testref<-rep("gray",nrow(Data1))
+	testref[Data1$variable==Sample]="blue"
+	Data1<-data.frame(Data1,testref)
+	levels(Data1$variable)=c(levels(Data1$variable),"VAR")
+	Data1$testref=as.factor(Data1$testref)
+	levels(Data1$testref)=c(levels(Data1$testref),"red")
 
-    ############## Part of plot containing the gene names as legend ###########
-    message('Adding gene names')
-    genes_sel = unique(bed.file[exonRange,4])
-    temp<-cbind(1:nrow(bed.file),bed.file)[exonRange,]
-    len<-table(temp$gene)
-    mp<-tapply(exonRange,temp[,5],mean)
-    mp<-mp[genes_sel]
-    len<-len[genes_sel]
-    Genes<-data.frame(c(genes_sel),c(mp),c(len-.5),1)
-    names(Genes)=c("Gene","MP","Length","Ind")
+	data_temp<-Data1[Data1$variable==Sample & Data1$exonRange%in%VariantExon,]
 
-    if(!singlechr){
-        if(prev){
-            fakegene=c(newchr,min(exonRange)-5,3.5,1)
-        }else{
-            fakegene=c(newchr,max(exonRange)+5,3.5,1)
-        }
-        Genes<-rbind(Genes,fakegene)
-        levels(Genes$Gene)=c(levels(Genes$Gene),newchr)
-        Genes$MP=as.numeric(Genes$MP)
-        Genes$Length=as.numeric(Genes$Length)
-    }
+	if(nrow(data_temp)>0){
+		data_temp$variable="VAR"
+		data_temp$testref="red"
+		Data1<-rbind(Data1,data_temp)
+	}   
+	levels(Data1$testref)=c("Test Sample","Reference Sample","Affected exon")
 
-    GenesPlot<-ggplot(data=Genes, aes(x=MP,y=Ind,fill=Gene,width=Length,label=Gene)) +geom_tile() + geom_text() + theme_bw() + theme(legend.position="None",panel.grid.major = element_blank(), panel.grid.minor = element_blank(),axis.text.y = element_blank(),axis.ticks.y=element_blank(),plot.margin=unit(c(.5,.5,.5,.55),"cm")) + ylab(" ") + xlab(" ")
-    GenesPlot<-GenesPlot + theme(axis.text.x=element_blank(),axis.ticks.x=element_blank())
+	new_cols=c("blue","gray","red")
+	A1<-ggplot(data=Data1,aes(x=exonRange,y=value,group=variable,colour=testref))
+	A1<-A1 + geom_point(cex=2.5,lwd=1.5)
+	A1<-A1 + scale_colour_manual(values=new_cols)  
+	A1<-A1 + geom_line(data=subset(Data1,testref=="Reference Sample"),lty="dashed",lwd=1.5,col="grey") 
+	A1<-A1 + geom_point(data=subset(Data1,testref=="Reference Sample"),cex=2.5,col="grey")   
+	A1<-A1+ geom_line(data=subset(Data1,testref=="Test Sample"),lty="dashed",lwd=1.5,col="blue")  
+	A1<-A1 + geom_point(data=subset(Data1,testref=="Test Sample"),cex=2.5,col="blue") 
+	A1<-A1 + geom_point(data=subset(Data1,testref=="Affected exon"),cex=3.5,col="red") 
+	A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position="none")+ xlab(" ")
 
-    # for debug
-    rdata_file <- sprintf("/app/res/after_adding_genes_names_%s_%s.RData", modechrom, call_index)
-    save(Index, singlechr, genes_sel, temp, len, mp, Genes, GenesPlot, A1, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
+	Data2<-Data1[Data1$testref=="Affected exon",]
+	if(nrow(Data2)>1){
+		for(i in 1:(nrow(Data2)-1)){
+			if((Data2$exonRange[i]+1)==Data2$exonRange[i+1]){A1<-A1 + geom_line(data=Data2[i:(i+1),],aes(x=exonRange,y=value,group=1),lwd=1.5,col="red")}
+		}
+	}   
 
-    ####### Part of the plot containing the normalized ratio of the coverage (lower part) #############
-    message('Adding normalized ratio')
-    Totals<-rowSums(ExomeCount[exonRange,c(Sample,refs_sample)])
-    ratio = (ExomeCount[exonRange,Sample]/Totals)/models[[Sample]][1]
-    mins <- vector(length=length(exonRange))
-    maxs <-vector(length=length(exonRange))
 
-    # for debug
-    rdata_file <- sprintf("/app/res/debug_before_qbetabinom_data_%s.RData", modechrom)
-    save(singlechr, exonRange, Totals, ratio, mins, maxs, models, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+	if(!singlechr){
+		if(prev){A1<-A1 + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange),labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange)))
+		}else{A1<-A1 + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75))}
+	}else{A1<-A1 + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
 
-    for(i in 1:length(exonRange)) {
-        print(paste("Iteration:", i))
-        print(paste("Totals[i]:", Totals[i]))
-        print(paste("Model parameters:", models[[Sample]][2], models[[Sample]][1]))
-        
-        # Check for NA/NaN or Totals[i] being zero before calling qbetabinom
-        if (is.na(Totals[i]) || Totals[i] == 0 || is.na(models[[Sample]][2]) || is.na(models[[Sample]][1])) {
-            warning(paste("Skipping iteration", i, "due to NA or zero values in Totals or model parameters"))
-            mins[i] <- NA
-            maxs[i] <- NA
-            next
-        }
-        
-        temp = qbetabinom(p=0.025, Totals[i], models[[Sample]][2], models[[Sample]][1])
-        mins[i] = (temp / Totals[i]) / models[[Sample]][1]
-        
-        temp = qbetabinom(p=0.975, Totals[i], models[[Sample]][2], models[[Sample]][1])
-        maxs[i] = (temp / Totals[i]) / models[[Sample]][1]
-    }
-       
-    CIData<-data.frame(exonRange,ratio,mins,maxs)
-    names(CIData)<-c("Exon","Ratio","Min","Max")
-    
-    CIPlot<-ggplot(CIData,aes(x=Exon,y=Ratio))+geom_ribbon(aes(ymin=Min,ymax=Max),fill="grey")+geom_point(col="blue",cex=3.5) + theme_bw() +xlab("")+ylab("Observed/Expected")
-    temp = cnv.calls[cnv.calls$Sample==Sample,]
 
-    # for debug
-    rdata_file <- sprintf("/app/res/debug_ratio_plot_data_%s.RData", modechrom)
-    save(singlechr, CIData, CIPlot, Index, exonRange, Totals, ratio, mins, maxs, models, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+	############## Part of plot containing the gene names as legend ###########
+	message('Adding gene names')
+	genes_sel = unique(bed.file[exonRange,4])
+	temp<-cbind(1:nrow(bed.file),bed.file)[exonRange,]
+	len<-table(temp$Gene) 	# ? len<-table(temp$name)
+	mp<-tapply(exonRange,temp[,5],mean)
+	mp<-mp[genes_sel]
+	len<-len[genes_sel]
+	Genes<-data.frame(c(genes_sel),c(mp),c(len-.5),1)
+	names(Genes)=c("Gene","MP","Length","Ind")
 
-    if(sum(temp$Start.p%in%exonRange |temp$End.p%in%exonRange)>0){
-        temp = temp[temp$Start.p%in%exonRange|temp$End.p%in%exonRange,]
-        for(i in 1:nrow(temp)){
-            start.temp = temp[i,]$Start.p
-            end.temp = temp[i,]$End.p
-            CIPlot<-CIPlot + geom_point(data=CIData[CIData$Exon%in%start.temp:end.temp,], aes(x=Exon,y=Ratio),color="red",cex=3.5)
-        }
-    }
+	if(!singlechr){
+		levels(Genes$Gene)=c(levels(Genes$Gene),newchr)
+		if(prev){
+			fakegene=c(newchr,min(exonRange)-5,3.5,1)
+		}else{
+			fakegene=c(newchr,max(exonRange)+5,3.5,1)
+		}
+		Genes<-rbind(Genes,fakegene)
+		Genes$MP=as.numeric(Genes$MP)
+		Genes$Length=as.numeric(Genes$Length)
+	}
 
-    if(!singlechr){
-        if(prev){CIPlot<- CIPlot + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange),labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange)))
-        } else {
-            CIPlot<-CIPlot + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75))}
-    } else {
-        CIPlot<-CIPlot + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
- 
-    # for debug
-    rdata_file <- sprintf("/app/res/debug_end_plot_data_%s_%s.RData", modechrom, call_index)
-    save(singlechr, A1, Index, CIPlot, CIData, GenesPlot, exonRange, Totals, ratio, mins, maxs, models, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+	GenesPlot<-ggplot(data=Genes, aes(x=MP,y=Ind,fill=Gene,width=Length,label=Gene)) +geom_tile() + geom_text() + theme_bw() + theme(legend.position="None",panel.grid.major = element_blank(), panel.grid.minor = element_blank(),axis.text.y = element_blank(),axis.ticks.y=element_blank(),plot.margin=unit(c(.5,.5,.5,.55),"cm")) + ylab(" ") + xlab(" ")
+	GenesPlot<-GenesPlot + theme(axis.text.x=element_blank(),axis.ticks.x=element_blank())
+
+	####### Part of the plot containing the normalized ratio of the coverage (lower part) #############
+	Totals<-rowSums(ExomeCount[exonRange,c(Sample,refs_sample)])
+	ratio = (ExomeCount[exonRange,Sample]/Totals)/models[[Sample]][1]
+	mins <- vector(length=length(exonRange))
+	maxs <-vector(length=length(exonRange))
+	for(i in 1:length(exonRange)){
+		temp = qbetabinom(p=0.025,Totals[i],models[[Sample]][2],models[[Sample]][1])
+		mins[i] = (temp/Totals[i])/models[[Sample]][1]
+		temp = qbetabinom(p=0.975,Totals[i],models[[Sample]][2],models[[Sample]][1])
+		maxs[i] = (temp/Totals[i])/models[[Sample]][1]
+	}       
+
+	CIData<-data.frame(exonRange,ratio,mins,maxs)
+	names(CIData)<-c("Exon","Ratio","Min","Max")
+	CIPlot<-ggplot(CIData,aes(x=Exon,y=Ratio))+geom_ribbon(aes(ymin=Min,ymax=Max),fill="grey")+geom_point(col="blue",cex=3.5) + theme_bw() +xlab("")+ylab("Observed/Expected")
+	temp = cnv.calls[cnv.calls$Sample==Sample,]
+	if(sum(temp$Start.p%in%exonRange |temp$End.p%in%exonRange)>0){
+		temp = temp[temp$Start.p%in%exonRange|temp$End.p%in%exonRange,]
+		for(i in 1:nrow(temp)){
+			start.temp = temp[i,]$Start.p
+			end.temp = temp[i,]$End.p
+			CIPlot<-CIPlot + geom_point(data=CIData[CIData$Exon%in%start.temp:end.temp,], aes(x=Exon,y=Ratio),color="red",cex=3.5)
+		}
+	}
+
+	if(!singlechr){
+		if(prev){CIPlot<- CIPlot + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange),labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange)))
+		}else{CIPlot<-CIPlot + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75))}
+	}else{CIPlot<-CIPlot + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
 
     ######### Save plot in pdf format ###########
     message('Saving plots in pdf format')
@@ -551,13 +442,13 @@ for(call_index in 1:nrow(cnv.calls_plot)){
         pdf(file = paste(plotFolder, "/DECON.", prefixfile, ".", Sample, ".", paste(cleaned_gene, collapse = "_"), "_", which(cnv_genes_sample_index == call_index), ".pdf", sep = ""), useDingbats = FALSE)
     }
 
- 
-    grid.newpage()
-    pushViewport(viewport(layout = grid.layout(6, 1)))
-    print(A1,vp=viewport(layout.pos.row=1:3,layout.pos.col=1))
-    print(GenesPlot,vp=viewport(layout.pos.row=4,layout.pos.col=1))
-    print(CIPlot,vp=viewport(layout.pos.row=5:6,layout.pos.col=1))
-    dev.off()
+if(sum(cnv_genes_sample==Gene)>2){print(paste("WARNING: more than 2 calls in ",Gene,", could affect plotting",sep=""))}
+
+	grid.newpage()
+	pushViewport(viewport(layout = grid.layout(6, 1)))
+	print(A1,vp=viewport(layout.pos.row=1:3,layout.pos.col=1))
+	print(GenesPlot,vp=viewport(layout.pos.row=4,layout.pos.col=1))
+	print(CIPlot,vp=viewport(layout.pos.row=5:6,layout.pos.col=1))
+	dev.off()
+
 }
-warnings()
-print("END DeconPlot script")
