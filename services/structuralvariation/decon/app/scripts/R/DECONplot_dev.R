@@ -290,7 +290,7 @@ for(i in 2:nrow(bed.file)){
 
 if (colnames(counts)[5] == "exon_number") {
     message('Exon numbers detected')
-    exons <- bed.file[, c("chromosome", "start", "end", "gene", "exon")]
+    exons <- bed.file
     for (i in 1:nrow(exons)) {
         x = which(paste(bed.file[,5]) == paste(exons[i,5]) & 
                   bed.file[,2] <= exons[i,3] & 
