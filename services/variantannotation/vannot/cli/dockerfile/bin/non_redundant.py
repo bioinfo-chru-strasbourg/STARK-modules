@@ -20,15 +20,20 @@ def generate(run_informations):
     else:
         filter_mode = False
 
-    module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
+    module_config = osj(
+        os.environ["DOCKER_MODULE_CONFIG"],
+        f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
+    )
     with open(module_config, "r") as read_file:
         data = json.load(read_file)
-        columns_to_remove = data["non_redundant_unwanted_columns"][run_informations["run_platform_application"]]
+        columns_to_remove = data["non_redundant_unwanted_columns"][
+            run_informations["run_platform_application"]
+        ]
 
     input_files_list = glob.glob(
         osj(
             input_dir,
-            "VANNOT_*.tsv",
+            "VANNOT_*.*.tsv",
         )
     )
     input_files_dict = {}
@@ -82,18 +87,28 @@ def generate(run_informations):
                                 l = l.rstrip("\r\n").split("\t")
                                 split_header_length = len(l)
                                 for i in range(len(l)):
-                                    if l[i] not in columns_to_remove and l[i] not in samples:
+                                    if (
+                                        l[i] not in columns_to_remove
+                                        and l[i] not in samples
+                                    ):
                                         index_to_keep.append(i)
                                     if l[i] not in samples:
                                         cleaned_header.append(l[i])
                                 header = "\t".join(cleaned_header)
-                                            
+
                                 write_file.write(
                                     "\t".join(l[i] for i in index_to_keep) + "\r\n"
                                 )
-                                if "gnomadAltFreq_popmax" in l and "gnomadHomCount_all" in l:
-                                    gnomadAltFreq_popmax_index = l.index("gnomadAltFreq_popmax")
-                                    gnomadHomCount_all_index = l.index("gnomadHomCount_all")
+                                if (
+                                    "gnomadAltFreq_popmax" in l
+                                    and "gnomadHomCount_all" in l
+                                ):
+                                    gnomadAltFreq_popmax_index = l.index(
+                                        "gnomadAltFreq_popmax"
+                                    )
+                                    gnomadHomCount_all_index = l.index(
+                                        "gnomadHomCount_all"
+                                    )
                                 first_file = False
                             else:
                                 cleaned_line = []
@@ -105,7 +120,10 @@ def generate(run_informations):
                                 assert l == header
                         else:
                             l = l.rstrip("\r\n").split("\t")
-                            if "gnomadAltFreq_popmax" in l and "gnomadHomCount_all" in l:
+                            if (
+                                "gnomadAltFreq_popmax" in l
+                                and "gnomadHomCount_all" in l
+                            ):
                                 if "," in l[gnomadAltFreq_popmax_index]:
                                     l[gnomadAltFreq_popmax_index] = l[
                                         gnomadAltFreq_popmax_index
@@ -122,8 +140,13 @@ def generate(run_informations):
                                         gnomadAltFreq_popmax_index
                                     ].replace(".", ",")
 
-                            if f"{l[0]}_{l[1]}_{l[2]}_{l[3]}" not in already_seen_variants_dic:
-                                already_seen_variants_dic[f"{l[0]}_{l[1]}_{l[2]}_{l[3]}"] = ""
+                            if (
+                                f"{l[0]}_{l[1]}_{l[2]}_{l[3]}"
+                                not in already_seen_variants_dic
+                            ):
+                                already_seen_variants_dic[
+                                    f"{l[0]}_{l[1]}_{l[2]}_{l[3]}"
+                                ] = ""
 
                                 if len(l) != split_header_length:
                                     if len(l) == split_header_length - 1:
@@ -143,7 +166,10 @@ def generate(run_informations):
             "head -n1 " + output_file + "_unsorted > " + output_file, shell=True
         )
         subprocess.call(
-            "tail -n+2 " + output_file + "_unsorted | sort -t $'\t' -k 1 >> " + output_file,
+            "tail -n+2 "
+            + output_file
+            + "_unsorted | sort -t $'\t' -k 1 >> "
+            + output_file,
             shell=True,
         )
         os.remove(output_file + "_unsorted")

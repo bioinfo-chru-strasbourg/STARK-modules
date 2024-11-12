@@ -496,49 +496,54 @@ def howard_score_transcripts(run_informations):
     start = actual_time
 
     for vcf_file in vcf_files:
-        output_file_bonus_calculation = osj(
-            run_informations["tmp_analysis_folder"], "output_bonus_calculation.vcf.gz"
+        output_file_transcripts = osj(
+            run_informations["tmp_analysis_folder"], "output_transcripts.vcf.gz"
         )
 
-        container_name = f"VANNOT_calculation_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+        container_name = f"VANNOT_transcripts_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
         launch_annotate_arguments = [
             "calculation",
             "--input",
             vcf_file,
             "--output",
-            output_file_bonus_calculation,
-            "--calculation_config",
-            "/STARK/config/variantannotation/vannot/howard/param.calculation.json",
+            output_file_transcripts,
+            "--param",
+            "/STARK/config/variantannotation/vannot/howard/param.transcripts.json",
             "--memory",
             memory,
             "--threads",
             threads,
-            "--calculations='PZTSCORE_BONUS,SNPEFF_ANN_EXPLODE'",
+            "--calculations=TRANSCRIPTS_ANNOTATIONS,TRANSCRIPTS_PRIORITIZATION,TRANSCRIPTS_EXPORT",
         ]
 
-        log.info("Calculation of bonus scores")
+        log.info("Prioritization of transcripts")
         howard_launcher.launch(container_name, launch_annotate_arguments)
-        # os.remove(vcf_file)
+        os.remove(vcf_file)
 
-        # container_name = f"VANNOT_transcripts_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
-        # launch_annotate_arguments = [
-        #     "calculation",
-        #     "--input",
-        #     output_file_bonus_calculation,
-        #     "--output",
-        #     vcf_file,
-        #     "--param",
-        #     "/STARK/config/variantannotation/vannot/howard/param.transcripts.json",
-        #     "--memory",
-        #     memory,
-        #     "--threads",
-        #     threads,
-        #     "--calculations='SNPEFF_ANN_EXPLODE,TRANSCRIPTS_ANNOTATIONS,TRANSCRIPTS_PRIORITIZATION,TRANSCRIPTS_EXPORT'",
-        # ]
+        info_to_delete = "INFO/SPiP_distSS"
 
-        # log.info("Prioritization of transcripts")
-        # howard_launcher.launch(container_name, launch_annotate_arguments)
-        # os.remove(output_file_bonus_calculation)
+        cmd = ["bcftools", "annotate", "-x"]
+        cmd.append(info_to_delete)
+        cmd.append(output_file_transcripts)
+
+        with open(vcf_file[:-3], "w") as output:
+            subprocess.call(cmd, stdout=output, universal_newlines=True)
+        os.remove(output_file_transcripts)
+        subprocess.call(["bgzip", vcf_file[:-3]])
+
+        with open(
+            osj(os.environ["DOCKER_MODULE_CONFIG"], "howard", "param.transcripts.json"),
+            "r",
+        ) as read_file:
+            data = json.load(read_file)
+            transcripts_output = data["transcripts"]["export"]["output"]
+
+        sample_name = (os.path.basename(vcf_file).split(".")[0]).removeprefix("VANNOT_")
+        transcripts_output_renamed = f"VANNOT_transcripts_{sample_name}.tsv"
+        shutil.copy(
+            transcripts_output,
+            osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed),
+        )
 
 
 def merge_vcf_files(run_informations):

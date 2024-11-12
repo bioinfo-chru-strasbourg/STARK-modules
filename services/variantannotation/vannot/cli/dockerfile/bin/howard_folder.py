@@ -52,6 +52,7 @@ def launch_folder(args):
             run_informations, merged_vcf
         )
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
+        howard_processing.howard_score_transcripts(run_informations)
         howard_processing.convert_to_final_tsv(run_informations)
         non_redundant.generate(run_informations)
         howard_processing.cleaner(run_informations)
@@ -63,6 +64,7 @@ def launch_folder(args):
             run_informations, merged_vcf
         )
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
+        howard_processing.howard_score_transcripts(run_informations)
         howard_processing.convert_to_final_tsv(run_informations)
         non_redundant.generate(run_informations)
         howard_processing.cleaner(run_informations)
