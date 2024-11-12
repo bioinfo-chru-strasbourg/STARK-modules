@@ -251,15 +251,15 @@ if (!is.null(opt$bedfiltering)) {
 
 	ExomeCount <- modify_prefix(ExomeCount, "chromosome", action = "add", prefix = "chr")
     ExomeCount <- filter_df(ExomeCount, bed.filtering)
-    ExomeCount <- modify_prefix(ExomeCount, "chromosome", action = "remove", prefix = "chr")
+    ExomeCount <- modify_prefix(ExomeCount, "Chromosome", action = "remove", prefix = "chr")
 
-	cnv.calls <- modify_prefix(cnv.calls, "chromosome", action = "add", prefix = "chr")
+	cnv.calls <- modify_prefix(cnv.calls, "Chromosome", action = "add", prefix = "chr")
 	cnv.calls <- filter_df(cnv.calls, bed.filtering)
-	cnv.calls <- modify_prefix(cnv.calls, "chromosome", action = "remove", prefix = "chr")
+	cnv.calls <- modify_prefix(cnv.calls, "Chromosome", action = "remove", prefix = "chr")
 
-	cnv.calls_ids <- modify_prefix(cnv.calls_ids, "chromosome", action = "add", prefix = "chr")
+	cnv.calls_ids <- modify_prefix(cnv.calls_ids, "Chromosome", action = "add", prefix = "chr")
     cnv.calls_ids <- filter_df(cnv.calls_ids, bed.filtering)
-	cnv.calls_ids <- modify_prefix(cnv.calls_ids, "chromosome", action = "remove", prefix = "chr")
+	cnv.calls_ids <- modify_prefix(cnv.calls_ids, "Chromosome", action = "remove", prefix = "chr")
 
 
 }
