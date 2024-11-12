@@ -47,13 +47,18 @@ filter_chromosomes <- function(df, include.chrom = NULL, exclude.chrom = NULL) {
   return(df)
 }
 
-# Function to lowercase the specified columns if necessary
+# Function to lowercase the specified columns name if necessary
 lowercase_required_cols <- function(df, cols) {
-  for (col in cols) {
-    if (col %in% colnames(df)) {
-      df[[col]] <- tolower(df[[col]])
-    }
-  }
+  # Convert the column names and the specified columns to lowercase for case-insensitive matching
+  colnames_lower <- tolower(colnames(df))
+  cols_lower <- tolower(cols)
+  
+  # Find which columns should be lowercased by matching case-insensitively
+  matching_cols <- colnames(df)[colnames_lower %in% cols_lower]
+  
+  # Lowercase the matching column names
+  colnames(df)[colnames(df) %in% matching_cols] <- tolower(colnames(df)[colnames(df) %in% matching_cols])
+  
   return(df)
 }
 
@@ -65,9 +70,24 @@ standardize_chromosome <- function(df) {
   return(df)
 }
 
-# Function to remove duplicate columns based on column names
-remove_duplicate_columns <- function(df) {
-  df <- df[, !duplicated(colnames(df))]
+remove_duplicate_rows <- function(df, subset_cols) {
+  # Convert subset_cols to lower case
+  subset_cols_lower <- tolower(subset_cols)
+  
+  # Find matching columns in the data frame (case-insensitive)
+  matched_cols <- tolower(colnames(df)) %in% subset_cols_lower
+  
+  # If no matching columns are found, stop with an error
+  if (all(!matched_cols)) {
+    stop("None of the specified columns were found in the data frame.")
+  }
+  
+  # Select the columns that match (case-insensitive)
+  df_matched <- df[, matched_cols, drop = FALSE]
+  
+  # Remove duplicate rows based on only the matched columns
+  df <- df[!duplicated(df_matched), ]
+  
   return(df)
 }
 
@@ -81,7 +101,7 @@ capitalize_first_letter <- function(df, cols) {
 filter_df <- function(input_df, filtering_df) {
   
   # Define required columns
-  required_cols <- c("chromosome", "start", "end")
+  required_cols <- c("chromosome", "start", "end", "gene")
   
   # Ensure the required columns are present and lowercase them if needed
   input_df <- lowercase_required_cols(input_df, required_cols)
@@ -90,6 +110,12 @@ filter_df <- function(input_df, filtering_df) {
   # Standardize chromosome format
   input_df <- standardize_chromosome(input_df)
   filtering_df <- standardize_chromosome(filtering_df)
+
+  # Convert start and end columns to numeric
+  input_df$start <- as.numeric(input_df$start)
+  input_df$end <- as.numeric(input_df$end)
+  filtering_df$start <- as.numeric(filtering_df$start)
+  filtering_df$end <- as.numeric(filtering_df$end)
 
   # Convert to GRanges objects
   input_gr <- GRanges(seqnames = input_df$chromosome, ranges = IRanges(start = input_df$start, end = input_df$end))
@@ -107,8 +133,8 @@ filter_df <- function(input_df, filtering_df) {
   # Combine filtered data
   result <- cbind(input_df_filtered, filtering_df_filtered)
 
-  # Remove duplicate columns (except for required ones)
-  result <- remove_duplicate_columns(result)
+  # Remove duplicate rows 
+  result <- remove_duplicate_rows(result, required_cols)
 
   # Restore chromosome labels (chr23 -> X, chr24 -> Y)
   result$chromosome[result$chromosome == "chr23"] <- "X"
@@ -120,6 +146,24 @@ filter_df <- function(input_df, filtering_df) {
   return(result)
 }
 
+# Function to add or remove a prefix from a specific column in a dataframe
+modify_prefix <- function(df, column_name, action = "remove", prefix = "chr") {
+  # Check if the column exists in the dataframe
+  if (!(column_name %in% colnames(df))) {
+    stop("The specified column does not exist in the dataframe.")
+  }
+  
+  # Perform the action based on the user's choice
+  if (action == "remove") {
+    df[[column_name]] <- sub(paste0("^", prefix), "", df[[column_name]])
+  } else if (action == "add") {
+    df[[column_name]] <- paste0(prefix, df[[column_name]])
+  } else {
+    stop("Invalid action. Choose 'remove' or 'add'.")
+  }
+  
+  return(df)
+}
 
 print("BEGIN DECONPlot script")
 
@@ -187,8 +231,8 @@ if (!is.null(opt$bedfiltering)) {
 	message('Loading specified BED file: ', opt$bedfiltering)
 	# Read the BED file, ensuring it has at least four columns and keep only the first four
 	bed.filtering <- read.table(opt$bedfiltering, header = FALSE, sep = "\t",
-								colClasses = c("character", "integer", "integer", "character", "integer", "character"),
-								fill = TRUE)[, 1:4]
+								colClasses = c("character", "integer", "integer", "character", rep("NULL", 100)),
+								fill = TRUE)
 
 	# Check if the file has at least 4 columns
 	if (ncol(bed.filtering) < 4) stop("Error: The BED file must have at least four columns.")
@@ -204,9 +248,19 @@ if (!is.null(opt$bedfiltering)) {
 	}
     bed.file <- filter_df(bed.file, bed.filtering)
     counts <- filter_df(counts, bed.filtering)
+
+	ExomeCount <- modify_prefix(ExomeCount, "chromosome", action = "add", prefix = "chr")
     ExomeCount <- filter_df(ExomeCount, bed.filtering)
-    cnv.calls <- filter_df(cnv.calls, bed.filtering)
+    ExomeCount <- modify_prefix(ExomeCount, "chromosome", action = "remove", prefix = "chr")
+
+	cnv.calls <- modify_prefix(cnv.calls, "chromosome", action = "add", prefix = "chr")
+	cnv.calls <- filter_df(cnv.calls, bed.filtering)
+	cnv.calls <- modify_prefix(cnv.calls, "chromosome", action = "remove", prefix = "chr")
+
+	cnv.calls_ids <- modify_prefix(cnv.calls_ids, "chromosome", action = "add", prefix = "chr")
     cnv.calls_ids <- filter_df(cnv.calls_ids, bed.filtering)
+	cnv.calls_ids <- modify_prefix(cnv.calls_ids, "chromosome", action = "remove", prefix = "chr")
+
 
 }
 
