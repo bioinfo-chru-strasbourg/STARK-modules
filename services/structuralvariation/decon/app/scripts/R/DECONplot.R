@@ -23,9 +23,13 @@ sanitize_filename <- function(name) {
 # To include only chromosome "X": filtered_df <- filter_chromosomes(df, include.chrom = c("X"))
 # Work if chromosome is "chrX" or "X" in the df
 filter_chromosomes <- function(df, include.chrom = NULL, exclude.chrom = NULL) {
-  # Check if the dataframe has a "chromosome" column
-  if (!"chromosome" %in% colnames(df)) {
-    stop("Data frame must contain a 'chromosome' column.")
+  # Check if the dataframe has either "chromosome" or "Chromosome" column
+  if ("chromosome" %in% colnames(df)) {
+    chrom_col <- "chromosome"
+  } else if ("Chromosome" %in% colnames(df)) {
+    chrom_col <- "Chromosome"
+  } else {
+    stop("Data frame must contain a 'chromosome' or 'Chromosome' column.")
   }
   
   # Create versions of include/exclude lists with and without "chr" prefix
@@ -38,15 +42,85 @@ filter_chromosomes <- function(df, include.chrom = NULL, exclude.chrom = NULL) {
   
   # Apply inclusion and exclusion filters
   if (!is.null(include.chrom)) {
-    df <- subset(df, chromosome %in% include.chrom)
+    df <- subset(df, df[[chrom_col]] %in% include.chrom)
   }
   if (!is.null(exclude.chrom)) {
-    df <- subset(df, !chromosome %in% exclude.chrom)
+    df <- subset(df, !df[[chrom_col]] %in% exclude.chrom)
   }
   
   return(df)
 }
 
+
+# Function to lowercase the specified columns name if necessary
+lowercase_required_cols <- function(df, cols) {
+  # Convert the column names and the specified columns to lowercase for case-insensitive matching
+  colnames_lower <- tolower(colnames(df))
+  cols_lower <- tolower(cols)
+  
+  # Find which columns should be lowercased by matching case-insensitively
+  matching_cols <- colnames(df)[colnames_lower %in% cols_lower]
+  
+  # Lowercase the matching column names
+  colnames(df)[colnames(df) %in% matching_cols] <- tolower(colnames(df)[colnames(df) %in% matching_cols])
+  
+  return(df)
+}
+
+# Function to standardize the chromosome format
+standardize_chromosome <- function(df) {
+  df$chromosome <- gsub("^chr(.*)$", "chr\\1", tolower(df$chromosome))
+  df$chromosome[df$chromosome == "chrx"] <- "chr23"
+  df$chromosome[df$chromosome == "chry"] <- "chr24"
+  return(df)
+}
+
+remove_duplicate_rows <- function(df, subset_cols) {
+  # Convert subset_cols to lower case
+  subset_cols_lower <- tolower(subset_cols)
+  
+  # Find matching columns in the data frame (case-insensitive)
+  matched_cols <- tolower(colnames(df)) %in% subset_cols_lower
+  
+  # If no matching columns are found, stop with an error
+  if (all(!matched_cols)) {
+    stop("None of the specified columns were found in the data frame.")
+  }
+  
+  # Select the columns that match (case-insensitive)
+  df_matched <- df[, matched_cols, drop = FALSE]
+  
+  # Remove duplicate rows based on only the matched columns
+  df <- df[!duplicated(df_matched), ]
+  
+  return(df)
+}
+
+# Function to capitalize the first letter of specific columns
+capitalize_first_letter <- function(df, cols) {
+  colnames(df)[colnames(df) %in% cols] <- sub("^(.)", "\\U\\1", colnames(df)[colnames(df) %in% cols], perl = TRUE)
+  return(df)
+}
+
+
+# Function to add or remove a prefix from a specific column in a dataframe
+modify_prefix <- function(df, column_name, action = "remove", prefix = "chr") {
+  # Check if the column exists in the dataframe
+  if (!(column_name %in% colnames(df))) {
+    stop("The specified column does not exist in the dataframe.")
+  }
+  
+  # Perform the action based on the user's choice
+  if (action == "remove") {
+    df[[column_name]] <- sub(paste0("^", prefix), "", df[[column_name]])
+  } else if (action == "add") {
+    df[[column_name]] <- paste0(prefix, df[[column_name]])
+  } else {
+    stop("Invalid action. Choose 'remove' or 'add'.")
+  }
+  
+  return(df)
+}
 
 print("BEGIN DECONPlot script")
 
@@ -68,11 +142,13 @@ option_list <- list(
     make_option('--out', default = './plots', help = 'Output directory, default=./plots', dest = 'pfolder'),
     make_option("--chromosome", default="A", help='Perform plots for autosomes or chrX', dest='chromosome'),
     make_option('--prefix', default = '', help = 'Prefix for the files, default=None', dest = 'prefix'),
+    #make_option('--bedfiltering', default = NULL, help = 'Specify a BED for filtering datas, default=None', dest = 'bedfiltering'),
     make_option("--outrdata", default="./DECONplot.Rdata", help="Output Rdata file, default: ./DECONplot.Rdata", dest='outdata'),
 	make_option('--debug', action="store_true", default=FALSE, help="Enable debug mode to save intermediate RData files", dest="debug")
 
 )
 opt <- parse_args(OptionParser(option_list = option_list))
+
 
 # Get current date and time & format date and time as "YYYYMMDD-HHMMSS"
 current_datetime <- Sys.time()
@@ -114,6 +190,26 @@ if(!file.exists(plotFolder)){dir.create(plotFolder)}
 
 # Chromosome filtering
 modechrom = opt$chromosome
+if (modechrom == "XX" || modechrom == "XY") {
+	bed.file <- filter_chromosomes(bed.file, include.chrom = c("chrX")) # we don't call Y
+	counts <- filter_chromosomes(counts, include.chrom = c("chrX"))
+	ExomeCount <- filter_chromosomes(ExomeCount, include.chrom = c("chrX"))
+	cnv.calls <- filter_chromosomes(cnv.calls, include.chrom = c("chrX"))
+	cnv.calls_ids <- filter_chromosomes(cnv.calls_ids, include.chrom = c("chrX"))
+}
+if (modechrom == "A") {
+	bed.file <- filter_chromosomes(bed.file, exclude.chrom = c("chrX", "chrY"))
+	counts <- filter_chromosomes(counts, exclude.chrom = c("chrX", "chrY"))
+	ExomeCount <- filter_chromosomes(ExomeCount, exclude.chrom = c("chrX", "chrY"))
+	cnv.calls <- filter_chromosomes(cnv.calls, exclude.chrom = c("chrX", "chrY"))
+	cnv.calls_ids <- filter_chromosomes(cnv.calls_ids, exclude.chrom = c("chrX", "chrY"))
+}
+
+# Debug
+if (opt$debug) {
+rdata_file <- sprintf("%s/debug_filtering_data_%s.RData", debugFolder, modechrom)
+save(bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+}
 
 # Check custom exons
 if ("Custom.first" %in% colnames(cnv.calls_ids)){
