@@ -192,6 +192,12 @@ option_list <- list(
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
+# Debug
+if (opt$debug) {
+debugFolder = "/app/res/debug"
+dir.create(debugFolder)
+}
+
 # Get current date and time & format date and time as "YYYYMMDD-HHMMSS"
 current_datetime <- Sys.time()
 formatted_datetime <- format(current_datetime, "%Y%m%d-%H%M%S")
@@ -266,7 +272,7 @@ if (!is.null(opt$bedfiltering)) {
 
 	# Debug
     if (opt$debug) {
-    rdata_file <- sprintf("%s/debug_filtering_data_%s.RData", plotFolder, modechrom)
+    rdata_file <- sprintf("%s/debug_filtering_data_%s.RData", debugFolder, modechrom)
     save(bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 	}
 }
@@ -297,7 +303,7 @@ for(i in 2:nrow(bed.file)){
 
 if (colnames(counts)[5] == "exon_number") {
     message('Exon numbers detected')
-    exons <- bed.file
+    exons <- bed.file # or [, c("Chromosome", "Start", "End", "Gene", "exon")] ?
     for (i in 1:nrow(exons)) {
         x = which(paste(bed.file[,5]) == paste(exons[i,5]) & 
                   bed.file[,2] <= exons[i,3] & 
@@ -326,14 +332,14 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	singlechr=length(unique(bed.file[exonRange,1]))==1
 
 	if(!singlechr){
-		if(bed.file[exonRange[1],1]!=cnv.calls_plot[call_index,]$Chromosome){
+		if(bed.file[exonRange[1],1]!=cnv.calls_plot[call_index,]$Chromosome){ # or $chr ?
 			prev=TRUE
 			newchr=bed.file[exonRange[1],1]
 		}else{
-			prev=FALSE
+			prev=FALSE 
 			newchr=bed.file[exonRange[length(exonRange)],1]
 		}
-		exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$Chromosome]
+		exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$Chromosome] # or $chr ?
 	}
 
 	###### Part of plot containing the coverage points (upper part) ###############
@@ -416,7 +422,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 
     # Debug
 	if (opt$debug) {
-	rdata_file <- sprintf("%s/debug_after_adding_genes_names_%s_%s.RData", plotFolder, modechrom, call_index)
+	rdata_file <- sprintf("%s/debug_after_adding_genes_names_%s_%s.RData", debugFolder, modechrom, call_index)
     save(Index, singlechr, genes_sel, temp, len, mp, Genes, GenesPlot, A1, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
 	}
 
@@ -453,7 +459,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 
 	# Debug
 	if (opt$debug) {
-	rdata_file <- sprintf("%s/debug_end_plot_data_%s_%s.RData", plotFolder, modechrom, call_index)
+	rdata_file <- sprintf("%s/debug_end_plot_data_%s_%s.RData", debugFolder, modechrom, call_index)
     save(singlechr, A1, Index, CIPlot, CIData, GenesPlot, exonRange, Totals, ratio, mins, maxs, models, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
 	}
 
