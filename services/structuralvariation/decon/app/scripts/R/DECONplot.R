@@ -142,7 +142,6 @@ option_list <- list(
     make_option('--out', default = './plots', help = 'Output directory, default=./plots', dest = 'pfolder'),
     make_option("--chromosome", default="A", help='Perform plots for autosomes or chrX', dest='chromosome'),
     make_option('--prefix', default = '', help = 'Prefix for the files, default=None', dest = 'prefix'),
-    #make_option('--bedfiltering', default = NULL, help = 'Specify a BED for filtering datas, default=None', dest = 'bedfiltering'),
     make_option("--outrdata", default="./DECONplot.Rdata", help="Output Rdata file, default: ./DECONplot.Rdata", dest='outdata'),
 	make_option('--debug', action="store_true", default=FALSE, help="Enable debug mode to save intermediate RData files", dest="debug")
 

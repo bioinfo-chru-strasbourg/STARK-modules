@@ -1248,9 +1248,10 @@ onsuccess:
 	print('[INFO] Copying files')
 	for sample in sample_list:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
+		shell(f"rm -rf {outputDir}/{sample}/{serviceName}/pdf* || true")
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 	for sample in sample_list:
-		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+		shell(f"cp -r {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 	print('[INFO] Copying files done')
 
 	# Optionally, perform DEPOT_DIR copy
