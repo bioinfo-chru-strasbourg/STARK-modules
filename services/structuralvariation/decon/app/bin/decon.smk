@@ -37,8 +37,8 @@ import json
 import csv
 import tempfile
 import logging
+import shutil
 from pypdf import PdfWriter
-from shutil import copy2
 from datetime import datetime
 from itertools import product
 from collections import defaultdict
@@ -602,7 +602,32 @@ if file_source:
 		# Process the gene list and accumulate results
 		res_list = []
 		res_list = process_gene_list(file, resultDir, res_list)
-		panels_list.extend(res_list)  # Append results to panels_list
+		panels_list.extend(res_list)  # add results to panels_list
+
+	# Dictionary to store the gene_name_list for each panels/files
+	gene_names_by_file = defaultdict(set)
+
+	for file in panels_list:
+		# Construct the full path of the file
+		file_path = os.path.join(resultDir, file)
+		# Extract the file name from the file path
+		file_name = os.path.basename(file_path)
+		
+		# Open and read the file
+		with open(file_path, 'r') as f:
+			for line in f:
+				# Split the line by tab character '\t' to get the columns
+				columns = line.strip().split('\t')  # Split by tab
+				if len(columns) >= 3:
+					gene_name = columns[3].split('_')[0]  # Get the first part before '_'
+					gene_names_by_file[file_name].add(gene_name)
+
+	# Convert sets to lists if needed, as defaultdict stores data in sets
+	# For a list format, we can explicitly cast it to a list
+	gene_names_by_file = {file: list(names) for file, names in gene_names_by_file.items()}
+
+	# gene_names_by_file now holds the gene_name_list for each file
+	print(gene_names_by_file)
 
 	print('[INFO] Processing panel bed files done')
 
@@ -691,7 +716,7 @@ print('[INFO] Starting DECON pipeline')
 sample_count = len(sample_list) 
 
 # Priority order
-ruleorder: copy_bam > copy_cram > cramtobam > indexing > plot > plot_panel
+ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
 # To avoid expansion of aligner into bwamem.AnnotSV for some weird reason we constraint the wildcard
 wildcard_constraints:
@@ -709,9 +734,7 @@ rule all:
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz", panel=panels_list, aligner=aligner_list) if config['GENES_FILE'] else []) +
-		(expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design.plotSuccess", aligner=aligner_list, gender=gender_list) if config['DECON_PLOT'] else []) +
-		(expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Panel.{{panel}}.plotSuccess", panel=panels_list, aligner=aligner_list, gender=gender_list) if config['DECON_PLOT'] and config['GENES_FILE'] else [])
-
+		(expand(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design.plotSuccess", aligner=aligner_list, gender=gender_list) if config['DECON_PLOT'] else [])
 
 
 rule help:
@@ -1104,15 +1127,15 @@ use rule merge_vcf as merge_vcf_panel_noannotation with:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
 
-# plot for XX should be done with bed XX
+
 rule plot:
 	""" This step inputs the CNVcall.Rdata file to output the plot files in pdf format """
 	input:
 		rules.makeCNVcalls.output.rdata
 	params:
-		folder=f"{resultDir}/pdfs/", # should be by design/panels ?
+		folder=f"{resultDir}/pdf_design/",
 		deconplotscript=config['DECON_PLOT_SCRIPT'],
-		bed=lambda wildcards: f"{resultDir}/{serviceName}.{date_time}.bed",
+		#bed=lambda wildcards: f"{resultDir}/{serviceName}.{date_time}.bed", # bed Design
 		prefix= f"Design.{date_time}",
 		chromosome="{gender}",
 		plotdebug=config['PLOT_DEBUG']		
@@ -1124,26 +1147,9 @@ rule plot:
 	shell:
 		"""
 		mkdir -p {params.folder} &&
-		Rscript {params.deconplotscript} --rdata {input} --bedfiltering {params.bed} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} --debug {params.plotdebug} 1> {log.log} 2> {log.err} &&
+		Rscript {params.deconplotscript} --rdata {input} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} --debug {params.plotdebug} 1> {log.log} 2> {log.err} &&
 		touch {output}
 		"""
-
-use rule plot as plot_panel with:
-	input:
-		rules.makeCNVcalls.output.rdata
-	params:
-		folder=f"{resultDir}/pdfs/", # should be by design/panels ?
-		deconplotscript=config['DECON_PLOT_SCRIPT'],
-		bed=lambda wildcards: f"{resultDir}/{wildcards.panel}",
-		prefix= f"Panel.{date_time}",
-		chromosome="{gender}",
-		plotdebug=config['PLOT_DEBUG']
-	output:
-		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Panel.{{panel}}.plotSuccess"
-	log:
-		log=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Panel.{{panel}}.plots.log",
-		err=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Panel.{{panel}}.plots.err"
-
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
@@ -1161,42 +1167,66 @@ onsuccess:
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write(f"End of the analysis : {date_time_end}\n")
-	
-	# Move pdfs into sample's directories
+		
 	if config['DECON_PLOT']:
 		print('[INFO] Processing pdfs')
-		pdf_list = os.listdir(f"{resultDir}/pdfs")
-		pdf_path_list = [f"{resultDir}/pdfs/{pdf}" for pdf in pdf_list]
-
+		
+		# List all PDFs in the design directory (only Design PDFs are present here)
+		pdf_list = os.listdir(f"{resultDir}/pdf_design")
 		output_pdf_list = []
+
+		# Step 1: Merge Design PDFs for each sample
 		for sample in sample_list:
-			# Separate matching PDFs into Design and Panel categories
-			design_pdfs = [pdf for pdf in pdf_path_list if sample in pdf and "Design" in pdf]
-			panel_pdfs = [pdf for pdf in pdf_path_list if sample in pdf and "Panel" in pdf]
+			# Filter Design PDFs for the current sample
+			design_pdfs = [f"{resultDir}/pdf_design/{pdf}" for pdf in pdf_list if sample in pdf]
 
 			# Merge Design PDFs if any
 			if design_pdfs:
-				output_pdf_design = f"{resultDir}/pdfs/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
-				output_pdf_list.append(os.path.basename(output_pdf_design))
+				output_pdf_design = f"{resultDir}/pdf_design/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
+				output_pdf_list.append(output_pdf_design)
 				merge_pdfs(design_pdfs, output_pdf_design)
 
-			# Merge Panel PDFs if any
-			if panel_pdfs:
-				output_pdf_panel = f"{resultDir}/pdfs/{serviceName}.{date_time}.{sample}.Panel.merge.pdf"
-				output_pdf_list.append(os.path.basename(output_pdf_panel))
-				merge_pdfs(panel_pdfs, output_pdf_panel)
+		# Step 2: Process each sample for panel-specific actions based on gene_names_by_file, if it exists
+		if gene_names_by_file:
+			for sample in sample_list:
+				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/pdf_design/"
+				os.makedirs(sample_folder, exist_ok=True)
 
-		# Update the main pdf list with the new merged PDFs
-		pdf_list.extend(output_pdf_list)
+				for pdf in output_pdf_list:
+					if sample in pdf:  # Process only merged PDFs that match the sample
+						# Move the original merged Design PDF to the sample's pdf_design folder
+						shutil.move(pdf, os.path.join(sample_folder, os.path.basename(pdf)))
+						print(f"[INFO] Moved original {pdf} to {sample_folder}")
 
-		# Move PDFs to corresponding sample directories
-		for sample in sample_list:
-			for pdf in pdf_list:
-				if sample in pdf:
-					shell(f"mv {resultDir}/pdfs/{pdf} {resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/")
-		
-		# Clean up the temporary pdf directory
-		shell(f"rm -rf {resultDir}/pdfs")
+						# Copy and rename PDFs for each panel based on gene_names_by_file
+						for file_name, genes in gene_names_by_file.items():
+							if any(gene in pdf for gene in genes):
+								panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/pdf_panel_{file_name}/"
+								os.makedirs(panel_folder, exist_ok=True)
+
+								# Rename PDF for this panel
+								new_pdf_name = os.path.basename(pdf).replace("Design", f"Panel.{file_name}")
+								new_pdf_path = os.path.join(panel_folder, new_pdf_name)
+
+								# Copy the renamed PDF to the panel folder
+								shutil.copy(os.path.join(sample_folder, os.path.basename(pdf)), new_pdf_path)
+								print(f"[INFO] Copied and renamed {pdf} to {new_pdf_path}")
+
+			# Step 3: Merge all PDFs in each panel folder
+			for sample in sample_list:
+				for file_name in gene_names_by_file.keys():
+					panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/pdf_panel_{file_name}/"
+					if os.path.exists(panel_folder):
+						panel_pdfs = [os.path.join(panel_folder, pdf) for pdf in os.listdir(panel_folder) if pdf.endswith('.pdf')]
+
+						# Merge PDFs if there are any in the folder
+						if panel_pdfs:
+							merged_panel_pdf = f"{panel_folder}/{serviceName}.{date_time}.{sample}.{file_name}.Panel.merge.pdf"
+							merge_pdfs(panel_pdfs, merged_panel_pdf)
+							print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
+
+		# Step 4: Clean up the temporary pdf directory
+		shell(f"rm -rf {resultDir}/pdf_design")
 		print('[INFO] Processing pdfs done')
 
 

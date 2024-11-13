@@ -47,126 +47,6 @@ filter_chromosomes <- function(df, include.chrom = NULL, exclude.chrom = NULL) {
   return(df)
 }
 
-# Function to lowercase the specified columns name if necessary
-lowercase_required_cols <- function(df, cols) {
-  # Convert the column names and the specified columns to lowercase for case-insensitive matching
-  colnames_lower <- tolower(colnames(df))
-  cols_lower <- tolower(cols)
-  
-  # Find which columns should be lowercased by matching case-insensitively
-  matching_cols <- colnames(df)[colnames_lower %in% cols_lower]
-  
-  # Lowercase the matching column names
-  colnames(df)[colnames(df) %in% matching_cols] <- tolower(colnames(df)[colnames(df) %in% matching_cols])
-  
-  return(df)
-}
-
-# Function to standardize the chromosome format
-standardize_chromosome <- function(df) {
-  df$chromosome <- gsub("^chr(.*)$", "chr\\1", tolower(df$chromosome))
-  df$chromosome[df$chromosome == "chrx"] <- "chr23"
-  df$chromosome[df$chromosome == "chry"] <- "chr24"
-  return(df)
-}
-
-remove_duplicate_rows <- function(df, subset_cols) {
-  # Convert subset_cols to lower case
-  subset_cols_lower <- tolower(subset_cols)
-  
-  # Find matching columns in the data frame (case-insensitive)
-  matched_cols <- tolower(colnames(df)) %in% subset_cols_lower
-  
-  # If no matching columns are found, stop with an error
-  if (all(!matched_cols)) {
-    stop("None of the specified columns were found in the data frame.")
-  }
-  
-  # Select the columns that match (case-insensitive)
-  df_matched <- df[, matched_cols, drop = FALSE]
-  
-  # Remove duplicate rows based on only the matched columns
-  df <- df[!duplicated(df_matched), ]
-  
-  return(df)
-}
-
-# Function to capitalize the first letter of specific columns
-capitalize_first_letter <- function(df, cols) {
-  colnames(df)[colnames(df) %in% cols] <- sub("^(.)", "\\U\\1", colnames(df)[colnames(df) %in% cols], perl = TRUE)
-  return(df)
-}
-
-# Main function to filter the data frame based on overlaps
-filter_df <- function(input_df, filtering_df) {
-  
-  # Define required columns
-  required_cols <- c("chromosome", "start", "end", "gene")
-  
-  # Ensure the required columns are present and lowercase them if needed
-  input_df <- lowercase_required_cols(input_df, required_cols)
-  filtering_df <- lowercase_required_cols(filtering_df, required_cols)
-
-  # Standardize chromosome format
-  input_df <- standardize_chromosome(input_df)
-  filtering_df <- standardize_chromosome(filtering_df)
-
-  # Convert start and end columns to numeric
-  input_df$start <- as.numeric(input_df$start)
-  input_df$end <- as.numeric(input_df$end)
-  filtering_df$start <- as.numeric(filtering_df$start)
-  filtering_df$end <- as.numeric(filtering_df$end)
-
-  # Convert to GRanges objects
-  input_gr <- GRanges(seqnames = input_df$chromosome, ranges = IRanges(start = input_df$start, end = input_df$end))
-  filter_gr <- GRanges(seqnames = filtering_df$chromosome, ranges = IRanges(start = filtering_df$start, end = filtering_df$end))
-
-  # Find overlaps
-  overlaps <- findOverlaps(input_gr, filter_gr)
-  input_df_filtered <- input_df[queryHits(overlaps), ]
-  filtering_df_filtered <- filtering_df[subjectHits(overlaps), ]
-
-  # Remove overlapping columns (except required ones) and combine data
-  overlapping_cols <- intersect(colnames(input_df_filtered), colnames(filtering_df_filtered))
-  filtering_df_filtered <- filtering_df_filtered[, !(colnames(filtering_df_filtered) %in% overlapping_cols)]
-
-  # Combine filtered data
-  result <- cbind(input_df_filtered, filtering_df_filtered)
-
-  # Remove duplicate rows 
-  result <- remove_duplicate_rows(result, required_cols)
-
-  # Restore chromosome labels (chr23 -> X, chr24 -> Y)
-  result$chromosome[result$chromosome == "chr23"] <- "X"
-  result$chromosome[result$chromosome == "chr24"] <- "Y"
-  
-  # Capitalize the first letter of required columns (chromosome, start, end)
-  result <- capitalize_first_letter(result, required_cols)
-
-  # Reset index
-  rownames(result) <- NULL
-
-  return(result)
-}
-
-# Function to add or remove a prefix from a specific column in a dataframe
-modify_prefix <- function(df, column_name, action = "remove", prefix = "chr") {
-  # Check if the column exists in the dataframe
-  if (!(column_name %in% colnames(df))) {
-    stop("The specified column does not exist in the dataframe.")
-  }
-  
-  # Perform the action based on the user's choice
-  if (action == "remove") {
-    df[[column_name]] <- sub(paste0("^", prefix), "", df[[column_name]])
-  } else if (action == "add") {
-    df[[column_name]] <- paste0(prefix, df[[column_name]])
-  } else {
-    stop("Invalid action. Choose 'remove' or 'add'.")
-  }
-  
-  return(df)
-}
 
 print("BEGIN DECONPlot script")
 
@@ -188,22 +68,26 @@ option_list <- list(
     make_option('--out', default = './plots', help = 'Output directory, default=./plots', dest = 'pfolder'),
     make_option("--chromosome", default="A", help='Perform plots for autosomes or chrX', dest='chromosome'),
     make_option('--prefix', default = '', help = 'Prefix for the files, default=None', dest = 'prefix'),
-    make_option('--bedfiltering', default = NULL, help = 'Specify a BED for filtering datas, default=None', dest = 'bedfiltering'),
     make_option("--outrdata", default="./DECONplot.Rdata", help="Output Rdata file, default: ./DECONplot.Rdata", dest='outdata'),
 	make_option('--debug', action="store_true", default=FALSE, help="Enable debug mode to save intermediate RData files", dest="debug")
 
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
-
-
 # Get current date and time & format date and time as "YYYYMMDD-HHMMSS"
 current_datetime <- Sys.time()
 formatted_datetime <- format(current_datetime, "%Y%m%d-%H%M%S")
 
+# Set the prefix for file names
+prefixfile=opt$prefix
+# Check if prefixfile is NULL or an empty string
+if (is.null(prefixfile) || prefixfile == "") {
+    prefixfile <- formatted_datetime
+}
+
 # Debug
 if (opt$debug) {
-debugFolder <- paste("/app/res/debug", formatted_datetime, sep = "/")
+debugFolder <- paste("/app/res/debug", prefixfile, sep = "/")
 dir.create(debugFolder, recursive = TRUE, showWarnings = FALSE)
 }
 
@@ -228,60 +112,8 @@ if (length(cnv.calls_ids)==0){
 plotFolder=opt$pfolder
 if(!file.exists(plotFolder)){dir.create(plotFolder)}
 
-# Set the prefix for file names
-prefixfile=opt$prefix
-# Check if prefixfile is NULL or an empty string
-if (is.null(prefixfile) || prefixfile == "") {
-    prefixfile <- formatted_datetime
-}
-
 # Chromosome filtering
 modechrom = opt$chromosome
-
-###### Handling BED file option ########
-if (!is.null(opt$bedfiltering)) {
-	# Load and validate the BED file
-	message('Loading specified BED file: ', opt$bedfiltering)
-	# Read the BED file, ensuring it has at least four columns and keep only the first four
-	bed.filtering <- read.table(opt$bedfiltering, header = FALSE, sep = "\t",
-								colClasses = c("character", "integer", "integer", "character", rep("NULL", 100)),
-								fill = TRUE)
-
-	# Check if the file has at least 4 columns
-	if (ncol(bed.filtering) < 4) stop("Error: The BED file must have four columns.")
-
-	# Assign column names
-	colnames(bed.filtering) <- c("chromosome", "start", "end", "gene")
-
-	if (modechrom == "XX" || modechrom == "XY") {
-		bed.filtering <- filter_chromosomes(bed.filtering, include.chrom = c("chrX")) # we don't call Y
-	}
-	if (modechrom == "A") {
-		bed.filtering <- filter_chromosomes(bed.filtering, exclude.chrom = c("chrX", "chrY"))
-	}
-
-    bed.file <- filter_df(bed.file, bed.filtering)
-    counts <- filter_df(counts, bed.filtering)
-
-	ExomeCount <- modify_prefix(ExomeCount, "chromosome", action = "add", prefix = "chr")
-    ExomeCount <- filter_df(ExomeCount, bed.filtering)
-    ExomeCount <- modify_prefix(ExomeCount, "Chromosome", action = "remove", prefix = "chr")
-
-	cnv.calls <- modify_prefix(cnv.calls, "Chromosome", action = "add", prefix = "chr")
-	cnv.calls <- filter_df(cnv.calls, bed.filtering)
-	cnv.calls <- modify_prefix(cnv.calls, "Chromosome", action = "remove", prefix = "chr")
-
-	cnv.calls_ids <- modify_prefix(cnv.calls_ids, "Chromosome", action = "add", prefix = "chr")
-    cnv.calls_ids <- filter_df(cnv.calls_ids, bed.filtering)
-	cnv.calls_ids <- modify_prefix(cnv.calls_ids, "Chromosome", action = "remove", prefix = "chr")
-
-	# Debug
-    if (opt$debug) {
-    rdata_file <- sprintf("%s/debug_filtering_data_%s.RData", debugFolder, modechrom)
-    save(bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
-	}
-}
-
 
 # Check custom exons
 if ("Custom.first" %in% colnames(cnv.calls_ids)){
@@ -295,7 +127,6 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
 }
 
 cnv.calls_plot$Chromosome=paste('chr',cnv.calls_plot$Chromosome,sep='')
-#bed.file$Chromosome=paste('chr',bed.file$Chromosome,sep='')
 
 Index=vector(length=nrow(bed.file))
 Index[1]=1
@@ -309,7 +140,7 @@ for(i in 2:nrow(bed.file)){
 
 if (colnames(counts)[5] == "exon_number") {
     message('Exon numbers detected')
-    exons <- bed.file[, c("Chromosome", "Start", "End", "Gene", "exon")]
+    exons <- bed.file #[, c("Chromosome", "Start", "End", "Gene", "exon")]
     for (i in 1:nrow(exons)) {
         x = which(paste(bed.file[,5]) == paste(exons[i,5]) & 
                   bed.file[,2] <= exons[i,3] & 
@@ -320,7 +151,7 @@ if (colnames(counts)[5] == "exon_number") {
 
     if (opt$debug) {
     rdata_file <- sprintf("%s/debug_start_plot_%s.RData", debugFolder, modechrom)
-    save(exons, cnv.calls_plot, bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+    save(exons, cnv.calls_plot, bed.file , models, refs, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 	}
 
 for(call_index in 1:nrow(cnv.calls_plot)){
@@ -356,7 +187,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	
 	if (opt$debug) {
     rdata_file <- sprintf("%s/debug_before_melt_plot_%s_%s.RData", debugFolder, modechrom, call_index)
-    save(Gene, VariantExon, Sample, refs_sample, Data, exons, cnv.calls_plot, bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, exonRange, file = rdata_file)
+    save(Gene, VariantExon, Sample, refs_sample, Data, exons, cnv.calls_plot, bed.file , models, refs, ExomeCount, counts, cnv.calls, cnv.calls_ids, exonRange, file = rdata_file)
 	}
 	
 	Data1<-melt(Data,id=c("exonRange"))
@@ -400,7 +231,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	if(!singlechr){
 		if(prev){A1<-A1 + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange),labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange)))
 		}else{A1<-A1 + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75))}
-	}else{A1<-A1 + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
+	}else{A1<-A1 + scale_x_continuous(breaks=exonRange, labels = Index[exonRange]) + theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))}
 
 
 	############## Part of plot containing the gene names as legend ###########
@@ -464,7 +295,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	if(!singlechr){
 		if(prev){CIPlot<- CIPlot + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange),labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange)))
 		}else{CIPlot<-CIPlot + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75))}
-	}else{CIPlot<-CIPlot + scale_x_continuous(breaks=exonRange,labels=paste(Index[exonRange]))}
+	}else{CIPlot<-CIPlot + scale_x_continuous(breaks=exonRange, labels= Index[exonRange]) + theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))}
 
 	# Debug
 	if (opt$debug) {
