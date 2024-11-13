@@ -38,6 +38,7 @@ import csv
 import tempfile
 import logging
 import shutil
+from shutil import copy2
 from pypdf import PdfWriter
 from datetime import datetime
 from itertools import product
