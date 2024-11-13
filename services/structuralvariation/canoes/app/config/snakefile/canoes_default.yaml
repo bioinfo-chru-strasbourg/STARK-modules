@@ -135,9 +135,8 @@ homdel: "0.2" # threeshold for homozygous deletion
 # REF_BAM_LIST: "--refbams /app/res/list.tsv"
 REF_BAM_LIST: ""
 
-# Limit AnnotSV jobs & define cores
+# Limit cores
 resources:
-  AnnotSVjobs: 1
   cores: 16
 
 # AnnotSV needs the "CosmicCompleteCNA.tsv.gz" file from https://cancer.sanger.ac.uk/cosmic/download (Copy Number Variants part, Download Whole file)

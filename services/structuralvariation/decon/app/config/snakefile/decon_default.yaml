@@ -78,7 +78,7 @@ LOG_LEVEL: 30
 # Path of the template foldre (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'merge.pdf', 'Design.tsv', 'Metrics.tsv']
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'Design.merge.pdf', 'Panel.merge.pdf', 'Design.tsv', 'Metrics.tsv']
 
 ############## Tools specific parameters ##############
 ### TOOLS PATH ###
@@ -168,13 +168,12 @@ transProb: 0.01 # Transition probability – the transition probability between 
 ############# AnnotSV params ##############
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
-annotationMode: full # split, full or both (defaut both)
+annotationMode: both # split, full or both (defaut both)
 annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database
 vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFiles option ; extension should be in EXT_INDEX_LIST
 
-# Limit AnnotSV jobs & define cores
+# Limit cores
 resources:
-  AnnotSVjobs: 1
   cores: 16
 
 # AnnotSV needs the "CosmicCompleteCNA.tsv.gz" file from https://cancer.sanger.ac.uk/cosmic/download (Copy Number Variants part, Download Whole file)

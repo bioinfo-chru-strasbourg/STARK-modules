@@ -143,6 +143,9 @@ filter_df <- function(input_df, filtering_df) {
   # Capitalize the first letter of required columns (chromosome, start, end)
   result <- capitalize_first_letter(result, required_cols)
 
+  # Reset index
+  rownames(result) <- NULL
+
   return(result)
 }
 
@@ -192,15 +195,17 @@ option_list <- list(
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
-# Debug
-if (opt$debug) {
-debugFolder = "/app/res/debug"
-dir.create(debugFolder)
-}
+
 
 # Get current date and time & format date and time as "YYYYMMDD-HHMMSS"
 current_datetime <- Sys.time()
 formatted_datetime <- format(current_datetime, "%Y%m%d-%H%M%S")
+
+# Debug
+if (opt$debug) {
+debugFolder <- paste("/app/res/debug", formatted_datetime, sep = "/")
+dir.create(debugFolder, recursive = TRUE, showWarnings = FALSE)
+}
 
 # set output
 rdata_output = opt$outdata
@@ -254,8 +259,8 @@ if (!is.null(opt$bedfiltering)) {
 	if (modechrom == "A") {
 		bed.filtering <- filter_chromosomes(bed.filtering, exclude.chrom = c("chrX", "chrY"))
 	}
-    bed.file <- filter_df(bed.file, bed.filtering)
 
+    bed.file <- filter_df(bed.file, bed.filtering)
     counts <- filter_df(counts, bed.filtering)
 
 	ExomeCount <- modify_prefix(ExomeCount, "chromosome", action = "add", prefix = "chr")
@@ -380,8 +385,8 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	A1<-A1+ geom_line(data=subset(Data1,testref=="Test Sample"),lty="dashed",lwd=1.5,col="blue")  
 	A1<-A1 + geom_point(data=subset(Data1,testref=="Test Sample"),cex=2.5,col="blue") 
 	A1<-A1 + geom_point(data=subset(Data1,testref=="Affected exon"),cex=3.5,col="red") 
-	A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position="none") + xlab(" ")
-    #A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position= "top") + xlab(" ") + guides(color = guide_legend(nrow = 1, title = NULL))
+	#A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position="none") + xlab(" ")
+    A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position= "top") + xlab(" ") + guides(color = guide_legend(nrow = 1, title = NULL))
 
 
 	Data2<-Data1[Data1$testref=="Affected exon",]

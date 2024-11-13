@@ -1207,8 +1207,7 @@ onsuccess:
 	sample_list_orig = sample_list
 	sample_list.insert(0,"allsamples")
 	resultDict = populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
-	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender", "merge.pdf"],remove_none_samples=sample_list_orig,
-	restrict_none_keys=["Metrics.tsv"])
+	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender", "Design.merge.pdf", "Panel.merge.pdf"], remove_none_samples=sample_list_orig, restrict_none_keys=["Metrics.tsv"])
 	print('[INFO] Generating html report')
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html")
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
@@ -1233,7 +1232,7 @@ onsuccess:
 			print('[INFO] Copying files into archives done')
 
 onerror:
-	print('[ERROR] DECON pipeline error, check for log and err files')
+	print('[ERROR] DECON pipeline did not end well, check for log and err files')
 	include_log = config['INCLUDE_LOG_RSYNC']
 	shell(f"touch {outputDir}/{serviceName}Failed.txt")
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
