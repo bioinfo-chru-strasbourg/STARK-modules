@@ -312,9 +312,8 @@ if (colnames(counts)[5] == "exon_number") {
     }
 }
 
-
     if (opt$debug) {
-    rdata_file <- sprintf("%s/debug_start_plot_%s.RData", plotFolder, modechrom)
+    rdata_file <- sprintf("%s/debug_start_plot_%s.RData", debugFolder, modechrom)
     save(exons, cnv.calls_plot, bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 	}
 
@@ -349,6 +348,12 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	
 	Data<-cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
 	Data[,-ncol(Data)]=log(Data[,-ncol(Data)])
+	
+	if (opt$debug) {
+    rdata_file <- sprintf("%s/debug_before_melt_plot_%s_%s.RData", debugFolder, modechrom, call_index)
+    save(VariantExon, Sample, refs_sample, Data, exons, cnv.calls_plot, bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, exonRange, file = rdata_file)
+	}
+	
 	Data1<-melt(Data,id=c("exonRange"))
 
 	testref<-rep("gray",nrow(Data1))
@@ -423,7 +428,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     # Debug
 	if (opt$debug) {
 	rdata_file <- sprintf("%s/debug_after_adding_genes_names_%s_%s.RData", debugFolder, modechrom, call_index)
-    save(Index, singlechr, genes_sel, temp, len, mp, Genes, GenesPlot, A1, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
+    save(exons, Index, singlechr, genes_sel, temp, len, mp, Genes, GenesPlot, A1, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
 	}
 
 	####### Part of the plot containing the normalized ratio of the coverage (lower part) #############
