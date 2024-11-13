@@ -235,7 +235,7 @@ for(i in 2:nrow(bed.file)){
 
 if (colnames(counts)[5] == "exon_number") {
     message('Exon numbers detected')
-    exons <- bed.file #[, c("Chromosome", "Start", "End", "Gene", "exon")]
+    exons <- bed.file
     for (i in 1:nrow(exons)) {
         x = which(paste(bed.file[,5]) == paste(exons[i,5]) & 
                   bed.file[,2] <= exons[i,3] & 
@@ -333,7 +333,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	message('Adding gene names')
 	genes_sel = unique(bed.file[exonRange,4])
 	temp<-cbind(1:nrow(bed.file),bed.file)[exonRange,]
-	len<-table(temp$Gene) 	# ? len<-table(temp$name)
+	len<-table(temp$gene) 
 	mp<-tapply(exonRange,temp[,5],mean)
 	mp<-mp[genes_sel]
 	len<-len[genes_sel]
@@ -358,7 +358,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     # Debug
 	if (opt$debug) {
 	rdata_file <- sprintf("%s/debug_after_adding_genes_names_%s_%s.RData", debugFolder, modechrom, call_index)
-    save(exons, Index, singlechr, genes_sel, temp, len, mp, Genes, GenesPlot, A1, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, Data, file = rdata_file)
+    save(exons, Index, singlechr, genes_sel, temp, len, mp, Genes, GenesPlot, A1, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, cnv.calls_ids, Data, file = rdata_file)
 	}
 
 	####### Part of the plot containing the normalized ratio of the coverage (lower part) #############

@@ -1186,7 +1186,14 @@ onsuccess:
 				output_pdf_design = f"{resultDir}/pdf_design/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
 				output_pdf_list.append(output_pdf_design)
 				merge_pdfs(design_pdfs, output_pdf_design)
-
+				
+				# Step 1.1: Copy individual Design PDFs to sample folder (copy before merging)
+				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/pdf_design/"
+				os.makedirs(sample_folder, exist_ok=True)
+				for pdf in design_pdfs:
+					shutil.copy(pdf, sample_folder)
+					print(f"[INFO] Copied individual {pdf} to {sample_folder}")
+		
 		# Step 2: Process each sample for panel-specific actions based on gene_names_by_file, if it exists
 		if gene_names_by_file:
 			for sample in sample_list:
@@ -1212,24 +1219,27 @@ onsuccess:
 								# Copy the renamed PDF to the panel folder
 								shutil.copy(os.path.join(sample_folder, os.path.basename(pdf)), new_pdf_path)
 								print(f"[INFO] Copied and renamed {pdf} to {new_pdf_path}")
+								
+								# Step 2.1: Copy the original individual panel PDF to the panel folder
+								shutil.copy(pdf, panel_folder)
+								print(f"[INFO] Copied individual panel PDF {pdf} to {panel_folder}")
 
-			# Step 3: Merge all PDFs in each panel folder
-			for sample in sample_list:
-				for file_name in gene_names_by_file.keys():
-					panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/pdf_panel_{file_name}/"
-					if os.path.exists(panel_folder):
-						panel_pdfs = [os.path.join(panel_folder, pdf) for pdf in os.listdir(panel_folder) if pdf.endswith('.pdf')]
+		# Step 3: Merge all PDFs in each panel folder
+		for sample in sample_list:
+			for file_name in gene_names_by_file.keys():
+				panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/pdf_panel_{file_name}/"
+				if os.path.exists(panel_folder):
+					panel_pdfs = [os.path.join(panel_folder, pdf) for pdf in os.listdir(panel_folder) if pdf.endswith('.pdf')]
 
-						# Merge PDFs if there are any in the folder
-						if panel_pdfs:
-							merged_panel_pdf = f"{panel_folder}/{serviceName}.{date_time}.{sample}.{file_name}.Panel.merge.pdf"
-							merge_pdfs(panel_pdfs, merged_panel_pdf)
-							print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
+					# Merge PDFs if there are any in the folder
+					if panel_pdfs:
+						merged_panel_pdf = f"{panel_folder}/{serviceName}.{date_time}.{sample}.{file_name}.Panel.merge.pdf"
+						merge_pdfs(panel_pdfs, merged_panel_pdf)
+						print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
 
 		# Step 4: Clean up the temporary pdf directory
 		shell(f"rm -rf {resultDir}/pdf_design")
 		print('[INFO] Processing pdfs done')
-
 
 	# Generate dictionary for results
 	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*/*", "/*"]]
