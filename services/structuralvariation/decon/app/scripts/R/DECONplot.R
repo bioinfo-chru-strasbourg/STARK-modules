@@ -207,7 +207,7 @@ if (modechrom == "A") {
 # Debug
 if (opt$debug) {
 rdata_file <- sprintf("%s/debug_filtering_data_%s.RData", debugFolder, modechrom)
-save(bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+save(bed.file , models, refs, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
 }
 
 # Check custom exons
