@@ -1166,25 +1166,39 @@ onsuccess:
 	if config['DECON_PLOT']:
 		print('[INFO] Processing pdfs')
 		pdf_list = os.listdir(f"{resultDir}/pdfs")
-		pdf_path_list = [f"{resultDir}/pdfs/{pdf}" for pdf in pdf_list]	
-		
+		pdf_path_list = [f"{resultDir}/pdfs/{pdf}" for pdf in pdf_list]
+
 		output_pdf_list = []
 		for sample in sample_list:
-			matching_pdfs = [pdf for pdf in pdf_path_list if sample in pdf]
-			
-			if matching_pdfs:
-				output_pdf = f"{resultDir}/pdfs/{serviceName}.{date_time}.{sample}.merge.pdf"
-				output_pdf_list.append(os.path.basename(output_pdf))
-				merge_pdfs(matching_pdfs, output_pdf)
+			# Separate matching PDFs into Design and Panel categories
+			design_pdfs = [pdf for pdf in pdf_path_list if sample in pdf and "Design" in pdf]
+			panel_pdfs = [pdf for pdf in pdf_path_list if sample in pdf and "Panel" in pdf]
 
+			# Merge Design PDFs if any
+			if design_pdfs:
+				output_pdf_design = f"{resultDir}/pdfs/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
+				output_pdf_list.append(os.path.basename(output_pdf_design))
+				merge_pdfs(design_pdfs, output_pdf_design)
+
+			# Merge Panel PDFs if any
+			if panel_pdfs:
+				output_pdf_panel = f"{resultDir}/pdfs/{serviceName}.{date_time}.{sample}.Panel.merge.pdf"
+				output_pdf_list.append(os.path.basename(output_pdf_panel))
+				merge_pdfs(panel_pdfs, output_pdf_panel)
+
+		# Update the main pdf list with the new merged PDFs
 		pdf_list.extend(output_pdf_list)
 
+		# Move PDFs to corresponding sample directories
 		for sample in sample_list:
 			for pdf in pdf_list:
 				if sample in pdf:
 					shell(f"mv {resultDir}/pdfs/{pdf} {resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/")
+		
+		# Clean up the temporary pdf directory
 		shell(f"rm -rf {resultDir}/pdfs")
 		print('[INFO] Processing pdfs done')
+
 
 	# Generate dictionary for results
 	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*/*", "/*"]]

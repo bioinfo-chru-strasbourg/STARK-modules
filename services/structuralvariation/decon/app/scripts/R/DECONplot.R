@@ -289,7 +289,8 @@ if ("Custom.first" %in% colnames(cnv.calls_ids)){
 	message('CNV plot initiating without custom exon numbers')
 }
 
-cnv.calls_plot$chr=paste('chr',cnv.calls_plot$Chromosome,sep='')
+cnv.calls_plot$Chromosome=paste('chr',cnv.calls_plot$Chromosome,sep='')
+#bed.file$Chromosome=paste('chr',bed.file$Chromosome,sep='')
 
 Index=vector(length=nrow(bed.file))
 Index[1]=1
@@ -303,7 +304,7 @@ for(i in 2:nrow(bed.file)){
 
 if (colnames(counts)[5] == "exon_number") {
     message('Exon numbers detected')
-    exons <- bed.file # or [, c("Chromosome", "Start", "End", "Gene", "exon")] ?
+    exons <- bed.file[, c("Chromosome", "Start", "End", "Gene", "exon")]
     for (i in 1:nrow(exons)) {
         x = which(paste(bed.file[,5]) == paste(exons[i,5]) & 
                   bed.file[,2] <= exons[i,3] & 
@@ -331,31 +332,29 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	singlechr=length(unique(bed.file[exonRange,1]))==1
 
 	if(!singlechr){
-		if(bed.file[exonRange[1],1]!=cnv.calls_plot[call_index,]$Chromosome){ # or $chr ?
+		if(bed.file[exonRange[1],1]!=cnv.calls_plot[call_index,]$Chromosome){
 			prev=TRUE
 			newchr=bed.file[exonRange[1],1]
 		}else{
 			prev=FALSE 
 			newchr=bed.file[exonRange[length(exonRange)],1]
 		}
-		exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$Chromosome] # or $chr ?
+		exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$Chromosome]
 	}
 
 	###### Part of plot containing the coverage points (upper part) ###############
 	message('Starting drawing coverage')
 	VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$Sample==Sample,]$Start.p,cnv.calls[cnv.calls$Sample==Sample,]$End.p))
 	refs_sample<-refs[[Sample]]
-	
 	Data<-cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
 	Data[,-ncol(Data)]=log(Data[,-ncol(Data)])
 	
 	if (opt$debug) {
     rdata_file <- sprintf("%s/debug_before_melt_plot_%s_%s.RData", debugFolder, modechrom, call_index)
-    save(VariantExon, Sample, refs_sample, Data, exons, cnv.calls_plot, bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, exonRange, file = rdata_file)
+    save(Gene, VariantExon, Sample, refs_sample, Data, exons, cnv.calls_plot, bed.file , models, refs, bed.filtering, ExomeCount, counts, cnv.calls, cnv.calls_ids, exonRange, file = rdata_file)
 	}
 	
 	Data1<-melt(Data,id=c("exonRange"))
-
 	testref<-rep("gray",nrow(Data1))
 	testref[Data1$variable==Sample]="blue"
 	Data1<-data.frame(Data1,testref)
