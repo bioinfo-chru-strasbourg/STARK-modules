@@ -1201,7 +1201,8 @@ onsuccess:
 			for sample in sample_list:
 				design_folder = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.Design.pdf"
 				
-				for pdf in design_pdfs:
+				for pdf_full in design_pdfs:
+					pdf = os.path.basename(pdf_full)
 					for panel_name, genes in gene_names_by_panel.items():
 						gene_pattern = re.compile("|".join(genes)) # Compile a regex pattern for the current gene list
 						print('[INFO] Processing ', pdf, ' for ', panel_name, ' genes')
