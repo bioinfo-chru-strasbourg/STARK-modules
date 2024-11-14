@@ -1184,12 +1184,12 @@ onsuccess:
 			design_pdfs = [f"{temp_folder}/{pdf}" for pdf in os.listdir(temp_folder) if sample in pdf]
 
 			if design_pdfs:
-				merge_design_pdf = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
+				merge_design_pdf = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
 				merge_pdfs(design_pdfs, merge_design_pdf)
 				print(f"[INFO] Merged design PDFs into {merge_design_pdf}")
 
 				# Copy individual Design PDFs to sample folder
-				design_folder = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.Design.pdf"
+				design_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{sample}.Design.pdf"
 				os.makedirs(design_folder, exist_ok=True)
 				for pdf in design_pdfs:
 					shutil.copy(pdf, design_folder)
@@ -1199,7 +1199,7 @@ onsuccess:
 		# Step 2: Process each sample for panel-specific actions based on gene_names_by_file, if it exists
 		if gene_names_by_panel:
 			for sample in sample_list:
-				design_folder = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.Design.pdf"
+				design_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{sample}.Design.pdf"
 				
 				for pdf_full in design_pdfs:
 					pdf = os.path.basename(pdf_full)
@@ -1208,7 +1208,7 @@ onsuccess:
 							gene_pattern = re.compile("|".join(genes)) # Compile a regex pattern for the current gene list
 							if gene_pattern.search(pdf):  # Check if any gene is in the pdf name
 								print('[INFO] Processing panel-specific ', pdf,' for sample:', sample, 'and panel:', panel_name)
-								panel_folder = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.Panel.{panel_name}.pdf"
+								panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{sample}.Panel.{panel_name}.pdf"
 								os.makedirs(panel_folder, exist_ok=True)
 
 								# Rename PDF for this panel
@@ -1221,7 +1221,7 @@ onsuccess:
 								
 								# Merged pdf for each panels 
 								panel_pdfs = [f"{panel_folder}/{pdf}" for pdf in os.listdir(panel_folder) if sample in pdf]
-								merged_panel_pdf = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.{panel_name}.Panel.merge.pdf"
+								merged_panel_pdf = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{sample}.{panel_name}.Panel.merge.pdf"
 								merge_pdfs(panel_pdfs, merged_panel_pdf)
 								print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
 
@@ -1247,7 +1247,7 @@ onsuccess:
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 	for sample in sample_list:
 		shell(f"cp -r {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
-	print('[INFO] Copying files done')
+		print('[INFO] Copying files done')
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR']:
