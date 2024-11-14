@@ -729,6 +729,28 @@ rule split_vcf:
 	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 
 
+# We filter non annoted design to get panels
+rule filter_vcf:
+	"""	Filter vcf with a bed file """
+	input: rules.split_vcf.output
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
+	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
+	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.bedtoolsfilter.{{panel}}.log"
+	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output}"
+
+# Panel vcf.gz individual samples no annotation
+use rule vcf_normalization as vcf_normalisation_panel with:
+	input: rules.filter_vcf.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
+
+# Panel vcf.gz all samples no annotation
+rule merge_vcf:
+	""" Copy or merge multiple vcfs using bcftools """
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
+	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
+
 # Design tsv individual samples AnnotSV
 rule AnnotSV:
 	"""
@@ -848,28 +870,10 @@ use rule fix_vcf as fix_vcf_sample with:
 
 
 # Design vcf.gz all samples AnnotSV
-rule merge_vcf:
-	""" Copy or merge multiple vcfs using bcftools """
+use rule merge_vcf as merge_vcf_annotation with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.bcftoolsmerge.log"
-	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
-
-
-# We filter non annoted design to get panels
-rule filter_vcf:
-	"""	Filter vcf with a bed file """
-	input: rules.split_vcf.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
-	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.bedtoolsfilter.{{panel}}.log"
-	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output}"
-
-
-# Panel vcf.gz individual samples no annotation
-use rule vcf_normalization as vcf_normalisation_panel with:
-	input: rules.filter_vcf.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
 
 
 # Panel tsv individual samples AnnotSV
@@ -909,7 +913,6 @@ use rule correct_vcf as correct_vcf_panel with:
 	input: rules.variantconvert_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_unfix.{{panel}}.vcf")
 
-
 rule sortvcf_panel:
 	input: rules.correct_vcf_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_sort.{{panel}}.vcf")
@@ -929,11 +932,6 @@ use rule merge_vcf as merge_vcf_panel with:
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.bcftoolsmerge.log"
 
-# Panel vcf.gz all samples no annotation
-use rule merge_vcf as merge_vcf_panel_noannotation with:
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
@@ -957,7 +955,7 @@ onsuccess:
 			shell(f"rm -rf {resultDir}/{sample} || true")
 			#shell(f"find {outputDir}/{sample}/{serviceName} -type f -exec rm -f {{}} +")
 		# We extract the samples that are present in the sample_list_addruns & the vcf
-		shell(f"bcftools query -l {resultDir}/{serviceName}.{date_time}.allsamples.Design.unfiltered.vcf.gz > vcf_samples.txt")
+		shell(f"bcftools query -l {resultDir}/{serviceName}.{date_time}.	allsamples.Design.unfiltered.vcf.gz > vcf_samples.txt")
 		with open('final_sample_list.txt', 'w') as file:
 			file.write('\n'.join(sample_list_addruns))
 		# Then we filter out the vcf
@@ -991,11 +989,12 @@ onsuccess:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 
 	# Optionally, perform DEPOT_DIR copy
-	if config['DEPOT_DIR']:
-		if outputDir != depotDir:
-			shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
-			for sample in sample_list:
-				shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
+	if config['DEPOT_DIR'] and outputDir != depotDir:
+		for sample in sample_list_to_copy:
+			shell(f"rm -f {depotDir}/{sample}/{serviceName}/* || true")
+		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
+		for sample in sample_list_to_copy:
+			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']

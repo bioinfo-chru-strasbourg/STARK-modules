@@ -31,6 +31,7 @@
 	# remove header from tsv converted
 ################## Import libraries ##################
 import os
+import re
 import glob
 import pandas as pd
 import json
@@ -1142,7 +1143,7 @@ rule plot:
 	input:
 		rules.makeCNVcalls.output.rdata
 	params:
-		folder=f"{resultDir}/{serviceName}.{date_time}.{{sample}}.Design.pdf/",
+		folder=f"{resultDir}/{serviceName}.{date_time}.Design.pdf/",
 		deconplotscript=config['DECON_PLOT_SCRIPT'],
 		prefix= f"Design.{date_time}",
 		chromosome="{gender}",
@@ -1175,27 +1176,34 @@ onsuccess:
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write(f"End of the analysis : {date_time_end}\n")
-		
+	
+	# Removing old results in sample folders
+	print('[INFO] Removing old results')
+	for sample in sample_list:
+		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
+		shell(f"rm -rf {outputDir}/{sample}/{serviceName}/*Design*.pdf || true")
+		shell(f"rm -rf {outputDir}/{sample}/{serviceName}/*Panel*.pdf || true")
+
 	if config['DECON_PLOT']:
 		print('[INFO] Processing pdfs')
 		
 		# List all PDFs in the design directory (only Design PDFs are present here)
-		pdf_list = os.listdir(f"{resultDir}/{serviceName}.{date_time}.{{sample}}.Design.pdf")
+		pdf_list = os.listdir(f"{resultDir}/{serviceName}.{date_time}.Design.pdf")
 		output_pdf_list = []
 
 		# Step 1: Merge Design PDFs for each sample
 		for sample in sample_list:
 			# Filter Design PDFs for the current sample
-			design_pdfs = [f"{resultDir}/{serviceName}.{date_time}.{{sample}}.Design.pdf/{pdf}" for pdf in pdf_list if sample in pdf]
+			design_pdfs = [f"{resultDir}/{serviceName}.{date_time}.Design.pdf/{pdf}" for pdf in pdf_list if sample in pdf]
 
 			# Merge Design PDFs if any
 			if design_pdfs:
-				output_pdf_design = f"{resultDir}/{serviceName}.{date_time}.{{sample}}.Design.pdf/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
+				output_pdf_design = f"{resultDir}/{serviceName}.{date_time}.Design.pdf/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
 				output_pdf_list.append(output_pdf_design)
 				merge_pdfs(design_pdfs, output_pdf_design)
 				
 				# Step 1.1: Copy individual Design PDFs to sample folder (copy before merging)
-				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.Design.pdf"
+				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.Design.pdf"
 				os.makedirs(sample_folder, exist_ok=True)
 				for pdf in design_pdfs:
 					shutil.copy(pdf, sample_folder)
@@ -1204,10 +1212,10 @@ onsuccess:
 		# Step 2: Process each sample for panel-specific actions based on gene_names_by_file, if it exists
 		if gene_names_by_file:
 			for sample in sample_list:
-				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.Design.pdf"
+				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.Design.pdf"
 				os.makedirs(sample_folder, exist_ok=True)
 
-				for pdf in output_pdf_list:
+				for pdf in design_pdfs:
 					if sample in pdf:  # Process only merged PDFs that match the sample
 						# Move the original merged Design PDF to the sample's pdf_design folder
 						shutil.move(pdf, os.path.join(sample_folder, os.path.basename(pdf)))
@@ -1215,9 +1223,14 @@ onsuccess:
 
 						# Copy and rename PDFs for each panel based on gene_names_by_file
 						for file_name, genes in gene_names_by_file.items():
+							# Compile a regex pattern for the current gene list
+							gene_pattern = re.compile("|".join(genes))
+							print(gene_pattern)
 							pdf_basename = os.path.basename(pdf)  # Extract basename for easier matching
-							if any(gene in pdf_basename for gene in genes):  # Check if gene is in basename
-								panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.Panel.{file_name}.pdf/"
+							print('[INFO] Processing ', pdf_basename, ' for ', file_name, ' genes')
+							if gene_pattern.search(pdf_basename):  # Check if any gene is in the basename
+								print('[INFO] Processing panel-specific PDFs for sample:', sample, 'and panel:', file_name)
+								panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.Panel.{file_name}.pdf/"
 								os.makedirs(panel_folder, exist_ok=True)
 
 								# Rename PDF for this panel
@@ -1231,22 +1244,24 @@ onsuccess:
 								# Step 2.1: Copy the original individual panel PDF to the panel folder
 								shutil.copy(pdf, panel_folder)
 								print(f"[INFO] Copied individual panel PDF {pdf} to {panel_folder}")
+							else:
+								print(f"[INFO] No match for panel '{file_name}' in PDF: {pdf_basename}")
 
 		# Step 3: Merge all PDFs in each panel folder
 		for sample in sample_list:
 			for file_name in gene_names_by_file.keys():
-				panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.Panel.{file_name}.pdf"
+				panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.Panel.{file_name}.pdf"
 				if os.path.exists(panel_folder):
 					panel_pdfs = [os.path.join(panel_folder, pdf) for pdf in os.listdir(panel_folder) if pdf.endswith('.pdf')]
 
 					# Merge PDFs if there are any in the folder
 					if panel_pdfs:
-						merged_panel_pdf = f"{panel_folder}/{serviceName}.{date_time}.{sample}.{file_name}.Panel.merge.pdf"
+						merged_panel_pdf = f"{panel_folder}/{serviceName}.{date_time}.{sample}.Panel.{file_name}.merge.pdf"
 						merge_pdfs(panel_pdfs, merged_panel_pdf)
 						print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
 
 		# Step 4: Clean up the temporary pdf directory
-		shell(f"rm -rf {resultDir}/{serviceName}.{date_time}.{{sample}}.Design.pdf")
+		shell(f"rm -rf {resultDir}/{serviceName}.{date_time}.Design.pdf")
 		print('[INFO] Processing pdfs done')
 
 	# Generate dictionary for results
@@ -1262,11 +1277,8 @@ onsuccess:
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 	print('[INFO] Generating html report done')
 
-	# Clear existing output directories & copy results
+	# Copy results
 	print('[INFO] Copying files')
-	for sample in sample_list:
-		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-		shell(f"rm -rf {outputDir}/{sample}/{serviceName}/pdf* || true")
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 	for sample in sample_list:
 		shell(f"cp -r {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
@@ -1274,6 +1286,13 @@ onsuccess:
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR']:
+		# Removing old results in sample folders
+		print('[INFO] Removing old results from archives')
+		for sample in sample_list:
+			shell(f"rm -f {depotDir}/{sample}/{serviceName}/* || true")
+			shell(f"rm -rf {depotDir}/{sample}/{serviceName}/*Design*.pdf || true")
+			shell(f"rm -rf {depotDir}/{sample}/{serviceName}/*Panel*.pdf || true")
+				
 		print('[INFO] Copying files into archives')
 		if outputDir != depotDir:
 			shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")

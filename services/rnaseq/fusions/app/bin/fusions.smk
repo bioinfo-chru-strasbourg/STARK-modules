@@ -495,11 +495,12 @@ onsuccess:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 
 	# Optionally, perform DEPOT_DIR copy
-	if config['DEPOT_DIR']:
-		if outputDir != depotDir:
-			shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
-			for sample in sample_list:
-				shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
+	if config['DEPOT_DIR'] and outputDir != depotDir:
+		for sample in sample_list:
+			shell(f"rm -f {depotDir}/{sample}/{serviceName}/* || true")
+		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
+		for sample in sample_list:
+			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 
 
 onerror:
