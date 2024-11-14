@@ -1203,27 +1203,27 @@ onsuccess:
 				
 				for pdf_full in design_pdfs:
 					pdf = os.path.basename(pdf_full)
-					for panel_name, genes in gene_names_by_panel.items():
-						gene_pattern = re.compile("|".join(genes)) # Compile a regex pattern for the current gene list
-						print('[INFO] Processing ', pdf, ' for ', panel_name, ' genes')
-						if gene_pattern.search(pdf):  # Check if any gene is in the pdf name
-							print('[INFO] Processing panel-specific PDFs for sample:', sample, 'and panel:', panel_name)
-							panel_folder = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.Panel.{panel_name}.pdf"
-							os.makedirs(panel_folder, exist_ok=True)
+					if sample in pdf:
+						for panel_name, genes in gene_names_by_panel.items():
+							gene_pattern = re.compile("|".join(genes)) # Compile a regex pattern for the current gene list
+							if gene_pattern.search(pdf):  # Check if any gene is in the pdf name
+								print('[INFO] Processing panel-specific ', pdf,' for sample:', sample, 'and panel:', panel_name)
+								panel_folder = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.Panel.{panel_name}.pdf"
+								os.makedirs(panel_folder, exist_ok=True)
 
-							# Rename PDF for this panel
-							panel_pdf_name = pdf.replace("Design", f"{panel_name}.Panel")
-							panel_pdf = os.path.join(panel_folder, panel_pdf_name)
+								# Rename PDF for this panel
+								panel_pdf_name = pdf.replace("Design", f"{panel_name}.Panel")
+								panel_pdf = os.path.join(panel_folder, panel_pdf_name)
 
-							# Copy the renamed PDF to the panel folder
-							shutil.copy(os.path.join(design_folder, pdf), panel_pdf)
-							print(f"[INFO] Copied and renamed {pdf} to {panel_pdf}")
-							
-							# Merged pdf for each panels 
-							panel_pdfs = [f"{panel_folder}/{pdf}" for pdf in os.listdir(panel_folder) if sample in pdf]
-							merged_panel_pdf = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.{panel_name}.Panel.merge.pdf"
-							merge_pdfs(panel_pdfs, merged_panel_pdf)
-							print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
+								# Copy the renamed PDF to the panel folder
+								shutil.copy(os.path.join(design_folder, pdf), panel_pdf)
+								print(f"[INFO] Copied and renamed {pdf} to {panel_pdf}")
+								
+								# Merged pdf for each panels 
+								panel_pdfs = [f"{panel_folder}/{pdf}" for pdf in os.listdir(panel_folder) if sample in pdf]
+								merged_panel_pdf = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.{panel_name}.Panel.merge.pdf"
+								merge_pdfs(panel_pdfs, merged_panel_pdf)
+								print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
 
 		# Step 4: Clean up the temporary pdf directory
 		shell(f"rm -rf {resultDir}/{serviceName}.{date_time}.temp.pdf")
