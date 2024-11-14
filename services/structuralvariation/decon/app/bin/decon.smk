@@ -782,6 +782,7 @@ rule indexing:
 	threads: workflow.cores
 	shell: "[[ \"{params.process_file_str}\" =~ \"bam.bai\" ]] && ( [ \"{params.process}\" = \"ln\" ] && ln -sfn {params.download_link} {output} || rsync -azvh {params.download_link} {output} ) || samtools index -b -@ {threads} {input} {output}"
 
+
 rule ReadInBams:
 	""" DECoN calculates FPKM for each exon in each samples BAM file, using a list of BAM files and a BED file """
 	input:
@@ -846,6 +847,7 @@ rule merge_makeCNVcalls:
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_uncorr.tsv")
 	shell: "cat {input} | sort -u | sort -r >> {output}"
 
+
 # Design tsv allsamples no annotation
 rule fix_makeCNVcalls:
 	input: rules.merge_makeCNVcalls.output
@@ -895,6 +897,7 @@ rule vcf2gz:
 	params: config['DUMMY_FILES']
 	shell: "bgzip -c {input} > {output}"
 
+
 rule fix_vcf:
 	input: rules.vcf2gz.output
 	output: 
@@ -903,11 +906,13 @@ rule fix_vcf:
 	params:	config['MULTIFIX_SCRIPT']
 	shell: " python {params} -i {input} -o {output.vcfgz} -z ; tabix {output.vcfgz} "
 
+
 # Design vcf.gz all samples no annotation
 rule vcf_normalization:
 	input: rules.fix_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
+
 
 # # Design vcf.gz individual samples no annotation
 # --force-samples will output a vcf file with all annotations but without a sample name if the sample did not exist
@@ -923,6 +928,32 @@ rule split_vcf:
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz"
 	params: config['DUMMY_FILES']
 	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
+
+
+# Panel vcf.gz all samples no annotation
+rule merge_vcf:
+	""" Copy or merge multiple vcfs using bcftools """
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
+	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
+
+
+# We filter non annoted design to get panels
+rule filter_vcf:
+	"""	Filter vcf with a bed file """
+	input: rules.split_vcf.output
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
+	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
+	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.bedtoolsfilter.{{panel}}.log"
+	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output}"
+
+
+# Panel vcf.gz individual samples no annotation
+use rule vcf_normalization as vcf_normalisation_panel with:
+	input: rules.filter_vcf.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
+
 
 # Design tsv individual samples AnnotSV
 rule AnnotSV:
@@ -1042,28 +1073,10 @@ use rule fix_vcf as fix_vcf_sample with:
 
 
 # Design vcf.gz all samples AnnotSV
-rule merge_vcf:
-	""" Copy or merge multiple vcfs using bcftools """
+use rule merge_vcf as merge_vcf_annotation with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.bcftoolsmerge.log"
-	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
-
-
-# We filter non annoted design to get panels
-rule filter_vcf:
-	"""	Filter vcf with a bed file """
-	input: rules.split_vcf.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
-	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.bedtoolsfilter.{{panel}}.log"
-	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output}"
-
-
-# Panel vcf.gz individual samples no annotation
-use rule vcf_normalization as vcf_normalisation_panel with:
-	input: rules.filter_vcf.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
 
 
 # Panel tsv individual samples AnnotSV
@@ -1116,17 +1129,12 @@ use rule fix_vcf as fix_vcf_panel with:
 		vcfgz=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz",
 		vcfgzbti=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz.tbi"
 
+
 # Panel vcf.gz all samples AnnotSV
 use rule merge_vcf as merge_vcf_panel with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.bcftoolsmerge.log"
-
-# Panel vcf.gz all samples no annotation
-use rule merge_vcf as merge_vcf_panel_noannotation with:
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
 
 
 rule plot:
@@ -1134,9 +1142,8 @@ rule plot:
 	input:
 		rules.makeCNVcalls.output.rdata
 	params:
-		folder=f"{resultDir}/pdf_design/",
+		folder=f"{resultDir}/{serviceName}.{date_time}.{{sample}}.Design.pdf/",
 		deconplotscript=config['DECON_PLOT_SCRIPT'],
-		#bed=lambda wildcards: f"{resultDir}/{serviceName}.{date_time}.bed", # bed Design
 		prefix= f"Design.{date_time}",
 		chromosome="{gender}",
 		plotdebug=config['PLOT_DEBUG']		
@@ -1173,22 +1180,22 @@ onsuccess:
 		print('[INFO] Processing pdfs')
 		
 		# List all PDFs in the design directory (only Design PDFs are present here)
-		pdf_list = os.listdir(f"{resultDir}/pdf_design")
+		pdf_list = os.listdir(f"{resultDir}/{serviceName}.{date_time}.{{sample}}.Design.pdf")
 		output_pdf_list = []
 
 		# Step 1: Merge Design PDFs for each sample
 		for sample in sample_list:
 			# Filter Design PDFs for the current sample
-			design_pdfs = [f"{resultDir}/pdf_design/{pdf}" for pdf in pdf_list if sample in pdf]
+			design_pdfs = [f"{resultDir}/{serviceName}.{date_time}.{{sample}}.Design.pdf/{pdf}" for pdf in pdf_list if sample in pdf]
 
 			# Merge Design PDFs if any
 			if design_pdfs:
-				output_pdf_design = f"{resultDir}/pdf_design/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
+				output_pdf_design = f"{resultDir}/{serviceName}.{date_time}.{{sample}}.Design.pdf/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
 				output_pdf_list.append(output_pdf_design)
 				merge_pdfs(design_pdfs, output_pdf_design)
 				
 				# Step 1.1: Copy individual Design PDFs to sample folder (copy before merging)
-				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/pdf_design/"
+				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.Design.pdf"
 				os.makedirs(sample_folder, exist_ok=True)
 				for pdf in design_pdfs:
 					shutil.copy(pdf, sample_folder)
@@ -1197,7 +1204,7 @@ onsuccess:
 		# Step 2: Process each sample for panel-specific actions based on gene_names_by_file, if it exists
 		if gene_names_by_file:
 			for sample in sample_list:
-				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/pdf_design/"
+				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.Design.pdf"
 				os.makedirs(sample_folder, exist_ok=True)
 
 				for pdf in output_pdf_list:
@@ -1208,12 +1215,13 @@ onsuccess:
 
 						# Copy and rename PDFs for each panel based on gene_names_by_file
 						for file_name, genes in gene_names_by_file.items():
-							if any(gene in pdf for gene in genes):
-								panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/pdf_panel_{file_name}/"
+							pdf_basename = os.path.basename(pdf)  # Extract basename for easier matching
+							if any(gene in pdf_basename for gene in genes):  # Check if gene is in basename
+								panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.Panel.{file_name}.pdf/"
 								os.makedirs(panel_folder, exist_ok=True)
 
 								# Rename PDF for this panel
-								new_pdf_name = os.path.basename(pdf).replace("Design", f"Panel.{file_name}")
+								new_pdf_name = pdf_basename.replace("Design", f"Panel.{file_name}")
 								new_pdf_path = os.path.join(panel_folder, new_pdf_name)
 
 								# Copy the renamed PDF to the panel folder
@@ -1227,7 +1235,7 @@ onsuccess:
 		# Step 3: Merge all PDFs in each panel folder
 		for sample in sample_list:
 			for file_name in gene_names_by_file.keys():
-				panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/pdf_panel_{file_name}/"
+				panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.Panel.{file_name}.pdf"
 				if os.path.exists(panel_folder):
 					panel_pdfs = [os.path.join(panel_folder, pdf) for pdf in os.listdir(panel_folder) if pdf.endswith('.pdf')]
 
@@ -1238,7 +1246,7 @@ onsuccess:
 						print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
 
 		# Step 4: Clean up the temporary pdf directory
-		shell(f"rm -rf {resultDir}/pdf_design")
+		shell(f"rm -rf {resultDir}/{serviceName}.{date_time}.{{sample}}.Design.pdf")
 		print('[INFO] Processing pdfs done')
 
 	# Generate dictionary for results
