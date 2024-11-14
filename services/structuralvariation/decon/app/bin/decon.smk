@@ -607,30 +607,21 @@ if file_source:
 		panels_list.extend(res_list)  # add results to panels_list
 
 	# Dictionary to store the gene_name_list for each panels/files
-	gene_names_by_file = defaultdict(set)
-
-	for file in panels_list:
-		# Construct the full path of the file
-		file_path = os.path.join(resultDir, file)
-		# Extract the file name from the file path
-		file_name = os.path.basename(file_path)
-		
-		# Open and read the file
-		with open(file_path, 'r') as f:
+	gene_names_by_panel = defaultdict(set)
+	for panel in panels_list:
+		with open(os.path.join(resultDir, panel), 'r') as f:
 			for line in f:
-				# Split the line by tab character '\t' to get the columns
-				columns = line.strip().split('\t')  # Split by tab
+				columns = line.strip().split('\t')
 				if len(columns) >= 3:
 					gene_name = columns[3].split('_')[0]  # Get the first part before '_'
-					gene_names_by_file[file_name].add(gene_name)
+					gene_names_by_panel[panel].add(gene_name)
 
 	# Convert sets to lists if needed, as defaultdict stores data in sets
 	# For a list format, we can explicitly cast it to a list
-	gene_names_by_file = {file: list(names) for file, names in gene_names_by_file.items()}
+	gene_names_by_panel = {panel: list(genes) for panel, genes in gene_names_by_panel.items()}
 
-	# gene_names_by_file now holds the gene_name_list for each file
-	print(gene_names_by_file)
-
+	# gene_names_by_panel dic now holds the gene_name_list for each file
+	print(gene_names_by_panel)
 	print('[INFO] Processing panel bed files done')
 
 # Find transcripts files (NM)
@@ -931,15 +922,6 @@ rule split_vcf:
 	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 
 
-# Panel vcf.gz all samples no annotation
-rule merge_vcf:
-	""" Copy or merge multiple vcfs using bcftools """
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
-	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
-
-
 # We filter non annoted design to get panels
 rule filter_vcf:
 	"""	Filter vcf with a bed file """
@@ -954,6 +936,15 @@ rule filter_vcf:
 use rule vcf_normalization as vcf_normalisation_panel with:
 	input: rules.filter_vcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
+
+
+# Panel vcf.gz all samples no annotation
+rule merge_vcf:
+	""" Copy or merge multiple vcfs using bcftools """
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
+	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
 
 
 # Design tsv individual samples AnnotSV
@@ -1143,7 +1134,7 @@ rule plot:
 	input:
 		rules.makeCNVcalls.output.rdata
 	params:
-		folder=f"{resultDir}/{serviceName}.{date_time}.Design.pdf/",
+		folder=f"{resultDir}/{serviceName}.{date_time}.temp.pdf/",
 		deconplotscript=config['DECON_PLOT_SCRIPT'],
 		prefix= f"Design.{date_time}",
 		chromosome="{gender}",
@@ -1186,82 +1177,55 @@ onsuccess:
 
 	if config['DECON_PLOT']:
 		print('[INFO] Processing pdfs')
-		
-		# List all PDFs in the design directory (only Design PDFs are present here)
-		pdf_list = os.listdir(f"{resultDir}/{serviceName}.{date_time}.Design.pdf")
-		output_pdf_list = []
+		temp_folder = f"{resultDir}/{serviceName}.{date_time}.temp.pdf"
 
-		# Step 1: Merge Design PDFs for each sample
 		for sample in sample_list:
-			# Filter Design PDFs for the current sample
-			design_pdfs = [f"{resultDir}/{serviceName}.{date_time}.Design.pdf/{pdf}" for pdf in pdf_list if sample in pdf]
+			# Filter Design PDFs for the current sample and merge if any
+			design_pdfs = [f"{temp_folder}/{pdf}" for pdf in os.listdir(temp_folder) if sample in pdf]
 
-			# Merge Design PDFs if any
 			if design_pdfs:
-				output_pdf_design = f"{resultDir}/{serviceName}.{date_time}.Design.pdf/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
-				output_pdf_list.append(output_pdf_design)
-				merge_pdfs(design_pdfs, output_pdf_design)
+				merge_design_pdf = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.Design.merge.pdf"
+				merge_pdfs(design_pdfs, merge_design_pdf)
+				print(f"[INFO] Merged design PDFs into {merge_design_pdf}")
+
+				# Copy individual Design PDFs to sample folder
+				design_folder = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.Design.pdf"
+				os.makedirs(design_folder, exist_ok=True)
+				for pdf in design_pdfs:
+					shutil.copy(pdf, design_folder)
+					print(f"[INFO] Copied individual {pdf} to {design_folder}")
 				
-				# Step 1.1: Copy individual Design PDFs to sample folder (copy before merging)
-				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.Design.pdf"
-				os.makedirs(sample_folder, exist_ok=True)
-				for pdf in design_pdfs:
-					shutil.copy(pdf, sample_folder)
-					print(f"[INFO] Copied individual {pdf} to {sample_folder}")
-		
+
 		# Step 2: Process each sample for panel-specific actions based on gene_names_by_file, if it exists
-		if gene_names_by_file:
+		if gene_names_by_panel:
 			for sample in sample_list:
-				sample_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.Design.pdf"
-				os.makedirs(sample_folder, exist_ok=True)
-
+				design_folder = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.Design.pdf"
+				
 				for pdf in design_pdfs:
-					if sample in pdf:  # Process only merged PDFs that match the sample
-						# Move the original merged Design PDF to the sample's pdf_design folder
-						shutil.move(pdf, os.path.join(sample_folder, os.path.basename(pdf)))
-						print(f"[INFO] Moved original {pdf} to {sample_folder}")
+					for panel_name, genes in gene_names_by_panel.items():
+						gene_pattern = re.compile("|".join(genes)) # Compile a regex pattern for the current gene list
+						print('[INFO] Processing ', pdf, ' for ', panel_name, ' genes')
+						if gene_pattern.search(pdf):  # Check if any gene is in the pdf name
+							print('[INFO] Processing panel-specific PDFs for sample:', sample, 'and panel:', panel_name)
+							panel_folder = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.Panel.{panel_name}.pdf"
+							os.makedirs(panel_folder, exist_ok=True)
 
-						# Copy and rename PDFs for each panel based on gene_names_by_file
-						for file_name, genes in gene_names_by_file.items():
-							# Compile a regex pattern for the current gene list
-							gene_pattern = re.compile("|".join(genes))
-							print(gene_pattern)
-							pdf_basename = os.path.basename(pdf)  # Extract basename for easier matching
-							print('[INFO] Processing ', pdf_basename, ' for ', file_name, ' genes')
-							if gene_pattern.search(pdf_basename):  # Check if any gene is in the basename
-								print('[INFO] Processing panel-specific PDFs for sample:', sample, 'and panel:', file_name)
-								panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.Panel.{file_name}.pdf/"
-								os.makedirs(panel_folder, exist_ok=True)
+							# Rename PDF for this panel
+							panel_pdf_name = pdf.replace("Design", f"{panel_name}.Panel")
+							panel_pdf = os.path.join(panel_folder, panel_pdf_name)
 
-								# Rename PDF for this panel
-								new_pdf_name = pdf_basename.replace("Design", f"Panel.{file_name}")
-								new_pdf_path = os.path.join(panel_folder, new_pdf_name)
-
-								# Copy the renamed PDF to the panel folder
-								shutil.copy(os.path.join(sample_folder, os.path.basename(pdf)), new_pdf_path)
-								print(f"[INFO] Copied and renamed {pdf} to {new_pdf_path}")
-								
-								# Step 2.1: Copy the original individual panel PDF to the panel folder
-								shutil.copy(pdf, panel_folder)
-								print(f"[INFO] Copied individual panel PDF {pdf} to {panel_folder}")
-							else:
-								print(f"[INFO] No match for panel '{file_name}' in PDF: {pdf_basename}")
-
-		# Step 3: Merge all PDFs in each panel folder
-		for sample in sample_list:
-			for file_name in gene_names_by_file.keys():
-				panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.Panel.{file_name}.pdf"
-				if os.path.exists(panel_folder):
-					panel_pdfs = [os.path.join(panel_folder, pdf) for pdf in os.listdir(panel_folder) if pdf.endswith('.pdf')]
-
-					# Merge PDFs if there are any in the folder
-					if panel_pdfs:
-						merged_panel_pdf = f"{panel_folder}/{serviceName}.{date_time}.{sample}.Panel.{file_name}.merge.pdf"
-						merge_pdfs(panel_pdfs, merged_panel_pdf)
-						print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
+							# Copy the renamed PDF to the panel folder
+							shutil.copy(os.path.join(design_folder, pdf), panel_pdf)
+							print(f"[INFO] Copied and renamed {pdf} to {panel_pdf}")
+							
+							# Merged pdf for each panels 
+							panel_pdfs = [f"{panel_folder}/{pdf}" for pdf in os.listdir(panel_folder) if sample in pdf]
+							merged_panel_pdf = f"{resultDir}/{sample}/{serviceName}/{serviceName}.{date_time}.{sample}.{panel_name}.Panel.merge.pdf"
+							merge_pdfs(panel_pdfs, merged_panel_pdf)
+							print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
 
 		# Step 4: Clean up the temporary pdf directory
-		shell(f"rm -rf {resultDir}/{serviceName}.{date_time}.Design.pdf")
+		shell(f"rm -rf {resultDir}/{serviceName}.{date_time}.temp.pdf")
 		print('[INFO] Processing pdfs done')
 
 	# Generate dictionary for results

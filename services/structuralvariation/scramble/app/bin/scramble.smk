@@ -558,6 +558,13 @@ rule filter_vcf:
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.bedtoolsfilter.log"
 	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output}"
 
+rule merge_vcf:
+	""" Copy or merge multiple vcfs using bcftools """
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.bcftoolsmerge.log"
+	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
+
 # We filter non annoted design to get panels
 rule filter_vcf_panel:
 	"""	Filter vcf with a bed file """
@@ -578,17 +585,10 @@ rule vcf_normalization:
 	shell: "bcftools norm -d all -o {output} -Oz {input.vcfgz} ; tabix {output}"
 
 # Panel vcf.gz all samples no annotation
-rule merge_vcf:
-	""" Copy or merge multiple vcfs using bcftools """
+use rule merge_vcf as merge_vcf_panel_noannotation with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
-	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
-
-use rule merge_vcf as merge_vcf_noannotation with:
-	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.bcftoolsmerge.log"
 
 
 rule AnnotSV:
