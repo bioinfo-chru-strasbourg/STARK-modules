@@ -35,8 +35,10 @@
                         <td>
                         {% if file == "gender" or file == "hpo" %}
                             {{ path }}
+                        {% elif path is not none %}
+                        	<a href="{{ path }}" target="_blank">{{ path }}</a>
                         {% else %}
-                        <a href="{{ path }}" target="_blank">{{ path }}</a>
+                            None
                         {% endif %}
                         </td>
                     </tr>
