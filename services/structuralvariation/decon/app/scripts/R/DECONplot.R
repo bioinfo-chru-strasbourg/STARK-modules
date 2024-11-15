@@ -172,15 +172,15 @@ rdata_output = opt$outdata
 # Check if count_data is NULL or an empty string
 count_data=opt$data
 if(is.null(count_data) || count_data == "") {
-    print("ERROR: no RData summary file provided -- Execution halted")
+    print("[ERROR] no RData summary file provided -- Execution halted")
     quit()
 }
-message('Loading Rdata')
+message('[INFO] Loading Rdata')
 load(count_data)
-message('Loading done')
+message('[INFO] Loading done')
 
 if (length(cnv.calls_ids)==0){
-    message('No CNVcalls in the Rdata file. No plot to draw')
+    message('[ERROR] No CNVcalls in the Rdata file. No plot to draw')
     quit()
 }
 
@@ -191,38 +191,25 @@ if(!file.exists(plotFolder)){dir.create(plotFolder)}
 modechrom = opt$chromosome
 if (modechrom == "XX" || modechrom == "XY") {
 	bed.file <- filter_chromosomes(bed.file, include.chrom = c("chrX")) # we don't call Y
-	counts <- filter_chromosomes(counts, include.chrom = c("chrX"))
 	ExomeCount <- filter_chromosomes(ExomeCount, include.chrom = c("chrX"))
-	cnv.calls <- filter_chromosomes(cnv.calls, include.chrom = c("chrX"))
 	cnv.calls_ids <- filter_chromosomes(cnv.calls_ids, include.chrom = c("chrX"))
 }
 if (modechrom == "A") {
 	bed.file <- filter_chromosomes(bed.file, exclude.chrom = c("chrX", "chrY"))
-	counts <- filter_chromosomes(counts, exclude.chrom = c("chrX", "chrY"))
 	ExomeCount <- filter_chromosomes(ExomeCount, exclude.chrom = c("chrX", "chrY"))
-	cnv.calls <- filter_chromosomes(cnv.calls, exclude.chrom = c("chrX", "chrY"))
 	cnv.calls_ids <- filter_chromosomes(cnv.calls_ids, exclude.chrom = c("chrX", "chrY"))
 }
 
 # Debug
 if (opt$debug) {
 rdata_file <- sprintf("%s/debug_filtering_data_%s.RData", debugFolder, modechrom)
-save(bed.file , models, refs, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
+save(bed.file , models, refs, ExomeCount, cnv.calls_ids, file = rdata_file)
 }
 
-# Check custom exons
-if ("Custom.first" %in% colnames(cnv.calls_ids)){
-	message('Custom.first column detected')
-	cnv.calls_plot=cnv.calls_ids[!is.na(cnv.calls_ids$Custom.first),]
-	message('CNV plot initiating with custom exon numbers')
-}else{
-	message('Custom.first column not detected')
-	cnv.calls_plot=cnv.calls_ids
-	message('CNV plot initiating without custom exon numbers')
-}
+# Creating cnv.calls_plot
+cnv.calls_plot <- transform(cnv.calls_ids, Chromosome = paste('chr', Chromosome, sep = ''))
 
-cnv.calls_plot$Chromosome=paste('chr',cnv.calls_plot$Chromosome,sep='')
-
+# Starting index
 Index=vector(length=nrow(bed.file))
 Index[1]=1
 for(i in 2:nrow(bed.file)){
@@ -233,8 +220,8 @@ for(i in 2:nrow(bed.file)){
 	}   
 }   
 
-if (colnames(counts)[5] == "exon_number") {
-    message('Exon numbers detected')
+if (colnames(bed.file)[5] == "exon") {
+    message('[INFO] Exon numbers detected')
     exons <- bed.file
     for (i in 1:nrow(exons)) {
         x = which(paste(bed.file[,5]) == paste(exons[i,5]) & 
@@ -244,21 +231,32 @@ if (colnames(counts)[5] == "exon_number") {
     }
 }
 
-    if (opt$debug) {
-    rdata_file <- sprintf("%s/debug_start_plot_%s.RData", debugFolder, modechrom)
-    save(exons, cnv.calls_plot, bed.file , models, refs, ExomeCount, counts, cnv.calls, cnv.calls_ids, file = rdata_file)
-	}
+if (opt$debug) {
+rdata_file <- sprintf("%s/debug_start_plot_%s.RData", debugFolder, modechrom)
+save(exons, cnv.calls_plot, bed.file , models, refs, ExomeCount, cnv.calls_ids, file = rdata_file)
+}
 
 for(call_index in 1:nrow(cnv.calls_plot)){
 	
-	Sample<-cnv.calls_plot[call_index,]$Sample
-	Gene<-unlist(strsplit(cnv.calls_plot[call_index,]$Gene,split=", "))
-	exonRange<-which(bed.file[,4]%in%Gene)
+	Sample <- cnv.calls_plot[call_index,]$Sample
+	Gene <- unlist(strsplit(cnv.calls_plot[call_index,]$Gene,split=", "))
+	exonRange <- which(bed.file[,4]%in%Gene)
 
-	if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)>=1)){exonRange=(cnv.calls_plot[call_index,]$Start.p-5):max(exonRange)}
-	if((cnv.calls_plot[call_index,]$Start.p-5)<min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5)<=0)){exonRange=1:max(exonRange)}
-	if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)<=nrow(bed.file))){exonRange=min(exonRange):(cnv.calls_plot[call_index,]$End.p+5)}
-	if((cnv.calls_plot[call_index,]$End.p+5)>max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5)>nrow(bed.file))){exonRange=min(exonRange):nrow(bed.file)}
+	if((cnv.calls_plot[call_index,]$Start.p-5) < min(exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5) >= 1)){
+		exonRange = (cnv.calls_plot[call_index,]$Start.p-5):max(exonRange)
+		}
+	
+	if((cnv.calls_plot[call_index,]$Start.p-5) < min (exonRange) & ((cnv.calls_plot[call_index,]$Start.p-5) <= 0 )){
+		exonRange = 1:max(exonRange)
+		}
+	
+	if((cnv.calls_plot[call_index,]$End.p+5) > max(exonRange) & ((cnv.calls_plot[call_index,]$End.p+5) <= nrow (bed.file))){
+		exonRange = min(exonRange):(cnv.calls_plot[call_index,]$End.p+5)
+		}
+
+	if((cnv.calls_plot[call_index,]$End.p+5) > max (exonRange) & ((cnv.calls_plot[call_index,]$End.p+5) > nrow (bed.file))){
+		exonRange = min(exonRange):nrow(bed.file)
+		}
 
 	singlechr=length(unique(bed.file[exonRange,1]))==1
 
@@ -274,101 +272,101 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	}
 
 	###### Part of plot containing the coverage points (upper part) ###############
-	message('Starting drawing coverage')
-	# cnv.calls debug
-	VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$Start.p,cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$End.p))
+	message('[INFO] Starting drawing coverage')
+	VariantExon <- unlist(mapply(function(x,y)x:y,cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$Start.p,cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$End.p))
 	refs_sample<-refs[[Sample]]
-	Data<-cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
-	Data[,-ncol(Data)]=log(Data[,-ncol(Data)])
+	Data <- cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
+	Data[,-ncol(Data)] = log(Data[,-ncol(Data)])
 	
 	if (opt$debug) {
     rdata_file <- sprintf("%s/debug_before_melt_plot_%s_%s.RData", debugFolder, modechrom, call_index)
-    save(Gene, VariantExon, Sample, refs_sample, Data, exons, cnv.calls_plot, bed.file , models, refs, ExomeCount, counts, cnv.calls, cnv.calls_ids, exonRange, file = rdata_file)
+    save(Gene, VariantExon, Sample, refs_sample, Data, exons, cnv.calls_plot, bed.file , models, refs, ExomeCount, cnv.calls_ids, exonRange, file = rdata_file)
 	}
 	
 	Data1<-melt(Data,id=c("exonRange"))
 	testref<-rep("gray",nrow(Data1))
-	testref[Data1$variable==Sample]="blue"
+	testref[Data1$variable==Sample] = "blue"
 	Data1<-data.frame(Data1,testref)
 	levels(Data1$variable)=c(levels(Data1$variable),"VAR")
 	Data1$testref=as.factor(Data1$testref)
 	levels(Data1$testref)=c(levels(Data1$testref),"red")
 
-	data_temp<-Data1[Data1$variable==Sample & Data1$exonRange%in%VariantExon,]
+	data_temp <- Data1[Data1$variable == Sample & Data1$exonRange%in%VariantExon,]
 
 	if(nrow(data_temp)>0){
-		data_temp$variable="VAR"
-		data_temp$testref="red"
-		Data1<-rbind(Data1,data_temp)
+		Data1 <- rbind(Data1, transform(data_temp, variable = "VAR", testref = "red"))
 	}
-	# Update levels to include the sample name dynamically
+	# Include the sample name 
 	sample_name_label <- paste("Test Sample (", Sample, ")", sep = "")
 	levels(Data1$testref)=c(sample_name_label,"Reference Sample","Affected exon")
-
 	new_cols=c("blue","gray","red")
-	A1<-ggplot(data=Data1,aes(x=exonRange,y=value,group=variable,colour=testref))
-	A1<-A1 + geom_point(cex=2.5,lwd=1.5)
-	A1<-A1 + scale_colour_manual(values=new_cols)  
-	A1<-A1 + geom_line(data=subset(Data1,testref=="Reference Sample"),lty="dashed",lwd=1.5,col="grey") 
-	A1<-A1 + geom_point(data=subset(Data1,testref=="Reference Sample"),cex=2.5,col="grey")   
-	A1<-A1+ geom_line(data=subset(Data1,testref==sample_name_label),lty="dashed",lwd=1.5,col="blue")  
-	A1<-A1 + geom_point(data=subset(Data1,testref==sample_name_label),cex=2.5,col="blue") 
-	A1<-A1 + geom_point(data=subset(Data1,testref=="Affected exon"),cex=3.5,col="red") 
-    A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position= "top") + xlab(" ") + guides(color = guide_legend(nrow = 1, title = NULL))
 
+	A1 <- ggplot(data=Data1,aes(x=exonRange,y=value,group=variable,colour=testref))
+	A1 <- A1 + geom_point(cex=2.5,lwd=1.5)
+	A1 <- A1 + scale_colour_manual(values=new_cols)  
+	A1 <- A1 + geom_line(data=subset(Data1,testref=="Reference Sample"),lty="dashed",lwd=1.5,col="grey") 
+	A1 <- A1 + geom_point(data=subset(Data1,testref=="Reference Sample"),cex=2.5,col="grey")   
+	A1 <- A1 + geom_line(data=subset(Data1,testref==sample_name_label),lty="dashed",lwd=1.5,col="blue")  
+	A1 <- A1 + geom_point(data=subset(Data1,testref==sample_name_label),cex=2.5,col="blue") 
+	A1 <- A1 + geom_point(data=subset(Data1,testref=="Affected exon"),cex=3.5,col="red") 
+    A1 <- A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position= "top") + xlab(" ") + guides(color = guide_legend(nrow = 1, title = NULL))
 
-	Data2<-Data1[Data1$testref=="Affected exon",]
+	Data2 <- Data1[Data1$testref=="Affected exon",]
 	if(nrow(Data2)>1){
 		for(i in 1:(nrow(Data2)-1)){
-			if((Data2$exonRange[i]+1)==Data2$exonRange[i+1]){A1<-A1 + geom_line(data=Data2[i:(i+1),],aes(x=exonRange,y=value,group=1),lwd=1.5,col="red")}
+			if ((Data2$exonRange[i]+1)==Data2$exonRange[i+1]) {
+				A1<-A1 + geom_line(data=Data2[i:(i+1),],aes(x=exonRange,y=value,group=1),lwd=1.5,col="red")
+			}
 		}
 	}   
 
-
-	if(!singlechr){
-		if(prev){A1<-A1 + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange),labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange)))
-		}else{A1<-A1 + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75))}
-	}else{A1<-A1 + scale_x_continuous(breaks=exonRange, labels = Index[exonRange]) + theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))}
-
+	if (!singlechr) {
+		if (prev) {
+			A1 <- A1 + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange), labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange))) + theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))
+		} else {
+			A1 <- A1 + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75)) + theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))
+			}
+	} else {
+	A1 <- A1 + scale_x_continuous(breaks=exonRange, labels = Index[exonRange]) + theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))
+	}
 
 	############## Part of plot containing the gene names as legend ###########
-	message('Adding gene names')
+	message('[INFO] Adding gene names')
 	genes_sel = unique(bed.file[exonRange,4])
-	temp<-cbind(1:nrow(bed.file),bed.file)[exonRange,]
-	len<-table(temp$gene)
-	mp<-tapply(exonRange,temp[,5],mean)
-	mp<-mp[genes_sel]
-	len<-len[genes_sel]
-	Genes<-data.frame(c(genes_sel),c(mp),c(len-.5),1)
-	names(Genes)=c("Gene","MP","Length","Ind")
+	temp <- cbind(1:nrow(bed.file),bed.file)[exonRange,]
+	len <- table(temp$gene)
+	mp <- tapply(exonRange,temp[,5],mean)
+	mp <- mp[genes_sel]
+	len <- len[genes_sel]
+	Genes <- data.frame(c(genes_sel),c(mp),c(len-.5),1)
+    names(Genes) = c("Gene","MP","Length","Ind")
 
 	if(!singlechr){
 		if(prev){
 			fakegene=c(newchr,min(exonRange)-5,3.5,1)
-		}else{
+		} else {
 			fakegene=c(newchr,max(exonRange)+5,3.5,1)
 		}
-		#levels(Genes$Gene)=c(levels(Genes$Gene),newchr)
-		Genes<-rbind(Genes,fakegene)
-		Genes$MP=as.numeric(Genes$MP)
-		Genes$Length=as.numeric(Genes$Length)
+		Genes <- rbind(Genes,fakegene)
+		Genes$MP = as.numeric(Genes$MP)
+		Genes$Length = as.numeric(Genes$Length)
 	}
 
-	GenesPlot<-ggplot(data=Genes, aes(x=MP,y=Ind,fill=Gene,width=Length,label=Gene)) +geom_tile() + geom_text() + theme_bw() + theme(legend.position="None",panel.grid.major = element_blank(), panel.grid.minor = element_blank(),axis.text.y = element_blank(),axis.ticks.y=element_blank(),plot.margin=unit(c(.5,.5,.5,.55),"cm")) + ylab(" ") + xlab(" ")
-	GenesPlot<-GenesPlot + theme(axis.text.x=element_blank(),axis.ticks.x=element_blank())
+	GenesPlot <- ggplot(data=Genes, aes(x=MP,y=Ind,fill=Gene,width=Length,label=Gene)) + geom_tile() + geom_text() + theme_bw() + theme(legend.position="None",panel.grid.major = element_blank(), panel.grid.minor = element_blank(),axis.text.y = element_blank(),axis.ticks.y=element_blank(),plot.margin=unit(c(.5,.5,.5,.5),"cm")) + ylab(" ") + xlab(" ")
+	GenesPlot <- GenesPlot + theme(axis.text.x=element_blank(),axis.ticks.x=element_blank())
 
     # Debug
 	if (opt$debug) {
-	rdata_file <- sprintf("%s/debug_after_adding_genes_names_%s_%s.RData", debugFolder, modechrom, call_index)
-    save(exons, Index, singlechr, genes_sel, temp, len, mp, Genes, GenesPlot, A1, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls, cnv.calls_ids, Data, file = rdata_file)
+		rdata_file <- sprintf("%s/debug_after_adding_genes_names_%s_%s.RData", debugFolder, modechrom, call_index)
+		save(exons, Index, singlechr, genes_sel, temp, len, mp, Genes, GenesPlot, A1, models, refs, bed.file, cnv.calls_plot, exonRange, Gene, Sample, VariantExon, refs_sample, ExomeCount, cnv.calls_ids, Data, file = rdata_file)
 	}
 
 	####### Part of the plot containing the normalized ratio of the coverage (lower part) #############
-	message('Adding normalized ratio')
-	Totals<-rowSums(ExomeCount[exonRange,c(Sample,refs_sample)])
+	message('[INFO] Adding normalized ratio')
+	Totals <- rowSums(ExomeCount[exonRange,c(Sample,refs_sample)])
 	ratio = (ExomeCount[exonRange,Sample]/Totals)/models[[Sample]][1]
-	mins <- vector(length=length(exonRange))
-	maxs <-vector(length=length(exonRange))
+	mins <- maxs <- rep(NA, length(exonRange))
+	
 	for(i in 1:length(exonRange)){
 		temp = qbetabinom(p=0.025,Totals[i],models[[Sample]][2],models[[Sample]][1])
 		mins[i] = (temp/Totals[i])/models[[Sample]][1]
@@ -376,35 +374,39 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 		maxs[i] = (temp/Totals[i])/models[[Sample]][1]
 	}       
 
-	CIData<-data.frame(exonRange,ratio,mins,maxs)
-	names(CIData)<-c("Exon","Ratio","Min","Max")
-	CIPlot<-ggplot(CIData,aes(x=Exon,y=Ratio))+geom_ribbon(aes(ymin=Min,ymax=Max),fill="grey")+geom_point(col="blue",cex=3.5) + theme_bw() +xlab("")+ylab("Observed/Expected")
-	# cnv.calls debug
+	CIData <- setNames(data.frame(exonRange, ratio, mins, maxs), c("Exon", "Ratio", "Min", "Max"))
+	CIPlot <- ggplot(CIData, aes(x=Exon,y=Ratio)) + geom_ribbon(aes(ymin=Min,ymax=Max),fill="grey") + geom_point(col="blue",cex=3.5) + theme_bw() + xlab("") + ylab("Observed/Expected")
+	
 	temp = cnv.calls_plot[cnv.calls_plot$Sample==Sample,]
-	if(sum(temp$Start.p%in%exonRange |temp$End.p%in%exonRange)>0){
+	if (sum(temp$Start.p%in%exonRange | temp$End.p%in%exonRange) > 0){
 		temp = temp[temp$Start.p%in%exonRange|temp$End.p%in%exonRange,]
 		for(i in 1:nrow(temp)){
 			start.temp = temp[i,]$Start.p
 			end.temp = temp[i,]$End.p
-			CIPlot<-CIPlot + geom_point(data=CIData[CIData$Exon%in%start.temp:end.temp,], aes(x=Exon,y=Ratio),color="red",cex=3.5)
+			CIPlot <- CIPlot + geom_point(data=CIData[CIData$Exon%in%start.temp:end.temp,], aes(x=Exon,y=Ratio),color="red",cex=3.5)
 		}
 	}
 
-	if(!singlechr){
-		if(prev){CIPlot<- CIPlot + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange),labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange)))
-		}else{CIPlot<-CIPlot + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75))}
-	}else{CIPlot<-CIPlot + scale_x_continuous(breaks=exonRange, labels= Index[exonRange]) + theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))}
+	if (!singlechr) {
+		if (prev) {
+			CIPlot <- CIPlot + scale_x_continuous(breaks=(min(exonRange)-6):max(exonRange),labels=c(rep("",6),paste(Index[exonRange])),limits=c(min(exonRange)-6.75,max(exonRange))) + theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))
+		} else {
+			CIPlot <- CIPlot + scale_x_continuous(breaks=min(exonRange):(max(exonRange)+6),labels=c(paste(Index[exonRange]),rep("",6)),limits=c(min(exonRange),max(exonRange)+6.75)) + theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))
+			}
+	} else {
+		CIPlot <- CIPlot + scale_x_continuous(breaks=exonRange, labels = Index[exonRange]) + theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))
+		}
 
 	# Debug
 	if (opt$debug) {
 	rdata_file <- sprintf("%s/debug_end_plot_data_%s_%s.RData", debugFolder, modechrom, call_index)
-    save(singlechr, A1, Index, CIPlot, CIData, GenesPlot, exonRange, Totals, ratio, mins, maxs, models, bed.file, counts, ExomeCount, cnv.calls, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
+    save(singlechr, A1, Index, CIPlot, CIData, GenesPlot, exonRange, Totals, ratio, mins, maxs, models, bed.file, ExomeCount, cnv.calls_ids, cnv.calls_plot, file = rdata_file)
 	}
 
     ######### Save plot in pdf format ###########
-    message('Saving plots in pdf format')
+    message('[INFO] Saving plots in pdf format')
     cnv_genes_sample=cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$Gene
-    cleaned_gene <- sanitize_filename(Gene)
+    cleaned_gene <- sanitize_filename(Gene) # for naming files
 
     if (sum(cnv_genes_sample == cleaned_gene) == 1) {
         pdf(file = paste(plotFolder, "/DECON.", prefixfile, ".", Sample, ".", cleaned_gene, ".pdf", sep = ""), useDingbats = FALSE)
@@ -413,7 +415,9 @@ for(call_index in 1:nrow(cnv.calls_plot)){
         pdf(file = paste(plotFolder, "/DECON.", prefixfile, ".", Sample, ".", paste(cleaned_gene, collapse = "_"), "_", which(cnv_genes_sample_index == call_index), ".pdf", sep = ""), useDingbats = FALSE)
     }
 
-if(sum(cnv_genes_sample==Gene)>2){print(paste("WARNING: more than 2 calls in ",Gene,", could affect plotting",sep=""))}
+if(sum(cnv_genes_sample==Gene)>2){
+	print(paste("[WARNING] More than 2 calls in ",Gene,", could affect plotting",sep=""))
+	}
 
 	grid.newpage()
 	pushViewport(viewport(layout = grid.layout(6, 1)))
