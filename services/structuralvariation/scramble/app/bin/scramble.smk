@@ -272,8 +272,9 @@ if depotDir:  # Ensure depotDir is not an empty string
 for directory in directories:
 	os.makedirs(directory, exist_ok=True)
 
-# Search files in repository 
+print('[INFO] Starting searching files with the parameters provided')
 files_list = searchfiles(os.path.normpath(config['run']), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
+print('[INFO] Searching files done')
 
 # Create sample and aligner list
 sample_list = extractlistfromfiles(files_list, config['PROCESS_FILE'], '.', 0)
@@ -284,7 +285,9 @@ sample_list = [sample for sample in sample_list if not any(sample.upper().starts
 
 # If filter_sample_list variable is not empty, it will force the sample list
 if config['FILTER_SAMPLE']:
+	print('[INFO] Filtering samples list')
 	sample_list = list(config['FILTER_SAMPLE'])
+	print('[INFO] Filtering of samples list done')
 
 # For validation analyse bam will be sample.aligner.validation.bam, so we append .validation to all the aligner strings
 if config['VALIDATION_ONLY']:
@@ -294,16 +297,20 @@ if config['VALIDATION_ONLY']:
 else:
 	filtered_files = filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
 
-# Populate dictionary
+print('[INFO] Construct the dictionary for the run')
 runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, ['analysis'])
+print('[INFO] Dictionary done')
 
 # Set a filelist with all the files tag ; file format is sample.tag
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
 for individual in runDict.values():
 	individual.update({'hpo': None, 'gender': None})
 
+print('[INFO] Seaching for pedigree files')
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
+
 if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
+	print('[INFO] Reading pedigree files')
 	pedigree_into_dict(ped_file, sample_list, runDict, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex')
 	print('[INFO] Gender found in the pedigree file')
 	df = pd.read_csv(ped_file, sep='\t', dtype=str)
@@ -313,10 +320,12 @@ if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 		if individual_id in sample_list:
 			runDict[individual_id]['hpo'] = hpo_list
 else:
+	print('[INFO] No pedigree files found, reading gender from tag files')
 	tagfile_list = [runDict[sample].get('.tag') for sample in sample_list if '.tag' in runDict.get(sample, {})]
 	tagfile_list = [tag for tag in tagfile_list if tag is not None]
 	if not tagfile_list:
-		print('[INFO] No gender found for the samples')
+		print('[INFO] No tag files found to find the genders of the samples')
+		print('[WARN] The calling of chrXX & chrXY will not be done')
 	else:
 		for tagfile in tagfile_list:
 			sample_name = os.path.basename(tagfile).split(".")[0]
@@ -332,13 +341,18 @@ config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, co
 # Find transcripts files (file containing NM)
 config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
 
+# Find transcripts files (NM)
+config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
 # If transcript file exist, create the annotation file for AnnotSV
 annotation_file = f"{resultDir}/{serviceName}.{date_time}.AnnotSV.txt"
 if os.path.exists(config['TRANSCRIPTS_FILE']) and os.path.getsize(config['TRANSCRIPTS_FILE']):
+	print('[INFO] Processing transcript file')
 	df = pd.read_csv(config['TRANSCRIPTS_FILE'], sep='\t', names=["NM", "Gene"])
 	with open(annotation_file, 'w+') as f:
 		f.write('\t'.join(df['NM']))
+	print('[INFO] Processing transcript file done')
 else:
+	print('[WARN] No transcript file found')
 	with open(annotation_file, 'w') as f:
 		f.write("No NM found")
 
@@ -626,10 +640,12 @@ rule wait_for_AnnotSV:
 		log_file= f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"
 	output:
 		ready=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.ready"
+	params:
+		limit=config['annotSV_limit']
 	shell:
 		"""
 		count=0
-		limit=30
+		limit={params.limit}
 		while true; do
 			if grep -q "Exit without error" {input.log_file} || grep -q "AnnotSV is done with the analysis" {input.log_file}; then
 				touch {output.ready}
@@ -770,6 +786,7 @@ use rule merge_vcf as merge_vcf_panel with:
 
 
 onstart:
+	print('[INFO] Starting SCRAMBLE pipeline, brace yourselves!')
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
 	with open(logfile, "a+") as f:
 		f.write("\n")
@@ -778,6 +795,7 @@ onstart:
 		f.write("\n")
 
 onsuccess:
+	print('[INFO] SCRAMBLE pipeline finished successfully!')
 	include = config['INCLUDE_RSYNC']
 	shell(f"touch {outputDir}/{serviceName}Complete.txt")
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
@@ -792,25 +810,33 @@ onsuccess:
 	sample_list.insert(0,"allsamples")
 	resultDict = populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
 	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender"])
+	print('[INFO] Generating html report')
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html")
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
+	print('[INFO] Generating html report done')
 
-	# Clear existing output directories & copy results
+	print('[INFO] Removing old results')
 	for sample in sample_list:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
+	print('[INFO] Copying files')
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 	for sample in sample_list:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+	print('[INFO] Copying files done')
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR'] and outputDir != depotDir:
+		print('[INFO] Removing old results from archives')
 		for sample in sample_list:
 			shell(f"rm -f {depotDir}/{sample}/{serviceName}/* || true")
+		print('[INFO] Copying files into archives')
 		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
 		for sample in sample_list:
 			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
+		print('[INFO] Copying files into archives done')
 
 onerror:
+	print('[ERROR] SCRAMBLE pipeline did not end well, grab a cup of coffee and check for log and err files')
 	include_log = config['INCLUDE_LOG_RSYNC']
 	shell(f"touch {outputDir}/{serviceName}Failed.txt")
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")

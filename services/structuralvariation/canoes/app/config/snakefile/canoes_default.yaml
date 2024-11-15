@@ -117,6 +117,8 @@ overlap: 100 # default 100
 annotationMode: both # split, full or both (defaut both)
 annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database
 vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFiles option ; extension should be in EXT_INDEX_LIST
+# Limit of attempt to perform AnnotSV annotation
+annotSV_limit: 30
 
 ##################   Plots params   ##################
 # Generate plot coverage (warning if the number of rows is high (ie number of regions defined with the bed > 1 000)) it will generate a huge file or crash
@@ -135,7 +137,7 @@ homdel: "0.2" # threeshold for homozygous deletion
 # REF_BAM_LIST: "--refbams /app/res/list.tsv"
 REF_BAM_LIST: ""
 
-# Limit cores
+# Set cores
 resources:
   cores: 16
 

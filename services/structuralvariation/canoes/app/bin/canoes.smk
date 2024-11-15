@@ -303,8 +303,9 @@ if depotDir:  # Ensure depotDir is not an empty string
 for directory in directories:
 	os.makedirs(directory, exist_ok=True)
 
-# Search files in repository 
+print('[INFO] Starting searching files with the parameters provided')
 files_list = searchfiles(os.path.normpath(config['run']), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
+print('[INFO] Searching files done')
 
 # Create sample and aligner list
 sample_list = extractlistfromfiles(files_list, config['PROCESS_FILE'], '.', 0)
@@ -315,7 +316,9 @@ sample_list = [sample for sample in sample_list if not any(sample.upper().starts
 
 # If filter_sample_list variable is not empty, it will force the sample list
 if config['FILTER_SAMPLE']:
+	print('[INFO] Filtering samples list')
 	sample_list = list(config['FILTER_SAMPLE'])
+	print('[INFO] Filtering of samples list done')
 
 # For validation analyse bam will be sample.aligner.validation.bam, so we append .validation to all the aligner strings
 if config['VALIDATION_ONLY']:
@@ -325,8 +328,9 @@ if config['VALIDATION_ONLY']:
 else:
 	filtered_files = filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
 
-# Populate dictionary
+print('[INFO] Construct the dictionary for the run')
 runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, ['analysis'])
+print('[INFO] Dictionary done')
 
 # Add other runs/samples to improve sensibility
 if config['addruns']:
@@ -353,12 +357,14 @@ else:
 # tag ex SEX#M!POOL#POOL_HFV72AFX3_M_10#POOL_HFV72AFX3_F_11!
 for individual in runDict.values():
 	individual.update({'hpo': None, 'gender': None})
+
+print('[INFO] Seaching for pedigree files')
 ped_file = find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.ped')
 
 if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
+	print('[INFO] Reading pedigree files')
 	pedigree_into_dict(ped_file, sample_list, runDict, individual_id_column='Individual ID', hpo_list_column='HPOList', sex_column='Sex')
 	print('[INFO] Gender found in the pedigree file')
-
 	df = pd.read_csv(ped_file, sep='\t', dtype=str)
 	for _, row in df.iterrows():
 		individual_id = row['Individual ID']
@@ -366,10 +372,12 @@ if os.path.exists(ped_file) and os.path.getsize(ped_file) > 0:
 		if individual_id in sample_list:
 			runDict[individual_id]['hpo'] = hpo_list
 else:
+	print('[INFO] No pedigree files found, reading gender from tag files')
 	tagfile_list = [runDict[sample].get('.tag') for sample in sample_list if '.tag' in runDict.get(sample, {})]
 	tagfile_list = [tag for tag in tagfile_list if tag is not None]
 	if not tagfile_list:
-		print('[INFO] No gender found for the samples')
+		print('[INFO] No tag files found to find the genders of the samples')
+		print('[WARN] The calling of chrXX & chrXY will not be done')
 	else:
 		for tagfile in tagfile_list:
 			sample_name = os.path.basename(tagfile).split(".")[0]
@@ -396,13 +404,18 @@ config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, co
 # Find transcripts files (NM)
 config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
 
+# Find transcripts files (NM)
+config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
 # If transcript file exist, create the annotation file for AnnotSV
 annotation_file = f"{resultDir}/{serviceName}.{date_time}.AnnotSV.txt"
 if os.path.exists(config['TRANSCRIPTS_FILE']) and os.path.getsize(config['TRANSCRIPTS_FILE']):
+	print('[INFO] Processing transcript file')
 	df = pd.read_csv(config['TRANSCRIPTS_FILE'], sep='\t', names=["NM", "Gene"])
 	with open(annotation_file, 'w+') as f:
 		f.write('\t'.join(df['NM']))
+	print('[INFO] Processing transcript file done')
 else:
+	print('[WARN] No transcript file found')
 	with open(annotation_file, 'w') as f:
 		f.write("No NM found")
 
@@ -444,20 +457,25 @@ files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path
 files_list_XY = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']))
 
 # Creating a txt list for the bam files per aligner per gender (A, M & F)
+print('[INFO] Creating the files text list for CNV calling')
 for aligner in aligner_list:
 	for gender in gender_list:
 		bamlist = f"{resultDir}/{serviceName}.{date_time}.{gender}.list.txt"
 		create_list(bamlist, globals()[f"files_list_{gender}"], config['PROCESS_FILE'], aligner)
+print('[INFO] Creating the file text list for CNV calling done')
 
 # Option to remove gender in the gender_list
 gender_list = sorted([gender for gender in gender_list if gender not in config['REMOVE_GENDER']])
 
 # check the ref bam list and presence of gender, and update the gender_list based on the presence of 'F' and 'M'
 if config['REF_BAM_LIST']:
+	print('[INFO] Using external bam reference files')
 	df = pd.read_csv(config['REF_BAM_LIST'], sep='\t')
 	if not df['gender'].str.contains('F').any():
+		print('[WARN] No XX gender found in the reference files, the calling of chrX for Female will not be done')
 		gender_list.remove('XX')
 	if not df['gender'].str.contains('M').any():
+		print('[WARN] No XY gender found in the reference files, the calling of Male will not be done')
 		gender_list.remove('XY')
 
 # Log
@@ -785,10 +803,12 @@ rule wait_for_AnnotSV:
 		log_file= f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"
 	output:
 		ready=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.ready"
+	params:
+		limit=config['annotSV_limit']
 	shell:
 		"""
 		count=0
-		limit=30
+		limit={params.limit}
 		while true; do
 			if grep -q "Exit without error" {input.log_file} || grep -q "AnnotSV is done with the analysis" {input.log_file}; then
 				touch {output.ready}
@@ -934,6 +954,7 @@ use rule merge_vcf as merge_vcf_panel with:
 
 
 onstart:
+	print('[INFO] Starting CANOES pipeline, brace yourselves!')
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
 	with open(logfile, "a+") as f:
 		f.write("\n")
@@ -942,6 +963,7 @@ onstart:
 		f.write("\n")
 
 onsuccess:
+	print('[INFO] CANOES pipeline finished successfully!')
 	include = config['INCLUDE_RSYNC']
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
 	shell(f"touch {outputDir}/{serviceName}Complete.txt")
@@ -949,11 +971,11 @@ onsuccess:
 	with open(logfile, "a+") as f:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
-	# Removing additional samples from the results
+	print('[INFO] Removing old results')
 	if sample_list_addruns:
 		for sample in sample_list_addruns:
 			shell(f"rm -rf {resultDir}/{sample} || true")
-			#shell(f"find {outputDir}/{sample}/{serviceName} -type f -exec rm -f {{}} +")
+
 		# We extract the samples that are present in the sample_list_addruns & the vcf
 		shell(f"bcftools query -l {resultDir}/{serviceName}.{date_time}.	allsamples.Design.unfiltered.vcf.gz > vcf_samples.txt")
 		with open('final_sample_list.txt', 'w') as file:
@@ -963,7 +985,6 @@ onsuccess:
 		shell(f"bcftools view -c 1 -Oz -o {resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz {resultDir}/{serviceName}.{date_time}.allsamples.Design.filtered.vcf.gz")
 		# And convert vcf to tsv
 		shell(f"vcf2tsvpy --keep_rejected_calls --input_vcf {resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz --out_tsv {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp && cat {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp | grep -v '^#' > {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv ")
-
 
 	# Generate dictionary from outputdir
 	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*/*", "/*"]]
@@ -977,26 +998,34 @@ onsuccess:
 	list_XX = [os.path.basename(file).split('.')[0] for file in files_list_XX]
 	list_XY = [os.path.basename(file).split('.')[0] for file in files_list_XY]
 	none_gender_samples = [sample for sample, data in runDict.items() if data.get('gender') == 'None']
+	print('[INFO] Generating html report')
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html", sample_list_added=sample_list_addruns, gender_list=gender_list, list_XX=list_XX, list_XY=list_XY, none_gender_samples=none_gender_samples)
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
+	print('[INFO] Generating html report done')
 
-	# Clear existing output directories & copy
+	print('[INFO] Removing old results')
 	for sample in sample_list_to_copy:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-
+	
+	print('[INFO] Copying files')
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 	for sample in sample_list_to_copy:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+	print('[INFO] Copying files done')
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR'] and outputDir != depotDir:
+		print('[INFO] Removing old results from archives')
 		for sample in sample_list_to_copy:
 			shell(f"rm -f {depotDir}/{sample}/{serviceName}/* || true")
+		print('[INFO] Copying files into archives')
 		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
 		for sample in sample_list_to_copy:
 			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
+		print('[INFO] Copying files into archives done')
 
 onerror:
+	print('[ERROR] CANOES pipeline did not end well, grab a cup of coffee and check for log and err files')
 	include_log = config['INCLUDE_LOG_RSYNC']
 	shell(f"touch {outputDir}/{serviceName}Failed.txt")
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")

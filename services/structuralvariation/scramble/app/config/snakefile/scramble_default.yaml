@@ -140,8 +140,10 @@ overlap: 100 # default 100
 annotationMode: both # split, full or both (defaut both)
 annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database
 vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFiles option ; extension should be in EXT_INDEX_LIST
+# Limit of attempt to perform AnnotSV annotation
+annotSV_limit: 30
 
-# Limit cores
+# Set cores
 resources:
   cores: 16
 

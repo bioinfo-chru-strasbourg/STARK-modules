@@ -703,7 +703,6 @@ for item in log_items:
 
 print(dict(runDict))
 
-print('[INFO] Starting DECON pipeline')
 ################################################## RULES ##################################################
 # check the number of sample for copy or merge vcf rule
 sample_count = len(sample_list) 
@@ -738,8 +737,8 @@ rule help:
 	Separate multiple variable with a space (ex --config run=runname transProb=0.05 var1=0.05 var2=12)
 	Use option --configfile another.yaml to replace and merge existing default config.yaml file variables
 	Use -p to display shell commands, use --lt to display docstrings of rules, use -n for a dry run
-	Input file = bam or cram files (if bai is needed, it will be generate)
-	Output file = tsv & vcf annoted with AnnotSV 3.x for each sample/bam, and a global tsv & vcf file will all the samples ; a set of tsv & vcf files by design/panel ; a pdf report from DECON
+	Input file = bam or cram files (if an index is needed, it will be generate)
+	Output file = tsv & vcf annoted with AnnotSV 3.x for each sample/bam, and a global tsv & vcf file will all the samples ; a set of tsv & vcf files by design/panel ; a pdf report from DECON by design/panels
 	"""
 
 rule copy_bam:
@@ -988,10 +987,12 @@ rule wait_for_AnnotSV:
 		log_file= f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"
 	output:
 		ready=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.ready"
+	params:
+		limit=config['annotSV_limit']
 	shell:
 		"""
 		count=0
-		limit=30
+		limit={params.limit}
 		while true; do
 			if grep -q "Exit without error" {input.log_file} || grep -q "AnnotSV is done with the analysis" {input.log_file}; then
 				touch {output.ready}
@@ -1152,6 +1153,7 @@ rule plot:
 		"""
 
 onstart:
+	print('[INFO] Starting DECON pipeline, brace yourselves!')
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")
 	with open(logfile, "a+") as f:
 		f.write("\n")
@@ -1160,7 +1162,7 @@ onstart:
 		f.write("\n")
 
 onsuccess:
-	print('[INFO] DECON pipeline success')
+	print('[INFO] DECON pipeline finished successfully!')
 	include = config['INCLUDE_RSYNC']
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
 	shell(f"touch {outputDir}/{serviceName}Complete.txt")
@@ -1168,7 +1170,6 @@ onsuccess:
 	with open(logfile, "a+") as f:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
-	# Removing old results in sample folders
 	print('[INFO] Removing old results')
 	for sample in sample_list:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
@@ -1242,7 +1243,6 @@ onsuccess:
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 	print('[INFO] Generating html report done')
 
-	# Copy results
 	print('[INFO] Copying files')
 	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 	for sample in sample_list:
@@ -1251,7 +1251,7 @@ onsuccess:
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR']:
-		# Removing old results in sample folders
+
 		print('[INFO] Removing old results from archives')
 		for sample in sample_list:
 			shell(f"rm -f {depotDir}/{sample}/{serviceName}/* || true")
@@ -1266,7 +1266,7 @@ onsuccess:
 			print('[INFO] Copying files into archives done')
 
 onerror:
-	print('[ERROR] DECON pipeline did not end well, check for log and err files')
+	print('[ERROR] DECON pipeline did not end well, grab a cup of coffee and check for log and err files')
 	include_log = config['INCLUDE_LOG_RSYNC']
 	shell(f"touch {outputDir}/{serviceName}Failed.txt")
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
