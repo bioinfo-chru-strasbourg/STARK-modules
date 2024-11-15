@@ -65,16 +65,21 @@ TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
 RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
 
-################## Tools parameters ##################
 # Folder for scripts & dummy files
 DUMMY_FILES: "/app/scripts/dummy"
 SCRIPT_PATH: "/app/scripts"
 
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30
-# Command to download (wget or aria2c)
+# Command use to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
+# Define max cores to use
+resources:
+  cores: 16
+
+################## Tools parameters ##################
+# DB path
 REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/RAF>=0.01'"
@@ -87,7 +92,3 @@ ASSEMBLY: "hg19"
 NGS_TYPE: "HC"
 # Min of reads to considere an ITD
 MINREADS: "5"
-
-# Define cores
-resources:
-  cores: 16

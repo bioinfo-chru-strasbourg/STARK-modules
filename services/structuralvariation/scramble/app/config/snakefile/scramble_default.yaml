@@ -71,6 +71,10 @@ SEARCH_ARGUMENT: ["/*/STARK/*", "/*/*"]
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30
 
+# Set max cores to use
+resources:
+  cores: 16
+
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
@@ -80,6 +84,7 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', "gender", "hpo"]
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/VAF>=0.01'" or "-e 'ABS(SVLEN) >= 10000'" -e exclude -i include 
 BCFTOOLS_FILTER: "-e 'ABS(SVLEN) >= 100000'"
+
 ################## Tools specific parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
@@ -98,12 +103,13 @@ VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf.json"
 
 # Path to Scramble R directory scripts
 SCRAMBLE_PATH: "/opt/conda/share/scramble/bin" # installed via conda
-################## cluster_identifier params
+
+################## cluster_identifier params ##################
 m: 10 # min soft clipped bases to be put in a cluster (default 10)
 s: 5 # min soft clipped reads to be a cluster (default 5)
 r: all # region (default all : format ex chr9:1-20000)
 
-################## scramble params
+################## scramble params ##################
 nCluster: 5 # min cluster size to analyze (default 5)
 mei-score: 50 # min MEI alignment score to call (default 50)
 poly-a-frac: 0.75 # fraction of clipped length for calling polyA tail in MEIs (default 0.75)
@@ -131,7 +137,7 @@ ANNOTSV_DOWNLOAD_LINK: "https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Hu
 EXOMISER_DOWNLOAD_LINK1: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_{assembly}.zip"
 EXOMISER_DOWNLOAD_LINK2: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_phenotype.zip"
 
-# Command to download
+# Command use to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
 ################## AnnotSV params ##################
@@ -142,10 +148,6 @@ annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database
 vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFiles option ; extension should be in EXT_INDEX_LIST
 # Limit of attempt to perform AnnotSV annotation
 annotSV_limit: 30
-
-# Set cores
-resources:
-  cores: 16
 
 # AnnotSV needs the "CosmicCompleteCNA.tsv.gz" file from https://cancer.sanger.ac.uk/cosmic/download (Copy Number Variants part, Download Whole file)
 # Put the "CosmicCompleteCNA.tsv.gz" file in the corresponding directory: "$ANNOTSV/share/AnnotSV/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/

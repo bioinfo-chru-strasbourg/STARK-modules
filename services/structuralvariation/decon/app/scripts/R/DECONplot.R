@@ -219,15 +219,17 @@ for(i in 2:nrow(bed.file)){
 	}   
 }   
 
-if (colnames(bed.file)[5] == "exon") {
+if (ncol(bed.file) >= 5 && !is.na(colnames(bed.file)[5]) && colnames(bed.file)[5] == "exon") {
     message('[INFO] Exon numbers detected')
     exons <- bed.file
     for (i in 1:nrow(exons)) {
-        x = which(paste(bed.file[,5]) == paste(exons[i,5]) & 
-                  bed.file[,2] <= exons[i,3] & 
-                  bed.file[,3] >= exons[i,2])
-        Index[x] = exons[i,5]
+        x <- which(paste(bed.file[, 5]) == paste(exons[i, 5]) &
+                   bed.file[, 2] <= exons[i, 3] &
+                   bed.file[, 3] >= exons[i, 2])
+        Index[x] <- exons[i, 5]
     }
+} else {
+    message("[INFO] No exon numbers detected, we will perform the plots without exon numbers")
 }
 
 if (opt$debug) {

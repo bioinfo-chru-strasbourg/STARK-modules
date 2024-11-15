@@ -125,7 +125,7 @@ VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf.json"
 
 ### DECON ###
 # Plots for DECON True/False
-DECON_PLOT: False
+DECON_PLOT: True
 DECON_PLOT_SCRIPT: "/app/scripts/R/DECONplot.R"
 PLOT_DEBUG: False
 
@@ -156,7 +156,7 @@ ANNOTSV_DOWNLOAD_LINK: "https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Hu
 EXOMISER_DOWNLOAD_LINK1: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_{assembly}.zip"
 EXOMISER_DOWNLOAD_LINK2: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_phenotype.zip"
 
-# Command to download
+# Command use to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
 ############# IdentifyFailures params ##############

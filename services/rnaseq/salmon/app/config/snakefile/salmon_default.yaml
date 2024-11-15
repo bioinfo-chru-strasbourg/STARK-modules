@@ -57,6 +57,13 @@ RESULT_EXT_LIST: ['.sf']
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30
 
+# Define max cores to use
+resources:
+  cores: 16
+
+# Command used to download db
+COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
+
 ################## Gencode version for DB setup ##################
 # GRch38 assembly and gencode.vxx.transcripts.fa.gz can be found on https://www.gencodegenes.org/human/
 # release can be change (actually v41 is used, relase is 07.2022)
@@ -74,9 +81,6 @@ GENCODE_TRANSCRIPTS_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{
 GENCODE_README_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{SPECIES}/release_{GENCODE_VERSION}/_README.TXT"
 
 #GENCODE_GTF_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{SPECIES}/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.annotation.gtf.gz"
-
-# Command to download (wget or aria2c)
-COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
 # Bcl convert
 BCL_DIRECTORY: ""
@@ -96,7 +100,3 @@ FASTP_UMI: "" #  -U --umi_loc=per_read --umi_len=5 for XTHS2
 # For Salmon quantification fastq mode, path to the index file
 REFSALMONQUANTFASTQ_PATH: "/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
 MISC_SALMON_OPTIONS: ""
-
-# Define cores
-resources:
-  cores: 16

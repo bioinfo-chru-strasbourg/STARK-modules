@@ -68,8 +68,12 @@ TEMPLATE_DIR: "/app/template"
 
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30
-# Command to download (wget or aria2c)
+# Command use to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
+
+# Define max cores to use
+resources:
+  cores: 16
 
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
@@ -88,7 +92,3 @@ SHORT_INDELS: "2"
 KMER: "12"
 # GRCH37 or 38 refrence fasta sequence for FLT3
 ITDREF: "/databases/ITDs/FLT3/filt3r/hg19/flt3_hg19.fa"
-
-# Define cores
-resources:
-  cores: 16

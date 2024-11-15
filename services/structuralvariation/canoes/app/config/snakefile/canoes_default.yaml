@@ -84,10 +84,15 @@ LOG_LEVEL: 30
 KMER: ""
 # Remove M (XY) or F (XX) or A (autosome) analysis, ex ['XY', 'XX'] for autosome only
 REMOVE_GENDER: ""
+
+# Set max cores to use
+resources:
+  cores: 16
+
 ################## Misc params ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
-# Java mem option for gatk4 GC extraction
+# Java mem option for gatk4 GC % extraction
 JAVA_OPTION: "-Xmx8G"
 
 ################## AnnotSV params for DB setup ##################
@@ -102,13 +107,12 @@ GENEHANCER_VERSION: "GeneHancer_hg19_v5.9"
 # unzip -q GeneHancer_<version>_for_annotsv.zip -d ($ANNOTSV/share/AnnotSV)/Annotations_Human/FtIncludedInSV/RegulatoryElements/
 # Cosmic db is CosmicCompleteCNA.tsv.gz
 
-
 # HTTPS links for AnnotSV and Exomiser downloads
 ANNOTSV_DOWNLOAD_LINK: "https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
 EXOMISER_DOWNLOAD_LINK1: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_{assembly}.zip"
 EXOMISER_DOWNLOAD_LINK2: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_phenotype.zip"
 
-# Command to download
+# Command use to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
 ################## AnnotSV params ##################
@@ -136,10 +140,6 @@ homdel: "0.2" # threeshold for homozygous deletion
 # the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
 # REF_BAM_LIST: "--refbams /app/res/list.tsv"
 REF_BAM_LIST: ""
-
-# Set cores
-resources:
-  cores: 16
 
 # AnnotSV needs the "CosmicCompleteCNA.tsv.gz" file from https://cancer.sanger.ac.uk/cosmic/download (Copy Number Variants part, Download Whole file)
 # Put the "CosmicCompleteCNA.tsv.gz" file in the corresponding directory: "$ANNOTSV/share/AnnotSV/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/
