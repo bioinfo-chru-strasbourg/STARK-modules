@@ -275,7 +275,8 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 
 	###### Part of plot containing the coverage points (upper part) ###############
 	message('Starting drawing coverage')
-	VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls[cnv.calls$Sample==Sample,]$Start.p,cnv.calls[cnv.calls$Sample==Sample,]$End.p))
+	# cnv.calls debug
+	VariantExon<- unlist(mapply(function(x,y)x:y,cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$Start.p,cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$End.p))
 	refs_sample<-refs[[Sample]]
 	Data<-cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
 	Data[,-ncol(Data)]=log(Data[,-ncol(Data)])
@@ -299,8 +300,10 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 		data_temp$variable="VAR"
 		data_temp$testref="red"
 		Data1<-rbind(Data1,data_temp)
-	}   
-	levels(Data1$testref)=c("Test Sample","Reference Sample","Affected exon")
+	}
+	# Update levels to include the sample name dynamically
+	sample_name_label <- paste("Test Sample (", Sample, ")", sep = "")
+	levels(Data1$testref)=c(sample_name_label,"Reference Sample","Affected exon")
 
 	new_cols=c("blue","gray","red")
 	A1<-ggplot(data=Data1,aes(x=exonRange,y=value,group=variable,colour=testref))
@@ -308,10 +311,9 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	A1<-A1 + scale_colour_manual(values=new_cols)  
 	A1<-A1 + geom_line(data=subset(Data1,testref=="Reference Sample"),lty="dashed",lwd=1.5,col="grey") 
 	A1<-A1 + geom_point(data=subset(Data1,testref=="Reference Sample"),cex=2.5,col="grey")   
-	A1<-A1+ geom_line(data=subset(Data1,testref=="Test Sample"),lty="dashed",lwd=1.5,col="blue")  
-	A1<-A1 + geom_point(data=subset(Data1,testref=="Test Sample"),cex=2.5,col="blue") 
+	A1<-A1+ geom_line(data=subset(Data1,testref==sample_name_label),lty="dashed",lwd=1.5,col="blue")  
+	A1<-A1 + geom_point(data=subset(Data1,testref==sample_name_label),cex=2.5,col="blue") 
 	A1<-A1 + geom_point(data=subset(Data1,testref=="Affected exon"),cex=3.5,col="red") 
-	#A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position="none") + xlab(" ")
     A1<-A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position= "top") + xlab(" ") + guides(color = guide_legend(nrow = 1, title = NULL))
 
 
@@ -333,7 +335,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	message('Adding gene names')
 	genes_sel = unique(bed.file[exonRange,4])
 	temp<-cbind(1:nrow(bed.file),bed.file)[exonRange,]
-	len<-table(temp$gene) 
+	len<-table(temp$gene)
 	mp<-tapply(exonRange,temp[,5],mean)
 	mp<-mp[genes_sel]
 	len<-len[genes_sel]
@@ -341,12 +343,12 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	names(Genes)=c("Gene","MP","Length","Ind")
 
 	if(!singlechr){
-		levels(Genes$Gene)=c(levels(Genes$Gene),newchr)
 		if(prev){
 			fakegene=c(newchr,min(exonRange)-5,3.5,1)
 		}else{
 			fakegene=c(newchr,max(exonRange)+5,3.5,1)
 		}
+		#levels(Genes$Gene)=c(levels(Genes$Gene),newchr)
 		Genes<-rbind(Genes,fakegene)
 		Genes$MP=as.numeric(Genes$MP)
 		Genes$Length=as.numeric(Genes$Length)
@@ -377,7 +379,8 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	CIData<-data.frame(exonRange,ratio,mins,maxs)
 	names(CIData)<-c("Exon","Ratio","Min","Max")
 	CIPlot<-ggplot(CIData,aes(x=Exon,y=Ratio))+geom_ribbon(aes(ymin=Min,ymax=Max),fill="grey")+geom_point(col="blue",cex=3.5) + theme_bw() +xlab("")+ylab("Observed/Expected")
-	temp = cnv.calls[cnv.calls$Sample==Sample,]
+	# cnv.calls debug
+	temp = cnv.calls_plot[cnv.calls_plot$Sample==Sample,]
 	if(sum(temp$Start.p%in%exonRange |temp$End.p%in%exonRange)>0){
 		temp = temp[temp$Start.p%in%exonRange|temp$End.p%in%exonRange,]
 		for(i in 1:nrow(temp)){

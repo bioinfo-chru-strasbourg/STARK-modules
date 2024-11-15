@@ -282,6 +282,9 @@ split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
   }
   cnv.calls_ids <- cbind(cnv.calls_ids, Start.b, End.b)
   
+  # Reset index
+  rownames(cnv.calls_ids) <- NULL
+
   # Return result
   return(cnv.calls_ids)
 }
