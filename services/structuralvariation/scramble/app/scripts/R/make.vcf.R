@@ -7,10 +7,10 @@
 # Original R script from https://github.com/GeneDx/scramble
 # script is located in /opt/conda/share/scramble/bin/make.vcf.R
 ########## Note ########################################################################################
-# DEV v1 11/07/2024
+# DEV v1 11/11/2024
 # Changelog
 #   - refactor INFO fields, add all the values computed into the vcf (Number of supporting reads), some bugfixes
-#   - conformity to vcf standard check with vcf_validator ; vcf is 1 based
+#   - conformity to vcf standard check with vcf_validator ; vcf is 1 based (by definition)
 ########################################################################################################
 
 suppressPackageStartupMessages(library(stringr))

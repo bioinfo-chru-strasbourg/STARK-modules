@@ -18,9 +18,9 @@ RUN apt-get update --fix-missing && \
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     python=3.12 \
-	samtools~=1.20 bcftools~=1.20 bedtools~=2.31.1 \
-	snakemake~=8.16 pandas~=2.2.2 \
-	sumaclust~=1.0.31 fgbio~=2.1.0 bwa~=0.7.17 picard~=3.1.0 bbmap~=39.01  vcf-validator~=0.9 \
+	samtools~=1.21 bcftools~=1.21 bedtools~=2.31 \
+	snakemake~=8.25 pandas~=2.2 \
+	sumaclust~=1.0.31 fgbio~=2.1.0 bwa~=0.7.17 picard~=3.1.0 bbmap~=39.01  vcf-validator~=0.10 \
 	&& mamba clean -afy
 
 # Copy applications files (/app)

@@ -14,7 +14,7 @@
 
 ################## Context ##################
 #
-# This snakemake will setup a cli ie checking and installing proper databases if needed ; copying launcher.py, .conf and .json files into specific directory
+# This snakemake will checking and installing proper databases if needed ; copying launcher.py, .conf and .json files into specific directory
 ####################################
 
 ################## Import libraries ##################

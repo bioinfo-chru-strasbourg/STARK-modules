@@ -7,9 +7,9 @@
 # Original R script from https://github.com/RahmanTeam/DECoN
 # DECON is an ExomeDepth wrapper 
 ########## Note ########################################################################################
-# PROD v1 21/11/2023
+# PROD v1 15/11/2024
 # Changelog
-#   - separate plot script from makeCNVcall, refactor code, remove install systemn, update ExomeDepth 1.16
+#   - separate plot script from makeCNVcall, refactor code & bugfix, remove install systemn, update to ExomeDepth 1.16
 #   - optparse script
 ########################################################################################################
 
@@ -122,7 +122,7 @@ modify_prefix <- function(df, column_name, action = "remove", prefix = "chr") {
   return(df)
 }
 
-print("BEGIN DECONPlot script")
+print("[INFO] Begin DECONPlot script")
 
 suppressPackageStartupMessages({
     library(R.utils)
@@ -132,7 +132,6 @@ suppressPackageStartupMessages({
     library(reshape)
     library(ggplot2)
     library(dplyr)
-    library(GenomicRanges)
 })
 
 
@@ -262,11 +261,11 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 
 	if(!singlechr){
 		if(bed.file[exonRange[1],1]!=cnv.calls_plot[call_index,]$Chromosome){
-			prev=TRUE
-			newchr=bed.file[exonRange[1],1]
+			prev = TRUE
+			newchr = bed.file[exonRange[1],1]
 		}else{
-			prev=FALSE 
-			newchr=bed.file[exonRange[length(exonRange)],1]
+			prev = FALSE 
+			newchr = bed.file[exonRange[length(exonRange)],1]
 		}
 		exonRange=exonRange[bed.file[exonRange,1]==cnv.calls_plot[call_index,]$Chromosome]
 	}
@@ -274,7 +273,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	###### Part of plot containing the coverage points (upper part) ###############
 	message('[INFO] Starting drawing coverage')
 	VariantExon <- unlist(mapply(function(x,y)x:y,cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$Start.p,cnv.calls_plot[cnv.calls_plot$Sample==Sample,]$End.p))
-	refs_sample<-refs[[Sample]]
+	refs_sample <- refs[[Sample]]
 	Data <- cbind(ExomeCount[exonRange,c(Sample,refs_sample)],exonRange)
 	Data[,-ncol(Data)] = log(Data[,-ncol(Data)])
 	
@@ -283,14 +282,13 @@ for(call_index in 1:nrow(cnv.calls_plot)){
     save(Gene, VariantExon, Sample, refs_sample, Data, exons, cnv.calls_plot, bed.file , models, refs, ExomeCount, cnv.calls_ids, exonRange, file = rdata_file)
 	}
 	
-	Data1<-melt(Data,id=c("exonRange"))
-	testref<-rep("gray",nrow(Data1))
+	Data1 <- melt(Data,id=c("exonRange"))
+	testref <- rep("gray",nrow(Data1))
 	testref[Data1$variable==Sample] = "blue"
-	Data1<-data.frame(Data1,testref)
-	levels(Data1$variable)=c(levels(Data1$variable),"VAR")
-	Data1$testref=as.factor(Data1$testref)
-	levels(Data1$testref)=c(levels(Data1$testref),"red")
-
+	Data1 <- data.frame(Data1,testref)
+	levels(Data1$variable) = c(levels(Data1$variable),"VAR")
+	Data1$testref = as.factor(Data1$testref)
+	levels(Data1$testref) = c(levels(Data1$testref),"red")
 	data_temp <- Data1[Data1$variable == Sample & Data1$exonRange%in%VariantExon,]
 
 	if(nrow(data_temp)>0){
@@ -298,9 +296,10 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	}
 	# Include the sample name 
 	sample_name_label <- paste("Test Sample (", Sample, ")", sep = "")
-	levels(Data1$testref)=c(sample_name_label,"Reference Sample","Affected exon")
+	levels(Data1$testref)=c(sample_name_label,"Reference Sample","Affected exon(s)")
 	new_cols=c("blue","gray","red")
 
+	# Plotting
 	A1 <- ggplot(data=Data1,aes(x=exonRange,y=value,group=variable,colour=testref))
 	A1 <- A1 + geom_point(cex=2.5,lwd=1.5)
 	A1 <- A1 + scale_colour_manual(values=new_cols)  
@@ -308,14 +307,14 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	A1 <- A1 + geom_point(data=subset(Data1,testref=="Reference Sample"),cex=2.5,col="grey")   
 	A1 <- A1 + geom_line(data=subset(Data1,testref==sample_name_label),lty="dashed",lwd=1.5,col="blue")  
 	A1 <- A1 + geom_point(data=subset(Data1,testref==sample_name_label),cex=2.5,col="blue") 
-	A1 <- A1 + geom_point(data=subset(Data1,testref=="Affected exon"),cex=3.5,col="red") 
+	A1 <- A1 + geom_point(data=subset(Data1,testref=="Affected exon(s)"),cex=3.5,col="red") 
     A1 <- A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position= "top") + xlab(" ") + guides(color = guide_legend(nrow = 1, title = NULL))
 
 	Data2 <- Data1[Data1$testref=="Affected exon",]
 	if(nrow(Data2)>1){
 		for(i in 1:(nrow(Data2)-1)){
 			if ((Data2$exonRange[i]+1)==Data2$exonRange[i+1]) {
-				A1<-A1 + geom_line(data=Data2[i:(i+1),],aes(x=exonRange,y=value,group=1),lwd=1.5,col="red")
+				A1 <- A1 + geom_line(data=Data2[i:(i+1),],aes(x=exonRange,y=value,group=1),lwd=1.5,col="red")
 			}
 		}
 	}   
@@ -375,15 +374,15 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	}       
 
 	CIData <- setNames(data.frame(exonRange, ratio, mins, maxs), c("Exon", "Ratio", "Min", "Max"))
-	CIPlot <- ggplot(CIData, aes(x=Exon,y=Ratio)) + geom_ribbon(aes(ymin=Min,ymax=Max),fill="grey") + geom_point(col="blue",cex=3.5) + theme_bw() + xlab("") + ylab("Observed/Expected")
+	CIPlot <- ggplot(CIData, aes(x=Exon,y=Ratio)) + geom_ribbon(aes(ymin=Min,ymax=Max),fill="grey") + geom_point(col="blue", cex=3.5) + theme_bw() + xlab("") + ylab("Observed/Expected")
 	
 	temp = cnv.calls_plot[cnv.calls_plot$Sample==Sample,]
 	if (sum(temp$Start.p%in%exonRange | temp$End.p%in%exonRange) > 0){
-		temp = temp[temp$Start.p%in%exonRange|temp$End.p%in%exonRange,]
+		temp = temp[temp$Start.p%in%exonRange | temp$End.p%in%exonRange,]
 		for(i in 1:nrow(temp)){
 			start.temp = temp[i,]$Start.p
 			end.temp = temp[i,]$End.p
-			CIPlot <- CIPlot + geom_point(data=CIData[CIData$Exon%in%start.temp:end.temp,], aes(x=Exon,y=Ratio),color="red",cex=3.5)
+			CIPlot <- CIPlot + geom_point(data=CIData[CIData$Exon%in%start.temp:end.temp,], aes(x=Exon,y=Ratio), color="red", cex=3.5)
 		}
 	}
 
@@ -427,3 +426,5 @@ if(sum(cnv_genes_sample==Gene)>2){
 	dev.off()
 
 }
+warnings()
+print("[INFO] End DECONPlot script")

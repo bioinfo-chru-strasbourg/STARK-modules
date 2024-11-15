@@ -7,7 +7,7 @@
 # Original R script from https://github.com/GeneDx/scramble
 # script is located in /opt/conda/share/scramble/bin/make.vcf.R
 ########## Note ########################################################################################
-# DEV v1 11/07/2024
+# DEV v1 11/11/2024
 # Changelog
 #   - add core option (default 1) for parallelization
 ########################################################################################################

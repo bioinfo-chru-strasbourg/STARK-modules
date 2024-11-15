@@ -13,9 +13,9 @@
 ########################################################################################################
 
 suppressPackageStartupMessages({
-library(R.utils)
-library(optparse)
-library(ExomeDepth)
+    library(R.utils)
+    library(optparse)
+    library(ExomeDepth)
 })
 
 # Define options and parse command line arguments

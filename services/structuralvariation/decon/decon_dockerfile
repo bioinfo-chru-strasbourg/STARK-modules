@@ -26,11 +26,11 @@ RUN apt-get update --fix-missing && \
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     python=3.12 \
     annotsv~=3.4.4 samtools~=1.21 bcftools~=1.21 vcf-validator~=0.10 \
-    bedtools~=2.31 snakemake~=8.24 graphviz~=12.0 pandas~=2.2 unidecode~=1.3 \
+    bedtools~=2.31 snakemake~=8.25 graphviz~=12.0 pandas~=2.2 unidecode~=1.3 \
     vcf2tsvpy~=0.6 pyfasta~=0.5 fasta~=36.3 \
     natsort~=8.3 pyfaidx~=0.8 pypdf~=4.1 \
     r-exomedepth~=1.1.16 r-r.utils~=2.12 r-optparse~=1.7 r-reshape~=0.8 \
-    r-ggplot2~=3.5 r-doparallel~=1.0 r-foreach~=1.5 r-reshape2~=1.4 bioconductor-genomicranges~=1.54 && \
+    r-ggplot2~=3.5 r-doparallel~=1.0 r-foreach~=1.5 r-reshape2~=1.4 && \
     mamba clean -afy
 
 # Clone and install variantconvert
@@ -38,8 +38,10 @@ WORKDIR /usr/lib
 RUN git clone https://github.com/SamuelNicaise/variantconvert.git && \
     cd variantconvert && \
     pip install -e . && pip cache purge && \
-    python /usr/lib/variantconvert/src/variantconvert/__main__.py init && \
-    python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
+    python /usr/lib/variantconvert/src/variantconvert/__main__.py init
+
+# Set default genome as hg19 if you use the default json config files
+# RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
 
 # Copy AnnotSV exomiser application.properties
 # Don't forget to modify the exomiser.data-directory to set it to the exomiser db path

@@ -7,15 +7,15 @@
 # Original R script from https://github.com/GeneDx/scramble
 # script is located in /opt/conda/share/scramble/bin/make.vcf.R
 ########## Note ########################################################################################
-# DEV v1 11/07/2024
+# DEV v1 11/11/2024
 # Changelog
 #   - parallelization
 ########################################################################################################
   
 
 ## MOBILOME
-#Takes the clipped read consensus (forward sequence and its reverse complement) and aligns to the mobilome.
-#Alignment quality statistics are returned. Filtering thresholds are used to determine likely MEIs.
+# Takes the clipped read consensus (forward sequence and its reverse complement) and aligns to the mobilome.
+# Alignment quality statistics are returned. Filtering thresholds are used to determine likely MEIs.
 
 suppressPackageStartupMessages({
   library(stringr)
@@ -172,7 +172,6 @@ do.meis = function(all,  refs, polyAFrac=0.5, meiScore=50,
       
     }
   }
-  
   
   winners = winners[,-(match(c("RNAME", "clipped_pos"), names(winners)) )]
   winners = winners[order(winners$Insertion, winners$Alignment_Score, decreasing=T),]

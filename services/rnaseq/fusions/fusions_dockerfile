@@ -5,7 +5,7 @@
 # Version :            1.0
 # Description:         Dockerfile to build container image fusions
 ##############################################################
-# DEV version 1 : 22/04/2024
+# DEV version 1 : 22/11/2024
 # Authoring : Thomas LAVAUX
 
 # Ubuntu based (minimal focal)
@@ -22,20 +22,21 @@ RUN alien -i -d /app/tools/bcl-convert-4.3.6-2.el7.x86_64.rpm
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     python=3.12 \
-	samtools~=1.20 bcftools~=1.20 bedtools~=2.31  vcf-validator~=0.9 \
-	snakemake~=8.16 pandas~=2.2 vcf2tsvpy~=0.6  \ 
+	samtools~=1.21 bcftools~=1.21 bedtools~=2.31  vcf-validator~=0.10 \
+	snakemake~=8.25 pandas~=2.2 vcf2tsvpy~=0.6  \ 
 	arriba~=2.4.0 star~=2.7.11a && mamba clean -afy
 
 # Variantconvert
 WORKDIR /usr/lib
 RUN git clone https://github.com/SamuelNicaise/variantconvert.git && cd variantconvert && pip install -e . && pip cache purge
 RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py init
-# Default genome is hg19
-RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/STARK/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
+
+# Set default genome as hg19 if you use the default json config files
+# RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
 
 # star-fusion 1.13.0 uses STAR aligner 2.7.11a
-# To activate the environnement use mamba activate starfusion
-# To deactivate use mamba deactivate
+# To activate the environnement use : mamba activate starfusion
+# To deactivate use : mamba deactivate
 RUN mamba create -n starfusion -y -c conda-forge -c bioconda -c biobuilds star-fusion~=1.13.0 && mamba clean -afy
 
 # Copy applications files (/app)
