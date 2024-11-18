@@ -380,11 +380,11 @@ rule correct_chr:
 		> $output
 		while read -r line; do
 			if [[ $line == "##contig=<ID=13"* ]]; then
-				echo "${line/ID=13/ID=chr13}" >> "$output"
+				echo "${{line/ID=13/ID=chr13}}" >> "$output"
 			elif [[ $line == "#CHROM"* ]]; then
 				echo "$line" >> "$output"
 			elif [[ $line =~ ^13[[:space:]] ]]; then
-				echo "${line/13/chr13}" >> "$output"
+				echo "${{line/13/chr13}}" >> "$output"
 			else
 				echo "$line" >> "$output"
 			fi
