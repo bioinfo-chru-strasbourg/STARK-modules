@@ -141,6 +141,7 @@ EXOMISER_DOWNLOAD_LINK2: "https://data.monarchinitiative.org/exomiser/data/{EXOM
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
 ################## AnnotSV params ##################
+ANNOTSV_ANNOTATION: True
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: both # split, full or both (defaut both)
