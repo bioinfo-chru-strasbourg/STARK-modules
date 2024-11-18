@@ -328,7 +328,8 @@ rule samtools_fastq:
 	output:
 		fastqR1=temp(f"{resultDir}/{{sample}}.{{aligner}}.R1.fastq.gz"),
 		fastqR2=temp(f"{resultDir}/{{sample}}.{{aligner}}.R2.fastq.gz")
-	shell: "samtools fastq -1 {output.fastqR1} -2 {output.fastqR2} {input}"
+	threads: workflow.cores
+	shell: "samtools fastq -@ {threads} -1 {output.fastqR1} -2 {output.fastqR2} {input}"
 
 rule filt3r:
 	"""
@@ -368,9 +369,32 @@ rule correctvcf:
 		(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output}
 		"""
 
+rule correct_chr:
+	"""Correction of VCF output: add 'chr' prefix to contig and #CHROM values."""
+	input: rules.correctvcf.output
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixchr.vcf")
+	shell:
+		"""
+		input={input}
+		output={output}
+		> $output
+		while read -r line; do
+			if [[ $line == "##contig=<ID=13"* ]]; then
+				echo "${line/ID=13/ID=chr13}" >> "$output"
+			elif [[ $line == "#CHROM"* ]]; then
+				echo "$line" >> "$output"
+			elif [[ $line =~ ^13[[:space:]] ]]; then
+				echo "${line/13/chr13}" >> "$output"
+			else
+				echo "$line" >> "$output"
+			fi
+		done < "$input"
+		"""
+
+
 rule bcftools_filter:
 	"""	Filter with bcftools """
-	input: rules.correctvcf.output
+	input: rules.correct_chr.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.filter.vcf")
 	params:	config['BCFTOOLS_FILTER']
 	shell: "bcftools view {params} {input} -o {output}"
