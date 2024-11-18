@@ -166,6 +166,7 @@ mincov: 100 # Minimum coverage threshold – the minimum median coverage for any
 ############# makeCNVcalls params ##############
 transProb: 0.01 # Transition probability – the transition probability between normal copy number state and either deletion or duplication state in the hidden Markov model, 0.01 is a high threshold value to increase sensitivity (default 0.01)
 ############# AnnotSV params ##############
+ANNOTSV_ANNOTATION: True
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: both # split, full or both (defaut both)

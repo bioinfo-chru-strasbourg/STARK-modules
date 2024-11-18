@@ -514,15 +514,18 @@ wildcard_constraints:
 rule all:
 	"""Output a design vcf.gz with the bams and the bed provided, optionally using a reference set and generating plots if specified"""
 	input:
-		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list) +
-		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.tsv", aligner=aligner_list) +
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list) +
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list) +
-		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
-		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] else []) +
-		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
-		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
+		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz", aligner=aligner_list) +
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list) +
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz", panel=panels_list, aligner=aligner_list) if config['GENES_FILE'] else []) +
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.vcf.gz", aligner=aligner_list) if config['ANNOTSV_ANNOTATION'] else []) +
+		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Design.tsv", aligner=aligner_list if config['ANNOTSV_ANNOTATION'] else []) +
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list if config['ANNOTSV_ANNOTATION'] else []) +
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.tsv", sample=sample_list, aligner=aligner_list if config['ANNOTSV_ANNOTATION'] else []) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] and config['ANNOTSV_ANNOTATION'] else []) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, panel=panels_list) if config['GENES_FILE'] and config['ANNOTSV_ANNOTATION'] else []) +
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] and config['ANNOTSV_ANNOTATION'] else []) +
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] and config['ANNOTSV_ANNOTATION'] else []) +
 		# Ref samples
 		(expand(f"{resultDir}/{serviceName}.{date_time}.refsamples.{{aligner}}.reads.tsv", aligner=aligner_list) if config['REF_BAM_LIST'] else []) +
 		# Plots
