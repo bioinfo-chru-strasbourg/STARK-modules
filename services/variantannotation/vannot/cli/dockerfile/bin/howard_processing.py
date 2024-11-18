@@ -10,6 +10,7 @@ import time
 
 from vannotplus.family.barcode import main_barcode
 from vannotplus.exomiser.exomiser import main_exomiser
+from vannotplus.annot.score import main_annot
 from vannotplus.__main__ import load_config, main_config
 
 import howard_launcher
@@ -40,7 +41,7 @@ def project_folder_initialisation(run_informations):
         )
 
     vcf_file_to_analyse = glob.glob(
-        osj(run_informations["tmp_analysis_folder"], "*vcf*")
+        osj(run_informations["tmp_analysis_folder"], "*.vcf*")
     )
     for vcf_file in vcf_file_to_analyse:
         output_exomiser = osj(
@@ -62,7 +63,7 @@ def project_folder_initialisation(run_informations):
 
 
 def folder_initialisation(run_informations):
-    vcf_file_list = glob.glob(osj(run_informations["archives_run_folder"], "*vcf*"))
+    vcf_file_list = glob.glob(osj(run_informations["archives_run_folder"], "*.vcf*"))
     if os.path.isdir(run_informations["tmp_analysis_folder"]):
         log.info("Cleaning temporary analysis folder")
         shutil.rmtree(run_informations["tmp_analysis_folder"])
@@ -249,7 +250,9 @@ def fambarcode_vcf(run_informations, input_vcf):
 
 
 def merge_vcf(run_informations):
-    vcf_file_to_merge = glob.glob(osj(run_informations["tmp_analysis_folder"], "*vcf*"))
+    vcf_file_to_merge = glob.glob(
+        osj(run_informations["tmp_analysis_folder"], "*.vcf*")
+    )
     if len(vcf_file_to_merge) > 1:
         log.info(f"Merging {len(vcf_file_to_merge)} vcf files")
         for i in vcf_file_to_merge:
@@ -301,6 +304,7 @@ def unmerge_vcf(input, run_informations):
             subprocess.call(["bgzip", output_file], universal_newlines=True)
         if run_informations["type"] == "dejavu":
             os.remove(vcf_file_to_unmerge)
+    os.remove(vcf_file_to_unmerge)
 
 
 def info_to_format_script(vcf_file, run_informations):
@@ -461,7 +465,7 @@ def howard_proc(run_informations, vcf_file):
 
     container_name = f"VANNOT_annotate_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
     launch_annotate_arguments = [
-        "annotation",
+        "process",
         "--input",
         vcf_file,
         "--output",
@@ -485,8 +489,34 @@ def howard_proc(run_informations, vcf_file):
     return output_file
 
 
+def gmc_score(run_informations):
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+
+    for vcf_file in vcf_files:
+        print(vcf_file)
+        output_gmc = osj(
+            run_informations["tmp_analysis_folder"],
+            "gmc_" + os.path.basename(vcf_file),
+        )
+        print(output_gmc)
+        vannotplus_config = osj(os.environ["DOCKER_MODULE_CONFIG"], "vannotplus.yml")
+        main_annot(
+            vcf_file,
+            output_gmc,
+            load_config(vannotplus_config),
+        )
+        os.remove(vcf_file)
+        os.rename(output_gmc, vcf_file)
+
+
 def howard_score_transcripts(run_informations):
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    transcript_param = osj(
+        os.environ["DOCKER_MODULE_CONFIG"],
+        "howard",
+        "param.transcripts.json",
+    )
+
     threads = commons.get_threads("threads_annotation")
     memory = commons.get_memory("memory_annotation")
 
@@ -497,23 +527,23 @@ def howard_score_transcripts(run_informations):
 
     for vcf_file in vcf_files:
         output_file_transcripts = osj(
-            run_informations["tmp_analysis_folder"], "output_transcripts.vcf.gz"
+            os.environ["HOST_TMP"], "output_transcripts.vcf.gz"
         )
 
         container_name = f"VANNOT_transcripts_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
         launch_annotate_arguments = [
-            "calculation",
+            "process",
             "--input",
             vcf_file,
             "--output",
             output_file_transcripts,
             "--param",
-            "/STARK/config/variantannotation/vannot/howard/param.transcripts.json",
+            transcript_param,
             "--memory",
             memory,
             "--threads",
             threads,
-            "--calculations=TRANSCRIPTS_ANNOTATIONS,TRANSCRIPTS_PRIORITIZATION,TRANSCRIPTS_EXPORT",
+            "--calculations=SNPEFF_HGVS,SNPEFF_ANN_EXPLODE,TRANSCRIPTS_ANNOTATIONS,TRANSCRIPTS_PRIORITIZATION,TRANSCRIPTS_EXPORT,NOMEN",
         ]
 
         log.info("Prioritization of transcripts")
@@ -547,27 +577,28 @@ def howard_score_transcripts(run_informations):
 
 
 def merge_vcf_files(run_informations):
-    log.info("Merging all vcfs into one for CuteVariant analysis")
-    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
-    if run_informations["type"] == "run":
-        output_file = osj(
-            run_informations["tmp_analysis_folder"],
-            f"merged_VANNOT_{run_informations["run_name"]}.design.vcf.gz",
-        )
-    else:
-        output_file = osj(
-            run_informations["tmp_analysis_folder"],
-            f"merged_VANNOT_{run_informations["run_name"]}.vcf.gz",
-        )
+    if run_informations["type"] != "dejavu":
+        log.info("Merging all vcfs into one for CuteVariant analysis")
+        vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+        if run_informations["type"] == "run":
+            output_file = osj(
+                run_informations["tmp_analysis_folder"],
+                f"merged_VANNOT_{run_informations["run_name"]}.design.vcf.gz",
+            )
+        else:
+            output_file = osj(
+                run_informations["tmp_analysis_folder"],
+                f"merged_VANNOT_{run_informations["run_name"]}.vcf.gz",
+            )
 
-    for vcf_file in vcf_files:
-        subprocess.call(["tabix", vcf_file], universal_newlines=True)
+        for vcf_file in vcf_files:
+            subprocess.call(["tabix", vcf_file], universal_newlines=True)
 
-    cmd = ["bcftools", "merge", "-o", output_file, "-O", "z"]
-    for vcf_file in vcf_files:
-        cmd.append(vcf_file)
+        cmd = ["bcftools", "merge", "-o", output_file, "-O", "z"]
+        for vcf_file in vcf_files:
+            cmd.append(vcf_file)
 
-    subprocess.call(cmd, universal_newlines=True)
+        subprocess.call(cmd, universal_newlines=True)
 
 
 def convert_to_final_tsv(run_informations):
@@ -601,7 +632,7 @@ def convert_to_final_tsv(run_informations):
                 f"{os.path.basename(vcf_file).split(".")[0]}.tsv",
             )
 
-        if not os.path.basename(vcf_file).startswith("VANNOT_merged"):
+        if "merged" not in vcf_file:
             launch_convert_arguments = [
                 "convert",
                 "--input",

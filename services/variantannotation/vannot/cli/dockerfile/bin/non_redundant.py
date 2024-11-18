@@ -33,13 +33,15 @@ def generate(run_informations):
     input_files_list = glob.glob(
         osj(
             input_dir,
-            "VANNOT_*.*.tsv",
+            "VANNOT_*.tsv",
         )
     )
     input_files_dict = {}
     if run_informations["type"] == "run":
         for input_file in input_files_list:
-            if input_file.split(".")[2] != "tsv":
+            if "transcripts" in input_file:
+                continue
+            elif input_file.split(".")[2] != "tsv":
                 panel = input_file.split(".")[2]
                 if panel in input_files_dict.keys():
                     previous_value = input_files_dict[panel]
@@ -56,6 +58,8 @@ def generate(run_informations):
                     input_files_dict["design"] = [input_file]
     else:
         for input_file in input_files_list:
+            if "transcripts" in input_file:
+                continue
             if "folder" in input_files_dict.keys():
                 previous_value = input_files_dict["folder"]
                 previous_value.append(input_file)
