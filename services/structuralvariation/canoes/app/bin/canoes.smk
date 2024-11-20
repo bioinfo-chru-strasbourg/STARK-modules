@@ -154,27 +154,49 @@ def extract_tag(tagfile, tag, tagsep, sep):
 	output_tag = next((items.split(sep)[-1] for items in row if tag in items and sep in items), "")
 	return output_tag
 
-def kmerisation(kmerSize, bedFile, kmerBedFile):
-	""" Bed kmerisation """
-	print(f"{kmerSize} kmerisation of your bed {bedFile} in progress")
+def kmerisation(kmerSize, kmerBedFile, df=None, bedFile=None):
+	""" 
+	Perform BED kmerisation with either DataFrame or file input.
 	
-	with open(bedFile, 'r') as readBed, open(kmerBedFile, 'w+') as writeKbed:
-		for line in readBed:
-			if line.startswith('#'):
-				continue
-			
-			chr, start, end, gene = line.split()[:4]
-			diff = int(end) - int(start)
-			
-			while diff >= kmerSize:
-				newEnd = int(start) + kmerSize - 1
-				writeKbed.write(f"{chr}\t{start}\t{newEnd}\t{gene}\n")
-				start, diff = newEnd + 1, diff - kmerSize
-			
-			if diff > 0:
-				writeKbed.write(f"{chr}\t{start}\t{end}\t{gene}\n")
+	Parameters:
+	- kmerSize (int): Size of k-mers to generate.
+	- kmerBedFile (str): Path to the output file for storing k-mer results (mandatory).
+	- df (pd.DataFrame, optional): Input data as a DataFrame.
+	- bedFile (str, optional): Path to input BED file.
+
+	Raises:
+	- ValueError: If neither `df` nor `bedFile` is provided.
+	"""
+	# Validate input: Ensure one of df or bedFile is provided.
+	if df is None and bedFile is None:
+		raise ValueError("Either 'df' or 'bedFile' must be provided.")
 	
-	print('Kmerisation done')
+	print(f"[INFO] Kmerisation of {kmerSize} fragment size in progress")
+	
+	if df is not None:
+		source = df.iterrows()
+		source_type = 'DataFrame'
+	elif bedFile is not None:
+		source = open(bedFile, 'r')
+		source_type = 'file'
+	else:
+		raise ValueError("Either df or bedFile must be provided")
+
+	with open(kmerBedFile, 'w+') as writeKbed:
+		if source_type == 'file':
+			for line in source:
+				if line.startswith('#'):
+					continue
+				chr, start, end, gene = line.split()[:4]
+				start, end = int(start), int(end)
+				write_kmers(writeKbed, chr, start, end, gene, kmerSize)
+			source.close()
+		else:
+			for _, row in source:
+				chr, start, end, gene = row["Chr"], int(row["Start"]), int(row["End"]), row["Gene"]
+				write_kmers(writeKbed, chr, start, end, gene, kmerSize)
+	
+	print("[INFO] Kmerisation completed successfully.")
 
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
@@ -444,7 +466,7 @@ if file_source:
 # Kmerisation
 canoesbed_file = f"{resultDir}/{serviceName}.{date_time}.bed"
 if config['KMER']:
-	kmerisation(config['KMER'], config['BED_FILE'], canoesbed_file)
+	kmerisation(config['KMER'], canoesbed_file, bedFile=config['BED_FILE'])
 else:
 	copy2(config['BED_FILE'], canoesbed_file)
 

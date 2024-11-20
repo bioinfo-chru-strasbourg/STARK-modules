@@ -184,9 +184,24 @@ def extract_tag(tagfile, tag, tagsep, sep):
 	output_tag = next((items.split(sep)[-1] for items in row if tag in items and sep in items), "")
 	return output_tag
 
-def kmerisation(kmerSize, df=None, bedFile=None, kmerBedFile=None):
-	""" Bed kmerisation using either DataFrame or file input """
-	print(f"{kmerSize} kmerisation in progress")
+def kmerisation(kmerSize, kmerBedFile, df=None, bedFile=None):
+	""" 
+	Perform BED kmerisation with either DataFrame or file input.
+	
+	Parameters:
+	- kmerSize (int): Size of k-mers to generate.
+	- kmerBedFile (str): Path to the output file for storing k-mer results (mandatory).
+	- df (pd.DataFrame, optional): Input data as a DataFrame.
+	- bedFile (str, optional): Path to input BED file.
+
+	Raises:
+	- ValueError: If neither `df` nor `bedFile` is provided.
+	"""
+	# Validate input: Ensure one of df or bedFile is provided.
+	if df is None and bedFile is None:
+		raise ValueError("Either 'df' or 'bedFile' must be provided.")
+	
+	print(f"[INFO] Kmerisation of {kmerSize} fragment size in progress")
 	
 	if df is not None:
 		source = df.iterrows()
@@ -211,7 +226,7 @@ def kmerisation(kmerSize, df=None, bedFile=None, kmerBedFile=None):
 				chr, start, end, gene = row["Chr"], int(row["Start"]), int(row["End"]), row["Gene"]
 				write_kmers(writeKbed, chr, start, end, gene, kmerSize)
 	
-	print('Kmerisation done')
+	print("[INFO] Kmerisation completed successfully.")
 
 def write_kmers(writeKbed, chr, start, end, gene, kmerSize):
 	""" Helper function to write kmerized intervals """
@@ -419,7 +434,7 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene=None, tran
 		print("[INFO] Saving DECON bed with custom exon.")
 		df.to_csv(bed_file, sep='\t', index=False, header=False)
 	elif kmer:
-		kmerisation(kmer, df, bed_file)
+		kmerisation(kmer,  bed_file, df)
 	else:
 		print("[INFO] Saving DECON bed.")
 		df.to_csv(bed_file, sep='\t', index=False, header=False)
