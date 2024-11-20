@@ -47,30 +47,30 @@ def launch_folder(args):
         )
 
         howard_processing.project_folder_initialisation(run_informations)
-        merged_vcf = howard_processing.merge_vcf(run_informations)
+        merged_vcf = howard_processing.merge_vcf(run_informations, "1")
         annotated_merged_vcf = howard_processing.howard_proc(
             run_informations, merged_vcf
         )
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
         howard_processing.gmc_score(run_informations)
         howard_processing.howard_score_transcripts(run_informations)
-        howard_processing.merge_vcf(run_informations)
+        howard_processing.merge_vcf(run_informations, "2")
         howard_processing.convert_to_final_tsv(run_informations)
         non_redundant.generate(run_informations)
         howard_processing.cleaner(run_informations)
 
     else:
         howard_processing.folder_initialisation(run_informations)
-        merged_vcf = howard_processing.merge_vcf(run_informations)
+        merged_vcf = howard_processing.merge_vcf(run_informations, "1")
         annotated_merged_vcf = howard_processing.howard_proc(
             run_informations, merged_vcf
         )
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
         howard_processing.gmc_score(run_informations)
         howard_processing.howard_score_transcripts(run_informations)
-        howard_processing.merge_vcf(run_informations)
+        howard_processing.merge_vcf(run_informations, "2")
         howard_processing.convert_to_final_tsv(run_informations)
-        # non_redundant.generate(run_informations)
+        non_redundant.generate(run_informations)
         howard_processing.cleaner(run_informations)
 
     log.info(f"vannot analysis for folder {run_informations['run_name']} ended well")

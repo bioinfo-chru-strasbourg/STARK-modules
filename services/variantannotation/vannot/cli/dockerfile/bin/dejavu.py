@@ -33,7 +33,8 @@ def launch_dejavu(args):
         "archives_run_folder": "",
         "parquet_db_run_folder": "",
         "parquet_db_project_folder": osj(
-            os.environ["DOCKER_DEJAVU_DATABASE"],
+            os.environ["HOST_DATABASES"],
+            "dejavu",
             "current",
             args.assembly,
             "dejavu.partition.parquet",
@@ -49,7 +50,8 @@ def launch_dejavu(args):
             "dejavu.partition.parquet",
         ),
         "parquet_db_folder": osj(
-            os.environ["DOCKER_DEJAVU_DATABASE"],
+            os.environ["HOST_DATABASES"],
+            "dejavu",
             "current",
             args.assembly,
             "dejavu.partition.parquet",

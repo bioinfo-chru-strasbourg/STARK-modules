@@ -249,7 +249,7 @@ def fambarcode_vcf(run_informations, input_vcf):
     return output
 
 
-def merge_vcf(run_informations):
+def merge_vcf(run_informations, step):
     vcf_file_to_merge = glob.glob(
         osj(run_informations["tmp_analysis_folder"], "*.vcf*")
     )
@@ -260,17 +260,21 @@ def merge_vcf(run_informations):
 
         output_merged = osj(
             run_informations["tmp_analysis_folder"],
-            f"merged_{run_informations["run_name"]}.vcf.gz",
+            f"VANNOT_merged_{run_informations["run_name"]}.vcf.gz",
         )
         cmd = ["bcftools", "merge"] + vcf_file_to_merge
         cmd_args = ["-m", "none", "-O", "z", "-o", output_merged]
         cmd = cmd + cmd_args
         log.debug(" ".join(cmd))
         subprocess.call(cmd, universal_newlines=True)
-        for i in vcf_file_to_merge:
-            os.remove(i)
-            os.remove(i + ".tbi")
+        if step == "1":
+            for i in vcf_file_to_merge:
+                os.remove(i)
+                os.remove(i + ".tbi")
         return output_merged
+    elif len(vcf_file_to_merge) == 0:
+        log.error("No vcf files to merge after transcript score calculation")
+        raise ValueError(vcf_file_to_merge)
     else:
         return vcf_file_to_merge[0]
 
@@ -298,13 +302,13 @@ def unmerge_vcf(input, run_informations):
                 output_file = osj(
                     os.path.dirname(vcf_file_to_unmerge), f"VANNOT_{sample}.vcf"
                 )
-            cmd = ["bcftools", "view", "-s", sample, vcf_file_to_unmerge]
+            cmd = ["bcftools", "view", "-c1", "-s", sample, vcf_file_to_unmerge]
             with open(output_file, "w") as writefile:
                 subprocess.call(cmd, universal_newlines=True, stdout=writefile)
             subprocess.call(["bgzip", output_file], universal_newlines=True)
         if run_informations["type"] == "dejavu":
             os.remove(vcf_file_to_unmerge)
-    os.remove(vcf_file_to_unmerge)
+        os.remove(vcf_file_to_unmerge)
 
 
 def info_to_format_script(vcf_file, run_informations):
@@ -549,17 +553,7 @@ def howard_score_transcripts(run_informations):
         log.info("Prioritization of transcripts")
         howard_launcher.launch(container_name, launch_annotate_arguments)
         os.remove(vcf_file)
-
-        info_to_delete = "INFO/SPiP_distSS"
-
-        cmd = ["bcftools", "annotate", "-x"]
-        cmd.append(info_to_delete)
-        cmd.append(output_file_transcripts)
-
-        with open(vcf_file[:-3], "w") as output:
-            subprocess.call(cmd, stdout=output, universal_newlines=True)
-        os.remove(output_file_transcripts)
-        subprocess.call(["bgzip", vcf_file[:-3]])
+        os.rename(output_file_transcripts, vcf_file)
 
         with open(
             osj(os.environ["DOCKER_MODULE_CONFIG"], "howard", "param.transcripts.json"),
@@ -576,32 +570,9 @@ def howard_score_transcripts(run_informations):
         )
 
 
-def merge_vcf_files(run_informations):
-    if run_informations["type"] != "dejavu":
-        log.info("Merging all vcfs into one for CuteVariant analysis")
-        vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
-        if run_informations["type"] == "run":
-            output_file = osj(
-                run_informations["tmp_analysis_folder"],
-                f"merged_VANNOT_{run_informations["run_name"]}.design.vcf.gz",
-            )
-        else:
-            output_file = osj(
-                run_informations["tmp_analysis_folder"],
-                f"merged_VANNOT_{run_informations["run_name"]}.vcf.gz",
-            )
-
-        for vcf_file in vcf_files:
-            subprocess.call(["tabix", vcf_file], universal_newlines=True)
-
-        cmd = ["bcftools", "merge", "-o", output_file, "-O", "z"]
-        for vcf_file in vcf_files:
-            cmd.append(vcf_file)
-
-        subprocess.call(cmd, universal_newlines=True)
-
-
 def convert_to_final_tsv(run_informations):
+    # howard query --input="tests/data/example.annotation_names.vcf" --explode_infos --explode_infos_fields="CLNSIG,DP,*" --query="SELECT * FROM variants"
+
     log.info("Converting output file into readable tsv")
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
     threads = commons.get_threads("threads_conversion")

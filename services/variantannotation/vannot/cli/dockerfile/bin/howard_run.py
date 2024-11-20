@@ -58,7 +58,8 @@ def launch_run(args):
             "",
         ),
         "parquet_db_run_folder": osj(
-            os.environ["DOCKER_DEJAVU_DATABASE"],
+            os.environ["HOST_DATABASES"],
+            "dejavu",
             "current",
             args.assembly,
             "dejavu.partition.parquet",
@@ -67,7 +68,8 @@ def launch_run(args):
             f"RUN={run_repository_list[-1]}",
         ),
         "parquet_db_project_folder": osj(
-            os.environ["DOCKER_DEJAVU_DATABASE"],
+            os.environ["HOST_DATABASES"],
+            "dejavu",
             "current",
             args.assembly,
             "dejavu.partition.parquet",
@@ -83,7 +85,8 @@ def launch_run(args):
             "dejavu.partition.parquet",
         ),
         "parquet_db_folder": osj(
-            os.environ["DOCKER_DEJAVU_DATABASE"],
+            os.environ["HOST_DATABASES"],
+            "dejavu",
             "current",
             args.assembly,
             "dejavu.partition.parquet",
@@ -109,7 +112,7 @@ def launch_run(args):
     # dejavu_processing.convert_vcf_parquet(run_informations, args)
     # dejavu_processing.calculate_dejavu(run_informations)
     howard_processing.run_initialisation(run_informations)
-    merged_vcf = howard_processing.merge_vcf(run_informations)
+    merged_vcf = howard_processing.merge_vcf(run_informations, "1")
     fambarcode_vcf = howard_processing.fambarcode_vcf(
         run_informations,
         merged_vcf,
@@ -120,7 +123,7 @@ def launch_run(args):
     howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
     howard_processing.gmc_score(run_informations)
     howard_processing.howard_score_transcripts(run_informations)
-    howard_processing.merge_vcf(run_informations)
+    howard_processing.merge_vcf(run_informations, "2")
     if run_informations["run_panels"] != "":
         howard_processing.panel_filtering(run_informations)
     howard_processing.convert_to_final_tsv(run_informations)
