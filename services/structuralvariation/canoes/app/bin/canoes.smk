@@ -198,6 +198,18 @@ def kmerisation(kmerSize, kmerBedFile, df=None, bedFile=None):
 	
 	print("[INFO] Kmerisation completed successfully.")
 
+def write_kmers(writeKbed, chr, start, end, gene, kmerSize):
+	""" Helper function to write kmerized intervals """
+	diff = end - start
+	
+	while diff >= kmerSize:
+		newEnd = start + kmerSize - 1
+		writeKbed.write(f"{chr}\t{start}\t{newEnd}\t{gene}\n")
+		start, diff = newEnd + 1, diff - kmerSize
+	
+	if diff > 0:
+		writeKbed.write(f"{chr}\t{start}\t{end}\t{gene}\n")
+
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
