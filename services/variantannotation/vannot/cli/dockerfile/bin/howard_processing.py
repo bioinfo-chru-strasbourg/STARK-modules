@@ -7,6 +7,7 @@ import shutil
 import json
 import re
 import time
+import pandas as pd
 
 from vannotplus.family.barcode import main_barcode
 from vannotplus.exomiser.exomiser import main_exomiser
@@ -177,7 +178,7 @@ def cleaning_annotations(vcf_file, run_informations):
     cmd = ["bcftools", "annotate", "-x"]
     cmd.append(info_to_keep)
     cmd.append(vcf_file)
-
+    print(cmd)
     with open(cleaned_vcf, "w") as output:
         subprocess.call(cmd, stdout=output, universal_newlines=True)
     os.remove(vcf_file)
@@ -571,12 +572,22 @@ def howard_score_transcripts(run_informations):
 
 
 def convert_to_final_tsv(run_informations):
-    # howard query --input="tests/data/example.annotation_names.vcf" --explode_infos --explode_infos_fields="CLNSIG,DP,*" --query="SELECT * FROM variants"
-
     log.info("Converting output file into readable tsv")
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
     threads = commons.get_threads("threads_conversion")
     memory = commons.get_memory("memory_conversion")
+    module_config = osj(
+        os.environ["DOCKER_MODULE_CONFIG"],
+        f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
+    )
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        ordered_fields = data["vcf_to_tsv_column_order"][
+            run_informations["run_platform_application"]
+        ]
+
+    explode_infos_fields = ",".join(ordered_fields)
+    explode_infos_fields = explode_infos_fields + ",*"
 
     for vcf_file in vcf_files:
 
@@ -605,18 +616,32 @@ def convert_to_final_tsv(run_informations):
 
         if "merged" not in vcf_file:
             launch_convert_arguments = [
-                "convert",
+                "query",
                 "--input",
                 vcf_file,
                 "--output",
                 output_file,
                 "--explode_infos",
+                "--explode_infos_fields",
+                explode_infos_fields,
+                "--query",
+                "SELECT * FROM variants",
                 "--threads",
                 threads,
                 "--memory",
                 memory,
             ]
             howard_launcher.launch(container_name, launch_convert_arguments)
+            tsv_column_remover(output_file)
+
+
+def tsv_column_remover(input_file):
+    data = pd.read_csv(input_file)
+    columns_to_drop = ["QUAL", "FILTER", "INFO", "FORMAT"]
+    for column in columns_to_drop:
+        data.drop(column, inplace=True, axis=1)
+    os.remove(input_file)
+    data.to_csv(input_file, sep="\t", index=False, header=True)
 
 
 def cleaner(run_informations):
