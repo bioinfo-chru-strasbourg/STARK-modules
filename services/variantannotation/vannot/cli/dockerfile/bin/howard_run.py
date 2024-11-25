@@ -77,8 +77,7 @@ def launch_run(args):
             f"PROJECT={run_repository_list[-2]}",
         ),
         "parquet_db_howard_folder": osj(
-            "/",
-            "databases",
+            os.environ["HOST_DATABASES"],
             "dejavu",
             "current",
             args.assembly,
@@ -109,8 +108,8 @@ def launch_run(args):
         pass
 
     synchronizer.vcf_synchronizer(run_informations)
-    # dejavu_processing.convert_vcf_parquet(run_informations, args)
-    # dejavu_processing.calculate_dejavu(run_informations)
+    dejavu_processing.convert_vcf_parquet(run_informations, args)
+    dejavu_processing.calculate_dejavu(run_informations)
     howard_processing.run_initialisation(run_informations)
     merged_vcf = howard_processing.merge_vcf(run_informations, "1")
     fambarcode_vcf = howard_processing.fambarcode_vcf(

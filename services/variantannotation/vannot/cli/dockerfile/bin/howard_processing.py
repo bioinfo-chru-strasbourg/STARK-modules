@@ -7,7 +7,6 @@ import shutil
 import json
 import re
 import time
-import pandas as pd
 
 from vannotplus.family.barcode import main_barcode
 from vannotplus.exomiser.exomiser import main_exomiser
@@ -636,12 +635,26 @@ def convert_to_final_tsv(run_informations):
 
 
 def tsv_column_remover(input_file):
-    data = pd.read_csv(input_file)
-    columns_to_drop = ["QUAL", "FILTER", "INFO", "FORMAT"]
-    for column in columns_to_drop:
-        data.drop(column, inplace=True, axis=1)
+    columns_to_remove = ["ID", "QUAL", "FILTER", "INFO", "FORMAT"]
+    output_file = osj(
+        os.path.dirname(input_file), "tmp_" + os.path.basename(input_file)
+    )
+    index_to_keep = []
+
+    with open(output_file, "w") as write_file:
+        with open(input_file, "r") as read_file:
+            for l in read_file:
+                if l.startswith("#CHROM"):
+                    l = l.rstrip("\r\n").split("\t")
+                    for i in range(len(l)):
+                        if l[i] not in columns_to_remove:
+                            index_to_keep.append(i)
+                    write_file.write("\t".join(l[i] for i in index_to_keep) + "\r\n")
+                else:
+                    l = l.rstrip("\r\n").split("\t")
+                    write_file.write("\t".join(l[i] for i in index_to_keep) + "\r\n")
     os.remove(input_file)
-    data.to_csv(input_file, sep="\t", index=False, header=True)
+    os.rename(output_file, input_file)
 
 
 def cleaner(run_informations):

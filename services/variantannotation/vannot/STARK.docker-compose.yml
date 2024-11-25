@@ -75,8 +75,8 @@ services:
             # Volumes for vannot configuration
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}:rw
             # Volumes for databases
-            - /home1/HUB/DB/HOWARD/:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
-            - /home1/HUB/DB/HOWARD/dejavu/:${DOCKER_STARK_INNER_FOLDER_DATABASES}/dejavu/:rw
+            - /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/:ro
+            - /home1/HUB/DB/HOWARD/dejavu/:/home1/HUB/DB/HOWARD/dejavu/:rw
             # Volume for developing, to comment if not used
             - /home1/bin/STARK-modules/dev.MR_real/services/variantannotation/vannot/cli/dockerfile/bin/:/tools/vannot/:rw
         networks:

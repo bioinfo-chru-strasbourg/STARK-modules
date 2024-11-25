@@ -15,7 +15,7 @@ RUN dnf -y install dnf-plugins-core
 RUN dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
 RUN dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 RUN dnf -y install gcc zlib-devel bzip2 bzip2-devel xz-devel make
-RUN dnf -y install wget rsync gcc-c++ which git python3.12 pandas
+RUN dnf -y install wget rsync gcc-c++ which git python3.12
 
 #bcftools
 WORKDIR /tools

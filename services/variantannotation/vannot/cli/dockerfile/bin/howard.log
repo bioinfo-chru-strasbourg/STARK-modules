@@ -1,0 +1,215 @@
+sending incremental file list
+SGT2301773.vcf.gz
+
+sent 35,399,513 bytes  received 35 bytes  23,599,698.67 bytes/sec
+total size is 35,390,775  speedup is 1.00
+sending incremental file list
+SGT2301626.vcf.gz
+
+sent 35,108,117 bytes  received 35 bytes  70,216,304.00 bytes/sec
+total size is 35,099,452  speedup is 1.00
+sending incremental file list
+SGT2006017.vcf.gz
+
+sent 35,269,623 bytes  received 35 bytes  70,539,316.00 bytes/sec
+total size is 35,260,917  speedup is 1.00
+sending incremental file list
+SGT2300685.vcf.gz
+
+sent 35,217,844 bytes  received 35 bytes  23,478,586.00 bytes/sec
+total size is 35,209,154  speedup is 1.00
+sending incremental file list
+SGT2301624.vcf.gz
+
+sent 35,196,168 bytes  received 35 bytes  70,392,406.00 bytes/sec
+total size is 35,187,486  speedup is 1.00
+sending incremental file list
+SGT2304513.vcf.gz
+
+sent 35,178,996 bytes  received 35 bytes  23,452,687.33 bytes/sec
+total size is 35,170,314  speedup is 1.00
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+      #CHROM       POS           ID REF  ...     QUAL  FILTER       INFO barcode
+0       chr1     69270            .   A  ...   100.77    PASS  barcode=1       1
+1       chr1     69511            .   A  ...   868.77    PASS  barcode=1       1
+2       chr1    866319    rs9988021   G  ...   708.77    PASS  barcode=2       2
+3       chr1    866511  rs375757231   C  ...   614.73    PASS  barcode=2       2
+4       chr1    871334    rs4072383   G  ...   278.78    PASS  barcode=2       2
+...      ...       ...          ...  ..  ...      ...     ...        ...     ...
+83415   chrY  21154323            .   G  ...  1089.77    PASS  barcode=1       1
+83416   chrY  21154466            .   T  ...   815.77    PASS  barcode=1       1
+83417   chrY  21154569            .   A  ...   353.77    PASS  barcode=1       1
+83418   chrY  21154603            .   A  ...   475.77    PASS  barcode=1       1
+83419   chrY  21883234            .   T  ...   922.77    PASS  barcode=2       2
+
+[83420 rows x 9 columns]
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+      #CHROM       POS         ID REF ALT     QUAL FILTER       INFO barcode
+0       chr1     69270          .   A   G   229.78   PASS  barcode=2       2
+1       chr1     69511          .   A   G  1433.77   PASS  barcode=2       2
+2       chr1    866319  rs9988021   G   A  1054.77   PASS  barcode=2       2
+3       chr1    871334  rs4072383   G   T   297.77   PASS  barcode=1       1
+4       chr1    876499  rs4372192   A   G  1365.77   PASS  barcode=2       2
+...      ...       ...        ...  ..  ..      ...    ...        ...     ...
+83016   chrY  21154323          .   G   A  1307.77   PASS  barcode=1       1
+83017   chrY  21154426          .   G   A   429.77   PASS  barcode=1       1
+83018   chrY  21154466          .   T   A   850.77   PASS  barcode=1       1
+83019   chrY  21154569          .   A   G   479.77   PASS  barcode=1       1
+83020   chrY  21154603          .   A   C   594.77   PASS  barcode=1       1
+
+[83021 rows x 9 columns]
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+      #CHROM       POS           ID REF  ...     QUAL  FILTER       INFO barcode
+0       chr1     69511            .   A  ...  1020.77    PASS  barcode=2       2
+1       chr1    866319    rs9988021   G  ...   598.77    PASS  barcode=2       2
+2       chr1    866511  rs375757231   C  ...   230.87    PASS  barcode=2       2
+3       chr1    871334    rs4072383   G  ...   755.77    PASS  barcode=2       2
+4       chr1    874864            .  CT  ...   247.73    PASS  barcode=1       1
+...      ...       ...          ...  ..  ...      ...     ...        ...     ...
+83155   chrY  21154323            .   G  ...  1577.77    PASS  barcode=2       2
+83156   chrY  21154426            .   G  ...  1015.77    PASS  barcode=2       2
+83157   chrY  21154466            .   T  ...  1379.77    PASS  barcode=2       2
+83158   chrY  21154569            .   A  ...   388.77    PASS  barcode=2       2
+83159   chrY  21154603            .   A  ...   521.77    PASS  barcode=2       2
+
+[83160 rows x 9 columns]
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+      #CHROM        POS         ID  ... FILTER       INFO  barcode
+0       chr1      69511          .  ...   PASS  barcode=2        2
+1       chr1     866319  rs9988021  ...   PASS  barcode=2        2
+2       chr1     874778          .  ...   PASS  barcode=1        1
+3       chr1     874816          .  ...   PASS  barcode=1        1
+4       chr1     876499  rs4372192  ...   PASS  barcode=2        2
+...      ...        ...        ...  ...    ...        ...      ...
+83414   chrX  154774707  rs2305518  ...   PASS  barcode=1        1
+83415   chrY   21154323          .  ...   PASS  barcode=2        2
+83416   chrY   21154466          .  ...   PASS  barcode=2        2
+83417   chrY   21154569          .  ...   PASS  barcode=2        2
+83418   chrY   21154603          .  ...   PASS  barcode=2        2
+
+[83419 rows x 9 columns]
+docker run --rm --name VANNOT_dejavu_155127_230908_NB551027_0178_AHW7KLBGXT_SGT2301773 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 minimalize --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301773.vcf.gz --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301773.mini.parquet --minimalize_info --minimalize_samples --threads 10 --memory 80G
+docker run --rm --name VANNOT_dejavu_155127_230908_NB551027_0178_AHW7KLBGXT_SGT2301773 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 process --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301773.mini.parquet --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301773.parquet --calculations=BARCODE --explode_infos --explode_infos_fields=barcode --query=SELECT "#CHROM", POS, ID, REF, ALT, QUAL, FILTER, INFO, barcode FROM variants --threads 10 --memory 80G
+docker run --rm --name VANNOT_dejavu_155147_230908_NB551027_0178_AHW7KLBGXT_SGT2301626 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 minimalize --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301626.vcf.gz --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301626.mini.parquet --minimalize_info --minimalize_samples --threads 10 --memory 80G
+docker run --rm --name VANNOT_dejavu_155147_230908_NB551027_0178_AHW7KLBGXT_SGT2301626 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 process --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301626.mini.parquet --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301626.parquet --calculations=BARCODE --explode_infos --explode_infos_fields=barcode --query=SELECT "#CHROM", POS, ID, REF, ALT, QUAL, FILTER, INFO, barcode FROM variants --threads 10 --memory 80G
+docker run --rm --name VANNOT_dejavu_155208_230908_NB551027_0178_AHW7KLBGXT_SGT2006017 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 minimalize --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2006017.vcf.gz --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2006017.mini.parquet --minimalize_info --minimalize_samples --threads 10 --memory 80G
+docker run --rm --name VANNOT_dejavu_155208_230908_NB551027_0178_AHW7KLBGXT_SGT2006017 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 process --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2006017.mini.parquet --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2006017.parquet --calculations=BARCODE --explode_infos --explode_infos_fields=barcode --query=SELECT "#CHROM", POS, ID, REF, ALT, QUAL, FILTER, INFO, barcode FROM variants --threads 10 --memory 80G
+docker run --rm --name VANNOT_dejavu_155230_230908_NB551027_0178_AHW7KLBGXT_SGT2300685 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 minimalize --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2300685.vcf.gz --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2300685.mini.parquet --minimalize_info --minimalize_samples --threads 10 --memory 80G
+docker run --rm --name VANNOT_dejavu_155230_230908_NB551027_0178_AHW7KLBGXT_SGT2300685 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 process --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2300685.mini.parquet --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2300685.parquet --calculations=BARCODE --explode_infos --explode_infos_fields=barcode --query=SELECT "#CHROM", POS, ID, REF, ALT, QUAL, FILTER, INFO, barcode FROM variants --threads 10 --memory 80G
+docker run --rm --name VANNOT_dejavu_155252_230908_NB551027_0178_AHW7KLBGXT_SGT2301624 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 minimalize --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301624.vcf.gz --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301624.mini.parquet --minimalize_info --minimalize_samples --threads 10 --memory 80Gcannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+      #CHROM       POS         ID REF ALT     QUAL FILTER       INFO barcode
+0       chr1    866319  rs9988021   G   A   885.77   PASS  barcode=2       2
+1       chr1    876499  rs4372192   A   G   498.77   PASS  barcode=2       2
+2       chr1    877715  rs6605066   C   G   583.77   PASS  barcode=2       2
+3       chr1    877831          .   T   C  1302.77   PASS  barcode=2       2
+4       chr1    880238  rs3748592   A   G   769.77   PASS  barcode=2       2
+...      ...       ...        ...  ..  ..      ...    ...        ...     ...
+83363   chrY  21154323          .   G   A  1060.77   PASS  barcode=1       1
+83364   chrY  21154426          .   G   A   311.77   PASS  barcode=1       1
+83365   chrY  21154466          .   T   A   738.77   PASS  barcode=1       1
+83366   chrY  21154569          .   A   G   287.77   PASS  barcode=1       1
+83367   chrY  21154603          .   A   C   403.77   PASS  barcode=1       1
+
+[83368 rows x 9 columns]
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+      #CHROM       POS         ID REF ALT     QUAL   FILTER       INFO barcode
+0       chr1    866319  rs9988021   G   A   295.78     PASS  barcode=2       2
+1       chr1    871334  rs4072383   G   T    44.77  LowQual  barcode=1       1
+2       chr1    876499  rs4372192   A   G   482.77     PASS  barcode=2       2
+3       chr1    877715  rs6605066   C   G   844.77     PASS  barcode=2       2
+4       chr1    877831          .   T   C  1191.77     PASS  barcode=2       2
+...      ...       ...        ...  ..  ..      ...      ...        ...     ...
+83011   chrY  21154323          .   G   A  1393.77     PASS  barcode=2       2
+83012   chrY  21154426          .   G   A   287.77     PASS  barcode=1       1
+83013   chrY  21154466          .   T   A  1057.77     PASS  barcode=2       2
+83014   chrY  21154569          .   A   G   494.77     PASS  barcode=2       2
+83015   chrY  21154603          .   A   C   371.77     PASS  barcode=2       2
+
+[83016 rows x 9 columns]
+sending incremental file list
+SGT2301773.parquet
+
+sent 1,538,086 bytes  received 35 bytes  3,076,242.00 bytes/sec
+total size is 1,537,621  speedup is 1.00
+sending incremental file list
+SGT2301773.parquet.hdr
+
+sent 16,883 bytes  received 35 bytes  33,836.00 bytes/sec
+total size is 16,777  speedup is 0.99
+sending incremental file list
+SGT2301626.parquet
+
+sent 1,530,933 bytes  received 35 bytes  3,061,936.00 bytes/sec
+total size is 1,530,467  speedup is 1.00
+sending incremental file list
+SGT2301626.parquet.hdr
+
+sent 16,883 bytes  received 35 bytes  33,836.00 bytes/sec
+total size is 16,777  speedup is 0.99
+sending incremental file list
+SGT2006017.parquet
+
+sent 1,532,080 bytes  received 35 bytes  3,064,230.00 bytes/sec
+total size is 1,531,614  speedup is 1.00
+sending incremental file list
+SGT2006017.parquet.hdr
+
+sent 16,882 bytes  received 35 bytes  33,834.00 bytes/sec
+total size is 16,777  speedup is 0.99
+sending incremental file list
+SGT2300685.parquet
+
+sent 1,526,856 bytes  received 35 bytes  3,053,782.00 bytes/sec
+total size is 1,526,390  speedup is 1.00
+sending incremental file list
+SGT2300685.parquet.hdr
+
+sent 16,881 bytes  received 35 bytes  33,832.00 bytes/sec
+total size is 16,776  speedup is 0.99
+sending incremental file list
+SGT2301624.parquet
+
+sent 1,523,558 bytes  received 35 bytes  3,047,186.00 bytes/sec
+total size is 1,523,092  speedup is 1.00
+sending incremental file list
+SGT2301624.parquet.hdr
+
+sent 16,880 bytes  received 35 bytes  33,830.00 bytes/sec
+total size is 16,774  speedup is 0.99
+sending incremental file list
+SGT2304513.parquet
+
+sent 1,517,401 bytes  received 35 bytes  3,034,872.00 bytes/sec
+total size is 1,516,935  speedup is 1.00
+sending incremental file list
+SGT2304513.parquet.hdr
+
+sent 16,882 bytes  received 35 bytes  33,834.00 bytes/sec
+total size is 16,777  speedup is 0.99
+cannot import name 'gui' from 'howard.tools.tools' (/tools/howard/0.11.0/howard/tools/tools.py)
+        #CHROM       POS   REF ALT  ALLELECOUNT  HETCOUNT  HOMCOUNT  ALLELEFREQ
+0         chr1    897564     T   C        273.0        33       120   22.750000
+1         chr1    917640     G   A         19.0        15         2    1.583333
+2         chr1    948921     T   C        571.0        41       265   47.583333
+3         chr1   1260168     C   A         33.0         3        15    2.750000
+4         chr1   1417696     C   G        452.0       138       157   37.666667
+...        ...       ...   ...  ..          ...       ...       ...         ...
+1384141  chr16   3900437     C   G          1.0         1         0    0.083333
+1384142  chr16  79245531     C   T          1.0         1         0    0.083333
+1384143  chr17  65822323  CGAG   C          1.0         1         0    0.083333
+1384144  chr21  34003239     T   A          1.0         1         0    0.083333
+1384145   chr3  47860855     C   A          1.0         1         0    0.083333
+
+[1384146 rows x 8 columns]
+
+docker run --rm --name VANNOT_dejavu_155252_230908_NB551027_0178_AHW7KLBGXT_SGT2301624 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 process --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301624.mini.parquet --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2301624.parquet --calculations=BARCODE --explode_infos --explode_infos_fields=barcode --query=SELECT "#CHROM", POS, ID, REF, ALT, QUAL, FILTER, INFO, barcode FROM variants --threads 10 --memory 80G
+docker run --rm --name VANNOT_dejavu_155311_230908_NB551027_0178_AHW7KLBGXT_SGT2304513 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 minimalize --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2304513.vcf.gz --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2304513.mini.parquet --minimalize_info --minimalize_samples --threads 10 --memory 80G
+docker run --rm --name VANNOT_dejavu_155311_230908_NB551027_0178_AHW7KLBGXT_SGT2304513 --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 process --input /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2304513.mini.parquet --output /home1/data/STARK/output/tmp/tmp_230908_NB551027_0178_AHW7KLBGXT/SGT2304513.parquet --calculations=BARCODE --explode_infos --explode_infos_fields=barcode --query=SELECT "#CHROM", POS, ID, REF, ALT, QUAL, FILTER, INFO, barcode FROM variants --threads 10 --memory 80G
+/home1/HUB/DB/HOWARD/dejavu/current/hg19/dejavu.WES_AGILENT.parquet
+docker run --rm --name VANNOT_dejavu_230908_NB551027_0178_AHW7KLBGXT --env http_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env ftp_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 --env https_proxy=http://bioinfosurf:cquetuveux@cyclope:8080 -v /home1/data/STARK/output/tmp:/home1/data/STARK/output/tmp -v /home1/HUB/DB/HOWARD/:/home1/HUB/DB/HOWARD/ -v /home1/data/STARK/services/variantannotation/vannot:/STARK/services/variantannotation/vannot -v /home1/data/STARK/config/variantannotation/vannot:/home1/data/STARK/config/variantannotation/vannot -v /var/run/docker.sock:/var/run/docker.sock howard:0.11.0 query --input /home1/HUB/DB/HOWARD/dejavu/current/hg19/dejavu.partition.parquet --query SELECT "#CHROM", POS, REF, ALT, sum(CAST(barcode AS INT)) AS ALLELECOUNT, count(barcode) FILTER(barcode=1) AS HETCOUNT, count(barcode) FILTER(barcode=2) AS HOMCOUNT, sum(CAST(barcode AS INT))/(6*2) AS ALLELEFREQ FROM variants WHERE PROJECT='WES_AGILENT' GROUP BY "#CHROM", POS, REF, ALT --output /home1/HUB/DB/HOWARD/dejavu/current/hg19/dejavu.WES_AGILENT.parquet --threads 10 --memory 80G
