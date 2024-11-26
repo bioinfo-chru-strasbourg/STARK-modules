@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import commons
 import time
-import sleep
+from time import sleep
 
 import howard_launcher
 import howard_processing

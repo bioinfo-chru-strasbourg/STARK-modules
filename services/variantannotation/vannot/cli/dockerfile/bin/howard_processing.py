@@ -547,7 +547,7 @@ def howard_score_transcripts(run_informations):
             memory,
             "--threads",
             threads,
-            "--calculations=SNPEFF_HGVS,SNPEFF_ANN_EXPLODE,TRANSCRIPTS_ANNOTATIONS,TRANSCRIPTS_PRIORITIZATION,TRANSCRIPTS_EXPORT,NOMEN",
+            # "--calculations=SNPEFF_HGVS,SNPEFF_ANN_EXPLODE,TRANSCRIPTS_ANNOTATIONS,TRANSCRIPTS_PRIORITIZATION,TRANSCRIPTS_EXPORT,NOMEN",
         ]
 
         log.info("Prioritization of transcripts")

@@ -46,6 +46,7 @@ WORKDIR /tools/bedtools2
 RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN make
 
+RUN mkdir /tools/vannot/
 COPY bin/*.py /tools/vannot/
 RUN chmod -R 777 /tools/
 
