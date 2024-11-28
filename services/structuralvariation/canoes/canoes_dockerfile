@@ -39,7 +39,7 @@ COPY ./app/config/annotsv/application.properties /opt/conda/etc/AnnotSV/
 
 # Copy applications files (/app)
 COPY ./app /app
-# COPY ./STARK.docker-compose.yml /app/config/module/
+COPY ./STARK.docker-compose.yml /app/config/module/
 
 WORKDIR "/app"
 ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
