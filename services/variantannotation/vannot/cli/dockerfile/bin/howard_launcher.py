@@ -7,7 +7,7 @@ import json
 
 def launch(container_name, launch_arguments):
     module_config = osj(
-        os.environ["DOCKER_MODULE_CONFIG"],
+        os.environ["HOST_MODULE_CONFIG"],
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
 
@@ -37,9 +37,9 @@ def launch(container_name, launch_arguments):
         "-v",
         f"{os.environ["HOST_DATABASES"]}:{os.environ["HOST_DATABASES"]}",
         "-v",
-        f"{os.environ["HOST_SERVICES"]}:{os.environ["DOCKER_SERVICES"]}",
+        f"{os.environ["HOST_SERVICES"]}:{os.environ["HOST_SERVICES"]}",
         "-v",
-        f"{os.environ["HOST_CONFIG"]}:{os.environ["DOCKER_CONFIG"]}",
+        f"{os.environ["HOST_CONFIG"]}:{os.environ["HOST_CONFIG"]}",
         "-v",
         "/var/run/docker.sock:/var/run/docker.sock",
         howard_image,

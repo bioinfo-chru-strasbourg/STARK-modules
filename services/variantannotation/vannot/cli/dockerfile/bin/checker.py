@@ -9,13 +9,13 @@ def absolute_folder_path(path):
     if (
         os.path.isabs(path)
         and os.path.isdir(path)
-        and not path.startswith(os.environ["DOCKER_REPOSITORY"])
+        and not path.startswith(os.environ["HOST_REPOSITORY"])
     ):
         return path
     elif (
         not os.path.isabs(path)
         and os.path.isdir(path)
-        and not os.path.abspath(path).starstwith(os.environ["DOCKER_REPOSITORY"])
+        and not os.path.abspath(path).starstwith(os.environ["HOST_REPOSITORY"])
     ):
         return os.path.abspath(path)
     else:
@@ -26,13 +26,13 @@ def absolute_run_path(path):
     if (
         os.path.isabs(path)
         and os.path.isdir(path)
-        and path.startswith(os.environ["DOCKER_REPOSITORY"])
+        and path.startswith(os.environ["HOST_REPOSITORY"])
     ):
         return path
     elif (
         not os.path.isabs(path)
         and os.path.isdir(path)
-        and os.path.abspath(path).startswith(os.environ["DOCKER_REPOSITORY"])
+        and os.path.abspath(path).startswith(os.environ["HOST_REPOSITORY"])
     ):
         return os.path.abspath(path)
     else:

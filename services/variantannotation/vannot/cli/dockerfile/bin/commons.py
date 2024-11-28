@@ -7,7 +7,7 @@ import time
 import json
 
 def get_threads(threads_type):
-    module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
+    module_config = osj(os.environ["HOST_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
     if not os.path.isfile(module_config):
         log.error(f"{module_config} do not exist, primordial file, check its existence")
         raise ValueError(module_config)
@@ -19,7 +19,7 @@ def get_threads(threads_type):
     return threads
 
 def get_memory(memory_type):
-    module_config = osj(os.environ["DOCKER_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
+    module_config = osj(os.environ["HOST_MODULE_CONFIG"], f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
     if not os.path.isfile(module_config):
         log.error(f"{module_config} do not exist, primordial file, check its existence")
         raise ValueError(module_config)
@@ -116,7 +116,7 @@ def set_log_level(args):
         log_file = f"{actual_time}_dejavuonly_{dejavu_name}.log"
 
     log_file = osj(
-        os.environ["DOCKER_SERVICES"],
+        os.environ["HOST_SERVICES"],
         "logs",
         log_file,
     )

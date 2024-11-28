@@ -47,7 +47,7 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN make
 
 RUN mkdir /tools/vannot/
-COPY bin/*.py /tools/vannot/
+COPY ./bin/*.py /tools/vannot/
 RUN chmod -R 777 /tools/
 
 RUN echo 'alias ll="ls -lra"' >> ~/.bashrc

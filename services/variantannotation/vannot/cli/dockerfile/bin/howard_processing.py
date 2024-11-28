@@ -48,7 +48,7 @@ def project_folder_initialisation(run_informations):
             run_informations["tmp_analysis_folder"],
             "exomized_" + os.path.basename(vcf_file),
         )
-        vannotplus_config = osj(os.environ["DOCKER_MODULE_CONFIG"], "vannotplus.yml")
+        vannotplus_config = osj(os.environ["HOST_MODULE_CONFIG"], "vannotplus.yml")
         if run_informations["run_application"] != "":
             main_exomiser(
                 vcf_file,
@@ -118,7 +118,7 @@ def run_initialisation(run_informations):
             run_informations["tmp_analysis_folder"],
             "exomized_" + os.path.basename(vcf_file),
         )
-        vannotplus_config = osj(os.environ["DOCKER_MODULE_CONFIG"], "vannotplus.yml")
+        vannotplus_config = osj(os.environ["HOST_MODULE_CONFIG"], "vannotplus.yml")
         main_exomiser(
             vcf_file,
             output_exomiser,
@@ -134,7 +134,7 @@ def run_initialisation(run_informations):
 
 def cleaning_annotations(vcf_file, run_informations):
     module_config = osj(
-        os.environ["DOCKER_MODULE_CONFIG"],
+        os.environ["HOST_MODULE_CONFIG"],
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
     with open(module_config, "r") as read_file:
@@ -198,11 +198,11 @@ def fambarcode_vcf(run_informations, input_vcf):
         "fambarcode_" + os.path.basename(input_vcf),
     )
     module_config = osj(
-        os.environ["DOCKER_MODULE_CONFIG"],
+        os.environ["HOST_MODULE_CONFIG"],
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
     howard_config_container = osj(
-        os.environ["DOCKER_MODULE_CONFIG"], "howard", "howard_config.json"
+        os.environ["HOST_MODULE_CONFIG"], "howard", "howard_config.json"
     )
     howard_config_host = osj(os.environ["HOST_CONFIG"], "howard", "howard_config.json")
 
@@ -215,7 +215,7 @@ def fambarcode_vcf(run_informations, input_vcf):
         )
         raise ValueError(howard_config_container)
 
-    vannotplus_config = osj(os.environ["DOCKER_MODULE_CONFIG"], "vannotplus.yml")
+    vannotplus_config = osj(os.environ["HOST_MODULE_CONFIG"], "vannotplus.yml")
     fambarcode_config = load_config(vannotplus_config)
 
     exact_time = time.time() + 7200
@@ -229,7 +229,7 @@ def fambarcode_vcf(run_informations, input_vcf):
         howard_image = data["howard_image"]
     log.info(f"Using {howard_image}")
 
-    howard_bin = f"docker run --rm --name {container_name} --env http_proxy={os.environ["http_proxy"]} --env ftp_proxy={os.environ["ftp_proxy"]} --env https_proxy={os.environ["https_proxy"]} -v /tmp/:/tmp/ -v {os.environ["HOST_TMP"]}:{os.environ["HOST_TMP"]} -v {os.environ["HOST_DATABASES"]}:/databases/ -v {os.environ["HOST_SERVICES"]}:{os.environ["DOCKER_SERVICES"]} -v {os.environ["HOST_CONFIG"]}:{os.environ["DOCKER_CONFIG"]} -v {howard_config_host}:/tools/howard/current/config/config.json -v /var/run/docker.sock:/var/run/docker.sock {howard_image} calculation"
+    howard_bin = f"docker run --rm --name {container_name} --env http_proxy={os.environ["http_proxy"]} --env ftp_proxy={os.environ["ftp_proxy"]} --env https_proxy={os.environ["https_proxy"]} -v /tmp/:/tmp/ -v {os.environ["HOST_TMP"]}:{os.environ["HOST_TMP"]} -v {os.environ["HOST_DATABASES"]}:/databases/ -v {os.environ["HOST_SERVICES"]}:{os.environ["HOST_SERVICES"]} -v {os.environ["HOST_CONFIG"]}:{os.environ["HOST_CONFIG"]} -v {howard_config_host}:/tools/howard/current/config/config.json -v /var/run/docker.sock:/var/run/docker.sock {howard_image} calculation"
 
     fambarcode_config["howard"]["bin"] = howard_bin
     main_barcode(
@@ -316,7 +316,7 @@ def info_to_format_script(vcf_file, run_informations):
         f"Moving desired columns to FORMAT column for {os.path.basename(vcf_file)}"
     )
     module_config = osj(
-        os.environ["DOCKER_MODULE_CONFIG"],
+        os.environ["HOST_MODULE_CONFIG"],
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
     output_file = osj(
@@ -433,14 +433,14 @@ def howard_proc(run_informations, vcf_file):
             "none",
         ]:
             configfile = osj(
-                os.environ["DOCKER_MODULE_CONFIG"],
+                os.environ["HOST_MODULE_CONFIG"],
                 "paramfiles",
                 f"param.{option}.json",
             )
             if os.path.isfile(configfile):
                 break
             elif configfile == osj(
-                os.environ["DOCKER_MODULE_CONFIG"], "paramfiles", "param.none.json"
+                os.environ["HOST_MODULE_CONFIG"], "paramfiles", "param.none.json"
             ):
                 log.error(
                     "Missing parameter file for your analysis, didn't find application nor platform not default parameters"
@@ -457,7 +457,7 @@ def howard_proc(run_informations, vcf_file):
         raise ValueError(configfile)
 
     howard_config = osj(
-        os.environ["DOCKER_MODULE_CONFIG"], "howard", "howard_config.json"
+        os.environ["HOST_MODULE_CONFIG"], "howard", "howard_config.json"
     )
     threads = commons.get_threads("threads_annotation")
     memory = commons.get_memory("memory_annotation")
@@ -503,7 +503,7 @@ def gmc_score(run_informations):
             "gmc_" + os.path.basename(vcf_file),
         )
         print(output_gmc)
-        vannotplus_config = osj(os.environ["DOCKER_MODULE_CONFIG"], "vannotplus.yml")
+        vannotplus_config = osj(os.environ["HOST_MODULE_CONFIG"], "vannotplus.yml")
         main_annot(
             vcf_file,
             output_gmc,
@@ -516,7 +516,7 @@ def gmc_score(run_informations):
 def howard_score_transcripts(run_informations):
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
     transcript_param = osj(
-        os.environ["DOCKER_MODULE_CONFIG"],
+        os.environ["HOST_MODULE_CONFIG"],
         "howard",
         "param.transcripts.json",
     )
@@ -556,7 +556,7 @@ def howard_score_transcripts(run_informations):
         os.rename(output_file_transcripts, vcf_file)
 
         with open(
-            osj(os.environ["DOCKER_MODULE_CONFIG"], "howard", "param.transcripts.json"),
+            osj(os.environ["HOST_MODULE_CONFIG"], "howard", "param.transcripts.json"),
             "r",
         ) as read_file:
             data = json.load(read_file)
@@ -576,7 +576,7 @@ def convert_to_final_tsv(run_informations):
     threads = commons.get_threads("threads_conversion")
     memory = commons.get_memory("memory_conversion")
     module_config = osj(
-        os.environ["DOCKER_MODULE_CONFIG"],
+        os.environ["HOST_MODULE_CONFIG"],
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
     with open(module_config, "r") as read_file:

@@ -32,7 +32,7 @@ def vcf_synchronizer(run_informations):
     pattern = run_informations["vcf_pattern"]
 
     module_config = osj(
-        os.environ["DOCKER_MODULE_CONFIG"],
+        os.environ["HOST_MODULE_CONFIG"],
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
     with open(module_config, "r") as read_file:

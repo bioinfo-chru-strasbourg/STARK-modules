@@ -23,7 +23,7 @@ def launch_dejavu(args):
         "run_repository": "",
         "vcf_pattern": "",
         "archives_project_folder": osj(
-            os.environ["DOCKER_SERVICES"],
+            os.environ["HOST_SERVICES"],
             "Archives",
             args.assembly,
             analysis_project_name[-2],

@@ -25,7 +25,7 @@ def launch_run(args):
         "run_platform": run_repository_list[-3],
         "run_platform_application": f"{run_repository_list[-3]}.{run_repository_list[-2]}",
         "run_depository": osj(
-            os.environ["DOCKER_DEPOSITORY"],
+            os.environ["HOST_DEPOSITORY"],
             run_repository_list[-3],
             run_repository_list[-2],
             run_repository_list[-1],
@@ -33,14 +33,14 @@ def launch_run(args):
         "run_repository": run_repository,
         "vcf_pattern": args.pattern,
         "archives_project_folder": osj(
-            os.environ["DOCKER_SERVICES"],
+            os.environ["HOST_SERVICES"],
             "Archives",
             args.assembly,
             run_repository_list[-3],
             run_repository_list[-2],
         ),
         "archives_results_folder": osj(
-            os.environ["DOCKER_SERVICES"],
+            os.environ["HOST_SERVICES"],
             "Archives",
             args.assembly,
             run_repository_list[-3],
@@ -48,7 +48,7 @@ def launch_run(args):
             "results",
         ),
         "archives_run_folder": osj(
-            os.environ["DOCKER_SERVICES"],
+            os.environ["HOST_SERVICES"],
             "Archives",
             args.assembly,
             run_repository_list[-3],
@@ -95,7 +95,7 @@ def launch_run(args):
             f"tmp_{run_repository_list[-1]}/",
         ),
         "module_config": osj(
-            os.environ["DOCKER_CONFIG"],
+            os.environ["HOST_CONFIG"],
             f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
         ),
     }

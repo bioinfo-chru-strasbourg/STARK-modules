@@ -35,7 +35,7 @@ def launch_folder(args):
             f"tmp_{analysis_folder_name[-1]}/",
         ),
         "module_config": osj(
-            os.environ["DOCKER_CONFIG"],
+            os.environ["HOST_CONFIG"],
             f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
         ),
     }
