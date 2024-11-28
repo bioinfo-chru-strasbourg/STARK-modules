@@ -29,8 +29,8 @@ services:
             dockerfile: fusions_dockerfile
         container_name: stark-module-rnaseq-submodule-fusions-service-cli
         restart: "no"
-        entrypoint: ["/bin/bash"]
-        command: ["-l"]
+        entrypoint: ["/bin/bash", "-c"]
+        command: ["tail -f /dev/null"]  
         tty: true
         stdin_open: true
         volumes:

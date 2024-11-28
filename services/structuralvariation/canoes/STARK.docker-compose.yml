@@ -29,8 +29,8 @@ services:
             dockerfile: canoes_dockerfile
         container_name: stark-module-structuralvariation-submodule-canoes-service-cli
         restart: "no"
-        entrypoint: ["/bin/bash"]
-        command: ["-l"]
+        entrypoint: ["/bin/bash", "-c"]
+        command: ["tail -f /dev/null"]  
         tty: true
         stdin_open: true
         volumes:

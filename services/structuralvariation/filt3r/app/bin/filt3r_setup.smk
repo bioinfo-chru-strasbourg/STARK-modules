@@ -53,6 +53,9 @@ for item in log_items:
 		logging.info(f"{item[0]} {item[1]}")
 
 ################## Snakemake Rules ##################
+rule all:
+	input: 	f"{services_folder}/cli/SETUPComplete.txt"
+
 rule cp:
 	output: f"{services_folder}/cli/SETUPComplete.txt"
 	shell: " mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli && touch {output} " 
