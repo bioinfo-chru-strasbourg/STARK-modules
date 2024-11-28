@@ -1,22 +1,22 @@
 {
 	"services": {
-		"DRAWFUSIONS": {
+		"FLT3ITDEXT": {
 			"infos": {
-				"name": "DRAWFUSIONS",
-				"description": "DRAWFUSIONS analysis",
-				"triggers-description": "(STARKCopyComplete.txt AND NOT (DRAWFUSIONSRunning.txt AND DRAWFUSIONSComplete.txt AND DRAWFUSIONSFailed.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
+				"name": "FLT3ITDEXT",
+				"description": "FLT3ITDEXT analysis",
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (FLT3ITDEXTRunning.txt AND FLT3ITDEXTComplete.txt AND FLT3ITDEXTFailed.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
 			},
 			"triggers": {
 				"AND_1":{
 					"file":[
 						"STARKCopyComplete.txt",
-						"!DRAWFUSIONSRunning.txt",
-						"!DRAWFUSIONSComplete.txt",
-						"!DRAWFUSIONSFailed.txt"
+						"!FLT3ITDEXTRunning.txt",
+						"!FLT3ITDEXTComplete.txt",
+						"!FLT3ITDEXTFailed.txt"
 					],
 					"OR_1":{
 						"tags":[
-							"DRAWFUSIONS"
+							"FLT3ITDEXT"
 						],
 						"AND_2":{
 							"group":[

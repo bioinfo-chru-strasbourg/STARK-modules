@@ -1,0 +1,66 @@
+{
+	"services": {
+		"SCRAMBLE": {
+			"infos": {
+				"name": "SCRAMBLE",
+				"description": "SCRAMBLE analysis",
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (SCRAMBLERunning.txt AND SCRAMBLEComplete.txt AND SCRAMBLEFailed.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
+			},
+			"triggers": {
+				"AND_1":{
+					"file":[
+						"STARKCopyComplete.txt",
+						"!SCRAMBLERunning.txt",
+						"!SCRAMBLEComplete.txt",
+						"!SCRAMBLEFailed.txt"
+					],
+					"OR_1":{
+						"tags":[
+							"SCRAMBLE"
+						],
+						"AND_2":{
+							"group":[
+								"HUSDIAGGEN",
+								"DIAG"
+							],
+							"project":[
+								"BBS_RP",
+								"DI",
+								"DIPAI",
+								"DPI",
+								"INFERTILITE",
+								"MYOPATHIE",
+								"PC_NEURO",
+								"PMDA",
+								"GOMV1_GERMLINE",
+								"GOMV1_SOMATIC"
+							]
+						}
+					},
+				"OR_2":{
+					"tags":[
+						"!POOL"
+					],
+					"AND_3":{
+						"tags":[
+							"POOL"
+						],
+						"OR_3":{
+							"OR_4":{
+								"file":[
+									"POOLRunning.txt"
+								]
+							},
+							"OR_5":{
+								"file":[
+									"POOLComplete.txt"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
