@@ -70,8 +70,7 @@ else:
 	run_genehancer = False
 
 rule all:
-	input: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV.dummyannotation.tsv"
-
+	input: f"{services_folder}/cli/SETUPComplete.txt"
 
 rule install_db:
 	output:
@@ -122,14 +121,20 @@ rule annotSV_dummy_vcf:
 	input:
 		success=rules.install_db.output.exomiser_success,
 		file="/app/scripts/dummy/dummy.vcf"
-	output: f"{db}/AnnotSV/{{ANNOTSV_VERSION}}/AnnotSV.dummyannotation.tsv"
+	output: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV.dummyannotation.tsv"
 	params:
-		annotsvdir=f"{db}/AnnotSV/{{ANNOTSV_VERSION}}/",
+		annotsvdir=f"{db}/AnnotSV/{ANNOTSV_VERSION}/",
 		genomeBuild=config['genomeBuild']
-	log: f"{db}/AnnotSV/{{ANNOTSV_VERSION}}/AnnotSV.dummyannotation.log"
+	log: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV.dummyannotation.log"
 	shell: """
 		AnnotSV -SVinputFile {input.file} -annotationsDir {params.annotsvdir} -outputFile {output} -genomeBuild {params.genomeBuild} 1>{log}
 	"""
+
+rule cp:
+	input: rules.annotSV_dummy_vcf.output
+	output: f"{services_folder}/cli/SETUPComplete.txt"
+	shell: " mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli && touch {output} " 
+
 
 onstart:
 	shell(f"rm -f {services_folder}/cli/SETUPComplete.txt")
@@ -141,8 +146,6 @@ onstart:
 
 onsuccess:
 	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")
-	shell(f"touch {services_folder}/cli/SETUPComplete.txt")
-	shell(f"mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli")
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write(f"End of the setup: {date_time_end}\n")
