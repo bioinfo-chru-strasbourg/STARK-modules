@@ -199,7 +199,7 @@ def kmerisation(kmerSize, kmerBedFile, df=None, bedFile=None):
 	"""
 	# Validate input: Ensure one of df or bedFile is provided.
 	if df is None and bedFile is None:
-		raise ValueError("Either 'df' or 'bedFile' must be provided.")
+		raise ValueError("[ERROR] Either 'df' or 'bedFile' must be provided.")
 	
 	print(f"[INFO] Kmerisation of {kmerSize} fragment size in progress")
 	
@@ -210,7 +210,7 @@ def kmerisation(kmerSize, kmerBedFile, df=None, bedFile=None):
 		source = open(bedFile, 'r')
 		source_type = 'file'
 	else:
-		raise ValueError("Either df or bedFile must be provided")
+		raise ValueError("[ERROR] Either df or bedFile must be provided")
 
 	with open(kmerBedFile, 'w+') as writeKbed:
 		if source_type == 'file':
