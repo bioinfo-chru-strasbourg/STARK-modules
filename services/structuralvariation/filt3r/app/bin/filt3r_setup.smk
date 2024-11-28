@@ -28,8 +28,8 @@ import json
 configfile: "/app/config/snakefile/filt3r_default.yaml"
 ##################################################
 
-services_folder = f"{config['services']}/{config['moduleName']}/{config['serviceName'].lower()}
-config_folder = f"{config['config']}/{config['moduleName']}/{config['serviceName'].lower()}
+services_folder = f"{config['services']}/{config['moduleName']}/{config['serviceName'].lower()}"
+config_folder = f"{config['config']}/{config['moduleName']}/{config['serviceName'].lower()}"
 
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 
