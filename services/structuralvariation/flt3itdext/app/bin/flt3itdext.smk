@@ -319,7 +319,7 @@ rule flt3_itd_ext:
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf"
 	params:
 		output = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/",
-		outputfile = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.{aligner}.vcf",
+		outputfile = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.{{aligner}}.vcf",
 		assembly = config['ASSEMBLY'],
 		index = config['REF_ITD_PATH'],
 		ngstype = config['NGS_TYPE'],
@@ -355,15 +355,15 @@ rule bcftools_filter:
 	params:	config['BCFTOOLS_FILTER']
 	shell: " bcftools view {params} {input} -o {output} "
 
-rule sortvcf:
-	"""	Bash script to sort a vcf """
-	input: rules.bcftools_filter.output
-	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.sort.vcf")
-	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
+#rule sortvcf:
+#	"""	Bash script to sort a vcf """
+#	input: rules.bcftools_filter.output
+#	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.sort.vcf")
+#	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
-	input: rules.sortvcf.output
+	input: rules.bcftools_filter.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz"
 	shell: " bgzip -c {input} > {output} ; tabix {output} "
 
