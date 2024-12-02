@@ -222,6 +222,8 @@ def checkTriggers(jconfig, serviceName, run):
 						listNotFile.append(running(run, file[1:-11]))
 					elif "Complete.txt" in file:
 						listNotFile.append(complete(run, file[1:-12]))
+					elif "Failed.txt" in file:
+						listFile.append(not failed(run, file[:-10]))
 					elif "STARKCopyComplete.txt" in file:
 						listNotFile.append(complete(run, "STARK"))
 				else:
@@ -230,7 +232,7 @@ def checkTriggers(jconfig, serviceName, run):
 					elif "Complete.txt" in file:
 						listFile.append(not complete(run, file[:-12]))
 					elif "Failed.txt" in file:
-						listFile.append(not failed(run, file[:-12]))
+						listFile.append(not failed(run, file[:-10]))
 					elif "STARKCopyComplete.txt" in file:
 						listFile.append(not complete(run, "STARK"))
 			if all(listNotFile + listFile):

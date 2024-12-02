@@ -366,8 +366,15 @@ rule correctvcf:
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixGT.vcf")
 	shell:
 		"""
-		(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output}
+		data_lines=$(grep -v '^#' {input} | wc -l || echo 0)
+		if [ "$data_lines" -eq 0 ]; then
+				echo "[INFO] No variant data found in {input}. Copying input file to {output}."
+				cp {input} {output}
+			else
+				(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output}
+			fi
 		"""
+
 
 rule correct_chr:
 	"""Correction of VCF output: add 'chr' prefix to contig and #CHROM values."""
@@ -400,25 +407,9 @@ rule bcftools_filter:
 	shell: "bcftools view {params} {input} -o {output}"
 
 
-rule sortvcf:
-	"""	Bash script to sort a vcf """
-	input: rules.bcftools_filter.output
-	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.sort.vcf")
-	#shell: " (grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g) > {output} "
-	shell:
-		"""
-		data_lines=$(grep -v '^#' {input} | wc -l || echo 0)
-		if [ $data_lines -eq 0 ]; then
-			echo "Warning: No variant data found in {input}. Skipping sort step."
-			cp {input} {output}  
-		else
-			(grep '^#' {input} && grep -v '^#' {input} | sort -k1,1V -k2,2g) > {output}
-		fi
-		"""
-
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
-	input: rules.sortvcf.output
+	input: rules.bcftools_filter.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz"
 	shell: " bgzip -c {input} > {output} ; tabix {output} "
 
