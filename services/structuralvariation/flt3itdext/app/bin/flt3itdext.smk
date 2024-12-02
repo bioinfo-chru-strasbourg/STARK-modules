@@ -310,7 +310,7 @@ rule indexing:
 rule flt3_itd_ext:
 	"""
 	Flt3_itd_ext is a software that detects internal duplications in bam files
-	Ouput file is sample.aligner_FLT3_ITD.vcf & sample.aligner_FLT3_ITD_summary.txt 
+	Ouput file is sample.aligner.vcf & sample.aligner_FLT3_ITD_summary.txt 
 	(same results as the vcf but in txt format)
 	"""
 	input:
@@ -318,8 +318,8 @@ rule flt3_itd_ext:
 		bai = rules.indexing.output
 	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf"
 	params:
-		output = resultDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/",
-		outputfile = resultDir+"/{sample}/"+serviceName+"/{sample}_"+date_time+"_"+serviceName+"/{sample}.{aligner}.vcf",
+		output = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/",
+		outputfile = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.{aligner}.vcf",
 		assembly = config['ASSEMBLY'],
 		index = config['REF_ITD_PATH'],
 		ngstype = config['NGS_TYPE'],
@@ -371,7 +371,7 @@ rule mergevcf:
 	"""	Copy or merge with bcftools several vcfs """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.vcf.gz"
-	shell: f"if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
+	shell: "if [ {sample_count} -eq 1 ]; then cp {{input}} {{output}} && tabix {{output}}; else bcftools merge {{input}} -O z -o {{output}} && tabix {{output}}; fi"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")

@@ -404,8 +404,17 @@ rule sortvcf:
 	"""	Bash script to sort a vcf """
 	input: rules.bcftools_filter.output
 	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.sort.vcf")
-	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
-
+	#shell: " (grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g) > {output} "
+	shell:
+		"""
+		data_lines=$(grep -v '^#' {input} | wc -l || echo 0)
+		if [ $data_lines -eq 0 ]; then
+			echo "Warning: No variant data found in {input}. Skipping sort step."
+			cp {input} {output}  
+		else
+			(grep '^#' {input} && grep -v '^#' {input} | sort -k1,1V -k2,2g) > {output}
+		fi
+		"""
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""

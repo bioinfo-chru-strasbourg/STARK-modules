@@ -1971,12 +1971,21 @@ foreach $j ( sort {$extByLength{$b}<=>$extByLength{$a}} keys %extByLength ) {
 
 if( length( $sumaclust ) == 0 ) {
     print "NO ITD CANDIDATE CLUSTERS GENERATED. Exiting...\n"; 
-    #system( "touch " . $fbase . "_ITD_none.vcf" );
 	system( "touch " . $fbase . ".vcf" );
-    if( !$debug && ( system( "rm " . $fbase . ".nowt.R*.fastq" ) || 
-        ( $inbam ne "" && system( "rm " . $fbase . ".R*.fastq" ) ) ) ) {
-      die "Error removing fastq files. Exiting...";
-    }
+	if (!$debug) {
+		my $cmd1 = "rm " . $fbase . ".nowt.R*.fastq";
+		my $cmd2 = $inbam ne "" ? "rm " . $fbase . ".R*.fastq" : "";
+
+		# Try to execute the first rm command and check for failure
+		if (system($cmd1) != 0) {
+			warn "Warning: Failed to execute '$cmd1'. Exit code: " . ($? >> 8);
+		}
+
+		# If applicable, try to execute the second rm command and check for failure
+		if ($cmd2 && system($cmd2) != 0) {
+			warn "Warning: Failed to execute '$cmd2'. Exit code: " . ($? >> 8);
+		}
+	}
     exit(0);
 }
 
@@ -2172,12 +2181,21 @@ foreach( keys %adets ) {
 }
 if( scalar( keys %itdkeys ) == 0 ) {
     print "NO ITD CANDIDATES. Exiting...\n";
-    #system( "touch " . $fbase . "_ITD_none.vcf" );
 	system( "touch " . $fbase . ".vcf" );
-    if( !$debug && ( system( "rm " . $fbase . ".nowt.R*.fastq" ) || 
-        ( $inbam ne "" && system( "rm " . $fbase . ".R*.fastq" ) ) ) ) {
-      die "Error removing fastq files. Exiting...";
-    }
+	if (!$debug) {
+		my $cmd1 = "rm " . $fbase . ".nowt.R*.fastq";
+		my $cmd2 = $inbam ne "" ? "rm " . $fbase . ".R*.fastq" : "";
+
+		# Execute the first command and check for failure
+		if (system($cmd1) != 0) {
+			warn "Warning: Failed to execute '$cmd1'. Exit code: " . ($? >> 8);
+		}
+
+		# Execute the second command if applicable and check for failure
+		if ($cmd2 && system($cmd2) != 0) {
+			warn "Warning: Failed to execute '$cmd2'. Exit code: " . ($? >> 8);
+		}
+	}
     exit(0);
 }
 
@@ -2279,12 +2297,21 @@ foreach my $size ( keys %svkeysByBinTot ) {
 
 if( scalar( keys %itdkeysfiltered ) == 0 ) {
     print "NO *FILTERED* ITD CANDIDATES. Exiting...\n";
-    #system( "touch " . $fbase . "_ITD_none.vcf" );
 	system( "touch " . $fbase . ".vcf" );
-    if( !$debug && ( system( "rm " . $fbase . ".nowt.R*.fastq" ) || 
-        ( $inbam ne "" && system( "rm " . $fbase . ".R*.fastq" ) ) ) ) {
-      die "Error removing fastq files. Exiting...";
-    }
+	if (!$debug) {
+		my $cmd1 = "rm " . $fbase . ".nowt.R*.fastq";
+		my $cmd2 = $inbam ne "" ? "rm " . $fbase . ".R*.fastq" : "";
+
+		# Execute the first command
+		if (system($cmd1) != 0) {
+			warn "Warning: Failed to execute '$cmd1'. Exit code: " . ($? >> 8);
+		}
+
+		# Execute the second command if applicable
+		if ($cmd2 && system($cmd2) != 0) {
+			warn "Warning: Failed to execute '$cmd2'. Exit code: " . ($? >> 8);
+		}
+	}
 }
 
 
@@ -2382,9 +2409,17 @@ foreach my $itd ( sort {$extpreHash{$b} <=> $extpreHash{$a} } keys %itdkeysfilte
   }
 }
 
-if( !$debug && ( system( "rm " . $fbase . ".nowt.R*.fastq" ) || 
-  ( $inbam ne "" && system( "rm " . $fbase . ".R*.fastq" ) ) ) ) {
-  die "Error removing fastq files. Exiting...";
+if (!$debug) {
+    my $cmd1 = "rm " . $fbase . ".nowt.R*.fastq";
+    my $cmd2 = $inbam ne "" ? "rm " . $fbase . ".R*.fastq" : "";
+
+    my $status1 = system($cmd1);
+    warn "Warning: Command '$cmd1' failed with exit code $?." if $status1;
+
+    if ($cmd2) {
+        my $status2 = system($cmd2);
+        warn "Warning: Command '$cmd2' failed with exit code $?." if $status2;
+    }
 }
 
 open (FO, ">" . $fbase . "_to_candidate_ITDs.filtered.sam" ) or die $!;
