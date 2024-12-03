@@ -332,6 +332,7 @@ rule flt3_itd_ext:
 		if [ -s {params.outputfile} ]; then
 			mv {params.outputfile} {output};
 		else
+			echo "[INFO] No variant found. Outputting empty vcf"
 			cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		fi
 		"""
@@ -346,6 +347,7 @@ rule correct_vcf:
 			echo "[INFO] No variant data found in {input}. Copying input file to {output}."
 			cp {input} {output}
 		else
+			echo "[INFO] Fixing genotype FORMAT field."
 			grep "^##" {input} > {output}
 			echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' >> {output}
 			grep -v "^#" {input} | sed 's/$/\\tGT\\t0\\/1/' >> {output}
@@ -376,6 +378,7 @@ rule bcftools_filter:
 			echo "[INFO] No variant data found in {input}. Copying input file to {output}."
 			cp {input} {output}
 		else
+			echo "[INFO] Filtering {input}."
 			bcftools view {params} {input} -o {output}
 		fi
 		"""

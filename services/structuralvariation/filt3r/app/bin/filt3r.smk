@@ -370,6 +370,7 @@ rule correctvcf:
 			echo "[INFO] No variant data found in {input}. Copying input file to {output}."
 			cp {input} {output}
 		else
+			echo "[INFO] Fixing genotype FORMAT field.
 			grep "^##" {input} > {output}
 			echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' >> {output}
 			grep "^#CHROM" {input} | sed 's/$/\\tFORMAT\\t{wildcards.sample}/' >> {output}
@@ -412,6 +413,7 @@ rule bcftools_filter:
 			echo "[INFO] No variant data found in {input}. Copying input file to {output}."
 			cp {input} {output}
 		else
+			echo "[INFO] Filtering {input}."
 			bcftools view {params} {input} -o {output}
 		fi
 		"""
