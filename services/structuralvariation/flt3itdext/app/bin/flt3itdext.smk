@@ -348,7 +348,6 @@ rule correct_vcf:
 		else
 			grep "^##" {input} > {output}
 			echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' >> {output}
-			grep "^#CHROM" {input} | sed 's/$/\\tFORMAT\\t{wildcards.sample}/' >> {output}
 			grep -v "^#" {input} | sed 's/$/\\tGT\\t0\\/1/' >> {output}
 		fi
 		"""
