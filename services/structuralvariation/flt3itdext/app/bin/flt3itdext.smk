@@ -371,8 +371,15 @@ rule bcftools_filter:
 	input: rules.correct_chr.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.filter.vcf")
 	params:	config['BCFTOOLS_FILTER']
-	shell: " bcftools view {params} {input} -o {output} "
-
+	shell:
+		"""
+		if ! grep -q -v '^#' {input}; then
+			echo "[INFO] No variant data found in {input}. Copying input file to {output}."
+			cp {input} {output}
+		else
+			bcftools view {params} {input} -o {output}
+		fi
+		"""
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
