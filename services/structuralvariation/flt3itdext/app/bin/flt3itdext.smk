@@ -324,17 +324,35 @@ rule flt3_itd_ext:
 		index = config['REF_ITD_PATH'],
 		ngstype = config['NGS_TYPE'],
 		mr = config ['MINREADS'],
-		scriptfolder = config['SCRIPT_PATH']
+		scriptfolder = config['SCRIPT_PATH'],
+		dummypath = config['DUMMY_FILES']
 	shell:
 		"""
-		perl {params.scriptfolder}/FLT3_ITD_ext.pl -b {input.bam} -mr {params.mr} -g {params.assembly} --ngstype {params.ngstype} -i {params.index} -o {params.output}; mv {params.outputfile} {output}
+		perl {params.scriptfolder}/FLT3_ITD_ext.pl -b {input.bam} -mr {params.mr} -g {params.assembly} --ngstype {params.ngstype} -i {params.index} -o {params.output}
+		if [ -s {params.outputfile} ]; then
+			mv {params.outputfile} {output};
+		else
+			cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		fi
 		"""
 
 rule correct_vcf:
 	"""	Correction of vcf output, add genotype to be consistent with the vcf format specification """
 	input: rules.flt3_itd_ext.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixGT.vcf")
-	shell: """ (grep "^##" {input} && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0}}' && grep -v "^#" {input} | awk '{{print $0"\tGT\t0/1"}}') > {output} """
+	shell:
+		"""
+		if ! grep -q -v '^#' {input}; then
+			echo "[INFO] No variant data found in {input}. Copying input file to {output}."
+			cp {input} {output}
+		else
+			grep "^##" {input} > {output}
+			echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' >> {output}
+			grep "^#CHROM" {input} | sed 's/$/\\tFORMAT\\t{wildcards.sample}/' >> {output}
+			grep -v "^#" {input} | sed 's/$/\\tGT\\t0\\/1/' >> {output}
+		fi
+		"""
+
 
 rule correct_chr:
 	"""
@@ -355,11 +373,6 @@ rule bcftools_filter:
 	params:	config['BCFTOOLS_FILTER']
 	shell: " bcftools view {params} {input} -o {output} "
 
-#rule sortvcf:
-#	"""	Bash script to sort a vcf """
-#	input: rules.bcftools_filter.output
-#	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.sort.vcf")
-#	shell: " {{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output} "
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""

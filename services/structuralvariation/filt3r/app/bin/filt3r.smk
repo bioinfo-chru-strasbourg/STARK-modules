@@ -366,13 +366,15 @@ rule correctvcf:
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixGT.vcf")
 	shell:
 		"""
-		data_lines=$(grep -v '^#' {input} | wc -l || echo 0)
-		if [ "$data_lines" -eq 0 ]; then
-				echo "[INFO] No variant data found in {input}. Copying input file to {output}."
-				cp {input} {output}
-			else
-				(grep "^##" {input} && echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' && grep "^#CHROM" {input} | awk -v SAMPLE={wildcards.sample} '{{print $0"\tFORMAT\t"SAMPLE}}' && grep "^#" -v {input} | awk '{{print $0"\tGT\t0/1"}}') > {output}
-			fi
+		if ! grep -q -v '^#' {input}; then
+			echo "[INFO] No variant data found in {input}. Copying input file to {output}."
+			cp {input} {output}
+		else
+			grep "^##" {input} > {output}
+			echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' >> {output}
+			grep "^#CHROM" {input} | sed 's/$/\\tFORMAT\\t{wildcards.sample}/' >> {output}
+			grep -v "^#" {input} | sed 's/$/\\tGT\\t0\\/1/' >> {output}
+		fi
 		"""
 
 
