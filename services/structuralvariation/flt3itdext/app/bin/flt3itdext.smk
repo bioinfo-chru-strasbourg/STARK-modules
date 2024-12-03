@@ -332,7 +332,7 @@ rule flt3_itd_ext:
 		if [ -s {params.outputfile} ]; then
 			mv {params.outputfile} {output};
 		else
-			echo "[INFO] No variant found. Outputting empty vcf"
+			echo "[INFO] No variant found. Outputting empty vcf."
 			cat {params.dummypath}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
 		fi
 		"""
