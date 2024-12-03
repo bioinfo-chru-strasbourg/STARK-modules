@@ -230,22 +230,24 @@ def calculate_dejavu(run_informations):
         "--memory",
         memory,
     ]
+    
+    day_time = time.strftime("%d%m%Y")
 
     howard_launcher.launch(container_name, launch_query_arguments)
     os.remove(dejavu_output_parquet_hdr)
     with open(dejavu_output_parquet_hdr, "w") as writefile:
         writefile.write("##fileformat=VCFv4.2\n")
         writefile.write(
-            '##INFO=<ID=ALLELECOUNT,Number=.,Type=Float,Description="allele count annotation">\n'
+            f'##INFO=<ID=ALLELECOUNT,Number=.,Type=Integer,Description="VANNOT dejavu {day_time} allele count">\n'
         )
         writefile.write(
-            '##INFO=<ID=HETCOUNT,Number=.,Type=Float,Description="heterozygot count annotation">\n'
+            f'##INFO=<ID=HETCOUNT,Number=.,Type=Integer,Description="VANNOT dejavu {day_time} heterozygote count">\n'
         )
         writefile.write(
-            '##INFO=<ID=HOMCOUNT,Number=.,Type=Float,Description="homozygot count annotation">\n'
+            f'##INFO=<ID=HOMCOUNT,Number=.,Type=Integer,Description="VANNOT dejavu {day_time} homozygote count">\n'
         )
         writefile.write(
-            '##INFO=<ID=ALLELEFREQ,Number=.,Type=Float,Description="allele frequency annotation">\n'
+            f'##INFO=<ID=ALLELEFREQ,Number=.,Type=Float,Description="VANNOT dejavu {day_time} allele frequency">\n'
         )
         writefile.write(
             f"#CHROM\tPOS\tREF\tALT\t{allelecount}\t{hetcount}\t{homcount}\t{allelefreq}\n"

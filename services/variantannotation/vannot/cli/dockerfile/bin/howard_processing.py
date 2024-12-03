@@ -177,7 +177,6 @@ def cleaning_annotations(vcf_file, run_informations):
     cmd = ["bcftools", "annotate", "-x"]
     cmd.append(info_to_keep)
     cmd.append(vcf_file)
-    print(cmd)
     with open(cleaned_vcf, "w") as output:
         subprocess.call(cmd, stdout=output, universal_newlines=True)
     os.remove(vcf_file)
@@ -497,12 +496,10 @@ def gmc_score(run_informations):
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
 
     for vcf_file in vcf_files:
-        print(vcf_file)
         output_gmc = osj(
             run_informations["tmp_analysis_folder"],
             "gmc_" + os.path.basename(vcf_file),
         )
-        print(output_gmc)
         vannotplus_config = osj(os.environ["HOST_MODULE_CONFIG"], "vannotplus.yml")
         main_annot(
             vcf_file,
@@ -547,7 +544,6 @@ def howard_score_transcripts(run_informations):
             memory,
             "--threads",
             threads,
-            # "--calculations=SNPEFF_HGVS,SNPEFF_ANN_EXPLODE,TRANSCRIPTS_ANNOTATIONS,TRANSCRIPTS_PRIORITIZATION,TRANSCRIPTS_EXPORT,NOMEN",
         ]
 
         log.info("Prioritization of transcripts")
@@ -631,31 +627,114 @@ def convert_to_final_tsv(run_informations):
                 memory,
             ]
             howard_launcher.launch(container_name, launch_convert_arguments)
-            tsv_column_remover(output_file)
+            output_file = format_explode(vcf_file, output_file)
+            # tsv_modifier(output_file)
 
+def format_explode(vcf_file, tsv_file):
+    output_file = osj(os.path.dirname(tsv_file), "tmp_" + os.path.basename(tsv_file))
+    tsv_line = []
+    format_dict = {}
+    index_dict = {}
 
-def tsv_column_remover(input_file):
-    columns_to_remove = ["ID", "QUAL", "FILTER", "INFO", "FORMAT"]
+    vcf_file_gunzip = vcf_file[:-3]
+    subprocess.call(["gunzip", vcf_file])
+
+    with open(vcf_file_gunzip, "r") as vcf_read:
+        for l in vcf_read:
+            if l.startswith("#CHROM"):
+                l = l.rstrip("\r\n").split("\t")
+                for i in range(len(l)):
+                    if l[i] == "FORMAT":
+                        format_index = i
+                        values_index = i+1
+            elif not l.startswith("#"):
+                l = l.rstrip("\r\n").split("\t")
+                variant_name = l[0] + "_" + l[1] + "_" + l[3] + "_" + l[4]
+                format_dict[variant_name] = [l[format_index].split(":"), l[values_index].split(":")]
+    with open(tsv_file, "r") as tsv_read:
+        for l in tsv_read:
+            if l.startswith("#CHROM"):
+                header = l.rstrip("\r\n").split("\t")
+            else:
+                tsv_line.append(l)
+    
+    vcf_header = set()
+    for values in format_dict.values():
+        vcf_header = vcf_header | set(values[0])
+        
+    vcf_header = list(vcf_header)
+    vcf_header_cleaned = []
+    for i in vcf_header:
+        if i not in header:
+            vcf_header_cleaned.append(i)
+    new_header = header + vcf_header_cleaned
+    
+    with open(output_file, "w") as write_file:
+        write_file.write("\t".join(new_header) + "\r\n")
+
+    for i in vcf_header:
+        index_dict[i] = new_header.index(i)
+    
+    for line in tsv_line:
+        line = line.rstrip("\r\n").split("\t")
+        for i in range(len(new_header)-len(line)):
+            line.append("")
+        tsv_variant = line[0] + "_" + line[1] + "_" + line[3] + "_" + line[4]
+        if tsv_variant in format_dict:
+            count = 0
+            associated_values = {}
+            for i in format_dict[tsv_variant][0]:
+                associated_values[i] = format_dict[tsv_variant][1][count]
+                count += 1
+            for key, value in associated_values.items():
+                key_index = index_dict[key]
+                if value == "1/1":
+                    value = '="1/1"'
+                    line[key_index] = value
+                else: 
+                    line[key_index] = value
+            with open(output_file, "a") as write_file:
+                write_file.write("\t".join(line) + "\r\n")
+        
+    subprocess.call(["bgzip", vcf_file_gunzip])
+    os.remove(tsv_file)
+    os.rename(output_file, tsv_file)
+    return tsv_file
+        
+def tsv_modifier(input_file):
+    sample = os.path.basename(input_file).removesuffix(".tsv").removeprefix("VANNOT_")
     output_file = osj(
         os.path.dirname(input_file), "tmp_" + os.path.basename(input_file)
     )
+    module_config = osj(os.environ["HOST_MODULE_CONFIG"],f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        values_to_change = data["tsv_columns_point_to_coma"]
+        values_to_delete = data["tsv_columns_to_remove"]
+
+    values_to_delete.append(sample)
     index_to_keep = []
+    index_point_to_coma = []
 
     with open(output_file, "w") as write_file:
         with open(input_file, "r") as read_file:
             for l in read_file:
                 if l.startswith("#CHROM"):
                     l = l.rstrip("\r\n").split("\t")
+                    print(l)
                     for i in range(len(l)):
-                        if l[i] not in columns_to_remove:
+                        if l[i] not in values_to_delete:
                             index_to_keep.append(i)
+                        if l[i] in values_to_change:
+                            index_point_to_coma.append(i)
                     write_file.write("\t".join(l[i] for i in index_to_keep) + "\r\n")
                 else:
                     l = l.rstrip("\r\n").split("\t")
+                    for index in index_point_to_coma:
+                        l[index] = l[index].replace(".", ",")
                     write_file.write("\t".join(l[i] for i in index_to_keep) + "\r\n")
     os.remove(input_file)
     os.rename(output_file, input_file)
-
 
 def cleaner(run_informations):
     log.info("Moving results from temporary folder")
