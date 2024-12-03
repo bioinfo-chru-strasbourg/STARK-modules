@@ -349,8 +349,8 @@ rule correct_vcf:
 		else
 			echo "[INFO] Fixing genotype FORMAT field."
 			grep "^##" {input} > {output}
-			grep "^#CHROM" {input} >> {output}
 			echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' >> {output}
+			grep "^#CHROM" {input} >> {output}
 			grep -v "^#" {input} | sed 's/$/\\tGT\\t0\\/1/' >> {output}
 		fi
 		"""
