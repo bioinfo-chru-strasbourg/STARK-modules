@@ -84,8 +84,8 @@ BCFTOOLS_FILTER: "-i 'INFO/VAF>=0.01'"
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 ################## filt3r ##################
-# Path of the filt3t executable ("/filt3r" if build with gitlab, "/app/bin" for the precompiled one)
-FILTER_PATH: "/app/bin/filt3r"
+# Bin of the filt3t executable ("/filt3r/filt3r" if build with gitlab source, "/app/bin/filt3r" for the precompiled one)
+FILTER_BIN: "/app/bin/filt3r"
 # Maximal length of the indels to ignore (default 0)
 SHORT_INDELS: "2" 
 # Kmer size (default 12)

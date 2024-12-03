@@ -343,12 +343,12 @@ rule filt3r:
 	params:
 		kmer = config['KMER'], 
 		itdrefseq = config['ITDREF'],
-		filterpath = config['FILTER_PATH'],
+		filterbin = config['FILTER_BIN'],
 		shortindels = config['SHORT_INDELS'],
 		output=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.raw"
 	shell:
 		"""
-		{params.filterpath}/filt3r -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --ignore-short-indels {params.shortindels} --vcf;
+		{params.filterbin} -k {params.kmer} --sequences {input.fastqR1},{input.fastqR2} --ref {params.itdrefseq} --out {params.output} --ignore-short-indels {params.shortindels} --vcf;
 		"""
 
 rule vcf_infofix:
