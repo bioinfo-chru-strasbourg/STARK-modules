@@ -128,8 +128,8 @@ def launch_run(args):
     howard_processing.convert_to_final_tsv(run_informations)
 
     non_redundant.generate(run_informations)
-    # howard_processing.cleaner(run_informations)
-    # results_provider.distribute(run_informations)
+    howard_processing.cleaner(run_informations)
+    results_provider.distribute(run_informations)
 
     lock_file = osj(run_repository, "VANNOTComplete.txt")
     with open(lock_file, "w") as write_file:

@@ -259,7 +259,7 @@ def merge_vcf(run_informations, step):
 
         output_merged = osj(
             run_informations["tmp_analysis_folder"],
-            f"VANNOT_merged_{run_informations["run_name"]}.vcf.gz",
+            f"VANNOT_merged_{run_informations["run_name"]}.design.vcf.gz",
         )
         cmd = ["bcftools", "merge"] + vcf_file_to_merge
         cmd_args = ["-m", "none", "-O", "z", "-o", output_merged]

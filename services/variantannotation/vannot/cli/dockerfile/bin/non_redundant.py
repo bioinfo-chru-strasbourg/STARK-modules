@@ -110,7 +110,6 @@ def generate(run_informations):
                                     gnomadAltFreq_popmax_index = l.index(
                                         "gnomadAltFreq_popmax"
                                     )
-                                    print(gnomadAltFreq_popmax_index)
                                     gnomadHomCount_all_index = l.index(
                                         "gnomadHomCount_all"
                                     )
