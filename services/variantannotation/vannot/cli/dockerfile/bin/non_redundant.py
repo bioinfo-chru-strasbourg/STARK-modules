@@ -86,7 +86,7 @@ def generate(run_informations):
                             continue
                         elif l in ["\n", "\r\n"]:
                             continue
-                        elif l.startswith("#CHROM"):
+                        elif l.rstrip("\r\n").split("\t")[0] == "chr":
                             if first_file:
                                 l = l.rstrip("\r\n").split("\t")
                                 split_header_length = len(l)
@@ -110,6 +110,7 @@ def generate(run_informations):
                                     gnomadAltFreq_popmax_index = l.index(
                                         "gnomadAltFreq_popmax"
                                     )
+                                    print(gnomadAltFreq_popmax_index)
                                     gnomadHomCount_all_index = l.index(
                                         "gnomadHomCount_all"
                                     )

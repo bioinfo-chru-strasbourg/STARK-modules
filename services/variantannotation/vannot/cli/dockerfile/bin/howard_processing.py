@@ -628,11 +628,11 @@ def convert_to_final_tsv(run_informations):
             ]
             howard_launcher.launch(container_name, launch_convert_arguments)
             output_file = format_explode(vcf_file, output_file)
-            # tsv_modifier(output_file)
+            tsv_modifier(output_file)
 
 def format_explode(vcf_file, tsv_file):
     output_file = osj(os.path.dirname(tsv_file), "tmp_" + os.path.basename(tsv_file))
-    tsv_line = []
+    tsv_lines = []
     format_dict = {}
     index_dict = {}
 
@@ -640,24 +640,62 @@ def format_explode(vcf_file, tsv_file):
     subprocess.call(["gunzip", vcf_file])
 
     with open(vcf_file_gunzip, "r") as vcf_read:
-        for l in vcf_read:
-            if l.startswith("#CHROM"):
-                l = l.rstrip("\r\n").split("\t")
-                for i in range(len(l)):
-                    if l[i] == "FORMAT":
-                        format_index = i
-                        values_index = i+1
-            elif not l.startswith("#"):
-                l = l.rstrip("\r\n").split("\t")
-                variant_name = l[0] + "_" + l[1] + "_" + l[3] + "_" + l[4]
-                format_dict[variant_name] = [l[format_index].split(":"), l[values_index].split(":")]
+        for line in vcf_read:
+            if line.startswith("#CHROM"):
+                line = line.rstrip("\r\n").split("\t")
+                for i in range(len(line)):
+                    if line[i] == "FORMAT":
+                        format_type = i
+                        format_values = i+1
+            elif not line.startswith("#"):
+                line = line.rstrip("\r\n").split("\t")
+                variant_name = line[0] + "_" + line[1] + "_" + line[3] + "_" + line[4]
+                format_dict[variant_name] = [line[format_type].split(":"), line[format_values].split(":")]
     with open(tsv_file, "r") as tsv_read:
-        for l in tsv_read:
-            if l.startswith("#CHROM"):
-                header = l.rstrip("\r\n").split("\t")
+        for line in tsv_read:
+            if line.startswith("#CHROM"):
+                header = line.rstrip("\r\n").split("\t")
             else:
-                tsv_line.append(l)
-    
+                tsv_lines.append(line)
+
+    is_second_ad_alt = False
+    for values in format_dict.values():
+        if "AD" in values[0]:
+            ad_index = values[0].index("AD")
+            ad_value = values[1][ad_index]
+        if ad_value.count(",") == 2:
+            is_second_ad_alt = True
+
+    modified_header = []
+    new_tsv_lines = []
+    for column_name in header:
+        if column_name == "#CHROM":
+            modified_header.append("chr")
+        elif column_name == "AD":
+            ad_index = header.index(column_name)
+            column_name = "AD_ref"
+            modified_header.append(column_name)
+            modified_header.append("AD_alt")
+            if is_second_ad_alt is True:
+                modified_header.append("AD_alt2")   
+        else:
+            modified_header.append(column_name)
+
+    for line in tsv_lines:
+        modified_tsv_line = []
+        line = line.rstrip("\r\n").split("\t")
+        for count, content in enumerate(line):
+            if count == ad_index:
+                modified_tsv_line.append(content)
+                modified_tsv_line.append("")
+                if content.count(",") == 2:
+                    modified_tsv_line.append("")
+            else:
+                modified_tsv_line.append(content)
+        new_tsv_lines.append(modified_tsv_line)
+        
+    tsv_lines = new_tsv_lines
+
     vcf_header = set()
     for values in format_dict.values():
         vcf_header = vcf_header | set(values[0])
@@ -665,34 +703,38 @@ def format_explode(vcf_file, tsv_file):
     vcf_header = list(vcf_header)
     vcf_header_cleaned = []
     for i in vcf_header:
-        if i not in header:
+        if i not in modified_header:
             vcf_header_cleaned.append(i)
-    new_header = header + vcf_header_cleaned
+    new_header = modified_header + vcf_header_cleaned
     
     with open(output_file, "w") as write_file:
         write_file.write("\t".join(new_header) + "\r\n")
 
-    for i in vcf_header:
+    for i in new_header:
         index_dict[i] = new_header.index(i)
-    
-    for line in tsv_line:
-        line = line.rstrip("\r\n").split("\t")
+
+    for line in tsv_lines:
         for i in range(len(new_header)-len(line)):
             line.append("")
         tsv_variant = line[0] + "_" + line[1] + "_" + line[3] + "_" + line[4]
-        if tsv_variant in format_dict:
-            count = 0
-            associated_values = {}
-            for i in format_dict[tsv_variant][0]:
-                associated_values[i] = format_dict[tsv_variant][1][count]
-                count += 1
-            for key, value in associated_values.items():
-                key_index = index_dict[key]
-                if value == "1/1":
-                    value = '="1/1"'
-                    line[key_index] = value
-                else: 
-                    line[key_index] = value
+        if tsv_variant in format_dict.keys():
+            format_value_per_type = {}
+            for count, format_type in enumerate(format_dict[tsv_variant][0]):
+                format_value_per_type[format_type] = format_dict[tsv_variant][1][count]
+            for key, value in format_value_per_type.items():
+                ad_ref_index = index_dict["AD_ref"]
+                ad_alt_index = index_dict["AD_alt"]
+                if key == "AD":
+                    ad_ref = value.split(",")[0]
+                    line[ad_ref_index] = ad_ref
+                    ad_alt = value.split(",")[1]
+                    line[ad_alt_index] = ad_alt
+                    if value.count(",") == 2:
+                        ad_alt_bis_index = index_dict["AD_alt"]
+                        ad_alt_bis = value.split(",")[2]
+                        line[ad_alt_bis_index] = ad_alt_bis
+                else:
+                    line[index_dict[key]] = value
             with open(output_file, "a") as write_file:
                 write_file.write("\t".join(line) + "\r\n")
         
@@ -709,30 +751,29 @@ def tsv_modifier(input_file):
     module_config = osj(os.environ["HOST_MODULE_CONFIG"],f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
     with open(module_config, "r") as read_file:
         data = json.load(read_file)
-        values_to_change = data["tsv_columns_point_to_coma"]
         values_to_delete = data["tsv_columns_to_remove"]
 
     values_to_delete.append(sample)
     index_to_keep = []
-    index_point_to_coma = []
 
     with open(output_file, "w") as write_file:
         with open(input_file, "r") as read_file:
-            for l in read_file:
-                if l.startswith("#CHROM"):
-                    l = l.rstrip("\r\n").split("\t")
-                    print(l)
-                    for i in range(len(l)):
-                        if l[i] not in values_to_delete:
+            for line in read_file:
+                line = line.rstrip("\r\n").split("\t")
+                if line[0] == "chr":
+                    for i in range(len(line)):
+                        if line[i] not in values_to_delete:
                             index_to_keep.append(i)
-                        if l[i] in values_to_change:
-                            index_point_to_coma.append(i)
-                    write_file.write("\t".join(l[i] for i in index_to_keep) + "\r\n")
+                    write_file.write("\t".join(line[i] for i in index_to_keep) + "\r\n")
                 else:
-                    l = l.rstrip("\r\n").split("\t")
-                    for index in index_point_to_coma:
-                        l[index] = l[index].replace(".", ",")
-                    write_file.write("\t".join(l[i] for i in index_to_keep) + "\r\n")
+                    for count, element in enumerate(line):
+                        if "/" in element:
+                            line[count] = f'="{element}"'
+                        if "." in element:
+                            element = element.split(".")
+                            if element[0].isdigit() and element[1].isdigit():
+                                line[count] = element[0] + "," + element[1]
+                    write_file.write("\t".join(line[i] for i in index_to_keep) + "\r\n")
     os.remove(input_file)
     os.rename(output_file, input_file)
 
