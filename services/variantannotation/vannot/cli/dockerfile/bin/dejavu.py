@@ -42,8 +42,7 @@ def launch_dejavu(args):
             f"PROJECT={analysis_project_name[-1]}",
         ),
         "parquet_db_howard_folder": osj(
-            "/",
-            "databases",
+            os.environ["HOST_DATABASES"],
             "dejavu",
             "current",
             args.assembly,
@@ -62,8 +61,8 @@ def launch_dejavu(args):
         ),
         "module_config": "",
     }
-
-    dejavu_processing.convert_vcf_parquet(run_informations, args)
+    if args.global_dejavu is False:
+        dejavu_processing.convert_vcf_parquet(run_informations, args)
     dejavu_processing.calculate_dejavu(run_informations)
 
     log.info(

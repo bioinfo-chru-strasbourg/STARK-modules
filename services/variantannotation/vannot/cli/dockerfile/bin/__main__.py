@@ -128,6 +128,13 @@ def parse_args():
         type=checker.absolute_folder_path,
         help="absolute path to the vannot archives folder to calculate dejavu",
     )
+    parser_folder.add_argument(
+        "-gd",
+        "--global_dejavu",
+        default=False,
+        type=bool,
+        help="absolute path to the vannot archives folder to calculate global dejavu, works only if there is already a tree path with all parquets, False by default",
+    )
 
     parser_run = subparsers.add_parser(
         "run",

@@ -7,6 +7,8 @@ import shutil
 import json
 import re
 import time
+import gzip
+from multiprocessing import Pool
 
 from vannotplus.family.barcode import main_barcode
 from vannotplus.exomiser.exomiser import main_exomiser
@@ -16,12 +18,8 @@ from vannotplus.__main__ import load_config, main_config
 import howard_launcher
 import commons
 
-
 def project_folder_initialisation(run_informations):
-    vcf_file_list = glob.glob(
-        osj(run_informations["archives_run_folder"], "VCF", "*", "*.vcf.gz")
-    )
-
+    vcf_file_list = glob.glob(osj(run_informations["archives_run_folder"], "VCF", "*.vcf*"))
     if os.path.isdir(run_informations["tmp_analysis_folder"]):
         log.info("Cleaning temporary analysis folder")
         shutil.rmtree(run_informations["tmp_analysis_folder"])
@@ -41,26 +39,37 @@ def project_folder_initialisation(run_informations):
         )
 
     vcf_file_to_analyse = glob.glob(
-        osj(run_informations["tmp_analysis_folder"], "*.vcf*")
+        osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
+
     for vcf_file in vcf_file_to_analyse:
-        output_exomiser = osj(
-            run_informations["tmp_analysis_folder"],
-            "exomized_" + os.path.basename(vcf_file),
-        )
-        vannotplus_config = osj(os.environ["HOST_MODULE_CONFIG"], "vannotplus.yml")
-        if run_informations["run_application"] != "":
+        unmerge_vcf(vcf_file, run_informations)
+        unmerged_vcfs = glob.glob(osj(run_informations["tmp_analysis_folder"], "unmerged_*vcf*"))
+        if len(unmerged_vcfs) > 1:
+            for unmerged_vcf in unmerged_vcfs:
+                info_to_format_script(unmerged_vcf, run_informations)
+            merge_vcf(run_informations, "0")
+        else:
+            info_to_format_script(vcf_file, run_informations)
+
+        cleaned_vcf = cleaning_annotations(vcf_file, run_informations)
+        
+        sample_list = subprocess.run(["bcftools", "query", "-l", cleaned_vcf],universal_newlines=True,stdout=subprocess.PIPE,).stdout.strip().split("\n")
+
+        if run_informations["run_platform_application"] != None and len(sample_list) >= 1:
+            output_exomiser = osj(
+                run_informations["tmp_analysis_folder"],
+                "exomized_" + os.path.basename(cleaned_vcf),
+            )
+            vannotplus_config = osj(os.environ["HOST_MODULE_CONFIG"], "vannotplus.yml")
             main_exomiser(
-                vcf_file,
+                cleaned_vcf,
                 output_exomiser,
                 run_informations["run_application"],
                 load_config(vannotplus_config),
             )
-            os.remove(vcf_file)
-
-        fixed_vcf_file = info_to_format_script(output_exomiser, run_informations)
-        cleaning_annotations(fixed_vcf_file, run_informations)
-
+            os.remove(cleaned_vcf)
+            os.rename(output_exomiser, vcf_file)
 
 def folder_initialisation(run_informations):
     vcf_file_list = glob.glob(osj(run_informations["archives_run_folder"], "*.vcf*"))
@@ -86,7 +95,33 @@ def folder_initialisation(run_informations):
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
     for vcf_file in vcf_file_to_analyse:
-        cleaning_annotations(vcf_file, run_informations)
+        unmerge_vcf(vcf_file, run_informations)
+        unmerged_vcfs = glob.glob(osj(run_informations["tmp_analysis_folder"], "unmerged_*vcf*"))
+        if len(unmerged_vcfs) > 1:
+            for unmerged_vcf in unmerged_vcfs:
+                info_to_format_script(unmerged_vcf, run_informations)
+            merge_vcf(run_informations, "0")
+        else:
+            info_to_format_script(vcf_file, run_informations)
+
+        cleaned_vcf = cleaning_annotations(vcf_file, run_informations)
+        
+        sample_list = subprocess.run(["bcftools", "query", "-l", cleaned_vcf],universal_newlines=True,stdout=subprocess.PIPE,).stdout.strip().split("\n")
+
+        if run_informations["run_platform_application"] != None and len(sample_list) >= 1:
+            output_exomiser = osj(
+                run_informations["tmp_analysis_folder"],
+                "exomized_" + os.path.basename(cleaned_vcf),
+            )
+            vannotplus_config = osj(os.environ["HOST_MODULE_CONFIG"], "vannotplus.yml")
+            main_exomiser(
+                cleaned_vcf,
+                output_exomiser,
+                run_informations["run_application"],
+                load_config(vannotplus_config),
+            )
+            os.remove(cleaned_vcf)
+            os.rename(output_exomiser, vcf_file)
 
 
 def run_initialisation(run_informations):
@@ -114,22 +149,25 @@ def run_initialisation(run_informations):
     )
 
     for vcf_file in vcf_file_to_analyse:
-        output_exomiser = osj(
-            run_informations["tmp_analysis_folder"],
-            "exomized_" + os.path.basename(vcf_file),
-        )
-        vannotplus_config = osj(os.environ["HOST_MODULE_CONFIG"], "vannotplus.yml")
-        main_exomiser(
-            vcf_file,
-            output_exomiser,
-            run_informations["run_application"],
-            load_config(vannotplus_config),
-        )
-        os.remove(vcf_file)
-        os.rename(output_exomiser, vcf_file)
+        info_to_format_script(vcf_file, run_informations)
+        cleaned_vcf = cleaning_annotations(vcf_file, run_informations)
+        
+        sample_list = subprocess.run(["bcftools", "query", "-l", cleaned_vcf],universal_newlines=True,stdout=subprocess.PIPE,).stdout.strip().split("\n")
 
-        fixed_vcf_file = info_to_format_script(vcf_file, run_informations)
-        cleaning_annotations(fixed_vcf_file, run_informations)
+        if run_informations["run_platform_application"] != None and len(sample_list) >= 1:
+            output_exomiser = osj(
+                run_informations["tmp_analysis_folder"],
+                "exomized_" + os.path.basename(cleaned_vcf),
+            )
+            vannotplus_config = osj(os.environ["HOST_MODULE_CONFIG"], "vannotplus.yml")
+            main_exomiser(
+                cleaned_vcf,
+                output_exomiser,
+                run_informations["run_application"],
+                load_config(vannotplus_config),
+            )
+            os.remove(cleaned_vcf)
+            os.rename(output_exomiser, vcf_file)
 
 
 def cleaning_annotations(vcf_file, run_informations):
@@ -177,6 +215,7 @@ def cleaning_annotations(vcf_file, run_informations):
     cmd = ["bcftools", "annotate", "-x"]
     cmd.append(info_to_keep)
     cmd.append(vcf_file)
+    print(" ".join(cmd))
     with open(cleaned_vcf, "w") as output:
         subprocess.call(cmd, stdout=output, universal_newlines=True)
     os.remove(vcf_file)
@@ -249,10 +288,25 @@ def fambarcode_vcf(run_informations, input_vcf):
 
 
 def merge_vcf(run_informations, step):
-    vcf_file_to_merge = glob.glob(
-        osj(run_informations["tmp_analysis_folder"], "*.vcf*")
-    )
+    if step == "0":
+        vcf_file_to_merge = glob.glob(osj(run_informations["tmp_analysis_folder"], "fixed_unmerged_*.vcf*"))
+    else:
+        vcf_file_to_merge = glob.glob(
+            osj(run_informations["tmp_analysis_folder"], "*.vcf*")
+        )
     if len(vcf_file_to_merge) > 1:
+        log.info(f"Trying to fix VAF")
+        for vcf_file in vcf_file_to_merge:
+            tmp_output = osj(os.path.dirname(vcf_file), "tmp_" + os.path.basename(vcf_file))
+            with gzip.open(vcf_file, "rt") as read_file:
+                with open(tmp_output, "w") as write_file:
+                    lines = read_file.readlines()
+                    for line in lines:
+                        if line.startswith("##FORMAT=<ID=VAF"):
+                            write_file.write("##FORMAT=<ID=VAF,Number=1,Type=Float,Description=\"VAF Variant Frequency, calculated from quality\">")
+                        else:
+                            write_file.write(line)
+        
         log.info(f"Merging {len(vcf_file_to_merge)} vcf files")
         for i in vcf_file_to_merge:
             subprocess.call(["tabix", i], universal_newlines=True)
@@ -270,16 +324,27 @@ def merge_vcf(run_informations, step):
             for i in vcf_file_to_merge:
                 os.remove(i)
                 os.remove(i + ".tbi")
-        return output_merged
+            os.rename(output_merged, osj(os.path.dirname(output_merged), os.path.basename(output_merged).removeprefix("VANNOT_merged_")))
+            return osj(os.path.dirname(output_merged), os.path.basename(output_merged).removeprefix("VANNOT_merged_"))
+        if step == "0":
+            for i in vcf_file_to_merge:
+                os.remove(i)
+                os.remove(i + ".tbi")
+            os.rename(output_merged, osj(os.path.dirname(output_merged), os.path.basename(output_merged).removeprefix("VANNOT_").replace(".design", "")))
+            return osj(os.path.dirname(output_merged), os.path.basename(output_merged).removeprefix("VANNOT_").replace(".design", ""))
+        else:
+            return output_merged
     elif len(vcf_file_to_merge) == 0:
         log.error("No vcf files to merge after transcript score calculation")
         raise ValueError(vcf_file_to_merge)
     else:
+        print("1vcf")
         return vcf_file_to_merge[0]
 
 
 def unmerge_vcf(input, run_informations):
     vcf_file_to_unmerge = input
+    print("sam: unmerge_vcf", vcf_file_to_unmerge)
     sample_list = (
         subprocess.run(
             ["bcftools", "query", "-l", vcf_file_to_unmerge],
@@ -293,20 +358,19 @@ def unmerge_vcf(input, run_informations):
         for sample in sample_list:
             if run_informations["type"] == "run":
                 output_file = osj(
-                    os.path.dirname(vcf_file_to_unmerge), f"VANNOT_{sample}.design.vcf"
+                    os.path.dirname(vcf_file_to_unmerge), f"unmerged_VANNOT_{sample}.design.vcf"
                 )
             elif run_informations["type"] == "dejavu":
                 output_file = osj(os.path.dirname(vcf_file_to_unmerge), f"{sample}.vcf")
             else:
                 output_file = osj(
-                    os.path.dirname(vcf_file_to_unmerge), f"VANNOT_{sample}.vcf"
+                    os.path.dirname(vcf_file_to_unmerge), f"unmerged_VANNOT_{sample}.vcf"
                 )
             cmd = ["bcftools", "view", "-c1", "-s", sample, vcf_file_to_unmerge]
             with open(output_file, "w") as writefile:
                 subprocess.call(cmd, universal_newlines=True, stdout=writefile)
             subprocess.call(["bgzip", output_file], universal_newlines=True)
-        if run_informations["type"] == "dejavu":
-            os.remove(vcf_file_to_unmerge)
+            print("sam:unmerge_vcf output_file:", output_file)
         os.remove(vcf_file_to_unmerge)
 
 
@@ -321,6 +385,43 @@ def info_to_format_script(vcf_file, run_informations):
     output_file = osj(
         os.path.dirname(vcf_file), f"fixed_{os.path.basename(vcf_file)[:-3]}"
     )
+    fixed_file = osj(
+        os.path.dirname(vcf_file), f"fixed2_{os.path.basename(vcf_file)[:-3]}"
+    )
+    is_pool = False
+    with gzip.open(vcf_file, "rt") as readfile:
+        with open(fixed_file, "wt") as writefile:
+            lines = readfile.readlines()
+            for line in lines:
+                if line.startswith("##INFO=<ID=POOL_F_Depth"):
+                    is_pool = True
+                else:
+                    continue
+            for line in lines:
+                if line.startswith("##INFO=<ID=BARCODE") and is_pool == True:
+                    line = line.replace("##INFO=<ID=BARCODE", "##INFO=<ID=POOL_BARCODE")
+                    writefile.write(line)
+                elif line.startswith("##"):
+                    writefile.write(line)
+                elif line.startswith("#CHROM"):
+                    line = line.rstrip("\n").split("\t")
+                    sample = line[-1]
+                    writefile.write("\t".join(line) + "\n")
+                else:
+                    line = line.rstrip("\n").split("\t")
+                    info_line = line[7].split(";")
+                    info_line_check = line[7].replace("=",";").split(";")
+                    if "POOL_F_Depth" in info_line_check and "POOL_M_Depth" in info_line_check:
+                        for i,info_value in enumerate(info_line):
+                            if info_value.startswith("BARCODE="):
+                                info_value = info_value.replace("BARCODE=", "POOL_BARCODE=")
+                            info_line[i] = info_value
+                    line[7] = ";".join(info_line)
+                    writefile.write("\t".join(line) + "\n")
+    
+    subprocess.call(["bgzip", fixed_file], universal_newlines=True)    
+    os.rename(fixed_file + ".gz", vcf_file)
+
     sample = os.path.basename(vcf_file).split(".")[0]
     tmp_annot = osj(os.path.dirname(vcf_file), "annot.txt.tmp")
     tmp_annot_fixed = osj(os.path.dirname(vcf_file), "annot.fixed.txt.tmp")
@@ -508,10 +609,31 @@ def gmc_score(run_informations):
         )
         os.remove(vcf_file)
         os.rename(output_gmc, vcf_file)
+        print("sam:gmc_score output", vcf_file)
+
+# def divide_memory(threads: str, memory: str) -> str:
+#     suffix = memory[-1]
+#     memory = int(memory[:-1])
+#     memory = memory/int(threads)
+#     return str(memory) + suffix
+
+# def prioritize_worker(vcf_file: str, run_informations: dict, memory: str, start: str, transcript_param: str, threads: str) -> None:
 
 
+
+# def prioritize_worker_unpacker(args):
+#     vcf_file, run_informations, memory, start, transcript_param, threads = args
+#     prioritize_worker(vcf_file, run_informations, memory, start, transcript_param, threads)
+#Fix parallelization prio
 def howard_score_transcripts(run_informations):
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    print(vcf_files)
+
+    if len(vcf_files) > 1:
+        for vcf_file in vcf_files:
+            os.rename(vcf_file, osj(os.path.dirname(vcf_file), os.path.basename(vcf_file).removeprefix("unmerged_")))
+        vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+
     transcript_param = osj(
         os.environ["HOST_MODULE_CONFIG"],
         "howard",
@@ -526,10 +648,11 @@ def howard_score_transcripts(run_informations):
     actual_time = time.strftime("%H%M%S", local_time)
     start = actual_time
 
+#     with Pool(1) as pool:
+#         pool.map(prioritize_worker_unpacker, [(vcf_file, run_informations, divide_memory(threads, memory), start, transcript_param, threads
+# ) for vcf_file in vcf_files])
     for vcf_file in vcf_files:
-        output_file_transcripts = osj(
-            os.environ["HOST_TMP"], "output_transcripts.vcf.gz"
-        )
+        output_file_transcripts = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(vcf_file).split(".")[0]}_output_transcripts.vcf.gz")
 
         container_name = f"VANNOT_transcripts_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
         launch_annotate_arguments = [
@@ -564,6 +687,7 @@ def howard_score_transcripts(run_informations):
             transcripts_output,
             osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed),
         )
+        print("sam: howard_score_transcripts output", osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed))
 
 
 def convert_to_final_tsv(run_informations):
@@ -583,6 +707,7 @@ def convert_to_final_tsv(run_informations):
 
     explode_infos_fields = ",".join(ordered_fields)
     explode_infos_fields = explode_infos_fields + ",*"
+    print(explode_infos_fields)
 
     for vcf_file in vcf_files:
 
@@ -627,124 +752,166 @@ def convert_to_final_tsv(run_informations):
                 memory,
             ]
             howard_launcher.launch(container_name, launch_convert_arguments)
+            #BUG ICI AVEC UN VCF POOL
             output_file = format_explode(vcf_file, output_file)
-            tsv_modifier(output_file)
+            tsv_modifier(output_file, run_informations)
 
 def format_explode(vcf_file, tsv_file):
     output_file = osj(os.path.dirname(tsv_file), "tmp_" + os.path.basename(tsv_file))
     tsv_lines = []
     format_dict = {}
     index_dict = {}
+    format_type = ""
+    is_format = True
 
-    vcf_file_gunzip = vcf_file[:-3]
-    subprocess.call(["gunzip", vcf_file])
-
-    with open(vcf_file_gunzip, "r") as vcf_read:
+    with gzip.open(vcf_file, "rt") as vcf_read:
         for line in vcf_read:
             if line.startswith("#CHROM"):
-                line = line.rstrip("\r\n").split("\t")
+                line = line.rstrip("\n").split("\t")
                 for i in range(len(line)):
                     if line[i] == "FORMAT":
                         format_type = i
                         format_values = i+1
-            elif not line.startswith("#"):
-                line = line.rstrip("\r\n").split("\t")
+                if format_type == "":
+                    is_format = False
+            elif not line.startswith("#") and is_format is True:
+                line = line.rstrip("\n").split("\t")
                 variant_name = line[0] + "_" + line[1] + "_" + line[3] + "_" + line[4]
                 format_dict[variant_name] = [line[format_type].split(":"), line[format_values].split(":")]
-    with open(tsv_file, "r") as tsv_read:
-        for line in tsv_read:
-            if line.startswith("#CHROM"):
-                header = line.rstrip("\r\n").split("\t")
-            else:
-                tsv_lines.append(line)
-
-    is_second_ad_alt = False
-    for values in format_dict.values():
-        if "AD" in values[0]:
-            ad_index = values[0].index("AD")
-            ad_value = values[1][ad_index]
-        if ad_value.count(",") == 2:
-            is_second_ad_alt = True
-
-    modified_header = []
-    new_tsv_lines = []
-    for column_name in header:
-        if column_name == "#CHROM":
-            modified_header.append("chr")
-        elif column_name == "AD":
-            ad_index = header.index(column_name)
-            column_name = "AD_ref"
-            modified_header.append(column_name)
-            modified_header.append("AD_alt")
-            if is_second_ad_alt is True:
-                modified_header.append("AD_alt2")   
-        else:
-            modified_header.append(column_name)
-
-    for line in tsv_lines:
-        modified_tsv_line = []
-        line = line.rstrip("\r\n").split("\t")
-        for count, content in enumerate(line):
-            if count == ad_index:
-                modified_tsv_line.append(content)
-                modified_tsv_line.append("")
-                if content.count(",") == 2:
-                    modified_tsv_line.append("")
-            else:
-                modified_tsv_line.append(content)
-        new_tsv_lines.append(modified_tsv_line)
-        
-    tsv_lines = new_tsv_lines
-
-    vcf_header = set()
-    for values in format_dict.values():
-        vcf_header = vcf_header | set(values[0])
-        
-    vcf_header = list(vcf_header)
-    vcf_header_cleaned = []
-    for i in vcf_header:
-        if i not in modified_header:
-            vcf_header_cleaned.append(i)
-    new_header = modified_header + vcf_header_cleaned
-    
-    with open(output_file, "w") as write_file:
-        write_file.write("\t".join(new_header) + "\r\n")
-
-    for i in new_header:
-        index_dict[i] = new_header.index(i)
-
-    for line in tsv_lines:
-        for i in range(len(new_header)-len(line)):
-            line.append("")
-        tsv_variant = line[0] + "_" + line[1] + "_" + line[3] + "_" + line[4]
-        if tsv_variant in format_dict.keys():
-            format_value_per_type = {}
-            for count, format_type in enumerate(format_dict[tsv_variant][0]):
-                format_value_per_type[format_type] = format_dict[tsv_variant][1][count]
-            for key, value in format_value_per_type.items():
-                ad_ref_index = index_dict["AD_ref"]
-                ad_alt_index = index_dict["AD_alt"]
-                if key == "AD":
-                    ad_ref = value.split(",")[0]
-                    line[ad_ref_index] = ad_ref
-                    ad_alt = value.split(",")[1]
-                    line[ad_alt_index] = ad_alt
-                    if value.count(",") == 2:
-                        ad_alt_bis_index = index_dict["AD_alt"]
-                        ad_alt_bis = value.split(",")[2]
-                        line[ad_alt_bis_index] = ad_alt_bis
+    if is_format is True:
+        with open(tsv_file, "r") as tsv_read:
+            for line in tsv_read:
+                if line.startswith("#CHROM"):
+                    header = line.rstrip("\n").split("\t")
                 else:
-                    line[index_dict[key]] = value
+                    tsv_lines.append(line)
+
+        is_second_ad_alt = False
+        is_varscan_ad = False
+        for values in format_dict.values():
+            if "AD" in values[0]:
+                ad_index = values[0].index("AD")
+                ad_value = values[1][ad_index]
+                if ad_value.count(",") == 2:
+                    is_second_ad_alt = True
+                elif "," not in ad_value:
+                    is_varscan_ad = True
+
+        modified_header = []
+        new_tsv_lines = []
+        for column_name in header:
+            if column_name == "#CHROM":
+                modified_header.append("chr")
+            elif column_name == "AD":
+                if is_varscan_ad is False:
+                    ad_index = header.index(column_name)
+                    column_name = "AD_ref"
+                    modified_header.append(column_name)
+                    modified_header.append("AD_alt")
+                    if is_second_ad_alt is True:
+                        modified_header.append("AD_alt2")
+                else:
+                    modified_header.append(column_name)
+            else:
+                modified_header.append(column_name)
+
+        for line in tsv_lines:
+            modified_tsv_line = []
+            line = line.rstrip("\n").split("\t")
+            for count, content in enumerate(line):
+                if count == ad_index:
+                    modified_tsv_line.append(content)
+                    modified_tsv_line.append("")
+                    if content.count(",") == 2:
+                        modified_tsv_line.append("")
+                else:
+                    modified_tsv_line.append(content)
+            new_tsv_lines.append(modified_tsv_line)
+            
+        tsv_lines = new_tsv_lines
+
+        vcf_header = set()
+        for values in format_dict.values():
+            vcf_header = vcf_header | set(values[0])
+            
+        vcf_header = list(vcf_header)
+        vcf_header_cleaned = []
+        for i in vcf_header:
+            if i not in modified_header:
+                vcf_header_cleaned.append(i)
+        new_header = modified_header + vcf_header_cleaned
+        
+        with open(output_file, "w") as write_file:
+            write_file.write("\t".join(new_header) + "\n")
+
+        for i in new_header:
+            index_dict[i] = new_header.index(i)
+
+        for line in tsv_lines:
+            for i in range(len(new_header)-len(line)):
+                line.append("")
+            tsv_variant = line[0] + "_" + line[1] + "_" + line[3] + "_" + line[4]
+            if tsv_variant in format_dict.keys():
+                format_value_per_type = {}
+                for count, format_type in enumerate(format_dict[tsv_variant][0]):
+                    format_value_per_type[format_type] = format_dict[tsv_variant][1][count]
+                for key, value in format_value_per_type.items():
+                    ad_ref_index = index_dict["AD_ref"]
+                    ad_alt_index = index_dict["AD_alt"]
+                    if key == "AD":
+                        if is_varscan_ad is False:
+                            ad_ref = value.split(",")[0]
+                            line[ad_ref_index] = ad_ref
+                            ad_alt = value.split(",")[1]
+                            line[ad_alt_index] = ad_alt
+                            if value.count(",") == 2:
+                                ad_alt_bis_index = index_dict["AD_alt"]
+                                ad_alt_bis = value.split(",")[2]
+                                line[ad_alt_bis_index] = ad_alt_bis
+                        else:
+                            line[index_dict[key]] = value
+                    else:
+                        line[index_dict[key]] = value
+                with open(output_file, "a") as write_file:
+                    write_file.write("\t".join(line) + "\n")
+            
+        os.remove(tsv_file)
+        os.rename(output_file, tsv_file)
+        return tsv_file
+    
+    else:
+        with open(tsv_file, "r") as tsv_read:
+            for line in tsv_read:
+                if line.startswith("#CHROM"):
+                    header = line.rstrip("\n").split("\t")
+                else:
+                    tsv_lines.append(line.rstrip("\n"))
+
+        modified_header = []
+        for column_name in header:
+            if column_name == "#CHROM":
+                modified_header.append("chr")
+            else:
+                modified_header.append(column_name)      
+
+        new_header = modified_header
+        with open(output_file, "w") as write_file:
+            write_file.write("\t".join(new_header) + "\n")
+        for line in tsv_lines:
             with open(output_file, "a") as write_file:
-                write_file.write("\t".join(line) + "\r\n")
-        
-    subprocess.call(["bgzip", vcf_file_gunzip])
-    os.remove(tsv_file)
-    os.rename(output_file, tsv_file)
-    return tsv_file
-        
-def tsv_modifier(input_file):
+                write_file.write(line + "\n")
+            
+        os.remove(tsv_file)
+        os.rename(output_file, tsv_file)
+        return tsv_file
+    
+
+def tsv_modifier(input_file, run_informations):
     sample = os.path.basename(input_file).removesuffix(".tsv").removeprefix("VANNOT_")
+    if sample.endswith(".design"):
+        sample = sample.removesuffix(".design")
+    elif sample.endswith(".panel"):
+        sample = sample.removesuffix(".panel")
     output_file = osj(
         os.path.dirname(input_file), "tmp_" + os.path.basename(input_file)
     )
@@ -752,19 +919,32 @@ def tsv_modifier(input_file):
     with open(module_config, "r") as read_file:
         data = json.load(read_file)
         values_to_delete = data["tsv_columns_to_remove"]
-
+    print(sample)
     values_to_delete.append(sample)
+    dejavu_to_keep = []
+    prefix_to_keep = [run_informations["run_application"], "WES_AGILENT", "WES_TWIST", "WES_ROCHE"]
+    for i in prefix_to_keep:
+        dejavu_to_keep.append(f"{i}_ALLELECOUNT")
+        dejavu_to_keep.append(f"{i}_HETCOUNT")
+        dejavu_to_keep.append(f"{i}_HOMCOUNT")
+        dejavu_to_keep.append(f"{i}_ALLELEFREQ")
+
     index_to_keep = []
 
     with open(output_file, "w") as write_file:
         with open(input_file, "r") as read_file:
             for line in read_file:
-                line = line.rstrip("\r\n").split("\t")
+                line = line.rstrip("\n").split("\t")
                 if line[0] == "chr":
                     for i in range(len(line)):
-                        if line[i] not in values_to_delete:
+                        if line[i] not in values_to_delete and not (line[i].endswith("_ALLELECOUNT") or line[i].endswith("_HETCOUNT") or line[i].endswith("_HOMCOUNT") or line[i].endswith("_ALLELEFREQ")) :
                             index_to_keep.append(i)
-                    write_file.write("\t".join(line[i] for i in index_to_keep) + "\r\n")
+                        elif line[i].endswith("_ALLELECOUNT") or line[i].endswith("_HETCOUNT") or line[i].endswith("_HOMCOUNT") or line[i].endswith("_ALLELEFREQ"):
+                            if line[i] in dejavu_to_keep:
+                                index_to_keep.append(i)
+                            else:
+                                continue
+                    write_file.write("\t".join([line[i] for i in index_to_keep]) + "\n")
                 else:
                     for count, element in enumerate(line):
                         if "/" in element:
@@ -773,7 +953,7 @@ def tsv_modifier(input_file):
                             element = element.split(".")
                             if element[0].isdigit() and element[1].isdigit():
                                 line[count] = element[0] + "," + element[1]
-                    write_file.write("\t".join(line[i] for i in index_to_keep) + "\r\n")
+                    write_file.write("\t".join([line[i] for i in index_to_keep]) + "\n")
     os.remove(input_file)
     os.rename(output_file, input_file)
 
@@ -843,7 +1023,7 @@ def panel_filtering(run_informations):
 
             subprocess.call(["bgzip", filtered_vcf])
             filtered_vcf = filtered_vcf + ".gz"
-
+                    
 
 if __name__ == "__main__":
     pass

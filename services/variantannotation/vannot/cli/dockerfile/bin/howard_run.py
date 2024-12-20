@@ -120,9 +120,9 @@ def launch_run(args):
         run_informations, fambarcode_vcf
     )
     howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
-    howard_processing.gmc_score(run_informations)
     howard_processing.howard_score_transcripts(run_informations)
-    howard_processing.merge_vcf(run_informations, "2")
+    howard_processing.gmc_score(run_informations)
+    print(howard_processing.merge_vcf(run_informations, "2"))
     if run_informations["run_panels"] != "":
         howard_processing.panel_filtering(run_informations)
     howard_processing.convert_to_final_tsv(run_informations)

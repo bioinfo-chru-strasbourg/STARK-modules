@@ -87,6 +87,11 @@ def vcf_synchronizer(run_informations):
             if ignored_sample in sample_vcf:
                 kept_vcf.remove(sample_vcf)
 
+    for vcf_file in vcf_files:
+        output = subprocess.call(f'zgrep -v \"#\" {vcf_file} | wc -l', shell=True)
+        if output == 0:
+            vcf_files.remove(vcf_file)
+        
     for vcf_file in kept_vcf:
         vcf_file_output = os.path.basename(vcf_file).split(".")[0] + ".vcf.gz"
         log.info(f"Synchronizing {vcf_file}")
