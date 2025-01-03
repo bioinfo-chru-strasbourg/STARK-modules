@@ -4,8 +4,8 @@ LABEL name="Mateusz RAUCH" email="<rauchmateusz@gmail.com>"
 
 ##########################################################################
 # Dockerfile Version:   1.0
-# Software:             VaRank
-# Software Version:     2.0
+# Software:             vAnnot
+# Software Version:     1.0
 # Software Website:     http://www.lbgi.fr/VaRank/
 # Description:          Dockerfile to build VaRank setup container image
 ##########################################################################

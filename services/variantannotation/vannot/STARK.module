@@ -8,7 +8,7 @@
           "name": "vannot cli",
           "type": "CLI",
           "description": "A vannot CLI.",
-          "release": "2.1",
+          "release": "1.0",
           "available": true
         },
         "listener": {
