@@ -47,14 +47,18 @@ def launch_folder(args):
         )
 
         howard_processing.project_folder_initialisation(run_informations)
-        merged_vcf = howard_processing.merge_vcf(run_informations, "1")
+        merged_vcf = howard_processing.merge_vcf(run_informations, "1", "")
+        fambarcode_vcf = howard_processing.fambarcode_vcf(
+        run_informations,
+        merged_vcf,
+        )
         annotated_merged_vcf = howard_processing.howard_proc(
-            run_informations, merged_vcf
+            run_informations, fambarcode_vcf
         )
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
         howard_processing.howard_score_transcripts(run_informations)
         howard_processing.gmc_score(run_informations)
-        howard_processing.merge_vcf(run_informations, "2")
+        print(howard_processing.merge_vcf(run_informations, "2", ""))
         howard_processing.convert_to_final_tsv(run_informations)
         non_redundant.generate(run_informations)
         howard_processing.cleaner(run_informations)
@@ -65,18 +69,17 @@ def launch_folder(args):
             run_informations["run_platform"] = args.param.split("/")[-1].removesuffix(".json").removeprefix("param.").split(".")[0]
             run_informations["run_platform_application"] = args.param.split("/")[-1].removesuffix(".json").removeprefix("param.")
         howard_processing.folder_initialisation(run_informations)
-        exit()
-        merged_vcf = howard_processing.merge_vcf(run_informations, "1")
+        merged_vcf = howard_processing.merge_vcf(run_informations, "1", "")
         annotated_merged_vcf = howard_processing.howard_proc(
             run_informations, merged_vcf
         )
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
         howard_processing.howard_score_transcripts(run_informations)
         howard_processing.gmc_score(run_informations)
-        print(howard_processing.merge_vcf(run_informations, "2"))
+        print(howard_processing.merge_vcf(run_informations, "2", ""))
         howard_processing.convert_to_final_tsv(run_informations)
-        # if run_informations["run_platform"]:
-        #     non_redundant.generate(run_informations)
+        if run_informations["run_platform"]:
+            non_redundant.generate(run_informations)
         howard_processing.cleaner(run_informations)
 
     log.info(f"vannot analysis for folder {run_informations['run_name']} ended well")

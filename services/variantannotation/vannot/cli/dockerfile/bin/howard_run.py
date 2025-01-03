@@ -111,7 +111,7 @@ def launch_run(args):
     dejavu_processing.convert_vcf_parquet(run_informations, args)
     dejavu_processing.calculate_dejavu(run_informations)
     howard_processing.run_initialisation(run_informations)
-    merged_vcf = howard_processing.merge_vcf(run_informations, "1")
+    merged_vcf = howard_processing.merge_vcf(run_informations, "1", "")
     fambarcode_vcf = howard_processing.fambarcode_vcf(
         run_informations,
         merged_vcf,
@@ -122,12 +122,12 @@ def launch_run(args):
     howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
     howard_processing.howard_score_transcripts(run_informations)
     howard_processing.gmc_score(run_informations)
-    print(howard_processing.merge_vcf(run_informations, "2"))
+    print(howard_processing.merge_vcf(run_informations, "2", ""))
     if run_informations["run_panels"] != "":
         howard_processing.panel_filtering(run_informations)
     howard_processing.convert_to_final_tsv(run_informations)
 
-    non_redundant.generate(run_informations)
+    # non_redundant.generate(run_informations)
     howard_processing.cleaner(run_informations)
     results_provider.distribute(run_informations)
 

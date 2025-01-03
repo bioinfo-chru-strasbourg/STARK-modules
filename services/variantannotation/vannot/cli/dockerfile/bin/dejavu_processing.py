@@ -123,7 +123,7 @@ def convert_vcf_parquet(run_informations, args):
                 ["rsync", "-rvt", parquet_file_hdr, sample_dejavu_db_folder],
                 universal_newlines=True,
             )
-
+            print(sample_dejavu_db_folder)
     shutil.rmtree(run_informations["tmp_analysis_folder"])
 
 
@@ -152,6 +152,9 @@ def minimize_worker(vcf_file: str, run_informations: dict, memory: str) -> None:
         run_informations["tmp_analysis_folder"],
         f"{os.path.basename(vcf_file).split(".")[0]}.parquet",
     )
+    howard_config = osj(
+        os.environ["HOST_MODULE_CONFIG"], "howard", "howard_config.json"
+    )
 
     launch_minimalize_arguments = [
         "minimalize",
@@ -165,6 +168,8 @@ def minimize_worker(vcf_file: str, run_informations: dict, memory: str) -> None:
         "1",
         "--memory",
         memory,
+        "--config",
+        howard_config,
     ]
     launch_parquet_arguments = [
         "process",
@@ -173,6 +178,8 @@ def minimize_worker(vcf_file: str, run_informations: dict, memory: str) -> None:
         "--output",
         output_parquet,
         "--calculations=BARCODE",
+        "--config",
+        howard_config,
         "--explode_infos",
         "--explode_infos_fields=barcode",
         '--query=SELECT "#CHROM", POS, ID, REF, ALT, QUAL, FILTER, INFO, barcode FROM variants',
@@ -194,6 +201,9 @@ def calculate_dejavu(run_informations):
     lockfile = osj(
         run_informations["tmp_analysis_folder"],
         "dejavu_lock_" + run_informations["run_platform_application"],
+    )
+    howard_config = osj(
+        os.environ["HOST_MODULE_CONFIG"], "howard", "howard_config.json"
     )
 
     container_name = f"VANNOT_dejavu_{run_informations["run_name"]}"
@@ -241,7 +251,8 @@ def calculate_dejavu(run_informations):
     hetcount = "HETCOUNT"
     homcount = "HOMCOUNT"
     allelefreq = "ALLELEFREQ"
-    query = f'SELECT "#CHROM", POS, REF, ALT, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq} FROM variants WHERE PROJECT=\'{project}\' GROUP BY "#CHROM", POS, REF, ALT'
+    samplecount = "SAMPLECOUNT"
+    query = f'SELECT "#CHROM", POS, REF, ALT, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq}, {sample_count} as {samplecount} FROM variants WHERE PROJECT=\'{project}\' GROUP BY "#CHROM", POS, REF, ALT'
     # query = f"SELECT \"#CHROM\", POS, ANY_VALUE(ID) AS ID, REF, ALT, ANY_VALUE(QUAL) AS QUAL, ANY_VALUE(FILTER) AS FILTER, ANY_VALUE(INFO) AS INFO, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq} FROM variants WHERE PROJECT='{project}' GROUP BY \"#CHROM\", POS, REF, ALT"
 
     launch_query_arguments = [
@@ -256,6 +267,8 @@ def calculate_dejavu(run_informations):
         threads,
         "--memory",
         memory,
+        "--config",
+        howard_config
     ]
     
     day_time = time.strftime("%d%m%Y")
@@ -277,7 +290,10 @@ def calculate_dejavu(run_informations):
             f'##INFO=<ID=ALLELEFREQ,Number=.,Type=Float,Description="VANNOT dejavu {day_time} allele frequency">\n'
         )
         writefile.write(
-            f"#CHROM\tPOS\tREF\tALT\t{allelecount}\t{hetcount}\t{homcount}\t{allelefreq}\n"
+            f'##INFO=<ID=SAMPLECOUNT,Number=.,Type=Float,Description="VANNOT dejavu {day_time} sample count">\n'
+        )
+        writefile.write(
+            f"#CHROM\tPOS\tREF\tALT\t{allelecount}\t{hetcount}\t{homcount}\t{allelefreq}\t{samplecount}\n"
         )
     if os.path.isfile(lockfile):
         os.remove(lockfile)
