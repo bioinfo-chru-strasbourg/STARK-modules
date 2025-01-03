@@ -25,7 +25,7 @@ def launch_run(args):
         "run_platform": run_repository_list[-3],
         "run_platform_application": f"{run_repository_list[-3]}.{run_repository_list[-2]}",
         "run_depository": osj(
-            os.environ["DOCKER_DEPOSITORY"],
+            os.environ["HOST_DEPOSITORY"],
             run_repository_list[-3],
             run_repository_list[-2],
             run_repository_list[-1],
@@ -33,14 +33,14 @@ def launch_run(args):
         "run_repository": run_repository,
         "vcf_pattern": args.pattern,
         "archives_project_folder": osj(
-            os.environ["DOCKER_SERVICES"],
+            os.environ["HOST_SERVICES"],
             "Archives",
             args.assembly,
             run_repository_list[-3],
             run_repository_list[-2],
         ),
         "archives_results_folder": osj(
-            os.environ["DOCKER_SERVICES"],
+            os.environ["HOST_SERVICES"],
             "Archives",
             args.assembly,
             run_repository_list[-3],
@@ -48,7 +48,7 @@ def launch_run(args):
             "results",
         ),
         "archives_run_folder": osj(
-            os.environ["DOCKER_SERVICES"],
+            os.environ["HOST_SERVICES"],
             "Archives",
             args.assembly,
             run_repository_list[-3],
@@ -95,7 +95,7 @@ def launch_run(args):
             f"tmp_{run_repository_list[-1]}/",
         ),
         "module_config": osj(
-            os.environ["DOCKER_CONFIG"],
+            os.environ["HOST_CONFIG"],
             f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
         ),
     }
@@ -111,7 +111,7 @@ def launch_run(args):
     dejavu_processing.convert_vcf_parquet(run_informations, args)
     dejavu_processing.calculate_dejavu(run_informations)
     howard_processing.run_initialisation(run_informations)
-    merged_vcf = howard_processing.merge_vcf(run_informations, "1")
+    merged_vcf = howard_processing.merge_vcf(run_informations, "1", "")
     fambarcode_vcf = howard_processing.fambarcode_vcf(
         run_informations,
         merged_vcf,
@@ -120,16 +120,16 @@ def launch_run(args):
         run_informations, fambarcode_vcf
     )
     howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
-    howard_processing.gmc_score(run_informations)
     howard_processing.howard_score_transcripts(run_informations)
-    howard_processing.merge_vcf(run_informations, "2")
+    howard_processing.gmc_score(run_informations)
+    print(howard_processing.merge_vcf(run_informations, "2", ""))
     if run_informations["run_panels"] != "":
         howard_processing.panel_filtering(run_informations)
     howard_processing.convert_to_final_tsv(run_informations)
 
-    non_redundant.generate(run_informations)
-    # howard_processing.cleaner(run_informations)
-    # results_provider.distribute(run_informations)
+    # non_redundant.generate(run_informations)
+    howard_processing.cleaner(run_informations)
+    results_provider.distribute(run_informations)
 
     lock_file = osj(run_repository, "VANNOTComplete.txt")
     with open(lock_file, "w") as write_file:

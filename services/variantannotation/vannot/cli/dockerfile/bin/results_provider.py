@@ -81,7 +81,7 @@ def distribute(run_informations):
             osj(run_informations["archives_results_folder"], "Non_Redondant.*.tsv")
         )
         for non_redundant in non_redundants:
-            if os.path.basename(merged_vcf).split(".")[1] != "design":
+            if os.path.basename(non_redundant).split(".")[1] != "design":
                 renamed_non_redundant = f"VANNOT.{date}.Non_Redondant.panel.{os.path.basename(non_redundant).split(".")[1]}.tsv"
             else:
                 renamed_non_redundant = f"VANNOT.{date}.Non_Redondant.design.tsv"

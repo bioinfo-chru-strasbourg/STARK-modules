@@ -47,13 +47,16 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN make
 
 RUN mkdir /tools/vannot/
-COPY bin/*.py /tools/vannot/
+COPY ./bin/*.py /tools/vannot/
 RUN chmod -R 777 /tools/
 
 RUN echo 'alias ll="ls -lra"' >> ~/.bashrc
-RUN echo 'alias vannot="python3 /tools/vannot/__main__.py"' >> ~/.bashrc
-RUN echo 'PATH="$PATH:/tools/bin/"' >> ~/.bashrc
-RUN echo 'PATH="$PATH:/tools/bedtools2/bin/"' >> ~/.bashrc
+RUN echo 'alias vannot="python /tools/vannot/__main__.py"' >> ~/.bashrc
+ENV PATH="$PATH:/tools/bin/"
+ENV PATH="$PATH:/tools/bedtools2/bin/"
+ENV PATH="$PATH:/tools/htslib-1.20/"
+ENV PATH="$PATH:/tools/bcftools-1.8/"
+
 
 WORKDIR /tools/
 RUN git clone https://github.com/SamuelNicaise/vannotplus

@@ -32,7 +32,7 @@ def vcf_synchronizer(run_informations):
     pattern = run_informations["vcf_pattern"]
 
     module_config = osj(
-        os.environ["DOCKER_MODULE_CONFIG"],
+        os.environ["HOST_MODULE_CONFIG"],
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
     with open(module_config, "r") as read_file:
@@ -40,7 +40,10 @@ def vcf_synchronizer(run_informations):
         ignored_samples = data["ignored_samples"]
     samplesheet = find_samplesheet(run_informations)
     control_samples = find_tag(samplesheet, "CQI#")
-    pool_samples = find_tag(samplesheet, "POOL#")
+    platform_application = run_informations["run_platform_application"]
+    pool_tag = f"APP#{platform_application}#POOL"
+    pool_samples = find_tag(samplesheet, pool_tag)
+
     ignored_samples = ignored_samples + control_samples + pool_samples
     log.info(
         "Ignoring following sample patterns for the analysis and dejavu generation : "
@@ -81,11 +84,17 @@ def vcf_synchronizer(run_informations):
             if element != commons.get_default_pattern():
                 log.info(f"Keeping the sample vcf with {pattern} pattern")
                 treated_samples.append(sample)
-
     for ignored_sample in ignored_samples:
         for sample_vcf in kept_vcf:
             if ignored_sample in sample_vcf:
                 kept_vcf.remove(sample_vcf)
+
+    for vcf_file in kept_vcf:
+        output = subprocess.check_output(f'zgrep -v \"#\" {vcf_file} | wc -l', shell=True, text=True)
+        if output == 0:
+            kept_vcf.remove(vcf_file)
+    print(ignored_samples)
+    print(len(kept_vcf))
 
     for vcf_file in kept_vcf:
         vcf_file_output = os.path.basename(vcf_file).split(".")[0] + ".vcf.gz"

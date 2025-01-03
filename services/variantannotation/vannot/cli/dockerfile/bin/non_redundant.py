@@ -21,7 +21,7 @@ def generate(run_informations):
         filter_mode = False
 
     module_config = osj(
-        os.environ["DOCKER_MODULE_CONFIG"],
+        os.environ["HOST_MODULE_CONFIG"],
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
     with open(module_config, "r") as read_file:
@@ -86,7 +86,7 @@ def generate(run_informations):
                             continue
                         elif l in ["\n", "\r\n"]:
                             continue
-                        elif l.startswith("#CHROM"):
+                        elif l.rstrip("\r\n").split("\t")[0] == "chr":
                             if first_file:
                                 l = l.rstrip("\r\n").split("\t")
                                 split_header_length = len(l)
