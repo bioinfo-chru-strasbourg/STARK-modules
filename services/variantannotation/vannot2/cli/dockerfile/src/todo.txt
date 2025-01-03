@@ -1,0 +1,29 @@
+Logiciels à installer :
+ - snakemake
+ - duckdb
+ - howard
+Librairies python :
+ - cyvcf2
+ - lockfile
+ - pytest
+Améliorations :
+ - travailler sur un fichier parquet tout le long
+ - lancer sur des vcf mais aussi des vcf.gz et vérifier que le fichier n'existe pas en double gz + pas gz
+ - faire du code simple 
+ - mettre des commentaires, des types pour les variables ainsi que de la docstring pour les fonctions et les types des inputs/output
+ - mettre un log.debug qui print et permet de garder tous les fichiers intermédiaires
+ - utiliser les classes
+ - que faire quand des samples sont en double pour le dejavu ?
+ - faire du pytest
+ - pour la gmc, lancer que s'il y a des samples
+ - trier les résultats du tsv sur le varankscore
+ - copier la configuration dans le dossier temporaire pour éviter les modifications à la volée
+Module : 
+ - faire le setup
+Configuration :
+ - héritage de la config default
+ 
+Arguments :
+ - folder : input, param, assembly, output, verbosity
+ - dejavu : input, global_dejavu (ne générer que le gros fichier), verbosity
+ - run : input, assembly, output, listener (or not), pattern, verbosity
