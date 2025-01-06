@@ -22,7 +22,7 @@ RUN apt-get update --fix-missing && \
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     python=3.12 \
 	samtools~=1.21 bcftools~=1.21 bedtools~=2.31  vcf-validator~=0.10 \
-	snakemake~=8.25 pandas~=2.2 && mamba clean -afy
+	snakemake~=8.26 pandas~=2.2 && mamba clean -afy
 
 # we use the precompiled version in /app/bin
 # Install FILT3R from source https://gitlab.univ-lille.fr/filt3r/filt3r/-/archive/fix-vcf-format/filt3r-fix-vcf-format.zip

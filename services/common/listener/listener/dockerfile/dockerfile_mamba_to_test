@@ -1,0 +1,61 @@
+##################################################################################
+# Dockerfile Version:   2.0
+# Software:             listener
+# Software Version:     2.0
+# Description:          Dockerfile to build MambaForge-based AlmaLinux image
+##################################################################################
+
+# Use AlmaLinux as the base image
+FROM almalinux:8
+
+######################
+# SYSTEM DEPENDENCIES #
+######################
+RUN yum update -y && \
+    yum install -y \
+    wget \
+    bzip2 \
+    git \
+    yum-utils \
+    device-mapper-persistent-data \
+    lvm2 && \
+    yum clean all
+
+##################
+# INSTALL MAMBA #
+##################
+# Download and install MambaForge
+ENV MAMBAFORGE_VERSION=23.1.0-1
+RUN wget https://github.com/conda-forge/miniforge/releases/download/${MAMBAFORGE_VERSION}/Mambaforge-${MAMBAFORGE_VERSION}-Linux-x86_64.sh -O /tmp/mambaforge.sh && \
+    bash /tmp/mambaforge.sh -b -p /opt/mambaforge && \
+    rm -f /tmp/mambaforge.sh && \
+    /opt/mambaforge/bin/conda init bash && \
+    /opt/mambaforge/bin/conda config --set auto_activate_base false && \
+    /opt/mambaforge/bin/mamba clean --all -f -y
+
+# Update PATH to include MambaForge binaries
+ENV PATH="/opt/mambaforge/bin:$PATH"
+
+#########################
+# INSTALL DOCKER & TOOLS #
+#########################
+RUN mamba install -y -c conda-forge \
+    docker-ce \
+    docker-compose \
+    python=3.8 && \
+    mamba clean --all -f -y
+
+# Add user to the Docker group (if needed)
+RUN groupadd docker && \
+    usermod -aG docker $(whoami)
+
+############
+# LISTENER #
+############
+COPY . /app
+RUN chmod -R +x /app
+ENV PATH="/app:$PATH"
+
+WORKDIR /app
+
+CMD ["python", "listener.py", "--help"]

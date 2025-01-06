@@ -26,7 +26,7 @@ RUN apt-get update --fix-missing && \
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     python=3.12 \
     annotsv~=3.4.4 samtools~=1.21 bcftools~=1.21 vcf-validator~=0.10 \
-    bedtools~=2.31 snakemake~=8.25 graphviz~=12.0 pandas~=2.2 unidecode~=1.3 \
+    bedtools~=2.31 snakemake~=8.26 graphviz~=12.0 pandas~=2.2 unidecode~=1.3 \
     vcf2tsvpy~=0.6 pyfasta~=0.5 fasta~=36.3 \
     natsort~=8.3 pyfaidx~=0.8 pypdf~=4.1 \
     r-exomedepth~=1.1.16 r-r.utils~=2.12 r-optparse~=1.7 r-reshape~=0.8 \
