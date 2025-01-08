@@ -269,7 +269,7 @@ for item in log_items:
 
 ################################################## RULES ##################################################
 # check the number of sample for merge vcf rule
-sample_count = len(sample_list) 
+#sample_count = len(sample_list) 
 
 ruleorder: copy_bam > samtools_fastq > copy_fastq > cramtobam
 
@@ -429,7 +429,7 @@ rule mergevcf:
 	"""	Copy or merge with bcftools several vcfs """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.vcf.gz"
-	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output} && tabix {output}; else bcftools merge {input} -O z -o {output} && tabix {output}; fi"
+	shell: "bcftools merge --force-single {input} -O z -o {output} ; tabix {output}"
 
 onstart:
 	shell(f"touch {os.path.join(outputDir, f'{serviceName}Running.txt')}")

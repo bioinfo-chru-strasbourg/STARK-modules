@@ -398,10 +398,6 @@ for item in log_items:
 print(dict(runDict))
 
 ################################################## RULES ##################################################
-
-# check the number of sample for copy or merge vcf rule
-sample_count = len(sample_list) 
-
 # Priority order
 ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
@@ -563,7 +559,6 @@ rule bcftools_filter:
 			dummy=config['DUMMY_FILES']
 	shell: "bcftools view {params.bed} {input} -o {output}  2> {log} && [[ -s {output} ]] || cat {params.dummy}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}" 
 
-
 # we filter Full to Design
 # Design individual samples vcf.gz no annotation
 rule filter_vcf:
@@ -575,11 +570,11 @@ rule filter_vcf:
 	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output}"
 
 rule merge_vcf:
-	""" Copy or merge multiple vcfs using bcftools """
+	""" Merge multiple vcfs using bcftools """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.bcftoolsmerge.log"
-	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
+	shell: "bcftools merge --force-single {input} -O z -o {output} 2> {log} && [[ -s {output} ]] || echo -e '## Dummy file created because there's no variant found in any samples\n## You can check individual samples for confirmation' | gzip > {output}; tabix {output} || true"
 
 # We filter non annoted design to get panels
 rule filter_vcf_panel:
@@ -637,6 +632,9 @@ rule AnnotSV:
 			"""
 
 rule wait_for_AnnotSV:
+	"""
+	AnnotSV is not compatible with multiple jobs running at the same time, so we need to wait for it to finish before moving on to the next sample
+	"""
 	input:
 		output_from_AnnotSV=rules.AnnotSV.output,
 		log_file= f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.log"

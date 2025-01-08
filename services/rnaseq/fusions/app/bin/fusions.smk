@@ -271,7 +271,7 @@ for item in log_items:
 
 ################################################## RULES ##################################################
 # check the number of sample for copy or merge vcf rule
-sample_count = len(sample_list) 
+#sample_count = len(sample_list) 
 ################################################## RULES ##################################################
 ruleorder: copy_fastq > bcl_convert
 
@@ -436,7 +436,7 @@ rule mergevcf:
 			fusion=[wildcards.fusion])
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.bcftoolsmerge.log"
-	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
+	shell: "bcftools merge --force-single {input} -O z -o {output} 2> {log}; tabix {output}"
 
 rule vcf2tsv:
 	""" vcf to tsv conversion """

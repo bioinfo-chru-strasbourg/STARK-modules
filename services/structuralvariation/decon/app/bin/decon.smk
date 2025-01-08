@@ -720,7 +720,7 @@ print(dict(runDict))
 
 ################################################## RULES ##################################################
 # check the number of sample for copy or merge vcf rule
-sample_count = len(sample_list) 
+#sample_count = len(sample_list) 
 
 # Priority order
 ruleorder: copy_bam > copy_cram > cramtobam > indexing
@@ -960,7 +960,7 @@ rule merge_vcf:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
-	shell: "if [ {sample_count} -eq 1 ]; then cp {input} {output}; else bcftools merge {input} -O z -o {output} 2> {log}; fi; tabix {output}"
+	shell: "bcftools merge --force-single {input} -O z -o {output} 2> {log}; tabix {output}"
 
 
 # Design tsv individual samples AnnotSV
