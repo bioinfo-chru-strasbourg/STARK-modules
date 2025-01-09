@@ -574,7 +574,7 @@ rule merge_vcf:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.bcftoolsmerge.log"
-	shell: "bcftools merge --force-single -W {input} -O z -o {output} 2> {log} && [[ -s {output} ]] || echo -e '## Dummy file created because there's no variant found in any samples\n## You can check individual samples for confirmation' | gzip > {output}; tabix {output} || true"
+	shell: "bcftools merge --force-single -W[tbi] {input} -O z -o {output} 2> {log} && [[ -s {output} ]] || echo -e '## Dummy file created because there's no variant found in any samples\n## You can check individual samples for confirmation' | gzip > {output}; tabix {output} || true"
 
 # We filter non annoted design to get panels
 rule filter_vcf_panel:
