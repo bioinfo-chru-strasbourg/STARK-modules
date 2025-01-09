@@ -85,10 +85,6 @@ KMER: ""
 # Remove M (XY) or F (XX) or A (autosome) analysis, ex ['XY', 'XX'] for autosome only
 REMOVE_GENDER: ""
 
-# Set max cores to use
-resources:
-  cores: 8
-
 ################## Misc params ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"

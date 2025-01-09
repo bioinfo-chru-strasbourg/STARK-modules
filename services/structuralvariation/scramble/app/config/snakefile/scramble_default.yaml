@@ -71,10 +71,6 @@ SEARCH_ARGUMENT: ["/*/STARK/*", "/*/*"]
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30
 
-# Set max cores to use
-resources:
-  cores: 4
-
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html

@@ -71,10 +71,6 @@ LOG_LEVEL: 30
 # Command use to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
-# Define max cores to use
-resources:
-  cores: 4
-
 ################## Tools parameters ##################
 # Folder to store dummy.vcf for ex
 DUMMY_FILES: "/app/scripts/dummy"

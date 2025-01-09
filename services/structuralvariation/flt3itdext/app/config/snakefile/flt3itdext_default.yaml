@@ -74,10 +74,6 @@ LOG_LEVEL: 30
 # Command use to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 
-# Define max cores to use
-resources:
-  cores: 4
-
 ################## Tools parameters ##################
 # DB path
 REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"

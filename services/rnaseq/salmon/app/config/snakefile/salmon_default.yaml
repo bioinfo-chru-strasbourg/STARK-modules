@@ -57,10 +57,6 @@ RESULT_EXT_LIST: ['.sf']
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30
 
-# Define max cores to use
-resources:
-  cores: 16
-
 # Command used to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 

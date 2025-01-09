@@ -175,10 +175,6 @@ vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFil
 # Limit of attempt to perform AnnotSV annotation
 annotSV_limit: 30
 
-# Set cores
-resources:
-  cores: 8
-
 # AnnotSV needs the "CosmicCompleteCNA.tsv.gz" file from https://cancer.sanger.ac.uk/cosmic/download (Copy Number Variants part, Download Whole file)
 # Put the "CosmicCompleteCNA.tsv.gz" file in the corresponding directory: "$ANNOTSV/share/AnnotSV/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/
 # create the directory is necessary (./Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/)
