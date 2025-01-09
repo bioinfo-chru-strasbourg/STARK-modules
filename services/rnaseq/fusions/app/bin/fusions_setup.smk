@@ -29,7 +29,7 @@ db = config['databases']
 date_time = config['DATE_TIME'] if config['DATE_TIME'] else datetime.now().strftime("%Y%m%d-%H%M%S")
 
 # Set up logging
-logfile = f"{config['serviceName']}.{date_time}.parameters.log"
+logfile = f"{config['serviceName']}_SETUP.{date_time}.parameters.log"
 logging.basicConfig(
 	filename=logfile,
 	level=config['LOG_LEVEL'],
