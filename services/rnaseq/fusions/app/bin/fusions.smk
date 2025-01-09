@@ -270,9 +270,6 @@ for item in log_items:
 		logging.info(f"{item[0]} {item[1]}")
 
 ################################################## RULES ##################################################
-# check the number of sample for copy or merge vcf rule
-#sample_count = len(sample_list) 
-################################################## RULES ##################################################
 ruleorder: copy_fastq > bcl_convert
 
 rule all:
@@ -428,7 +425,7 @@ rule vcf2gz:
 	shell: "bgzip -c {input} > {output} ; tabix {output}"
 
 rule mergevcf:
-	"""	Copy or merge vcfs with bcftools """
+	"""	Merge vcfs with bcftools """
 	input:
 		lambda wildcards: expand(
 			f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{wildcards.fusion}.vcf.gz", 
@@ -436,7 +433,7 @@ rule mergevcf:
 			fusion=[wildcards.fusion])
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.bcftoolsmerge.log"
-	shell: "bcftools merge --force-single {input} -O z -o {output} 2> {log}; tabix {output}"
+	shell: "bcftools merge --force-single {input} -O z -o {output} 2> {log} && [[ -s {output} ]] || echo -e '## Dummy file created because there's no variant found in any samples\n## You can check individual samples for confirmation' | gzip > {output}; tabix {output} || true"
 
 rule vcf2tsv:
 	""" vcf to tsv conversion """

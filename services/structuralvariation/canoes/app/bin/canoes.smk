@@ -535,9 +535,6 @@ for item in log_items:
 print(dict(runDict))
 
 ################################################## RULES ##################################################
-# check the number of sample for copy or merge vcf rule
-#sample_count = len(sample_list) 
-
 # Priority order
 ruleorder: copy_bam > copy_cram > cramtobam > indexing
 
@@ -800,11 +797,11 @@ use rule vcf_normalization as vcf_normalisation_panel with:
 
 # Panel vcf.gz all samples no annotation
 rule merge_vcf:
-	""" Copy or merge multiple vcfs using bcftools """
+	""" Merge multiple vcfs using bcftools """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
-	shell: "bcftools merge --force-single {input} -O z -o {output} 2> {log}; tabix {output}"
+	shell: "bcftools merge --force-single {input} -O z -o {output} 2> {log} && [[ -s {output} ]] || echo -e '## Dummy file created because there's no variant found in any samples\n## You can check individual samples for confirmation' | gzip > {output}; tabix {output} || true"
 
 # Design tsv individual samples AnnotSV
 rule AnnotSV:
