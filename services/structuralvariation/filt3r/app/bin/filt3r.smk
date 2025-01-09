@@ -273,7 +273,7 @@ ruleorder: copy_bam > samtools_fastq > copy_fastq > cramtobam
 rule all:
 	input:
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.raw.vcf",sample=sample_list,aligner=aligner_list),
-		f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf.gz"
+		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf.gz", aligner=aligner_list)
 
 rule copy_fastq:
 	output:
