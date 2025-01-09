@@ -270,7 +270,7 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 rule all:
 	input:
 		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf.gz",aligner=aligner_list, sample=sample_list),
-		f"{resultDir}/{serviceName}.{date_time}.allsamples.vcf.gz"
+		f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf.gz"
 
 rule copy_bam:
 	output: temp(f"{resultDir}/{{sample}}.{{aligner}}.bam")
