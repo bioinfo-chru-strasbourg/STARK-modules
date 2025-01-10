@@ -765,7 +765,7 @@ rule fix_vcf:
 rule vcf_normalization:
 	input: rules.fix_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-	shell: "bcftools norm -d all -o {output} -Oz {input} ; tabix {output}"
+	shell: "bcftools norm  -W=tbi -d all -o {output} -Oz {input}"
 
 
 rule split_vcf:

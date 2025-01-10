@@ -593,7 +593,7 @@ rule vcf_normalization:
 		vcfgz=rules.filter_vcf_panel.output.vcfgz,
 		vcfgztbi=rules.filter_vcf_panel.output.vcfgztbi
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
-	shell: "bcftools norm -d all -o {output} -Oz {input.vcfgz} ; tabix {output}"
+	shell: "bcftools norm  -W=tbi -d all -o {output} -Oz {input.vcfgz}"
 
 # Panel vcf.gz all samples no annotation
 use rule merge_vcf as merge_vcf_panel_noannotation with:
