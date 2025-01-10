@@ -433,7 +433,7 @@ rule mergevcf:
 			fusion=[wildcards.fusion])
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{fusion}}.bcftoolsmerge.log"
-	shell: "bcftools merge --force-single -W {input} -O z -o {output} 2> {log} && [[ -s {output} ]] || echo -e '## Dummy file created because there's no variant found in any samples\n## You can check individual samples for confirmation' | gzip > {output}; tabix {output} || true"
+	shell: "bcftools merge --force-single -W=tbi {input} -O z -o {output} 2> {log} && [[ -s {output} ]] || echo -e '## Dummy file created because there's no variant found in any samples\n## You can check individual samples for confirmation' | gzip > {output}; tabix {output} || true"
 
 rule vcf2tsv:
 	""" vcf to tsv conversion """
