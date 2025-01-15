@@ -10,10 +10,9 @@
 # Authoring : Thomas LAVAUX
 	# AnnotSV version 3.4 (include the vcf converter) HPO ready with exomiser
 	# options to process bed, k-merisation
-	# convert R to R scripts and rewrite some code 
+	# convert R to R scripts and rewrite some code, add external ref bams
 	# re-arrange/simplify/compact code a lot, input files copying is within the rules, f-string, etc.
 	# add an html report using jinja2
-	# remove header from tsv converted
 	# addruns option
 
 ################## Import libraries ##################

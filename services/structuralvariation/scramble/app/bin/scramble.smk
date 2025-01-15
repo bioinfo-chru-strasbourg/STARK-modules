@@ -20,7 +20,6 @@
 	# AnnotSV version 3.4.2 (include the vcf converter) ; add -snvIndelFiles option
 	# Add the deletion mode to SCRAMBLE
 	# refactor snakemake code a lot ; searchfiles function use a list of folder 
-	# remove header from tsv converted
 	
 ################## Import libraries ##################
 import os

@@ -1,0 +1,63 @@
+##########################################################################
+# Config Yaml Version:     1.0
+# Description:             Yaml file to run Snakefile Salmon count module
+##########################################################################
+# DEV version 1 : 05/03/2023
+# Authoring : Thomas LAVAUX
+
+################## Directories and variables ##################
+# Name of the module = {serviceName} from listener.py/launcher.py
+serviceName: "ALEVIN"
+# Specify a DATE_TIME value (for rerun)
+DATE_TIME: ""
+# Output directory
+OUTPUT_DIR: ""
+
+# Default path to the input datas == {run} from listener.py/launcher.py
+run: ""
+
+# Files to index into the dictionary depending on extension (endwith)
+EXT_INDEX_LIST : [".R1.fastq.gz",".R2.fastq.gz"]
+# List of files extension to process
+PROCESS_FILE: [".R1.fastq.gz",".R2.fastq.gz"] # if starting with fastq
+# How to copy input files (bam, bai, cram) : ln or leave empty (it will rsync files or index for bai from bam)
+PROCESS_CMD: 'ln'
+
+# Samples list exclusion (not to be analysed) ; exclude if startwith, case insensitive
+EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
+# Sample filter : only analyse those samples
+FILTER_SAMPLE: []
+
+# Extension files to copy after pipeline success
+# using brace extension, remove space between extensions
+INCLUDE_RSYNC: "{'*.gz','*.log','*.json','*.txt','*.html','/*'}"
+# Extensions files to copy after pipeline failure
+INCLUDE_LOG_RSYNC: "{'*Failed.txt','*.log','*.err'}"
+
+# Search parameters
+RECURSIVE_SEARCH: False
+SEARCH_ARGUMENT: ["*/*"]
+
+# LOG level 30=logging.WARNING or 20=logging.INFO
+LOG_LEVEL: 30
+
+################## Tools parameters ##################
+# Bcl convert
+BCL_DIRECTORY: ""
+SAMPLE_SHEET: ""
+# For alevin quantification fastq mode, path to the index file
+SALMON_INDEX: "/databases/salmon/GRCm39.v33/salmon_index/"
+ALEVIN_GENE_TABLE: "/databases/salmon/GRCm39.v33/txp2gene.tsv"
+MISC_SALMON_OPTIONS: "--chromiumV3"
+ALEVIN_LIBRARY: "ISR" # also for chromiumV3
+
+# Seurat analysis parameters
+PROJECT_PREFIX: "10X"
+MIN_GENES: 350
+MAX_GENES: 4000
+MAX_MITO: 15
+MIN_HOUSEKEEPING_EXPR: 55
+REMOVE_RIBO: false
+
+# Species settings
+SPECIES: "mouse"  # Options: "mouse", "human"

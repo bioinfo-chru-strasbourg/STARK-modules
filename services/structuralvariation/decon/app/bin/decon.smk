@@ -28,7 +28,7 @@
 	# R scripts rewrite, to speed up ReadInBam, separate plotting, call CNV with a reference bam list (see changlog in the R scripts for details)
 	# re-arrange/simplify/compact code a lot, input files copying is within the rules, f-string, etc.
 	# add a draft for an html report using jinja2
-	# remove header from tsv converted
+
 ################## Import libraries ##################
 import os
 import re
