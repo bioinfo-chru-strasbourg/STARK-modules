@@ -264,10 +264,10 @@ rule alevin:
 
 rule alevinQC:
 	input: f"{resultDir}/tmp/{{sample}}/alevin/quants_mat.gz"
-	output: f"{resultDir}/tmp/{{sample}}/alevin/{{sample}}_alevinReport.html"
+	output: f"{resultDir}/tmp/{{sample}}/{{sample}}_alevinReport.html"
 	params: scripts=config['SCRIPTS_FOLDER'],
-			folder=f"{resultDir}/tmp/{{sample}}/alevin"
-	shell: """ Rscript {params.scripts}/AlevinQC.Rscript --input {params.folder} --output {output} --sample {wildcards.sample} """
+			folder=f"{resultDir}/tmp/{{sample}}"
+	shell: """ Rscript {params.scripts}/AlevinQC.Rscript --input {params.folder} --output {params.folder} --sample {wildcards.sample} && touch {output} """
 
 rule seurat:
 	input: f"{resultDir}/tmp/{{sample}}/alevin/quants_mat.gz"
