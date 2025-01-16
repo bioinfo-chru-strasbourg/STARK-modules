@@ -213,7 +213,7 @@ rule alevin:
 		f"{resultDir}/tmp/{{sample}}.success"
 	params:
 		index = config['SALMON_INDEX'],
-		misc_options = config['MISC_SALMON_OPTIONS'], 
+		misc_options = config['MISC_ALEVIN_OPTIONS'], 
 		library_type = config['ALEVIN_LIBRARY'],
 		alevindir= f"{resultDir}/tmp/{{sample}}/",
 		gene_map = config['ALEVIN_GENE_TABLE']
@@ -226,13 +226,14 @@ rule alevin:
 rule alevinQC:
 	input: f"{resultDir}/tmp/{{sample}}/alevin/quants_mat.gz"
 	output: f"{resultDir}/tmp/{{sample}}/alevin/{{sample}}_alevinReport.html"
-	conda: "rtools"
-	shell: """ Rscript /app/scripts/AlevinQC.Rscript --input {input} --output {output} --sample {wildcards.sample} """
+	params: scripts=config['SCRIPTS_FOLDER']
+	shell: """ Rscript {params.scripts}/AlevinQC.Rscript --input {input} --output {output} --sample {wildcards.sample} """
 
 rule seurat:
 	input: f"{resultDir}/tmp/{{sample}}/alevin/quants_mat.gz"
 	output: f"{resultDir}/tmp/"
 	params:
+		scripts=config['SCRIPTS_FOLDER'],
 		prefix=config['PROJECT_PREFIX'],
 		min_genes=config['MIN_GENES'],
 		max_genes=config['MAX_GENES'],
@@ -242,7 +243,7 @@ rule seurat:
 		species=config['SPECIES']
 	shell:
 		"""
-		Rscript /app/scripts/Seurat.Rscript --files {input} --output {output} --prefix {params.prefix} --sample_id {wildcards.sample} --min_genes {params.min_genes} --max_genes {params.max_genes} --max_mito {params.max_mito} --min_housekeeping_expr {params.min_housekeeping_expr} --remove_ribo {params.remove_ribo} --species {params.species}
+		Rscript {params.scripts}/Seurat.Rscript --files {input} --output {output} --prefix {params.prefix} --sample_id {wildcards.sample} --min_genes {params.min_genes} --max_genes {params.max_genes} --max_mito {params.max_mito} --min_housekeeping_expr {params.min_housekeeping_expr} --remove_ribo {params.remove_ribo} --species {params.species}
 		"""
 
 onstart:

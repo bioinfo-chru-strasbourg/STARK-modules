@@ -41,6 +41,9 @@ SEARCH_ARGUMENT: ["*/*"]
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30
 
+# Misc 
+SCRIPTS_FOLDER: "/app/scripts"
+
 ################## Tools parameters ##################
 # Bcl convert
 BCL_DIRECTORY: ""
@@ -48,7 +51,7 @@ SAMPLE_SHEET: ""
 # For alevin quantification fastq mode, path to the index file
 SALMON_INDEX: "/databases/salmon/GRCm39.v33/salmon_index/"
 ALEVIN_GENE_TABLE: "/databases/salmon/GRCm39.v33/txp2gene.tsv"
-MISC_SALMON_OPTIONS: "--chromiumV3"
+MISC_ALEVIN_OPTIONS: "--chromiumV3"
 ALEVIN_LIBRARY: "ISR" # also for chromiumV3
 
 # Seurat analysis parameters
