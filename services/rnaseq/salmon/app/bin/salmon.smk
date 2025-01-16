@@ -112,7 +112,6 @@ def populate_dictionary(samples_list, extensions_list, files_list, pattern_inclu
 	
 	return dictionary
 
-
 def filter_files(files_list, filter_in=None, filter_out=None, extensions=None):
 	filtered_files = []
 
@@ -125,8 +124,7 @@ def filter_files(files_list, filter_in=None, filter_out=None, extensions=None):
 		filtered_files.append(file_name)
 
 	return filtered_files
-
-			
+		
 def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ext=None):
 	""" Function to search in a dictionary for a non-empty file path by iterating through sample_list and ext_list with inclusion and exclusion filters """
 	search_result = ""
@@ -231,9 +229,21 @@ sample_list = extractlistfromfiles(files_list, config['PROCESS_FILE'], '.', 0)
 sample_list = [sample for sample in sample_list if not any(sample.upper().startswith(exclude.upper()) for exclude in config['EXCLUDE_SAMPLE'])]
 # If filter_sample_list variable is not empty, it will force the sample list
 if config['FILTER_SAMPLE']:
+	print('[INFO] Filtering samples list')
 	sample_list = list(config['FILTER_SAMPLE'])
-runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, None)
-print(dict(runDict))
+	print('[INFO] Filtering of samples list done')
+
+# For validation analyse bam will be sample.aligner.validation.bam, so we append .validation to all the aligner strings
+if config['VALIDATION_ONLY']:
+	filtered_files = filter_files(files_list, filter_in='validation', extensions=config['PROCESS_FILE'])
+	append_aligner = '.validation'
+	aligner_list = [sub + append_aligner for sub in aligner_list]
+else:
+	filtered_files = filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
+
+print('[INFO] Construct the dictionary for the run')
+runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, ['analysis'])
+print('[INFO] Dictionary done')
 
 # Log
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
