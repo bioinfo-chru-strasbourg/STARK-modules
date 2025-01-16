@@ -184,7 +184,7 @@ for item in log_items:
 		logging.info(f"{item[0]} {item[1]}")
 
 ################################################## RULES ##################################################
-ruleorder: copy_fastq > bcl_convert
+ruleorder: copy_fastq > bcl_convert > alevinQC > seurat
 
 rule all:
 	input:
@@ -260,12 +260,14 @@ rule alevin:
 		"""
 		salmon alevin --dumpFeatures -l {params.library_type} -1 {input.fastqR1} -2 {input.fastqR2} {params.misc_options} -i {params.index} -p {threads} -o {params.alevindir} --tgMap {params.gene_map} && touch {output}
 		"""
+# --dumpUmiGraph --dumpOrigCounts 
 
 rule alevinQC:
 	input: f"{resultDir}/tmp/{{sample}}/alevin/quants_mat.gz"
 	output: f"{resultDir}/tmp/{{sample}}/alevin/{{sample}}_alevinReport.html"
-	params: scripts=config['SCRIPTS_FOLDER']
-	shell: """ Rscript {params.scripts}/AlevinQC.Rscript --input {input} --output {output} --sample {wildcards.sample} """
+	params: scripts=config['SCRIPTS_FOLDER'],
+			folder=f"{resultDir}/tmp/{{sample}}/alevin"
+	shell: """ Rscript {params.scripts}/AlevinQC.Rscript --input {params.folder} --output {output} --sample {wildcards.sample} """
 
 rule seurat:
 	input: f"{resultDir}/tmp/{{sample}}/alevin/quants_mat.gz"
