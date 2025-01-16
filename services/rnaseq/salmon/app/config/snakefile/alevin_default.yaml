@@ -35,7 +35,7 @@ FILTER_SAMPLE: []
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*.sf','/*'}"
+INCLUDE_RSYNC: "{'*','/*'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*Failed.txt','*.log','*.err'}"
 

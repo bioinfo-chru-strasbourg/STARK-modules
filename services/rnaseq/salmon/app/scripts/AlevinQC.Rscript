@@ -19,7 +19,7 @@ sampleId=opt$sample
 
 alevinQCReport(baseDir = DataInput, 
             sampleId = sampleId, 
-            outputFile = paste(sampleId,"_alevinReport.html"), 
+            outputFile = paste(sampleId,"_alevinReport.html", sep = ""), 
             outputFormat = "html_document",
             outputDir = FolderOutput, forceOverwrite = TRUE)
 

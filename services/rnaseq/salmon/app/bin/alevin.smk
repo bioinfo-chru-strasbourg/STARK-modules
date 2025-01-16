@@ -245,15 +245,15 @@ rule copy_fastq:
 
 rule alevin:
 	input:
-		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz", # BARCODE+UMI
-		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz" # READS
+		temp(fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz"), # BARCODE+UMI
+		temp(fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz") # READS
 	output:
-		f"{resultDir}/tmp/{{sample}}/alevin/quants_mat.gz"
+		f"{resultDir}/{{sample}}/alevin/quants_mat.gz"
 	params:
 		index = config['SALMON_INDEX'],
 		misc_options = config['MISC_ALEVIN_OPTIONS'], 
 		library_type = config['ALEVIN_LIBRARY'],
-		alevindir= f"{resultDir}/tmp/{{sample}}/",
+		alevindir= f"{resultDir}/{{sample}}/",
 		gene_map = config['ALEVIN_GENE_TABLE']
 	threads: workflow.cores
 	shell:
@@ -263,15 +263,15 @@ rule alevin:
 # --dumpUmiGraph --dumpOrigCounts 
 
 rule alevinQC:
-	input: f"{resultDir}/tmp/{{sample}}/alevin/quants_mat.gz"
-	output: f"{resultDir}/tmp/{{sample}}/{{sample}}_alevinReport.html"
+	input: f"{resultDir}/{{sample}}/alevin/quants_mat.gz"
+	output: f"{resultDir}/{{sample}}/{{sample}}_alevinReport.html"
 	params: scripts=config['SCRIPTS_FOLDER'],
-			folder=f"{resultDir}/tmp/{{sample}}"
-	shell: """ Rscript {params.scripts}/AlevinQC.Rscript --input {params.folder} --output {params.folder} --sample {wildcards.sample} && touch {output} """
+			folder=f"{resultDir}/{{sample}}"
+	shell: """ Rscript {params.scripts}/AlevinQC.Rscript --input {params.folder} --output {params.folder} --sample {wildcards.sample} """
 
 rule seurat:
-	input: f"{resultDir}/tmp/{{sample}}/alevin/quants_mat.gz"
-	output: f"{resultDir}/tmp/"
+	input: f"{resultDir}/{{sample}}/alevin/quants_mat.gz"
+	output: f"{resultDir}/"
 	params:
 		scripts=config['SCRIPTS_FOLDER'],
 		prefix=config['PROJECT_PREFIX'],
