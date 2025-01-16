@@ -49,9 +49,13 @@ configfile: "/app/config/snakefile/alevin_default.yaml"
 
 ####################### FUNCTIONS #####################
 
-def populate_dictionary(dictionary, samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None, split_index=0):
+def populate_dictionary(samples_list, extensions_list, files_list, pattern_include=None, pattern_exclude=None, split_index=0):
+	
+	dictionary = defaultdict(dict)
+
 	for sample in samples_list:
 		for ext in extensions_list:
+			found = False
 			for file in files_list:
 				file_parts = os.path.basename(file).split(".")
 				
@@ -63,17 +67,35 @@ def populate_dictionary(dictionary, samples_list, extensions_list, files_list, p
 				if file_base != sample or not os.path.basename(file).endswith(ext):
 					continue
 
-				if pattern_exclude and pattern_exclude in file:
+				if pattern_exclude and any(exclude in file for exclude in pattern_exclude):
 					continue
 
 				if pattern_include and pattern_include not in file:
 					continue
 
 				dictionary.setdefault(sample, {})[ext] = file
+				found = True
+				break  # Stop after the first match
+
+			if not found:
+				dictionary.setdefault(sample, {})[ext] = None
+	
+	return dictionary
 
 
-def filter_files(files_list, filter_in=None, filter_out=None):
-	return [file_name for file_name in files_list if (not filter_in or filter_in in file_name) and (not filter_out or filter_out not in file_name)]
+
+def filter_files(files_list, filter_in=None, filter_out=None, extensions=None):
+	filtered_files = []
+
+	for file_name in files_list:
+		if extensions and any(file_name.endswith(ext) for ext in extensions):
+			if filter_out and filter_out in file_name:
+				continue  # Skip files with both the specified extension and substring
+			if filter_in and filter_in not in file_name:
+				continue  # Skip files that do not contain the specified substring
+		filtered_files.append(file_name)
+
+	return filtered_files
 
 			
 def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ext=None):
@@ -84,21 +106,26 @@ def find_item_in_dict(sample_list, ext_list, dictionary, include_ext, exclude_ex
 		for ext in ext_list:
 			try:
 				items = dictionary.get(sample, {}).get(ext, [])
-				if include_ext in items and (exclude_ext is None or exclude_ext not in items):
-					if os.path.exists(items) and os.path.getsize(items) != 0:
-						search_result = items
+				if items is not None:
+					if include_ext in items and (exclude_ext is None or exclude_ext not in items):
+						if os.path.exists(items) and os.path.getsize(items) != 0:
+							search_result = items
 			except KeyError as e:
 				print(f"KeyError encountered: {e}")
 	
 	return search_result
 
-def searchfiles(directory, search_arg, recursive_arg):
-	""" Function to search all files in a directory, adding a search arguement append to the directory and a recursive_search options (True/False) """
-	return sorted(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
+def searchfiles(directory, search_args, recursive_arg):
+	""" Function to search all files in a directory with multiple search patterns and an option for recursive search """
+	results = []
+	for search_arg in search_args:
+		results.extend(filter(os.path.isfile, glob.glob(directory + search_arg, recursive=recursive_arg)))
+	return sorted(results)
 
 def extractlistfromfiles(file_list, ext_list, sep, position):
 	""" Function for creating list from a file list, with a specific extension, a separator and the position of the string we want to extract """
 	return list(set(os.path.basename(files).split(sep)[position] for files in file_list if any(files.endswith(ext) for ext in ext_list)))
+
 
 
 ### END OF FUNCTIONS ###
@@ -109,29 +136,31 @@ resultDir = f"/app/res/{runName}/{date_time}"
 outputDir = config['OUTPUT_DIR'] if config['OUTPUT_DIR'] else config['run']
 directories = [resultDir, outputDir]
 
+depotDir = config['DEPOT_DIR']
+if config['DEPOT_DIR'] == "depository":
+	depotDir = outputDir.replace("repository", "depository")
+
+directories = [resultDir, outputDir]
+if depotDir:  # Ensure depotDir is not an empty string
+	directories.append(depotDir)
 for directory in directories:
 	os.makedirs(directory, exist_ok=True)
 
 # Search files in repository 
 files_list = searchfiles(os.path.normpath(config['run']), config['SEARCH_ARGUMENT'],  config['RECURSIVE_SEARCH'])
-
-# Create sample list
+# Create sample  list
 sample_list = extractlistfromfiles(files_list, config['PROCESS_FILE'], '.', 0)
-
 # Exclude samples from the exclude_list , case insensitive
 sample_list = [sample for sample in sample_list if not any(sample.upper().startswith(exclude.upper()) for exclude in config['EXCLUDE_SAMPLE'])]
-
 # If filter_sample_list variable is not empty, it will force the sample list
 if config['FILTER_SAMPLE']:
 	sample_list = list(config['FILTER_SAMPLE'])
-
-runDict = defaultdict(dict)
-populate_dictionary(runDict, sample_list, config['EXT_INDEX_LIST'], files_list, None, 'validation')
+runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, None)
+print(dict(runDict))
 
 # Log
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
 logging.basicConfig(filename=logfile, level=config['LOG_LEVEL'], format='%(asctime)s %(message)s')
-
 log_items = [
 	('Start of the analysis:', date_time),
 	('Analysing run:', runName),
@@ -143,8 +172,7 @@ for item in log_items:
 		logging.info(f"{item[0]}\n{'\n'.join(map(str, item[1]))}")
 	else:
 		logging.info(f"{item[0]} {item[1]}")
-
-print(dict(runDict))
+		
 ################################################## RULES ##################################################
 ruleorder: copy_fastq > bcl_convert
 
