@@ -248,7 +248,7 @@ rule alevin:
 		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz", # BARCODE+UMI
 		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz" # READS
 	output:
-		f"{resultDir}/tmp/{{sample}}.success"
+		f"{resultDir}/tmp/{{sample}}/alevin/quants_mat.gz"
 	params:
 		index = config['SALMON_INDEX'],
 		misc_options = config['MISC_ALEVIN_OPTIONS'], 

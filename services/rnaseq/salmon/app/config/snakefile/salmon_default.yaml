@@ -49,6 +49,9 @@ INCLUDE_LOG_RSYNC: "{'*Failed.txt','*.log','*.err'}"
 RECURSIVE_SEARCH: False
 SEARCH_ARGUMENT: ["*/*"]
 
+# Only analyse sample.validation.aligner.bam/cram files
+VALIDATION_ONLY: False
+
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # For result html report, list of extensions to report
