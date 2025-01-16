@@ -188,7 +188,7 @@ ruleorder: copy_fastq > bcl_convert > alevinQC > seurat
 
 rule all:
 	input:
-		expand(f"{resultDir}/tmp/{{sample}}/{{sample}}_alevinReport.html", sample=sample_list)
+		expand(f"{resultDir}/{{sample}}/{{sample}}_alevinReport.html", sample=sample_list)
 
 
 rule help:
@@ -245,8 +245,8 @@ rule copy_fastq:
 
 rule alevin:
 	input:
-		temp(fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz"), # BARCODE+UMI
-		temp(fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz") # READS
+		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz", # BARCODE+UMI
+		fastqR2=f"{resultDir}/{{sample}}.R2.fastq.gz" # READS
 	output:
 		f"{resultDir}/{{sample}}/alevin/quants_mat.gz"
 	params:
