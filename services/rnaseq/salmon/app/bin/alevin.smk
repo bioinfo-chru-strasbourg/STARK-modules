@@ -167,7 +167,7 @@ else:
 print('[INFO] Construct the dictionary for the run')
 runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, ['analysis'])
 print('[INFO] Dictionary done')
-
+print(dict(runDict))
 # Log
 logfile = f"{resultDir}/{serviceName}.{date_time}.parameters.log"
 logging.basicConfig(filename=logfile, level=config['LOG_LEVEL'], format='%(asctime)s %(message)s')
