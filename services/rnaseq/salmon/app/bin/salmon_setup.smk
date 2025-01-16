@@ -59,8 +59,7 @@ for item in log_items:
 
 ################## Snakemake Rules ##################
 rule all:
-		input:
-			success=f"{db}/salmon/{assembly}.v{gencode_version}/salmon_index/salmon_install.success"
+	input: f"{services_folder}/cli/SETUPComplete.txt"
 
 rule download_gencode:
 	output: f"{db}/gencode/{assembly}.v{gencode_version}/gencode_DB_download.success"
@@ -101,6 +100,12 @@ rule create_salmon_index:
 		touch {output.success}
 		"""
 
+rule cp:
+	input: rules.create_salmon_index.output.success
+	output: f"{services_folder}/cli/SETUPComplete.txt"
+	shell: " mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli && touch {output} " 
+
+
 onstart:
 	shell(f"rm -f {services_folder}/cli/SETUPComplete.txt")
 	shell(f"touch {services_folder}/cli/SETUPRunning.txt")
@@ -112,7 +117,7 @@ onstart:
 onsuccess:
 	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")
 	shell(f"touch {services_folder}/cli/SETUPComplete.txt")
-	shell(f"mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli")
+
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write(f"End of the setup: {date_time_end}\n")
