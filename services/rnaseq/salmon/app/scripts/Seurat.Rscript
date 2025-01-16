@@ -61,9 +61,9 @@ option_list <- list(
               help="Remove ribosomal genes from the data [default %default]", metavar="logical"),
   make_option(c("--species"), type="character", default="mouse", 
               help="Species for the analysis ('mouse' or 'human') [default %default]", metavar="character"),
-  make_option(c("--cell_cycle_regression"), type="logical", default=TRUE, 
+  make_option(c("--cell_cycle_regression"), type="logical", default=FALSE, 
               help="Perform cell cycle regression [default %default]", metavar="logical"),
-  make_option(c("--sex_scoring"), type="logical", default=TRUE, 
+  make_option(c("--sex_scoring"), type="logical", default=FALSE, 
               help="Perform sex scoring regression [default %default]", metavar="logical")
 )
 

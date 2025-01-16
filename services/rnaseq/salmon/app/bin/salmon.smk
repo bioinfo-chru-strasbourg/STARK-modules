@@ -347,7 +347,7 @@ rule salmon:
 	output:
 		f"{resultDir}/tmp/{{sample}}.salmon.quant/quant.sf"
 	params:
-		fastquantref = config['REFSALMONQUANTFASTQ_PATH'],
+		fastquantref = config['REFSALMONINDEX_PATH'],
 		misc_options = config['MISC_SALMON_OPTIONS'],
 		salmondir= f"{resultDir}/tmp/{{sample}}.salmon.quant/"
 	threads: workflow.cores

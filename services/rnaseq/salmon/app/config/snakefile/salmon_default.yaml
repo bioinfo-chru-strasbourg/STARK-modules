@@ -16,7 +16,7 @@ databases: "/databases"
 services: "/services"
 # Config folder
 config: "/config"
-
+ 
 # Specify a DATE_TIME value (for rerun)
 DATE_TIME: ""
 # Output directory
@@ -94,5 +94,5 @@ FASTP_TRIM: "" # ex FASTP_TRIM: "--trim_front2=5 --trim_tail2=5"
 FASTP_UMI: "" #  -U --umi_loc=per_read --umi_len=5 for XTHS2
 
 # For Salmon quantification fastq mode, path to the index file
-REFSALMONQUANTFASTQ_PATH: "/databases/salmon/GHCh38.Ensembl107.gencodev41.salmon.index"
+REFSALMONINDEX_PATH: "/databases/salmon/GRCh38.v41"
 MISC_SALMON_OPTIONS: ""

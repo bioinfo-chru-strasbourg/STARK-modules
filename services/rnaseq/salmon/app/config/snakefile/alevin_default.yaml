@@ -13,15 +13,20 @@ DATE_TIME: ""
 # Output directory
 OUTPUT_DIR: ""
 
-# Default path to the input datas == {run} from listener.py/launcher.py
-run: ""
+# Specify a DATE_TIME value (for rerun)
+DATE_TIME: ""
+# Output directory
+OUTPUT_DIR: ""
+# Other path to copy results, leave empty to not copy, add a path to copy to this folder
+# Replace by "depository" will copy the results in a second folder based on OUTPUT_DIR, replacing "repository" with "depository" if repository exist
+DEPOT_DIR: ""
 
 # Files to index into the dictionary depending on extension (endwith)
 EXT_INDEX_LIST : [".R1.fastq.gz",".R2.fastq.gz"]
 # List of files extension to process
 PROCESS_FILE: [".R1.fastq.gz",".R2.fastq.gz"] # if starting with fastq
 # How to copy input files (bam, bai, cram) : ln or leave empty (it will rsync files or index for bai from bam)
-PROCESS_CMD: 'ln'
+PROCESS_CMD: ''
 
 # Samples list exclusion (not to be analysed) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
@@ -30,7 +35,7 @@ FILTER_SAMPLE: []
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*.gz','*.log','*.json','*.txt','*.html','/*'}"
+INCLUDE_RSYNC: "{'*.sf','/*'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*Failed.txt','*.log','*.err'}"
 

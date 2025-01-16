@@ -264,10 +264,16 @@ onsuccess:
 	
 	# Copy results to the main output directory
 	shell("rsync -azvh --include={include} --exclude='*'  {resultDir}/ {outputDir}")
-
-	# Copy individual sample results to their respective directories
 	for sample in sample_list:
 		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+	
+	# Optionally, perform DEPOT_DIR copy
+	if config['DEPOT_DIR'] and outputDir != depotDir:
+		for sample in sample_list:
+			shell(f"rm -f {depotDir}/{sample}/{serviceName}/* || true")
+		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")
+		for sample in sample_list:
+			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {depotDir}/{sample}/{serviceName}/ || true")
 
 onerror:
 	include_log = config['INCLUDE_LOG_RSYNC']
