@@ -188,7 +188,8 @@ ruleorder: copy_fastq > bcl_convert > alevinQC > seurat
 
 rule all:
 	input:
-		expand(f"{resultDir}/{{sample}}/{{sample}}_alevinReport.html", sample=sample_list)
+		expand(f"{resultDir}/{{sample}}/{{sample}}_alevinReport.html", sample=sample_list),
+		expand(f"{resultDir}/{{sample}}/{{sample}}_Seurat_raw.rds", sample=sample_list)
 
 
 rule help:
@@ -271,8 +272,9 @@ rule alevinQC:
 
 rule seurat:
 	input: f"{resultDir}/{{sample}}/alevin/quants_mat.gz"
-	output: f"{resultDir}/"
+	output: f"{resultDir}/{{sample}}/{{sample}}_Seurat_raw.rds"
 	params:
+		folder=f"{resultDir}/{{sample}}",
 		scripts=config['SCRIPTS_FOLDER'],
 		prefix=config['PROJECT_PREFIX'],
 		min_genes=config['MIN_GENES'],
@@ -283,7 +285,7 @@ rule seurat:
 		species=config['SPECIES']
 	shell:
 		"""
-		Rscript {params.scripts}/Seurat.Rscript --files {input} --output {output} --prefix {params.prefix} --sample_id {wildcards.sample} --min_genes {params.min_genes} --max_genes {params.max_genes} --max_mito {params.max_mito} --min_housekeeping_expr {params.min_housekeeping_expr} --remove_ribo {params.remove_ribo} --species {params.species}
+		Rscript {params.scripts}/Seurat.Rscript --files {input} --output {params.folder} --prefix {params.prefix} --sample_id {wildcards.sample} --min_genes {params.min_genes} --max_genes {params.max_genes} --max_mito {params.max_mito} --min_housekeeping_expr {params.min_housekeeping_expr} --remove_ribo {params.remove_ribo} --species {params.species}
 		"""
 
 onstart:

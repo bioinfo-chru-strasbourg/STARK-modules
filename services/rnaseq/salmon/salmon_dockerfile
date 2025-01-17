@@ -25,6 +25,7 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds -c bih-cubi  \
 	samtools~=1.21 bcftools~=1.21 bedtools~=2.31  bcl2fastq2~=2.20 \
 	snakemake~=8.26 pandas~=2.2 vcf2tsvpy~=0.6.1  \
 	salmon~=1.10.3 seqkit~=2.9 fastp~=0.24 boost-cpp~=1.85 \
+	bioconductor-tximport~=1.8 \
 	bioconductor-alevinqc~=1.22  bioconductor-singler~=2.8 bioconductor-celldex~=1.16 \
 	r-optparse~=1.7 r-ggplot2~=3.5 r-seurat~=5.1 \
 	bioconductor-eds~=1.8 r-tidyverse~=2.0 r-dplyr~=1.1 r-pheatmap~=1.0 \
