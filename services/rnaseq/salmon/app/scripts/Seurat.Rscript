@@ -228,12 +228,12 @@ for (i in seq_along(input_files)) {
   # Plot UMI Counts vs Percent Mito
   qc_output_file <- file.path(opt$output, paste0(sample_ids[i], "_QC_plots.pdf"))
   pdf(qc_output_file)
-  plot(seurat_obj$nCount_RNA, seurat_obj$percent.mt, main = "UMI Counts x Percent Mito", xlab = "UMI_count", ylab = "percent mito")
+  plot(seurat_obj$nCount_RNA, seurat_obj$percent.mt, main = "UMI Counts x Percent Mito", xlab = "UMI_count", ylab = "percent.mito")
   dev.off()  
 
   vln_output_file <- file.path(opt$output, paste0(sample_ids[i], "_VlnPlots.pdf"))
   pdf(vln_output_file, width = 10, height = 8)
-  print(VlnPlot(seurat_obj, features = c("nFeature_RNA", "nCount_RNA", "%.mt", "%.ribo", "%.hb", "%.housekeeping"), 
+  print(VlnPlot(seurat_obj, features = c("nFeature_RNA", "nCount_RNA", "percent.mt", "percent.ribo", "percent.hb", "percent.housekeeping"), 
                       ncol = 6, pt.size = 0) + theme(legend.position = 'none'))
   dev.off()
 
@@ -311,7 +311,7 @@ for (i in seq_along(input_files)) {
   # Generate and save the violin plot for the unfiltered object
   vln_filtered_output_file <- file.path(opt$output, paste0(sample_ids[i], "_filtered_VlnPlots.pdf"))
   pdf(vln_filtered_output_file, width = 10, height = 8)
-  print(VlnPlot(seurat_obj, features = c("nFeature_RNA", "nCount_RNA", "%.mt", "%.ribo", "%.hb", "%.housekeeping"), 
+  print(VlnPlot(seurat_obj, features = c("nFeature_RNA", "nCount_RNA", "percent.mt", "percent.ribo", "percent.hb", "percent.housekeeping"), 
                 ncol = 6, pt.size = 0) + theme(legend.position = 'none'))
   dev.off()
   
@@ -387,7 +387,7 @@ for (i in seq_along(input_files)) {
   message('Find variable features')
   seurat_obj_filtered <- FindVariableFeatures(seurat_obj_filtered)
   message('Find variable features done')
-  
+
   message('PCA')
   seurat_obj_filtered <- RunPCA(object = seurat_obj_filtered)
   message('PCA done')
