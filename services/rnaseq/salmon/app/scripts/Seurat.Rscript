@@ -24,8 +24,6 @@
 
 suppressPackageStartupMessages({
   library(optparse)
-  library(scDblFinder)
-  library(SingleCellExperiment)
   library(tidyverse)
   library(ggplot2)
   library(dplyr)
@@ -66,10 +64,7 @@ option_list <- list(
   make_option(c("--cell_cycle_regression"), type="logical", default=FALSE, 
               help="Perform cell cycle regression [default %default]", metavar="logical"),
   make_option(c("--sex_scoring"), type="logical", default=FALSE, 
-              help="Perform sex scoring regression [default %default]", metavar="logical"),
-  make_option(c("--filter_doublets"), type="logical", default=FALSE, 
-              help="Filter doublets using scDblFinder [default %default]", metavar="logical")
-
+              help="Perform sex scoring regression [default %default]", metavar="logical")
 )
 
 opt_parser <- OptionParser(option_list=option_list)
@@ -186,25 +181,6 @@ for (i in seq_along(input_files)) {
   # Save the raw Seurat object
   saveRDS(seurat_obj, file = file.path(opt$output, paste0(sample_ids[i], "_Seurat_raw.rds")))
   cat("Seurat object saved for sample: ", sample_ids[i], "\n")
-
-  # Detect doublets using scDblFinder
-  cat("Running scDblFinder to detect doublets...\n")
-  seurat_obj <- as.SingleCellExperiment(seurat_obj)  # Convert to SingleCellExperiment
-  seurat_obj <- scDblFinder(seurat_obj)  # Run scDblFinder
-  seurat_obj <- as.Seurat(seurat_obj)  # Convert back to Seurat object
-
-  # Add doublet classification metadata
-  seurat_obj$DoubletStatus <- seurat_obj$scDblFinder.class
-
-  # Save doublet results for reference
-  saveRDS(seurat_obj, file = file.path(opt$output, paste0(sample_ids[i], "_withDoublets.rds")))
-
-  if (opt$filter_doublets) {
-      # Filter out predicted doublets
-      cat("Filtering predicted doublets...\n")
-      seurat_obj <- subset(seurat_obj, subset = DoubletStatus == "singlet")
-      cat("Number of cells after doublet filtering: ", ncol(seurat_obj), "\n")
-    }
 
   # Fetch data for mitochondrial, hemoglobin, and ribosomal genes
   seurat_obj[["percent.mt"]] <- PercentageFeatureSet(seurat_obj, pattern = mito_pattern)
