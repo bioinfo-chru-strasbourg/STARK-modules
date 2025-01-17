@@ -1,0 +1,35 @@
+# Load required libraries
+library(Seurat)
+library(scDblFinder)
+library(SingleCellExperiment)
+
+# Example: Load or create a Seurat object
+# Replace this with your actual Seurat object
+# seurat_obj <- readRDS("path/to/your/seurat_object.rds")
+
+# Convert Seurat object to SingleCellExperiment object
+sce <- as.SingleCellExperiment(seurat_obj)
+
+# Run scDblFinder to identify doublets
+sce <- scDblFinder(sce)
+
+# Extract doublet information
+doublet_info <- colData(sce)$scDblFinder.class
+doublet_scores <- colData(sce)$scDblFinder.score
+
+# Add doublet information back to the Seurat object
+seurat_obj$doublet_class <- doublet_info
+seurat_obj$doublet_score <- doublet_scores
+
+# Visualize or subset based on doublets
+# For example, check the proportion of doublets
+table(seurat_obj$doublet_class)
+
+# Optionally, subset to keep only singlets
+seurat_obj_singlets <- subset(seurat_obj, subset = doublet_class == "singlet")
+
+# Save the Seurat object with doublet annotations
+saveRDS(seurat_obj, file = "seurat_obj_with_doublets.rds")
+
+# Save the singlet-only object (if applicable)
+saveRDS(seurat_obj_singlets, file = "seurat_obj_singlets.rds")

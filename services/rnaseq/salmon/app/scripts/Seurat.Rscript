@@ -39,7 +39,7 @@ current_wd <- getwd()
 cat("Current working directory: ", current_wd, "\n")
 
 option_list <- list(
-  make_option(c("-d", "--dir"), type="character", default="/app/scripts/function",
+  make_option(c("-d", "--dir"), type="character", default="/app/scripts",
               help="Directory containing .R files [default %default]", metavar="character"),
   make_option(c("-f", "--files"), type="character", default=NULL, 
               help="Comma-separated list of input files", metavar="character"),
@@ -299,6 +299,7 @@ for (i in seq_along(input_files)) {
     cat("Number of cells after filtering: ", ncol(seurat_obj_filtered), "\n")
   } else {
     cat("No cells meet the filtering criteria. Consider adjusting the thresholds.\n")
+    seurat_obj_filtered <- seurat_obj
   }
 
   # Save UMI Counts vs Percent Mito for filtered data
@@ -325,7 +326,8 @@ for (i in seq_along(input_files)) {
   # Normalization
   message('Normalization')
   seurat_obj_filtered <- NormalizeData(object = seurat_obj_filtered)
-  
+  message('Normalization done')
+
   # Cell Cycle Scoring and Regression
   if (opt$cell_cycle_regression) {
       s.genes <- cc.genes$s.genes
@@ -372,17 +374,29 @@ for (i in seq_along(input_files)) {
 
   # Regular Scaling (if neither cell cycle nor sex scoring is enabled)
   if (!opt$cell_cycle_regression && !opt$sex_scoring) {
-      seurat_obj_filtered <- ScaleData(object = seurat_obj_filtered, features = rownames(seurat_obj_filtered))
+    message('Scale data')
+    seurat_obj_filtered <- ScaleData(object = seurat_obj_filtered, features = rownames(seurat_obj_filtered))
+  } else {
+    # Perform scaling without specifying features or handle specific cases
+    # (Assume custom logic here, or adapt it as needed for cell cycle or sex scoring scenarios)
+    message('Scale data')
+    seurat_obj_filtered <- ScaleData(object = seurat_obj_filtered)
   }
-  # Continue with Scaling, and PCA
-  seurat_obj_filtered <- ScaleData(object = seurat_obj_filtered)
-  seurat_obj_filtered <- RunPCA(object = seurat_obj_filtered)
+  message('Scale data done')
 
+  message('Find variable features')
+  seurat_obj_filtered <- FindVariableFeatures(seurat_obj_filtered)
+  message('Find variable features done')
+  
+  message('PCA')
+  seurat_obj_filtered <- RunPCA(object = seurat_obj_filtered)
+  message('PCA done')
   # Save PCA DimPlot & object
   dimplot_pca_output_file <- file.path(opt$output, paste0(sample_ids[i], "_DimPlot_PCA.pdf"))
   pdf(dimplot_pca_output_file)
   print(DimPlot(seurat_obj_filtered, reduction = "pca"))
   dev.off()
+  message('Save final Seurat object in rds format')
   saveRDS(seurat_obj_filtered, file = file.path(opt$output, paste0(sample_ids[i], "_final_filtered.rds")))
   
 }
