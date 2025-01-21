@@ -36,7 +36,6 @@ suppressPackageStartupMessages({
   library(celldex)
 })
 
-
 current_wd <- getwd()
 cat("Current working directory: ", current_wd, "\n")
 
@@ -44,9 +43,7 @@ option_list <- list(
   make_option(c("-d", "--dir"), type="character", default="/app/scripts",
               help="Directory containing .R files [default %default]", metavar="character"),
   make_option(c("-f", "--files"), type="character", default=NULL, 
-              help="Comma-separated list of input files or a saved Seurat object (.rds)", metavar="character"),
-  make_option(c("-l", "--load_seurat"), type="logical", default=FALSE,
-              help="Option to load an existing Seurat object instead of processing raw counts [default %default]", metavar="logical"),
+              help="Comma-separated list of input files", metavar="character"),
   make_option(c("-o", "--output"), type="character", default="output", 
               help="Directory to save output files", metavar="character"),
   make_option(c("-p", "--prefix"), type = "character", default = NULL, 
@@ -59,18 +56,20 @@ option_list <- list(
               help="Maximum number of genes per cell [default %default]", metavar="number"),
   make_option(c("--max_mito"), type="numeric", default=15, 
               help="Maximum percentage of mitochondrial transcripts [default %default]", metavar="number"),
+  make_option(c("--min_housekeeping_expr"), type="numeric", default=0, 
+              help="Minimum expression of housekeeping genes per cell [default %default]", metavar="number"),
+  make_option(c("--remove_ribo"), type="logical", default=FALSE, 
+              help="Remove ribosomal genes from the data [default %default]", metavar="logical"),
   make_option(c("--species"), type="character", default="mouse", 
-              help="Species for the analysis ('mouse' or 'human') [default %default]", metavar="character")
+              help="Species for the analysis ('mouse' or 'human') [default %default]", metavar="character"),
+  make_option(c("--cell_cycle_regression"), type="logical", default=FALSE, 
+              help="Perform cell cycle regression [default %default]", metavar="logical"),
+  make_option(c("--sex_scoring"), type="logical", default=FALSE, 
+              help="Perform sex scoring regression [default %default]", metavar="logical")
 )
 
 opt_parser <- OptionParser(option_list=option_list)
 opt <- parse_args(opt_parser)
-
-# Directory setup
-if (!dir.exists(opt$output)) {
-  dir.create(opt$output, recursive = TRUE)
-}
-
 
 # List all .R files in the specified directory & source them
 scripts_dir <- opt$dir
@@ -89,53 +88,25 @@ if (length(r_files) > 0) {
   stop("No .R files found in the specified directory.")
 }
 
-cat("Input file(s): ", opt$files, "\n")
-cat("Loading existing Seurat object: ", opt$load_seurat, "\n")
-
-# Load or process Seurat object
-if (opt$load_seurat) {
-  # Load existing Seurat object
-  if (!file.exists(opt$files)) {
-    stop("The specified Seurat object file does not exist.", call.=FALSE)
-  }
-  seurat_obj <- readRDS(opt$files)
-  cat("Loaded Seurat object from: ", opt$files, "\n")
-} else {
-  # Process raw data using Alevin-generated counts
-  input_files <- unlist(strsplit(opt$files, ","))
-  sample_ids <- unlist(strsplit(opt$sample_id, ","))
-  
-  if (length(input_files) != length(sample_ids)) {
-    stop("The number of input files does not match the number of sample IDs.", call.=FALSE)
-  }
-  
-  for (i in seq_along(input_files)) {
-    cat("Processing file: ", input_files[i], " for sample: ", sample_ids[i], "\n")
-    if (!file.exists(input_files[i])) {
-      warning(sprintf("File %s does not exist. Skipping.", input_files[i]))
-      next
-    }
-    
-    # Import data & create Seurat object
-    txi <- tximport(input_files[i], type="alevin")
-    project_name <- paste(opt$prefix, sample_ids[i], sep = "")
-    
-    seurat_obj <- CreateSeuratObject(counts = txi$counts, 
-                                     min.cells = 3, 
-                                     min.features = 200, 
-                                     project = project_name)
-    
-    # Save the raw Seurat object
-    saveRDS(seurat_obj, file = file.path(opt$output, paste0(sample_ids[i], "_Seurat_raw.rds")))
-    cat("Seurat object saved for sample: ", sample_ids[i], "\n")
-  }
+# Check and split input files and sample IDs
+if (is.null(opt$files)) {
+  print_help(opt_parser)
+  stop("File path must be provided. See --help for details.", call.=FALSE)
 }
 
-# Print summary information
-cat("Number of samples: ", length(sample_ids), "\n")
+# Split comma-separated file paths and sample IDs into vectors
+input_files <- unlist(strsplit(opt$files, ","))
+sample_ids <- unlist(strsplit(opt$sample_id, ","))
+
+if (length(input_files) != length(sample_ids)) {
+  stop("The number of input files does not match the number of sample IDs.", call.=FALSE)
+}
+
+if (!dir.exists(opt$output)) {
+  dir.create(opt$output, recursive = TRUE)
+}
+
 cat("Input files: ", paste(input_files, collapse=", "), "\n")
-cat("Output directory: ", opt$output, "\n")
-cat("Species: ", opt$species, "\n")
 cat("Sample IDs: ", paste(sample_ids, collapse=", "), "\n")
 cat("Project prefix: ", opt$prefix, "\n")
 cat("Minimum genes per cell: ", opt$min_genes, "\n")
