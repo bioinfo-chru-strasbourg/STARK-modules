@@ -31,8 +31,14 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds -c bih-cubi  \
 	bioconductor-eds~=1.8 r-tidyverse~=2.0 r-dplyr~=1.1 r-pheatmap~=1.0 \
 	&& mamba clean -afy
 
-# bioconductor-scdblfinder bioconductor-singlecellexperiment
+# bioconductor-scdblfinder~=1.16 bioconductor-singlecellexperiment~=1.24 r-seurat~=5.1 \ 
 # seqkit~=2.9
+
+# To activate the environnement use : mamba/conda  activate scdblfinder
+# To deactivate use : mamba deactivate
+RUN mamba create -n scdblfinder -y -c conda-forge -c bioconda -c biobuilds \
+	bioconductor-scdblfinder~=1.16 bioconductor-singlecellexperiment~=1.24 r-seurat~=5.1 \ 
+	&& mamba clean -afy
 
 # Copy applications files (/app)
 COPY ./app /app
