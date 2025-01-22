@@ -188,8 +188,8 @@ ruleorder: copy_fastq > bcl_convert > alevinQC > seurat
 
 rule all:
 	input:
-		expand(f"{resultDir}/{{sample}}/{{sample}}_alevinReport.html", sample=sample_list),
-		expand(f"{resultDir}/{{sample}}/{{sample}}_Seurat_raw.rds", sample=sample_list)
+		expand(f"{resultDir}/{{sample}}/{{sample}}_alevinReport.html", sample=sample_list)
+		#expand(f"{resultDir}/{{sample}}/{{sample}}_Seurat_raw.rds", sample=sample_list)
 
 
 rule help:
