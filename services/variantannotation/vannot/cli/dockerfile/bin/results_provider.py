@@ -26,7 +26,7 @@ def distribute(run_informations):
 
         for output_folder in output_folders:
             if not os.path.isdir(osj(output_folder, sample, "VANNOT", "")):
-                os.mkdir(osj(output_folder, sample, "VANNOT", ""))
+                os.makedirs(osj(output_folder, sample, "VANNOT", ""))
                 log.info(
                     f"Created VANNOT folder for sample {sample} into {output_folder}"
                 )

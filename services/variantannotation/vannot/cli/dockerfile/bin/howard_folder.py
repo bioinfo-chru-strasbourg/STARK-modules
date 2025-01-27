@@ -46,17 +46,24 @@ def launch_folder(args):
             f"{analysis_folder_name[-2]}.{analysis_folder_name[-1]}"
         )
 
+        print("run_informations")
+        for k, v in run_informations.items():
+            print(k, ":", v)
         howard_processing.project_folder_initialisation(run_informations)
+        print("sam:hello there")
         merged_vcf = howard_processing.merge_vcf(run_informations, "1", "")
         fambarcode_vcf = howard_processing.fambarcode_vcf(
         run_informations,
         merged_vcf,
         )
+        print("done for now")
+        import sys
+        sys.exit()
         annotated_merged_vcf = howard_processing.howard_proc(
             run_informations, fambarcode_vcf
         )
-        howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
         howard_processing.howard_score_transcripts(run_informations)
+        howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
         howard_processing.gmc_score(run_informations)
         print(howard_processing.merge_vcf(run_informations, "2", ""))
         howard_processing.convert_to_final_tsv(run_informations)

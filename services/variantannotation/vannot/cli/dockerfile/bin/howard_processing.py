@@ -10,7 +10,7 @@ import time
 import gzip
 from multiprocessing import Pool
 
-from vannotplus.family.barcode import main_barcode
+from vannotplus.family.barcode import main_barcode_fast
 from vannotplus.exomiser.exomiser import main_exomiser
 from vannotplus.annot.score import main_annot
 from vannotplus.__main__ import load_config, main_config
@@ -19,6 +19,7 @@ import howard_launcher
 import commons
 
 def project_folder_initialisation(run_informations):
+    print("sam:project_folder_initialisation")
     vcf_file_list = glob.glob(osj(run_informations["archives_run_folder"], "VCF", "*", "*.vcf*"))
     if os.path.isdir(run_informations["tmp_analysis_folder"]):
         log.info("Cleaning temporary analysis folder")
@@ -268,7 +269,7 @@ def fambarcode_vcf(run_informations, input_vcf):
 
     howard_bin = f"docker run --rm --name {container_name} --env http_proxy={os.environ["http_proxy"]} --env ftp_proxy={os.environ["ftp_proxy"]} --env https_proxy={os.environ["https_proxy"]} -v /tmp/:/tmp/ -v {os.environ["HOST_TMP"]}:{os.environ["HOST_TMP"]} -v {os.environ["HOST_DATABASES"]}:/databases/ -v {os.environ["HOST_SERVICES"]}:{os.environ["HOST_SERVICES"]} -v {os.environ["HOST_CONFIG"]}:{os.environ["HOST_CONFIG"]} -v {howard_config_host}:/tools/howard/current/config/config.json -v /var/run/docker.sock:/var/run/docker.sock {howard_image} calculation"
     fambarcode_config["howard"]["bin"] = howard_bin
-    main_barcode(
+    main_barcode_fast(
         input_vcf,
         output,
         run_informations["run_application"],
@@ -282,70 +283,74 @@ def fambarcode_vcf(run_informations, input_vcf):
     output = osj(
         os.path.dirname(output), "_".join(os.path.basename(output).split("_")[1:])
     )
-
-    tmp_output = osj(os.path.dirname(output), "tmp_" + os.path.basename(output)[:-3])
-    tmp_header = osj(os.path.dirname(output), "tmp_header_" + os.path.basename(output)[:-3])
-
-    with gzip.open(output, "rt") as read_file:
-        with open(tmp_output, "w") as write_file:
-            with open(tmp_header, "w") as write_header:
-                lines = read_file.readlines()
-                for line in lines:
-                    if line.startswith("##"):
-                        write_header.write(line)
-                    elif line.startswith("#CHROM"):
-                        write_file.write(line)
-                        line = line.rstrip("\n").split("\t")
-                        if "FORMAT" in line:
-                            format_index = line.index("FORMAT")
-                    else:
-                        line = line.rstrip("\n").split("\t")
-                        format_values = line[format_index].split(":")
-                        if format_values.count("BCF") > 1:
-                            bcf_wanted = ["BCF", "BCFS"]
-                            bcf_original = ["BCF", "BCFS"]
-                            bcf_count = format_values.count("BCF")
-                            for i in range(1, bcf_count):
-                                bcf_wanted.append(f"BCF_{i}")
-                                bcf_wanted.append(f"BCFS_{i}")
-                                bcf_original.append("BCF")
-                                bcf_original.append("BCFS")
-                            bcf_wanted = ":".join(bcf_wanted)
-                            bcf_original = ":".join(bcf_original)
-                            format_values = ":".join(format_values)
-                            line[format_index] = format_values.replace(bcf_original, bcf_wanted)
-                        write_file.write("\t".join(line) + "\n")
-
-    os.remove(output)
-    output = output[:-3]
-
-    with open(tmp_header, "r") as read_file:
-        with open(tmp_output, "r") as read_file2:
-            with open(output, "w") as write_file:
-                lines = read_file.readlines()
-                for line in lines:
-                    if bcf_count > 1:
-                        if line.startswith("##FORMAT=<ID=BCF,"):
-                            write_file.write(line)
-                            for i in range(1, bcf_count):
-                                write_file.write(f"##FORMAT=<ID=BCF_{i},Number=.,Type=String,Description=\"barcode family calculation\">\n")
-                        elif line.startswith("##FORMAT=<ID=BCFS,"):
-                            write_file.write(line)
-                            for i in range(1, bcf_count):
-                                write_file.write(f"##FORMAT=<ID=BCFS_{i},Number=.,Type=String,Description=\"barcode family samples\">\n")
-                        else:
-                            write_file.write(line)
-                    else:
-                        write_file.write(line)
-                lines = read_file2.readlines()
-                for line in lines:
-                    write_file.write(line)
-    
-    os.remove(tmp_output)
-    os.remove(tmp_header)
-    subprocess.call("bgzip " + output, shell=True)  
-    output = output + ".gz" 
+    print("sam:fambarcode_vcf output", output)
     return output
+
+    # tmp_output = osj(os.path.dirname(output), "tmp_" + os.path.basename(output)[:-3])
+    # tmp_header = osj(os.path.dirname(output), "tmp_header_" + os.path.basename(output)[:-3])
+
+    # with gzip.open(output, "rt") as read_file:
+    #     with open(tmp_output, "w") as write_file:
+    #         with open(tmp_header, "w") as write_header:
+    #             lines = read_file.readlines()
+    #             for line in lines:
+    #                 if line.startswith("##"):
+    #                     write_header.write(line)
+    #                 elif line.startswith("#CHROM"):
+    #                     write_file.write(line)
+    #                     line = line.rstrip("\n").split("\t")
+    #                     if "FORMAT" in line:
+    #                         format_index = line.index("FORMAT")
+    #                 else:
+    #                     line = line.rstrip("\n").split("\t")
+    #                     format_values = line[format_index].split(":")
+    #                     if format_values.count("BCF") > 1:
+    #                         bcf_wanted = ["BCF", "BCFS"]
+    #                         bcf_original = ["BCF", "BCFS"]
+    #                         bcf_count = format_values.count("BCF")
+    #                         for i in range(1, bcf_count):
+    #                             bcf_wanted.append(f"BCF_{i}")
+    #                             bcf_wanted.append(f"BCFS_{i}")
+    #                             bcf_original.append("BCF")
+    #                             bcf_original.append("BCFS")
+    #                         bcf_wanted = ":".join(bcf_wanted)
+    #                         bcf_original = ":".join(bcf_original)
+    #                         format_values = ":".join(format_values)
+    #                         line[format_index] = format_values.replace(bcf_original, bcf_wanted)
+    #                     else:
+    #                         bcf_count = 0
+    #                     write_file.write("\t".join(line) + "\n")
+
+    # os.remove(output)
+    # output = output[:-3]
+
+    # with open(tmp_header, "r") as read_file:
+    #     with open(tmp_output, "r") as read_file2:
+    #         with open(output, "w") as write_file:
+    #             lines = read_file.readlines()
+    #             for line in lines:
+    #                 if bcf_count > 1:
+    #                     if line.startswith("##FORMAT=<ID=BCF,"):
+    #                         write_file.write(line)
+    #                         for i in range(1, bcf_count):
+    #                             write_file.write(f"##FORMAT=<ID=BCF_{i},Number=.,Type=String,Description=\"barcode family calculation\">\n")
+    #                     elif line.startswith("##FORMAT=<ID=BCFS,"):
+    #                         write_file.write(line)
+    #                         for i in range(1, bcf_count):
+    #                             write_file.write(f"##FORMAT=<ID=BCFS_{i},Number=.,Type=String,Description=\"barcode family samples\">\n")
+    #                     else:
+    #                         write_file.write(line)
+    #                 else:
+    #                     write_file.write(line)
+    #             lines = read_file2.readlines()
+    #             for line in lines:
+    #                 write_file.write(line)
+    
+    # os.remove(tmp_output)
+    # os.remove(tmp_header)
+    # subprocess.call("bgzip " + output, shell=True)  
+    # output = output + ".gz" 
+    # return output
 
 def merge_vcf(run_informations, step, base_vcf):
     if step == "0":
@@ -353,6 +358,8 @@ def merge_vcf(run_informations, step, base_vcf):
         if len(vcf_file_to_merge) == 0:
             vcf_file_to_merge = glob.glob(osj(run_informations["tmp_analysis_folder"], "unmerged_*.vcf*"))
     else:
+        print("sam: running merge_vcf step=1")
+        print("run_informations['tmp_analysis_folder']", run_informations["tmp_analysis_folder"])
         vcf_file_to_merge = glob.glob(
             osj(run_informations["tmp_analysis_folder"], "*.vcf*")
         )
@@ -363,21 +370,21 @@ def merge_vcf(run_informations, step, base_vcf):
                 with open(tmp_output, "w") as write_file:
                     lines = read_file.readlines()
                     for line in lines:
-                        if line.startswith("##FORMAT=<ID=VAF"):
+                        if line.startswith("##FORMAT=<ID=VAF,Number="):
                             log.info(f"Fixing VAF for sample {vcf_file}")
                             write_file.write("##FORMAT=<ID=VAF,Number=1,Type=Float,Description=\"VAF Variant Frequency, calculated from quality\">\n")
-                        elif line.startswith("##FORMAT=<ID=AD"):
+                        elif line.startswith("##FORMAT=<ID=AD,Number="):
                             log.info(f"Fixing AD for sample {vcf_file}")
                             write_file.write("##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Allelic depths for the ref and alt alleles in the order listed\">\n")
-                        elif line.startswith("##FORMAT=<ID=FT"):
+                        elif line.startswith("##FORMAT=<ID=FT,Number="):
                             log.info(f"Fixing FT for sample {vcf_file}")
                             write_file.write("##FORMAT=<ID=FT,Number=.,Type=String,Description=\"Genotype-level filter\">\n")
                         elif line.startswith("##reference=file:"):
                             log.info(f"Fixing reference for sample {vcf_file}")
                             write_file.write("##reference=file:///STARK/databases/genomes/current/hg19.fa\n")
-                        elif line.startswith("##INFO=<ID=PL"):
+                        elif line.startswith("##FORMAT=<ID=PL,Number="):
                             log.info(f"Fixing PL for sample {vcf_file}")
-                            write_file.write("##INFO=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification\">\n")
+                            write_file.write("##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification\">\n")
                         else:
                             write_file.write(line)
             os.remove(vcf_file)
@@ -772,6 +779,10 @@ def howard_score_transcripts(run_informations):
         shutil.copy(
             transcripts_output,
             osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed),
+        )
+        shutil.copy(
+            transcripts_output,
+            "/home1/data/STARK/data/samtranscripts/",
         )
         print("sam: howard_score_transcripts output", osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed))
 
