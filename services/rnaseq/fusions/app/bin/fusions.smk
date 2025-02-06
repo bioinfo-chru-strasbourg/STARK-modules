@@ -384,10 +384,11 @@ rule Arriba:
 		refprot = config['REFPROTDOMAIN_PATH'],
 		blacklist = config['BLACKLIST_PATH'],
 		reffusion = config['REFFUSION_PATH'],
-		fusion = config ['REFFUSION_PATH']
+		fusion = config ['REFFUSION_PATH'],
+		umi = config['ARRIBA_UMI']
 	shell:
 		"""
-		arriba -x {input} -o {output} -a {params.refgenome} -g {params.refgtfgencode} -b {params.blacklist} -k {params.reffusion} -t {params.fusion} -p {params.refprot} -f isoforms
+		arriba -x {input} -o {output} -a {params.refgenome} -g {params.refgtfgencode} -b {params.blacklist} -k {params.reffusion} -t {params.fusion} -p {params.refprot} -f isoforms {params.umi}
 		"""
 
 # Settings for STAR used by Starfusion

@@ -109,7 +109,8 @@ REFPROTDOMAIN_PATH: "/opt/conda/var/lib/arriba/protein_domains_hg19_hs37d5_GRCh3
 REFCYTOBAND_PATH: "/opt/conda/var/lib/arriba/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
 BLACKLIST_PATH: "/opt/conda/var/lib/arriba/blacklist_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
 REFFUSION_PATH: "/opt/conda/var/lib/arriba/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
-
+# -u to performs marking of duplicates internally based on identical mapping coordinates. When this switch is set, internal marking of duplicates is disabled and Arriba assumes that duplicates have been marked by a preceding program.
+ARRIBA_UMI: ""
 # Gencode DB Human
 # for hg19 the last gencode version is v19; check the p version of the genome (p13) and name of the transcript file (prefix pc_)
 ASSEMBLY: "GRCh37"
