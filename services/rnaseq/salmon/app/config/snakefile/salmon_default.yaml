@@ -98,4 +98,9 @@ FASTP_UMI: "" #  -U --umi_loc=per_read --umi_len=5 for XTHS2
 
 # For Salmon quantification fastq mode, path to the index file
 REFSALMONINDEX_PATH: "/databases/salmon/GRCh38.v41"
+
+# Sequence-Specific Bias Correction (--seqBias)
+# Helps correct for biases that might cause overrepresentation of certain reads.
+# GC Content Normalization (--gcBias)
+# Adjusts for biases related to GC content, which can be amplified differently in PCR.
 MISC_SALMON_OPTIONS: ""
