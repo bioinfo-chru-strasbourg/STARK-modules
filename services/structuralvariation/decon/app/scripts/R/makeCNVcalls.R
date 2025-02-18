@@ -328,6 +328,8 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
   ExomeCount <- as.data.frame(counts)
   ExomeCount$chromosome <- gsub('chr', '', as.character(ExomeCount$chromosome))
 
+  sample.names <- process_samplebams(samples)
+
   # Check if 'exon' column exists in ExomeCount
   if ("exon_number" %in% colnames(ExomeCount)) {
     colnames(ExomeCount)[1:length(sample.names) + 6] <- sample.names
@@ -335,10 +337,8 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
     colnames(ExomeCount)[1:length(sample.names) + 5] <- sample.names
   }
 
-  
   refsample.names <- process_refbams(refbams_file, modechrom)
-  sample.names <- process_samplebams(samples)
-  
+    
   result <- perform_cnv_calling(ExomeCount, sample.names, refsample.names, p_value, bed.file)
   cnv.calls <- result$cnv.calls
   refs <- result$refs

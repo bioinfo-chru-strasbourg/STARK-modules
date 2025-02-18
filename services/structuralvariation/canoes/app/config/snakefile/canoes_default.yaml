@@ -117,7 +117,7 @@ genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: both # split, full or both (defaut both)
 annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database
-vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFiles option ; extension should be in EXT_INDEX_LIST
+vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFiles option ; extension should be present in EXT_INDEX_LIST
 # Limit of attempt to perform AnnotSV annotation
 annotSV_limit: 30
 
@@ -135,7 +135,7 @@ homdel: "0.2" # threeshold for homozygous deletion
 # the bam files have to be indexed
 # number of reference patients should be 10 or more, and if the gender is considere, 10 per gender
 # the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
-# REF_BAM_LIST: "/app/res/list.tsv" in command it is REF_BAM_LIST="/databases/CNV/bamrefset/bamreflist.tsv"
+# REF_BAM_LIST: "/pathtoyourbamlist/list.tsv" ; in snakemake command it is REF_BAM_LIST="/databases/CNV/bamrefset/bamreflist.tsv"
 REF_BAM_LIST: ""
 
 # AnnotSV needs the "CosmicCompleteCNA.tsv.gz" file from https://cancer.sanger.ac.uk/cosmic/download (Copy Number Variants part, Download Whole file)
