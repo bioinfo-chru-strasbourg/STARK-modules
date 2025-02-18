@@ -35,13 +35,7 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
 
 # Clone and install variantconvert
 WORKDIR /usr/lib
-RUN git clone https://github.com/SamuelNicaise/variantconvert.git && \
-    cd variantconvert && \
-    pip install -e . && pip cache purge && \
-    python /usr/lib/variantconvert/src/variantconvert/__main__.py init
-
-# Set default genome as hg19 if you use the default json config files
-# RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
+RUN pip install git+https://github.com/SamuelNicaise/variantconvert.git
 
 # Copy AnnotSV exomiser application.properties
 # Don't forget to modify the exomiser.data-directory to set it to the exomiser db path
