@@ -134,7 +134,7 @@ PLOT_DEBUG: False
 # the bam files have to be indexed
 # number of reference patients should be 10 or more, and if the gender is considere, 10 per gender
 # the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
-# REF_BAM_LIST: "--refbams /app/res/list.tsv"
+# REF_BAM_LIST: "/app/res/list.tsv" in command it is REF_BAM_LIST="/databases/CNV/bamrefset/bamreflist.tsv"
 REF_BAM_LIST: ""
 # Max cores to use
 MCORES: 16

@@ -797,7 +797,7 @@ rule ReadInBams:
 	output:
 		f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.ReadInBams.RData"
 	params:
-		refbamlist=config['REF_BAM_LIST'],
+		refbamlist=("--refbams " + config['REF_BAM_LIST']) if config.get('REF_BAM_LIST') else "",
 		decondir=config['R_SCRIPTS'],
 		refgene=config['REFGENEFA_PATH'],
 		mcores=config['MCORES']
@@ -834,7 +834,7 @@ rule makeCNVcalls:
 		analysisfailure=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVCalledFailed",
 		bamlist=f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
 		chromosome="{gender}",
-		refbamlist=config['REF_BAM_LIST'],
+		refbamlist=("--refbams " + config['REF_BAM_LIST']) if config.get('REF_BAM_LIST') else "",
 		decondir=config['R_SCRIPTS']
 	output:
 		calltsv=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv",
