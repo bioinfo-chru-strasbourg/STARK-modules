@@ -42,12 +42,12 @@ def launch_folder(args):
                     "run_platform": folder_path_list[-2],
                     "run_platform_application": f"{folder_path_list[-2]}.{folder_path_list[-1]}",
                     "run_depository": "none",
-                    "run_pattern": "none",
-                    "run_processing_folder": folder_path,
+                    "vcf_pattern": "none",
+                    "archives_project_folder": folder_path,
                     "run_repository": "none",
                     "run_processing_folder_tsv": osj(folder_path, "TSV"),
-                    "run_processing_folder_vcf_run": "none",
-                    "analysis_folder": f"/tmp_{folder_path_list[-2]}.{folder_path_list[-1]}",
+                    "archives_run_folder": "none",
+                    "tmp_analysis_folder": f"/tmp_{folder_path_list[-2]}.{folder_path_list[-1]}",
                 }
         if in_application is False:
             log.error(
@@ -66,16 +66,16 @@ def launch_folder(args):
             "run_platform": "none",
             "run_platform_application": "default",
             "run_depository": "none",
-            "run_pattern": "none",
-            "run_processing_folder": folder_path,
+            "vcf_pattern": "none",
+            "archives_project_folder": folder_path,
             "run_repository": "none",
             "run_processing_folder_tsv": osj(folder_path, "TSV"),
-            "run_processing_folder_vcf_run": "none",
-            "analysis_folder": f"/tmp_{folder_path_list[-2]}.{folder_path_list[-1]}",
+            "archives_run_folder": "none",
+            "tmp_analysis_folder": f"/tmp_{folder_path_list[-2]}.{folder_path_list[-1]}",
         }
         log.info(f"Starting folder analysis from {folder_path}")
 
-    archives_processing.root_vcf_initialisation(run_informations)
+    archives_processing.folder_initialisation(run_informations)
     hgmd_processing.annotate(run_informations)
     checker.configfile(run_informations)
     archives_processing.configfile_manager(run_informations)

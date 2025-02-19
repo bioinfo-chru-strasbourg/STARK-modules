@@ -80,9 +80,9 @@ ENV VARANK=/tools/varank/current/
 
 #bcftools
 WORKDIR /tmp
-RUN wget https://github.com/samtools/bcftools/releases/download/1.19/bcftools-1.19.tar.bz2
-RUN tar -xvf bcftools-1.19.tar.bz2
-WORKDIR /tmp/bcftools-1.19
+RUN wget https://github.com/samtools/bcftools/releases/download/1.8/bcftools-1.8.tar.bz2
+RUN tar -xvf bcftools-1.8.tar.bz2
+WORKDIR /tmp/bcftools-1.8
 RUN ./configure --prefix=/tools/
 RUN make
 RUN make install

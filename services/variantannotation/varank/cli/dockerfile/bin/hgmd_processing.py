@@ -8,11 +8,10 @@ import subprocess
 import re
 
 
-
 def annotate(run_informations):
 
     analysis_folder_vcf_files = glob.glob(
-        osj(run_informations["analysis_folder"], "*.vcf.gz")
+        osj(run_informations["tmp_analysis_folder"], "*.vcf.gz")
     )
     hgmd_db = osj(
         os.environ["DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_DATABASES"],

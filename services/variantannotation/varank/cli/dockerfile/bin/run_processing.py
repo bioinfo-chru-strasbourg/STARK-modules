@@ -10,6 +10,7 @@ import results_provider
 import subprocess
 import hgmd_processing
 
+
 def launch_run(args):
     run_repository = args.run
     if run_repository.endswith("/"):
@@ -29,8 +30,8 @@ def launch_run(args):
             run_repository_list[-2],
             run_repository_list[-1],
         ),
-        "run_pattern": args.pattern,
-        "run_processing_folder": osj(
+        "vcf_pattern": args.pattern,
+        "archives_project_folder": osj(
             os.environ[
                 "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES"
             ],
@@ -48,7 +49,7 @@ def launch_run(args):
             run_repository_list[-2],
             "TSV",
         ),
-        "run_processing_folder_vcf_run": osj(
+        "archives_run_folder": osj(
             os.environ[
                 "DOCKER_MODULE_VARIANTANNOTATION_SUBMODULE_VARANK_FOLDER_SERVICES"
             ],
@@ -58,7 +59,7 @@ def launch_run(args):
             "VCF",
             run_repository_list[-1],
         ),
-        "analysis_folder": f"/tmp_{run_repository_list[-1]}/",
+        "tmp_analysis_folder": f"/tmp_{run_repository_list[-1]}/",
     }
     checker.depository_checker(run_informations)
     checker.pattern_checker(run_informations)
@@ -68,7 +69,7 @@ def launch_run(args):
         pass
 
     synchronizer.processing_folder_vcf_synchronizer(run_informations)
-    archives_processing.initialisation(run_informations)
+    archives_processing.run_initialisation(run_informations)
     hgmd_processing.annotate(run_informations)
     checker.configfile(run_informations)
     archives_processing.configfile_manager(run_informations)

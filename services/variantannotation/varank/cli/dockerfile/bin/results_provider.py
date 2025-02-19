@@ -9,7 +9,7 @@ import subprocess
 
 
 def distribute(run_informations):
-    varank_log_file = osj(run_informations["run_processing_folder"], "VaRank.log")
+    varank_log_file = osj(run_informations["archives_project_folder"], "VaRank.log")
     wrapper_log_file = log.getLogger().handlers[0].baseFilename
     non_redundant = osj(
         run_informations["run_processing_folder_tsv"], "Non_Redondant.tsv"
