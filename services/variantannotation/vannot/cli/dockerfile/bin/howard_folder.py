@@ -85,8 +85,8 @@ def launch_folder(args):
         howard_processing.gmc_score(run_informations)
         print(howard_processing.merge_vcf(run_informations, "2", ""))
         howard_processing.convert_to_final_tsv(run_informations)
-        if run_informations["run_platform"]:
-            non_redundant.generate(run_informations)
+        # if run_informations["run_platform"]:
+        #     non_redundant.generate(run_informations)
         howard_processing.cleaner(run_informations)
 
     log.info(f"vannot analysis for folder {run_informations['run_name']} ended well")

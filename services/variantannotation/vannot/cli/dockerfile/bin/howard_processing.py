@@ -96,17 +96,17 @@ def folder_initialisation(run_informations):
         osj(run_informations["tmp_analysis_folder"], "*vcf*")
     )
     for vcf_file in vcf_file_to_analyse:
-        unmerge_vcf(vcf_file, run_informations)
-        unmerged_vcfs = glob.glob(osj(run_informations["tmp_analysis_folder"], "unmerged_*vcf*"))
-        if len(unmerged_vcfs) > 1:
-            for unmerged_vcf in unmerged_vcfs:
-                info_to_format_script(unmerged_vcf, run_informations)
-            vcf_file = merge_vcf(run_informations, "0", os.path.basename(vcf_file))
-        else:
-            info_to_format_script(vcf_file, run_informations)
+        # unmerge_vcf(vcf_file, run_informations)
+        # unmerged_vcfs = glob.glob(osj(run_informations["tmp_analysis_folder"], "unmerged_*vcf*"))
+        # if len(unmerged_vcfs) > 1:
+        #     for unmerged_vcf in unmerged_vcfs:
+        #         info_to_format_script(unmerged_vcf, run_informations)
+        #     vcf_file = merge_vcf(run_informations, "0", os.path.basename(vcf_file))
+        # else:
+        #     info_to_format_script(vcf_file, run_informations)
 
         cleaned_vcf = cleaning_annotations(vcf_file, run_informations)
-        
+
         sample_list = subprocess.run(["bcftools", "query", "-l", cleaned_vcf],universal_newlines=True,stdout=subprocess.PIPE,).stdout.strip().split("\n")
 
         if run_informations["run_platform_application"] != None and len(sample_list) >= 1:
@@ -214,6 +214,7 @@ def cleaning_annotations(vcf_file, run_informations):
 
     cmd = ["bcftools", "annotate", "-x"]
     cmd.append(info_to_keep)
+    print(vcf_file)
     cmd.append(vcf_file)
     print(" ".join(cmd))
     with open(cleaned_vcf, "w") as output:
