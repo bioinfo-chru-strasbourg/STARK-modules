@@ -1,3 +1,14 @@
+##########################################################################
+# merge_tsv.py		       	Version: 1.0
+# Description:          	Python script to merge tsv files, combining headers and optionally filling blank columns with 'NA'.
+##########################################################################
+
+########## Note ########################################################################################
+# DEV v1 27/06/2024
+# Changelog
+#   - v1.0: Initial version
+########################################################################################################
+
 # usage python merge_tsv.py -i file1.tsv file2.tsv file3.tsv -o merged_output.tsv
 
 import pandas as pd

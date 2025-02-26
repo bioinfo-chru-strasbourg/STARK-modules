@@ -1,3 +1,14 @@
+##########################################################################
+# multifix_vcf.py       	Version: 1.0
+# Description:          	Python script to fix vcf files == vcf is conform to standard (remove white space, SVLEN is negative when deletion, etc.)
+##########################################################################
+
+########## Note ########################################################################################
+# DEV v1 27/06/2024
+# Changelog
+#   - v1.0: Initial version
+########################################################################################################
+
 import re
 import argparse
 import gzip

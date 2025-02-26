@@ -1,3 +1,14 @@
+##########################################################################
+# fix_vcf_0based.py       	Version: 1.0
+# Description:          	Python script to adjust positions in a VCF file based on variant type and handle .gz compression
+##########################################################################
+
+########## Note ########################################################################################
+# DEV v1 27/06/2024
+# Changelog
+#   - v1.0: Initial version
+########################################################################################################
+
 import argparse
 import pysam
 import gzip
