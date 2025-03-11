@@ -93,7 +93,7 @@ rule install_CTAT_DB:
 		echo 'Install CTAT database'
 		mkdir -p {params.ctlib}
 		tar -xzf {params.ctlib}/$(basename {params.ctat_download}) -C {params.ctlib} --strip-components=1
-		{params.command} --dir={params.ctlib} {params.ctat_filter_pm_download}/ctat_genome_lib_build_dir
+		{params.command} --dir={params.ctlib}/ctat_genome_lib_build_dir {params.ctat_filter_pm_download}
 		touch {output}
 		"""
 

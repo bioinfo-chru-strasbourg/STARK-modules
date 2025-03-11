@@ -81,3 +81,25 @@ See help for more options:
 ```
 $ services/services.sh --help
 ```
+
+## TROUBLESHOOT ##
+If the service.sh failed to pull image FROM:image_you_need use commande in shell
+```
+$ docker pull image_you_need
+```
+Example:
+```
+$ docker pull condaforge/mambaforge
+$ docker pull almalinux:8
+```
+
+You may have to set some .env file for the services to work
+
+in /STARK-modules/current/
+
+make a symbolic link or copy the file
+.env -> ../../STARK/current/.env
+
+make a symbolic link or copy the file
+in STARK-modules/current/services/
+STARK.env -> ../../../STARK/current/services/STARK.env
