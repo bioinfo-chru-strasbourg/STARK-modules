@@ -7,7 +7,7 @@
           "name": "NetData",
           "type": "IHM",
           "description": "Net Data is a real-time, per-second monitoring and troubleshooting solution for every environment",
-          "release": "v1.32.1",
+          "release": "v2.2.6",
           "available": true,
           "link": {
             "available": true,
