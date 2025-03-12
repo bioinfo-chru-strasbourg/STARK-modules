@@ -407,8 +407,10 @@ wildcard_constraints:
 rule all:
 	"""Rule will create an unfiltered vcf.gz and corresponding tsv, with an optional design/panel vcf.gz & tsv if a bed/gene file is provided"""
 	input:
-		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz", aligner=aligner_list) +
-		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list) +
+		expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz", sample=sample_list, aligner=aligner_list) +
+		expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Full.vcf.gz", aligner=aligner_list) +
+		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz", aligner=aligner_list)  if config['BED_FILE'] else []) +
+		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list) if config['BED_FILE'] else []) +
 		(expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz", panel=panels_list, aligner=aligner_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", aligner=aligner_list, sample=sample_list, panel=panels_list) if config['GENES_FILE'] else []) +
 		(expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design.vcf.gz", sample=sample_list, aligner=aligner_list) if config['ANNOTSV_ANNOTATION'] else []) +
@@ -558,6 +560,13 @@ rule bcftools_filter:
 			dummy=config['DUMMY_FILES']
 	shell: "bcftools view {params.bed} {input} -o {output}  2> {log} && [[ -s {output} ]] || cat {params.dummy}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}" 
 
+rule merge_vcf:
+	""" Merge multiple vcfs using bcftools """
+	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full.vcf.gz", sample=sample_list, aligner=aligner_list)
+	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Full.vcf.gz"
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Full.bcftoolsmerge.log"
+	shell: "bcftools merge --force-single -W=tbi {input} -O z -o {output} 2> {log} && [[ -s {output} ]] || echo -e '## Dummy file created because there's no variant found in any samples\n## You can check individual samples for confirmation' | gzip > {output}; tabix {output} || true"
+
 # we filter Full to Design
 # Design individual samples vcf.gz no annotation
 rule filter_vcf:
@@ -568,12 +577,10 @@ rule filter_vcf:
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.bedtoolsfilter.log"
 	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output}"
 
-rule merge_vcf:
-	""" Merge multiple vcfs using bcftools """
+use rule merge_vcf as merge_vcf_design with:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz", sample=sample_list, aligner=aligner_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.bcftoolsmerge.log"
-	shell: "bcftools merge --force-single -W=tbi {input} -O z -o {output} 2> {log} && [[ -s {output} ]] || echo -e '## Dummy file created because there's no variant found in any samples\n## You can check individual samples for confirmation' | gzip > {output}; tabix {output} || true"
 
 # We filter non annoted design to get panels
 rule filter_vcf_panel:

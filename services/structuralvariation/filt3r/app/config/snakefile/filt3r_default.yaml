@@ -87,4 +87,5 @@ SHORT_INDELS: "2"
 # Kmer size (default 12)
 KMER: "12"
 # GRCH37 or 38 refrence fasta sequence for FLT3
-ITDREF: "/databases/ITDs/FLT3/filt3r/hg19/flt3_hg19.fa"
+ITDREF: "/app/config/reference/FLT3/filt3r/hg19/flt3_hg19.fa"
+#ITDREF: "/databases/ITDs/FLT3/filt3r/hg19/flt3_hg19.fa"
