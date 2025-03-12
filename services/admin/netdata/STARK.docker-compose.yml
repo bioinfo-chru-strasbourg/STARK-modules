@@ -26,7 +26,7 @@ services:
             # Main configuration
             - ${DOCKER_STARK_SOCK_MOUNT}:ro
             - /etc/localtime:/etc/localtime:ro
-            - /etc/timezone:/etc/timezone:ro
+            #- /etc/timezone:/etc/timezone:ro
             - /proc:/host/proc:ro
             - /sys:/host/sys:ro
             # Drives
