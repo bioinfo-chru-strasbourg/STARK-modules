@@ -122,7 +122,26 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
 }
 
 read_bam_files <- function(bam_file) {
-    apply(read.table(bam_file), 1, toString)
+    # Log message before reading the file
+    message("Starting to read BAM file: ", bam_file)
+    
+    # Check if file exists before reading
+    if (!file.exists(bam_file)) {
+        message("Error: File does not exist: ", bam_file)
+        return(NULL)  # Return NULL if file doesn't exist
+    }
+    
+    # Log message for successful file loading
+    message("File exists, loading the file: ", bam_file)
+    
+    # Read the file and convert each row to a string
+    result <- apply(read.table(bam_file), 1, toString)
+    
+    # Log message after processing the file
+    message("Finished processing the BAM file: ", bam_file)
+    
+    # Return the result
+    return(result)
 }
 
 read_reference_bams <- function(refbams_file) {
@@ -131,19 +150,32 @@ read_reference_bams <- function(refbams_file) {
 }
 
 get_sample_names <- function(bam_paths) {
-    # Extract sample names for each BAM path
+    # Log the start of the function
+    message("Starting to extract sample names for BAM files.")
+    
+    # Initialize a vector to store sample names
     sample_names <- sapply(bam_paths, function(bam_path) {
+        # Log the current BAM file being processed
+        message("Processing BAM file: ", bam_path)
+        
         # Extract the basename of the file
         base_name <- basename(bam_path)
         
         # Split the basename by '.' and take the first part
         sample_name <- strsplit(base_name, "\\.")[[1]][1]
-    
+        
+        # Log the extracted sample name
+        message("Extracted sample name: ", sample_name)
+        
         return(sample_name)
     })
     
+    # Log the completion of the function
+    message("Finished extracting sample names.")
+    
     return(sample_names)
 }
+
 
 
 read_bed_file <- function(bedfile) {
