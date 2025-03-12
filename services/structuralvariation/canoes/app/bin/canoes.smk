@@ -139,13 +139,40 @@ def searchfiles(directory, search_args, recursive_arg):
 	return sorted(results)
 
 def extractlistfromfiles(file_list, ext_list, sep, position):
-	""" Function for creating list from a file list, with a specific extension, a separator and the position of the string we want to extract """
-	return list(set(os.path.basename(files).split(sep)[position] for files in file_list if any(files.endswith(ext) for ext in ext_list)))
+	""" Function for creating list from a file list, with a specific extension, a separator, and the position of the string we want to extract. 
+		The list will not contain values equal to any extension in ext_list. """
+	
+	# Create the list with the extraction logic
+	extracted_list = [
+		os.path.basename(files).split(sep)[position] 
+		for files in file_list 
+		if any(files.endswith(ext) for ext in ext_list)
+		and os.path.basename(files).split(sep)[position] not in ext_list
+	]
+	
+	# Remove duplicates by converting to a set and back to a list
+	return list(set(extracted_list))
 
-def create_list(txtlistoutput, file_list, ext_list, pattern):
-	""" Function to create a txt file from a list of files filtered by extension and pattern """
+def create_list(txtlistoutput, file_list, ext_list, pattern, append_name=None):
+	""" Function to create a txt file from a list of files filtered by extension and pattern.
+		Optionally, append a name to the file name before the extension.
+	"""
 	with open(txtlistoutput, 'a+') as f:
-		f.writelines(f"{files}\n" for files in file_list if any(files.endswith(ext) and pattern in files for ext in ext_list))
+		for files in file_list:
+			# Check if the file matches any of the extensions and the pattern
+			if any(files.endswith(ext) and pattern in files for ext in ext_list):
+				# Extract the filename and extension
+				name, ext = os.path.splitext(files)
+				
+				# Append the optional name to the filename before the extension
+				if append_name:
+					name = f"{name}{append_name}"
+				
+				# Reconstruct the full filename with the appended name (if provided)
+				new_filename = f"{name}{ext}"
+				
+				# Write the new filename to the txt file
+				f.write(f"{new_filename}\n")
 
 def extract_tag(tagfile, tag, tagsep, sep):
 	""" Function to extract a tag """
@@ -283,6 +310,15 @@ def process_gene_list(file, dest_dir, res_list):
 	# Return the updated list
 	return res_list
 
+def update_file_list_with_aligner(file_list, aligner_name):
+	"""Function to update the file list by inserting the aligner name before the file extension."""
+	for i in range(len(file_list)):
+		# Split the filename and extension
+		name, ext = os.path.splitext(file_list[i])
+		
+		# Append the aligner name before the extension
+		file_list[i] = f"{name}.{aligner_name}{ext}"
+
 def update_results(dictionary, update_dictionary, keys, exclude_samples=None, exclude_keys=None):
 	"""
 	Update a dictionary and remove specified keys for certain samples.
@@ -343,6 +379,9 @@ print('[INFO] Searching files done')
 # Create sample and aligner list
 sample_list = extractlistfromfiles(files_list, config['PROCESS_FILE'], '.', 0)
 aligner_list = extractlistfromfiles(files_list, config['PROCESS_FILE'], '.', 1)
+
+if config['ALIGNER_NAME']:
+	aligner_list.append(config['ALIGNER_NAME'])
 
 # Exclude samples from the exclude_list, case insensitive
 sample_list = [sample for sample in sample_list if not any(sample.upper().startswith(exclude.upper()) for exclude in config['EXCLUDE_SAMPLE'])]
@@ -486,6 +525,8 @@ else:
 # files_list_A contains the full path of all files (bam files for ex)
 # Warning the key dictionary for sexe is A/M/F but the gender_list is A/XY/XX
 files_list_A = list(set([os.path.join(resultDir, os.path.basename(runDict[sample][".bam"])) for sample in sample_list if sample in runDict and ".bam" in runDict[sample]]))
+if config['ALIGNER_NAME']:
+	update_file_list_with_aligner(files_list_A, config['ALIGNER_NAME'])
 files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']))
 files_list_XY = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']))
 
