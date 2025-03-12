@@ -139,15 +139,15 @@ def searchfiles(directory, search_args, recursive_arg):
 	return sorted(results)
 
 def extractlistfromfiles(file_list, ext_list, sep, position):
-	""" Function for creating list from a file list, with a specific extension, a separator, and the position of the string we want to extract. 
-		The list will not contain values equal to any extension in ext_list. """
+	""" Function for creating a list from a file list, with a specific extension, a separator, and the position of the string we want to extract.
+		The list will not contain values equal to any extension in ext_list (including the dot). """
 	
 	# Create the list with the extraction logic
 	extracted_list = [
 		os.path.basename(files).split(sep)[position] 
 		for files in file_list 
 		if any(files.endswith(ext) for ext in ext_list)
-		and os.path.basename(files).split(sep)[position] not in ext_list
+		and os.path.basename(files).split(sep)[position] not in [ext.lstrip('.') for ext in ext_list]  # Strip the dot for comparison
 	]
 	
 	# Remove duplicates by converting to a set and back to a list
