@@ -649,6 +649,7 @@ config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, co
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
 panels_list = []
 file_source = config['LIST_GENES'] or config['GENES_FILE']
+gene_names_by_panel = False
 if file_source:
 	print('[INFO] Processing panel bed files')
 	with open(file_source) as f:

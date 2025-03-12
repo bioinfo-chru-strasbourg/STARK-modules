@@ -91,8 +91,8 @@ REFSEQGENE: "/databases/refGene/current/formated_refgene.tsv"
 
 ### DECON BED processing ###
 # Regen exon number with IntersectBed and a refseqgene reference (REGEN) containing a column with the exon number
-# Else STANDARD 
-# Else NO : use the bed provided DECON formatedvi 
+# Else STANDARD (for STARK style bed design & panel)
+# Else NO : use the bed provided DECON formated 
 BED_PROCESS: "STANDARD"
 # Keep intergenic region when exon regen is done
 KEEP_UNKNOWN: False
