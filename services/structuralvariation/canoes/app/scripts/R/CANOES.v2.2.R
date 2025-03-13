@@ -93,7 +93,7 @@ if(length(refbams_file)>0){
       rawrefbams = subset(rawrefbams, rawrefbams$gender=='M')
       }
     }else{
-        if (modechrom=="XX" || modechrom=="XY"){
+        if (modechrom=="XX" | modechrom=="XY"){
         message('ERROR: No gender specified in the reference bam list, calling of chrX is not possible')
         quit()
         }
@@ -105,6 +105,7 @@ if(length(refbams_file)>0){
     names(refsample.names)<-NULL
     message('INFO: We will use external references for the analysis')
     head(refsample.names)
+  
   sample.names_all <- c(sample.names_to_analyse, refsample.names)
   canoes.reads_ref <- read.table(ref_reads,header=TRUE)
   canoes.reads_ref <- canoes.reads_ref[,-(1:3)]
@@ -127,7 +128,7 @@ if(length(refbams_file)>0){
     canoes.reads<-subset(canoes.reads, chromosome!="chrX" & chromosome!="chrY")
  }
  # we don't call chr Y
- if (modechrom=="XX" || modechrom=="XY"){
+ if (modechrom=="XX" | modechrom=="XY"){
     canoes.reads<-subset(canoes.reads, chromosome=="chrX")
  }
 
@@ -137,9 +138,8 @@ if(length(refbams_file)>0){
   }
   
   xcnvs <- do.call('rbind', xcnv.list)
-  xcnvs <- xcnvs %>%
-      mutate(Chrom = ifelse(Chrom == "23", "X", 
-                             ifelse(Chrom == "24", "Y", Chrom)))
+
+  xcnvs <- xcnvs %>% mutate(CHR = ifelse(CHR == "23", "X", ifelse(CHR == "24", "Y", CHR)))
   xcnvs$INTERVAL <- gsub("^23:", "chrX:", xcnvs$INTERVAL)
   xcnvs$INTERVAL <- gsub("^24:", "chrY:", xcnvs$INTERVAL)
 
@@ -149,6 +149,7 @@ if(length(refbams_file)>0){
   # Add start and end positions as new columns
   xcnvs$Start <- start
   xcnvs$End <- end
+  xcnvs <- xcnvs %>% rename(Chrom = CHR)
   xcnvs_final <- xcnvs[, c("Chrom", "Start", "End", "CNV", "SAMPLE", "INTERVAL", "KB", "MID_BP", "TARGETS", "NUM_TARG", "MLCN", "Q_SOME")]
   xcnvs_final$INTERVAL <- gsub("^(\\d+):", "chr\\1:", xcnvs_final$INTERVAL)
   write.table(xcnvs_final, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
@@ -762,7 +763,7 @@ PrintCNVs <- function(test.sample.name, viterbi.state, nonzero.counts){
   xcnv <- cbind(cnvs.df[, c("sample.name", "cnv.type", "cnv.interval", 
                       "cnv.kbs", "cnv.chromosome", "cnv.midbp", 
                       "cnv.targets", "num.targets")], 0)
-  colnames(xcnv) <- c("SAMPLE", "CNV", "INTERVAL", "KB", "Chrom", "MID_BP", "TARGETS",
+  colnames(xcnv) <- c("SAMPLE", "CNV", "INTERVAL", "KB", "CHR", "MID_BP", "TARGETS",
                       "NUM_TARG", "MLCN")
   xcnv$Q_SOME <- NA
   return(xcnv)
