@@ -91,6 +91,9 @@ Example:
 ```
 $ docker pull condaforge/mambaforge
 $ docker pull almalinux:8
+$ docker pull portainer/portainer-ce:2.27.1
+$ docker pull netdata/netdata:v2.2.6
+$ docker pull filebrowser/filebrowser:v2.32.0
 ```
 
 You may have to set some .env file for the services to work
