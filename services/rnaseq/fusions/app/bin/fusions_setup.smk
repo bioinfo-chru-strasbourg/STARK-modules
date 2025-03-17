@@ -98,8 +98,8 @@ rule install_CTAT_DB:
 		"""
 
 onstart:
-	shell(f"rm -f {services_folder}/cli/SETUPComplete.txt")
-	shell(f"touch {services_folder}/cli/SETUPRunning.txt")
+	shell(f"rm -f {services_folder}/cli/SETUPComplete.txt") 
+	shell(f"mkdir -p {services_folder}/cli && touch {services_folder}/cli/SETUPRunning.txt")
 	with open(logfile, "a+") as f:
 		f.write("\nGlobal parameters of the setup for debug only\n")
 		json.dump(config, f, ensure_ascii=False, indent=2)
