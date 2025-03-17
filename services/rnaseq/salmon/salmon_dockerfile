@@ -23,11 +23,11 @@ RUN alien -i -d /app/tools/bcl-convert-4.3.6-2.el7.x86_64.rpm
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds -c bih-cubi  \
 	python=3.12 \
 	samtools~=1.21 bcftools~=1.21 bedtools~=2.31  bcl2fastq2~=2.20 \
-	snakemake~=8.26 pandas~=2.2 \
+	snakemake~=8.30 pandas~=2.2 graphviz~=12.2 \
 	salmon~=1.10.3  fastp~=0.24 boost-cpp~=1.85 \
 	bioconductor-tximport~=1.8 \
 	bioconductor-alevinqc~=1.22  bioconductor-singler~=2.8 bioconductor-celldex~=1.16 \
-	r-optparse~=1.7 r-ggplot2~=3.5 r-seurat~=5.1 \
+	r-optparse~=1.7 r-ggplot2~=3.5 r-seurat~=5.2 \
 	bioconductor-eds~=1.8 r-tidyverse~=2.0 r-dplyr~=1.1 r-pheatmap~=1.0 \
 	&& mamba clean -afy
 
@@ -37,7 +37,7 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds -c bih-cubi  \
 # To activate the environnement use : mamba/conda  activate scdblfinder
 # To deactivate use : mamba deactivate
 RUN mamba create -n scdblfinder -y -c conda-forge -c bioconda -c biobuilds \
-	bioconductor-scdblfinder~=1.16 bioconductor-singlecellexperiment~=1.24 r-seurat~=5.1 \ 
+	bioconductor-scdblfinder~=1.16 bioconductor-singlecellexperiment~=1.24 r-seurat~=5.2 \ 
 	&& mamba clean -afy
 
 # Copy applications files (/app)
