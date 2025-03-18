@@ -880,6 +880,7 @@ rule makeCNVcalls:
 		analysisfailure=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVCalledFailed",
 		bamlist=f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
 		chromosome="{gender}",
+		removeY=config['REMOVE_Y'],
 		refbamlist=("--refbams " + config['REF_BAM_LIST']) if config.get('REF_BAM_LIST') else "",
 		decondir=config['R_SCRIPTS']
 	output:
@@ -890,7 +891,7 @@ rule makeCNVcalls:
 		err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.err"
 	shell:
 		"""
-		Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} {params.refbamlist} --tsv {output.calltsv} --outrdata {output.rdata} 1> {log.log} 2> {log.err} && [[ -s {output.calltsv} ]] || touch {params.analysisfailure} ; [[ -s {output.calltsv} ]] || touch {output.calltsv}
+		Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --removeY {params.removeY} {params.refbamlist} --tsv {output.calltsv} --outrdata {output.rdata} 1> {log.log} 2> {log.err} && [[ -s {output.calltsv} ]] || touch {params.analysisfailure} ; [[ -s {output.calltsv} ]] || touch {output.calltsv}
 		"""
  
 rule merge_makeCNVcalls:

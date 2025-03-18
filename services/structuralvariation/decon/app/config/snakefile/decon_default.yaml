@@ -105,6 +105,8 @@ OLD_BED: True
 ## Analysis processing ##
 # Remove M or F or Autosome analysis, ex ['XY', 'XX'] for autosome only
 REMOVE_GENDER: ""
+# Option to call Y
+REMOVE_Y: TRUE
 # Limit the analysis to a list of genes (remove from DECON BED)
 GENE_LIST_RESTRICT: []
 # List of chr to remove from DECON BED

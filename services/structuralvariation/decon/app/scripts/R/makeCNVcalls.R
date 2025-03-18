@@ -25,6 +25,7 @@ suppressPackageStartupMessages({
 option_list <- list(
   make_option('--rdata', help='Input summary RData file containing coverage data, bed file, and GC content (required)', dest='data'),
   make_option("--chromosome", default="A", help='Perform calling for autosomes or chr XX or chr XY', dest='chromosome'),
+  make_option("--removeY", type="logical", default=TRUE, dest='removeY', help="Remove chromosome Y from the analysis (TRUE/FALSE)"),
   make_option('--transProb', default=0.01, help='Transition probability for the HMM statistical analysis, default=0.01', dest='transProb'),
   make_option("--refbams", default=NULL, help="Text file containing the list of reference bam files for calling (full path) (optional)", dest='refbams'),
   make_option("--samples", default=NULL, help="Text file containing the list of sample bams to analyse", dest='samples'),
@@ -302,7 +303,7 @@ save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.na
   save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls_ids,cnv.calls, refs, models, fasta, file=output.rdata)
 }
 
-main <- function(data_file, modechrom, samples, p_value, output_file, rdata_output = NULL, refbams_file = NULL) {
+main <- function(data_file, modechrom, removeY, samples, p_value, output_file, rdata_output = NULL, refbams_file = NULL) {
   print("BEGIN makeCNVCalls script")
     
   stop_if_missing(data_file, "ERROR: no Rdata summary file provided -- Execution halted")
@@ -316,10 +317,24 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
     dir.create(dirname(output_file))
   }
 
-  if (modechrom == "XX" || modechrom == "XY") {
+  if (modechrom == "XX") { 
     bed.file <- filter_chromosomes(bed.file, include.chrom = c("chrX")) # we don't call Y
     counts <- filter_chromosomes(counts, include.chrom = c("chrX")) # we don't call Y
   }
+
+  # Check if modechrom is "XY" and Y should also be included or removed
+  if (options$modechrom == "XY") {
+      # If removeY is FALSE, we call Y as well
+      if (!options$removeY) {
+          bed.file <- filter_chromosomes(bed.file, include.chrom = c("chrX", "chrY"))  # Call both X and Y
+          counts <- filter_chromosomes(counts, include.chrom = c("chrX", "chrY"))  # Call both X and Y
+      } else {
+          # If removeY is TRUE, only call chrX
+          bed.file <- filter_chromosomes(bed.file, include.chrom = c("chrX"))  # Don't call Y
+          counts <- filter_chromosomes(counts, include.chrom = c("chrX"))  # Don't call Y
+      }
+  }
+
   if (modechrom == "A") {
     bed.file <- filter_chromosomes(bed.file, exclude.chrom = c("chrX", "chrY"))
     counts <- filter_chromosomes(counts, exclude.chrom = c("chrX", "chrY"))
@@ -352,4 +367,4 @@ main <- function(data_file, modechrom, samples, p_value, output_file, rdata_outp
 }
 
 # Parse command line arguments and call the main function
-main(data_file = options$data, modechrom = options$chromosome, samples = options$samples, p_value = as.numeric(options$transProb), output_file = options$tsv, rdata_output = options$outdata, refbams_file = options$refbams)
+main(data_file = options$data, modechrom = options$chromosome, removeY= options$removeY, samples = options$samples, p_value = as.numeric(options$transProb), output_file = options$tsv, rdata_output = options$outdata, refbams_file = options$refbams)

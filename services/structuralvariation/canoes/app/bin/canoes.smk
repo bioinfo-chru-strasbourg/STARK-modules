@@ -723,6 +723,7 @@ rule canoes_calling:
 	params:
 		Rscripts = config['R_SCRIPTS'],
 		chromosome= "{gender}",
+		removeY=config['REMOVE_Y'],
 		bamlist= f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
 		pvalue = config['pval'],
 		distance = config['dist'],
@@ -740,7 +741,7 @@ rule canoes_calling:
 		err = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.err"
 	shell:
 		"""
-		Rscript {params.Rscripts}/CANOES.v2.2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} \
+		Rscript {params.Rscripts}/CANOES.v2.2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} --removeY {params.removeY} \
 		--samples {params.bamlist} --homdel {params.hom} --numref {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
 		--pvalue {params.pvalue} {params.refbamlist} {params.refmulticovtsv} --output {output.cnvcall} --rdata {output.rdata} 1> {log.log} 2> {log.err} && touch {output.success}
 		"""

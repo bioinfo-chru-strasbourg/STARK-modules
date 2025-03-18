@@ -29,6 +29,7 @@ option_list <- list(
   make_option("--gcfile", type="character", default="gc.tsv", dest='gc', help="File containing the GC values in column 4"),
   make_option("--readsfile", type="character", default="canoes.reads.tsv", dest='reads', help="File containing the coverage reads data"),
   make_option("--chromosome",default="A",help='Perform calling for autosomes (A) or chrX (XX) or chrY (XY) ', dest='modechrom'),
+  make_option("--removeY", type="logical", default=TRUE, dest='removeY', help="Remove chromosome Y from the analysis (TRUE/FALSE)"),
   make_option("--samples",default=NULL,help="Text file containing the list of sample bams to analyse",dest='samples'),
   make_option("--pvalue", type="numeric", default=1e-08, dest='pvalue', help="Average rate of occurrence of CNVs"),
   make_option("--tnum", type="integer", default=6, dest='tnum', help="Expected number of targets in a CNV"),
@@ -93,7 +94,7 @@ if(length(refbams_file)>0){
       rawrefbams = subset(rawrefbams, rawrefbams$gender=='M')
       }
     }else{
-        if (modechrom=="XX" | modechrom=="XY"){
+        if (modechrom=="XX" || modechrom=="XY"){
         message('ERROR: No gender specified in the reference bam list, calling of chrX is not possible')
         quit()
         }
@@ -124,14 +125,23 @@ if(length(refbams_file)>0){
   }
 
  # We filter out chrX/Y depending on the type of analysis (A = Autosome only, XX/XY, sexual chr only)
- if (modechrom=="A"){
-    canoes.reads<-subset(canoes.reads, chromosome!="chrX" & chromosome!="chrY")
- }
- # we don't call chr Y
- if (modechrom=="XX" | modechrom=="XY"){
-    canoes.reads<-subset(canoes.reads, chromosome=="chrX")
- }
+ 
+  if (options$modechrom == "XX") {
+      # For chrX (XX), we assume the filtering should be done only for chrX
+      canoes.reads <- subset(canoes.reads, chromosome == "chrX")
+  } else if (options$modechrom == "XY") {
+      # For chrY (XY), include both chrX and chrY
+      canoes.reads <- subset(canoes.reads, chromosome == "chrX" | chromosome == "chrY")
+  } else if (options$modechrom == "A") {
+      # Default behavior for autosomes (A)
+      canoes.reads <- subset(canoes.reads, !chromosome %in% c("chrX", "chrY"))
+  }
 
+  # If the user specified to remove chromosome Y, exclude it from the dataset
+  if (options$removeY) {
+      canoes.reads <- subset(canoes.reads, chromosome != "chrY")
+  }
+  
   xcnv.list <- vector('list', length(sample.names_to_analyse))
   for (i in 1:length(sample.names_to_analyse)) {
     xcnv.list[[i]] <- CallCNVs(sample.names_to_analyse[i], canoes.reads, p_value, Tnum, D, numrefs, FALSE, homdel_mean, refsample.names) 
@@ -800,4 +810,4 @@ CalcCopyNumber <- function(data, cnvs, homdel.mean){
 }
 
 # Call the main function with parsed arguments
-main(options$gc, options$reads, options$modechrom, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$outputrdata, options$refbams, options$readsrefs)
+main(options$gc, options$reads, options$modechrom, option$removeY, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$outputrdata, options$refbams, options$readsrefs)
