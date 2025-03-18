@@ -53,7 +53,7 @@ multi_strsplit<-function(x,splits,y){
 }
 
 
-main <- function(gc_file, reads_file, modechrom, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, rdata_output = NULL, refbams_file= NULL, ref_reads = NULL) {
+main <- function(gc_file, reads_file, modechrom, removeY, samples, p_value, Tnum, D, numrefs, homdel_mean, output_file, rdata_output = NULL, refbams_file= NULL, ref_reads = NULL) {
   
   if(length(samples)>0){
     samplesbams<-apply(read.table(paste(samples)),1,toString)
@@ -810,4 +810,4 @@ CalcCopyNumber <- function(data, cnvs, homdel.mean){
 }
 
 # Call the main function with parsed arguments
-main(options$gc, options$reads, options$modechrom, option$removeY, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$outputrdata, options$refbams, options$readsrefs)
+main(options$gc, options$reads, options$modechrom, options$removeY, options$samples, options$pvalue, options$tnum, options$dvalue, options$numrefs, options$homdel, options$output, options$outputrdata, options$refbams, options$readsrefs)
