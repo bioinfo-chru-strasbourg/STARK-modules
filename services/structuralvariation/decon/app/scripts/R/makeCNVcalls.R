@@ -323,9 +323,9 @@ main <- function(data_file, modechrom, removeY, samples, p_value, output_file, r
   }
 
   # Check if modechrom is "XY" and Y should also be included or removed
-  if (options$modechrom == "XY") {
+  if (modechrom == "XY") {
       # If removeY is FALSE, we call Y as well
-      if (!options$removeY) {
+      if (!removeY) {
           bed.file <- filter_chromosomes(bed.file, include.chrom = c("chrX", "chrY"))  # Call both X and Y
           counts <- filter_chromosomes(counts, include.chrom = c("chrX", "chrY"))  # Call both X and Y
       } else {
