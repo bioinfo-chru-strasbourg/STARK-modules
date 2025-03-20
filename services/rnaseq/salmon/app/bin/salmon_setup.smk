@@ -117,7 +117,6 @@ onstart:
 onsuccess:
 	shell(f"rm -f {services_folder}/cli/SETUPRunning.txt")
 	shell(f"touch {services_folder}/cli/SETUPComplete.txt")
-
 	date_time_end = datetime.now().strftime("%Y%m%d-%H%M%S")
 	with open(logfile, "a+") as f:
 		f.write(f"End of the setup: {date_time_end}\n")
