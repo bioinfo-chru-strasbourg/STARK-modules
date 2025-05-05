@@ -313,7 +313,7 @@ rule copy_fastq:
 	params:
 		process = config['PROCESS_CMD'],
 		download_link1 = lambda wildcards: runDict[wildcards.sample]['.R1.fastq.gz'],
-		download_link2 = lambda wildcards: runDict[wildcards.sample].get('.R2.fastq.gz', None)  # Use .get() to avoid KeyError
+		download_link2 = lambda wildcards: runDict[wildcards.sample].get('.R2.fastq.gz', None)
 	shell:
 		"""
 		if [ "{params.process}" = "ln" ]; then
@@ -330,10 +330,10 @@ rule copy_fastq:
 rule fastp:
 	input:
 		fastqR1=rules.copy_fastq.output.fastqR1,
-		fastqR2=rules.copy_fastq.output.fastqR2 if "fastqR2" in rules.copy_fastq.output else None
+		fastqR2=rules.copy_fastq.output.fastqR2
 	output:
 		fastqR1=temp(f"{resultDir}/{{sample}}.fastp.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz") if "fastqR2" in rules.copy_fastq.output else None
+		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz")
 	params:
 		miscs=config['FASTP_GLOBALS_PARAMS'],
 		compression=config['FASTP_COMPRESSION'],
@@ -352,7 +352,7 @@ rule fastp:
 rule salmon:
 	input:
 		fastqR1=rules.fastp.output.fastqR1,
-		fastqR2=rules.fastp.output.fastqR2 if "fastqR2" in rules.copy_fastq.output else None
+		fastqR2=rules.fastp.output.fastqR2
 	output:
 		f"{resultDir}/tmp/{{sample}}.salmon.quant/quant.sf"
 	params:
