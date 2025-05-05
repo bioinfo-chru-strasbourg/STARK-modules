@@ -316,44 +316,43 @@ rule copy_fastq:
 		download_link2 = lambda wildcards: runDict[wildcards.sample].get('.R2.fastq.gz', None)  # Use .get() to avoid KeyError
 	shell:
 		"""
-		[ \"{params.process}\" = \"ln\" ] && \
-		ln -sfn {params.download_link1} {output.fastqR1} && \
-		{output.fastqR2} && \
-		if [ -f {params.download_link2} ]; then
-			ln -sfn {params.download_link2} {output.fastqR2} || rsync -azvh {params.download_link2} {output.fastqR2};
+		if [ "{params.process}" = "ln" ]; then
+			ln -sfn {params.download_link1} {output.fastqR1}
+			[ -n "{params.download_link2}" ] && ln -sfn {params.download_link2} {output.fastqR2}
 		else
-			echo "Warning: {params.download_link2} does not exist, proceeding with single-end data.";
+			rsync -azvh {params.download_link1} {output.fastqR1}
+			[ -n "{params.download_link2}" ] && rsync -azvh {params.download_link2} {output.fastqR2}
 		fi
-		|| rsync -azvh {params.download_link1} {output.fastqR1}
 		"""
 
 
 # https://github.com/OpenGene/fastp
 rule fastp:
 	input:
-		fastqR1=f"{resultDir}/{{sample}}.R1.fastq.gz",
-		fastqR2=lambda wildcards: f"{resultDir}/{wildcards.sample}.R2.fastq.gz" if runDict[wildcards.sample].get('.R2.fastq.gz') else None  # Make fastqR2 optional
+		fastqR1=rules.copy_fastq.output.fastqR1,
+		fastqR2=rules.copy_fastq.output.fastqR2 if "fastqR2" in rules.copy_fastq.output else None
 	output:
 		fastqR1=temp(f"{resultDir}/{{sample}}.fastp.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz") if runDict[wildcards.sample].get('.R2.fastq.gz') else None
+		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz") if "fastqR2" in rules.copy_fastq.output else None
 	params:
 		miscs=config['FASTP_GLOBALS_PARAMS'],
 		compression=config['FASTP_COMPRESSION'],
-		trim=config['FASTP_TRIM']
+		trim=config['FASTP_TRIM'],
+		sample_name = lambda wildcards: wildcards.sample
 	threads: workflow.cores
 	shell:	
 		"""
 		if [ -f "{input.fastqR2}" ]; then
-			fastp --thread={threads} {params.miscs} {params.trim} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2}
+			fastp --thread={threads} {params.miscs} {params.trim} --compression={params.compression} --html={params.sample_name}.QC.html --report_title={params.sample_name} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2}
 		else
-			fastp --thread={threads} {params.miscs} {params.trim} --compression={params.compression} --html={wildcards.sample}.QC.html --report_title={wildcards.sample} --in1={input.fastqR1} --out1={output.fastqR1}
+			fastp --thread={threads} {params.miscs} {params.trim} --compression={params.compression} --html={params.sample_name}.QC.html --report_title={params.sample_name} --in1={input.fastqR1} --out1={output.fastqR1}
 		fi
 		"""
 
 rule salmon:
 	input:
 		fastqR1=rules.fastp.output.fastqR1,
-		fastqR2=rules.fastp.output.fastqR2  # Ensure fastqR2 is still defined, but may not exist
+		fastqR2=rules.fastp.output.fastqR2 if "fastqR2" in rules.copy_fastq.output else None
 	output:
 		f"{resultDir}/tmp/{{sample}}.salmon.quant/quant.sf"
 	params:

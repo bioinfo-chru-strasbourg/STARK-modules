@@ -97,7 +97,7 @@ FASTP_TRIM: "" # ex FASTP_TRIM: "--trim_front2=5 --trim_tail2=5"
 FASTP_UMI: "" #  -U --umi_loc=per_read --umi_len=5 for XTHS2
 
 # For Salmon quantification fastq mode, path to the index file
-REFSALMONINDEX_PATH: "/databases/salmon/GRCh38.v41"
+REFSALMONINDEX_PATH: "/databases/salmon/GRCh38.v41/salmon_index/"
 
 # Sequence-Specific Bias Correction (--seqBias)
 # Helps correct for biases that might cause overrepresentation of certain reads.

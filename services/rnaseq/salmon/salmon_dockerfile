@@ -23,7 +23,7 @@ RUN alien -i -d /app/tools/bcl-convert-4.3.6-2.el7.x86_64.rpm
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds -c bih-cubi  \
 	python=3.12 \
 	samtools~=1.21 bcftools~=1.21 bedtools~=2.31  bcl2fastq2~=2.20 \
-	snakemake~=9.3 pandas~=2.2 \ 
+	snakemake~=8.30 pandas~=2.2 \ 
 	salmon~=1.10.3  fastp~=0.24 boost-cpp~=1.85 \
 	bioconductor-tximport~=1.34 \
 	bioconductor-alevinqc~=1.22   \
