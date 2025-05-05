@@ -91,7 +91,7 @@ COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 ########## STAR ##########
 # STAR option to junction file
 JUNCTION_FILE: "Junctions WithinBAM"
-GENOME_PATH_INDEXED: "/databases/CTAT_LIB/ref_genome.fa.star.idx"
+GENOME_PATH_INDEXED: "/databases/CTAT_LIB/ctat_genome_lib_build_dir/ref_genome.fa.star.idx"
 
 ########## STAR FUSION ##########
 CTAT_LIB: "/databases/CTAT_LIB"
