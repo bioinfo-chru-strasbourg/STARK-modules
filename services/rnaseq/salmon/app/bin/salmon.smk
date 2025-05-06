@@ -333,7 +333,8 @@ rule fastp:
 		fastqR2=rules.copy_fastq.output.fastqR2
 	output:
 		fastqR1=temp(f"{resultDir}/{{sample}}.fastp.R1.fastq.gz"),
-		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz")
+		fastqR2=temp(f"{resultDir}/{{sample}}.fastp.R2.fastq.gz"),
+		html=f"{resultDir}/{{sample}}/"
 	params:
 		miscs=config['FASTP_GLOBALS_PARAMS'],
 		compression=config['FASTP_COMPRESSION'],
@@ -343,7 +344,7 @@ rule fastp:
 	shell:	
 		"""
 		if [ -f "{input.fastqR2}" ]; then
-			fastp --thread={threads} {params.miscs} {params.trim} --compression={params.compression} --html={params.sample_name}.QC.html --report_title={params.sample_name} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2}
+			fastp --thread={threads} {params.miscs} {params.trim} --compression={params.compression} --html={output.html}/{params.sample_name}.QC.html --report_title={params.sample_name} --in1={input.fastqR1} --in2={input.fastqR2} --out1={output.fastqR1} --out2={output.fastqR2}
 		else
 			fastp --thread={threads} {params.miscs} {params.trim} --compression={params.compression} --html={params.sample_name}.QC.html --report_title={params.sample_name} --in1={input.fastqR1} --out1={output.fastqR1}
 		fi
