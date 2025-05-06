@@ -99,7 +99,7 @@ CTAT_LINK: "https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/GRCh37_gen
 CTAT_FILTER_PM_LINK: "https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/__genome_libs_StarFv1.10/AnnotFilterRule.pm"
 
 ######### ARRIBA ########## 
-# Gencode GTF file for arriba
+# Gencode GTF file for arriba (gz or uncompress)cd /a
 GTF_GENCODE: "/databases/gencode/GRCh37.v19/gencode.v19.annotation.gtf.gz"
 # Genome FASTA file reference for arriba (can be standard ref genome fa file)
 GENOME_FA: "/databases/genomes/current/hg19.fa"

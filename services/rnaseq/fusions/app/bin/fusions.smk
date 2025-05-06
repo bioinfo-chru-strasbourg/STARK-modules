@@ -7,6 +7,7 @@
 # Authoring : Thomas LAVAUX
 
 ################## Context ##################
+# ! DON'T FORGET THE --USE-CONDA option !
 # launch snakemake -s  snakefile_fusions -c(numberofthreads) --use-conda --config run=absolutepathoftherundirectory without / at the end of the path
 # to launch the snakemake file, use --config to replace variables that must be properly set for the pipeline to work ie run path directory
 # every variable defined in the yaml file can be change
