@@ -94,13 +94,13 @@ JUNCTION_FILE: "Junctions WithinBAM"
 GENOME_PATH_INDEXED: "/databases/CTAT_LIB/ctat_genome_lib_build_dir/ref_genome.fa.star.idx"
 
 ########## STAR FUSION ##########
-CTAT_LIB: "/databases/CTAT_LIB"
+CTAT_LIB: "/databases/CTAT_LIB/ctat_genome_lib_build_dir"
 CTAT_LINK: "https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/GRCh37_gencode_v19_CTAT_lib_Mar012021.plug-n-play.tar.gz"
 CTAT_FILTER_PM_LINK: "https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/__genome_libs_StarFv1.10/AnnotFilterRule.pm"
 
 ######### ARRIBA ########## 
 # Gencode GTF file for arriba
-GTF_GENCODE: "/databases/gencode/gencode.v19.annotation.gtf_withproteinids"
+GTF_GENCODE: "/databases/gencode/GRCh37.v19/gencode.v19.annotation.gtf.gz"
 # Genome FASTA file reference for arriba (can be standard ref genome fa file)
 GENOME_FA: "/databases/genomes/current/hg19.fa"
 # Arriba specifics databases (default is /opt/conda/var/lib/arriba)
@@ -116,15 +116,17 @@ ARRIBA_UMI: ""
 # for hg19 the last gencode version is v19; check the p version of the genome (p13) and name of the transcript file (prefix pc_)
 ASSEMBLY: "GRCh37"
 GENCODE_VERSION: "19"
+ASSEMBLY_PATCH: "p13"
 GENCODE_GTF_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.annotation.gtf.gz"
-GENCODE_GENOME_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/{ASSEMBLY}.p13.genome.fa.gz"
+GENCODE_GENOME_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/{ASSEMBLY}.{ASSEMBLY_PATCH}.genome.fa.gz"
 GENCODE_TRANSCRIPTS_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.pc_transcripts.fa.gz"
 GENCODE_README_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/_README.TXT"
 
 # for hg38 the first gencode version is v20 ; version 10/2023 is v44; version v46 is 05/2024 ; check the p version of the genome (p14) and name of the transcript file (no prefix)
 #ASSEMBLY: "GRCh38"
+#ASSEMBLY_PATCH: "p14"
 #GENCODE_VERSION: "44"
 #GENCODE_GTF_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.annotation.gtf.gz"
-#GENCODE_GENOME_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/{ASSEMBLY}.p14.genome.fa.gz"
+#GENCODE_GENOME_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/{ASSEMBLY}.{ASSEMBLY_PATCH}.genome.fa.gz"
 #GENCODE_TRANSCRIPTS_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.transcripts.fa.gz"
 #GENCODE_README_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_{GENCODE_VERSION}/_README.TXT"
