@@ -195,7 +195,7 @@ def update_results(dictionary, update_dictionary, keys, exclude_samples=None, ex
 	for sample in exclude_samples:
 		if sample in update_dictionary:
 			for key in exclude_keys:
-				update_dictinnary[sample].pop(key, None)  # Remove the key if it exists
+				update_dictionary[sample].pop(key, None)  # Remove the key if it exists
 
 ### END OF FUNCTIONS ###
 serviceName = config['serviceName']
