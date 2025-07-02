@@ -1,0 +1,48 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "license": "https://spdx.org/licenses/GPL-3.0",
+    "codeRepository": "git+https://gitlab.univ-lille.fr/filt3r/filt3r.git",
+    "contIntegration": "https://gitlab.univ-lille.fr/filt3r/filt3r/-/pipelines",
+    "dateCreated": "2021-05-10",
+    "datePublished": "2022-08-27",
+    "dateModified": "2023-06-23",
+    "downloadUrl": "https://gitlab.univ-lille.fr/filt3r/filt3r/-/archive/ed07543a2b31abebe56b79e6675e5aa934896524/filt3r-ed07543a2b31abebe56b79e6675e5aa934896524.zip",
+    "issueTracker": "https://gitlab.univ-lille.fr/filt3r/filt3r/issues",
+    "name": "FiLT3r",
+    "description": "FiLT3r detects internal duplications in raw sequencing data.\nFiLT3r uses an alignment-free approach, which makes it resource-frugal.",
+    "applicationCategory": "Bioinformatics",
+    "developmentStatus": "active",
+    "referencePublication": "https://doi.org/10.1186/s12859-022-04983-6",
+    "keywords": [
+        "Genomics",
+        "High-throughput sequencing",
+        "Leukemia",
+        "Tandem duplication"
+    ],
+    "programmingLanguage": [
+        "C++"
+    ],
+    "operatingSystem": [
+        "Linux"
+    ],
+    "author": [
+        {
+            "@type": "Person",
+            "givenName": "Mikaël",
+            "familyName": "Salson",
+            "email": "mikael.salson@univ-lille.fr",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Univ. Lille, CNRS, Centrale Lille, UMR 9189 CRIStAL, F-59000, Lille, France"
+            }
+        }
+    ],
+    "contributor": [
+        {
+            "@type": "Person",
+            "givenName": "Sasha",
+            "familyName": "Darmon"
+        }
+    ]
+}

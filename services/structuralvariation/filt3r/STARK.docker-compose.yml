@@ -1,0 +1,79 @@
+##########################
+# Docker compose FILT3R #
+##########################
+version: '3.9'
+
+services:
+
+    stark-module-structuralvariation-submodule-filt3r-service-setup:
+        image: stark/stark-module-structuralvariation-submodule-filt3r-service-common:1.0
+        build:
+            context: ./
+            dockerfile: filt3r_dockerfile
+        entrypoint: "snakemake"
+        command: "-p -s /app/bin/filt3r_setup.smk"
+        container_name: stark-module-structuralvariation-submodule-filt3r-service-setup
+        restart: "no"
+        volumes:
+            - /home1/data/STARK/services/structuralvariation/filt3r:/services/structuralvariation/filt3r:rw
+            - /home1/data/STARK/config/structuralvariation/filt3r:/config/structuralvariation/filt3r:rw
+            - /home1/data/STARK/databases:/databases:rw
+        working_dir: /
+        networks:
+            - stark_stark
+
+    stark-module-structuralvariation-submodule-filt3r-service-cli:
+        image: stark/stark-module-structuralvariation-submodule-filt3r-service-common:1.0
+        build:
+            context: ./
+            dockerfile: filt3r_dockerfile
+        container_name: stark-module-structuralvariation-submodule-filt3r-service-cli
+        restart: "no"
+        entrypoint: ["/bin/bash", "-c"]
+        command: ["tail -f /dev/null"]  
+        tty: true
+        stdin_open: true
+        volumes:
+            - /home1/data/STARK/output/repository:/output/repository:rw
+            - /home1/data/STARK/output/depository:/output/depository:rw
+            - /home1/data/STARK/services/structuralvariation/filt3r/cli:/services/structuralvariation/filt3r/cli:rw
+            - /home1/data/STARK/config/structuralvariation/filt3r/cli:/config/structuralvariation/filt3r/cli:ro
+            - /home1/data/STARK/databases:/databases:ro
+        networks:
+            - stark_stark
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "test",
+                    "-f",
+                    "/services/structuralvariation/filt3r/cli/SETUPComplete.txt"
+                ]
+            timeout: 10s
+            interval: 30s
+            retries: 30
+ 
+    stark-module-structuralvariation-submodule-filt3r-service-listener:
+        image: stark/stark-module-common-submodule-listener-service-listener:2.0
+        container_name: stark-module-structuralvariation-submodule-filt3r-service-listener
+        entrypoint: "python3"
+        command: "/app/bin/listener.py --input=/output/repository --json=/config/structuralvariation/filt3r/listener/filt3r.json --config=/config/structuralvariation/filt3r/listener/filt3r.conf --servicename=FILT3R --containersfile=/services/structuralvariation/filt3r/listener --nbDaysBack=30 --minDelay=1"
+        restart: always
+        environment:
+            - DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG=/config/structuralvariation/filt3r
+        volumes:
+            - /home1/data/STARK/output/repository:/output/repository:ro
+            - /home1/data/STARK/output/depository:/output/depository:ro
+            - /home1/data/STARK/services/structuralvariation/filt3r:/services/structuralvariation/filt3r:rw
+            - /home1/data/STARK/config/structuralvariation/filt3r:/config/structuralvariation/filt3r:ro
+            - /home1/data/STARK/config/structuralvariation/filt3r/listener/launcher.py:/app/bin/config/launcher.py:ro
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+            - stark_stark
+        depends_on:
+            stark-module-structuralvariation-submodule-filt3r-service-cli:
+                condition: service_healthy
+
+networks:
+    stark_stark:
+        external: true

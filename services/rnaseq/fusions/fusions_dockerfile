@@ -1,0 +1,47 @@
+##############################################################
+# Module :             fusions
+# Submodule :          fusions
+# Services :           cli
+# Version :            1.0
+# Description:         Dockerfile to build container image fusions
+##############################################################
+# DEV version 1 : 22/11/2024
+# Authoring : Thomas LAVAUX
+
+# Ubuntu based (minimal focal)
+FROM condaforge/mambaforge
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Update and install some tools
+RUN apt-get update --fix-missing && \
+	apt-get install -y unzip vim rsync aria2 alien gzip
+
+COPY app/tools/bcl-convert-4.3.6-2.el7.x86_64.rpm /app/tools/bcl-convert-4.3.6-2.el7.x86_64.rpm
+RUN alien -i -d /app/tools/bcl-convert-4.3.6-2.el7.x86_64.rpm
+
+# Mamba install 
+RUN mamba install -y -c conda-forge -c bioconda -c biobuilds -c bih-cubi  \ 
+    python=3.12 \
+	samtools~=1.21 bcftools~=1.21 bedtools~=2.31  vcf-validator~=0.10 bcl2fastq2~=2.20 \
+	snakemake~=8.30 graphviz~=12.2 pandas~=2.2 vcf2tsvpy~=0.6  \ 
+	arriba~=2.4.0 star~=2.7.11a && mamba clean -afy
+
+# Variantconvert
+WORKDIR /usr/lib
+RUN git clone https://github.com/SamuelNicaise/variantconvert.git && cd variantconvert && pip install -e . && pip cache purge
+RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py init
+
+# Set default genome as hg19 if you use the default json config files
+# RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py config --set GENOME.path=/databases/genomes/current/hg19/hg19.fa --configFiles hg19/*.json
+
+# star-fusion 1.13.0 uses STAR aligner 2.7.11a
+# To activate the environnement use : mamba activate starfusion
+# To deactivate use : mamba deactivate
+RUN mamba create -n starfusion -y -c conda-forge -c bioconda -c biobuilds star-fusion~=1.14.0 && mamba clean -afy
+
+# Copy applications files (/app)
+COPY ./app /app
+COPY ./STARK.docker-compose.yml /app/config/module/
+
+WORKDIR "/app"
+ENTRYPOINT [ "/bin/bash", "-l", "-c" ]

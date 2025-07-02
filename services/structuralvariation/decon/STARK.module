@@ -8,7 +8,7 @@
           "name": "CLI service",
           "type": "Cli",
           "description": "cli service, create image and configure service.",
-          "release": "1.0.2",
+          "release": "3.0",
           "available": false
         },
         "listener": {
@@ -16,15 +16,15 @@
           "name": "LISTENER service",
           "type": "listener",
           "description": "listener service, create image and configure service.",
-          "release": "1.1",
+          "release": "2.0",
           "available": false
-		},
-		"setup": {
+		    },
+		    "setup": {
           "code": "setup",
           "name": "SETUP service",
           "type": "setup",
           "description": "setup service, create image and configure service.",
-          "release": "1.0",
+          "release": "2.0",
           "available": false
         }
       }

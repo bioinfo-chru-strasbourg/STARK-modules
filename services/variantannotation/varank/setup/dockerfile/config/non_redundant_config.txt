@@ -1,5 +1,0 @@
-#Environment variable for non_redondant generation
-#You have to specify here for each application, unwanted columns names in the non-redondant file
-#Name for other application is UNWANTED_VARANK_COLUMN.PLATFORM.APPLICATION (example : UNWANTED_VARANK_COLUMN.DIAG.DI)
-
-UNWANTED_VARANK_COLUMN.default=strand,cdsLen,wtCodon,zygosity,totalReadDepth,varReadDepth,varReadPercent,QUALphred,assembly,gDNAstart,gDNAend,cDNAstart,cDNAend,familyBarcode,FindByPipelines,GenotypeConcordance

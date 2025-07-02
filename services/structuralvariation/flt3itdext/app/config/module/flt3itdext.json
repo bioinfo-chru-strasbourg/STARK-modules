@@ -1,0 +1,56 @@
+{
+	"services": {
+		"FLT3ITDEXT": {
+			"infos": {
+				"name": "FLT3ITDEXT",
+				"description": "FLT3ITDEXT analysis",
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (FLT3ITDEXTRunning.txt AND FLT3ITDEXTComplete.txt AND FLT3ITDEXTFailed.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
+			},
+			"triggers": {
+				"AND_1":{
+					"file":[
+						"STARKCopyComplete.txt",
+						"!FLT3ITDEXTRunning.txt",
+						"!FLT3ITDEXTComplete.txt",
+						"!FLT3ITDEXTFailed.txt"
+					],
+					"OR_1":{
+						"tags":[
+							"FLT3ITDEXT"
+						],
+						"AND_2":{
+							"group":[
+								"HUSHEMATO"
+							],
+							"project":[
+								"XTHS"
+							]
+						}
+					},
+				"OR_2":{
+					"tags":[
+						"!POOL"
+					],
+					"AND_3":{
+						"tags":[
+							"POOL"
+						],
+						"OR_3":{
+							"OR_4":{
+								"file":[
+									"POOLRunning.txt"
+								]
+							},
+							"OR_5":{
+								"file":[
+									"POOLComplete.txt"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

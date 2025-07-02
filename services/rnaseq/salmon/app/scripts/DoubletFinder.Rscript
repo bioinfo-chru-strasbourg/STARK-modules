@@ -1,0 +1,62 @@
+#!/usr/bin/env Rscript
+
+# Load required libraries
+library(optparse)
+library(tximport)
+library(Seurat)
+library(scDblFinder)
+library(SingleCellExperiment)
+
+# Define command-line options
+option_list <- list(
+  make_option(c("-t", "--transcript"), type = "character", default = NULL,
+              help = "Path to the directory or file containing transcript quantifications (e.g., Salmon/Alevin output)", metavar = "character"),
+  make_option(c("-g", "--gene_map"), type = "character", default = NULL,
+              help = "Path to the transcript-to-gene mapping file (e.g., a GTF-derived file with TXNAME and GENEID columns)", metavar = "character"),
+  make_option(c("-o", "--output"), type = "character", default = "seurat_obj_with_doublets.rds",
+              help = "Path to save the Seurat object with doublet annotations [default: %default]", metavar = "character"),
+  make_option(c("-s", "--singlets"), type = "character", default = "seurat_obj_singlets.rds",
+              help = "Path to save the singlet-only Seurat object [default: %default]", metavar = "character")
+)
+
+# Parse options
+opt_parser <- OptionParser(option_list = option_list)
+opt <- parse_args(opt_parser)
+
+# Validate inputs
+if (is.null(opt$transcript) || is.null(opt$gene_map)) {
+  stop("Both transcript quantifications and gene mapping file are required. Use -t and -g to specify these paths.", call. = FALSE)
+}
+
+# Load transcript-level quantifications with tximport
+txi <- tximport(files = opt$transcript, type = "alevin", tx2gene = read.csv(opt$gene_map, header = TRUE))
+
+# Create a Seurat object from gene counts
+counts <- txi$counts
+seurat_obj <- CreateSeuratObject(counts = counts)
+
+# Convert Seurat object to SingleCellExperiment object
+sce <- as.SingleCellExperiment(seurat_obj)
+
+# Run scDblFinder to identify doublets
+sce <- scDblFinder(sce)
+
+# Extract doublet information
+doublet_info <- colData(sce)$scDblFinder.class
+doublet_scores <- colData(sce)$scDblFinder.score
+
+# Add doublet information back to the Seurat object
+seurat_obj$doublet_class <- doublet_info
+seurat_obj$doublet_score <- doublet_scores
+
+# Optionally subset to keep only singlets
+seurat_obj_singlets <- subset(seurat_obj, subset = doublet_class == "singlet")
+
+# Save the Seurat objects
+saveRDS(seurat_obj, file = opt$output)
+saveRDS(seurat_obj_singlets, file = opt$singlets)
+
+# Print summary
+cat("Processing complete.\n")
+cat("Seurat object with doublet annotations saved to:", opt$output, "\n")
+cat("Singlet-only Seurat object saved to:", opt$singlets, "\n")

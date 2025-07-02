@@ -1,0 +1,404 @@
+
+# https://github.com/ebi-gene-expression-group/atlas-gene-annotation-manipulation
+# https://training.galaxyproject.org/training-material/topics/single-cell/tutorials/alevin-commandline/tutorial.html
+# https://training.galaxyproject.org/training-material/topics/single-cell/
+# https://satijalab.org/seurat/articles/pbmc3k_tutorial
+# https://satijalab.org/seurat/articles/sctransform_vignette.html
+
+# https://hbctraining.github.io/scRNA-seq/lessons/pseudobulk_DESeq2_scrnaseq.html for DESeq2 pseudo bulk analysis (sex, batch effect, etc.)
+
+# Seurat analysis from alevin
+# Alevin works in two phases. 
+# In the first phase it quickly parses the read file containing the CB and UMI information to generate the frequency distribution of all the observed CBs, 
+# and creates a lightweight data-structure for fast-look up and correction of the CB. 
+# In the second round, Alevin utilizes the read-sequences contained in the files to map the reads to the transcriptome, 
+# identify potential PCR/sequencing errors in the UMIs, and performs hybrid de-duplication while accounting for UMI collisions. 
+# Finally, a post-abundance estimation CB whitelisting procedure is done and a cell-by-gene count matrix is generated.
+# based on https://combine-lab.github.io/alevin-tutorial/2018/alevin-seurat/
+
+# nCount_RNA: number of UMIs per cell
+# nFeature_RNA: number of genes detected per cell
+
+# https://cran.r-project.org/web/packages/scRNAstat/scRNAstat.pdf
+# https://bioconductor.org/packages/3.18/bioc/manuals/scran/man/scran.pdf
+
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(tidyverse)
+  library(ggplot2)
+  library(dplyr)
+  library(Seurat)
+  library(tximport)
+  library(eds)
+  library(pheatmap)
+  library(SingleR)
+  library(celldex)
+})
+
+current_wd <- getwd()
+cat("Current working directory: ", current_wd, "\n")
+
+option_list <- list(
+  make_option(c("-d", "--dir"), type="character", default="/app/scripts",
+              help="Directory containing .R files [default %default]", metavar="character"),
+  make_option(c("-f", "--files"), type="character", default=NULL, 
+              help="Comma-separated list of input files", metavar="character"),
+  make_option(c("-o", "--output"), type="character", default="output", 
+              help="Directory to save output files", metavar="character"),
+  make_option(c("-p", "--prefix"), type = "character", default = NULL, 
+              help = "Project name prefix", metavar = "character"),
+  make_option(c("-s", "--sample_id"), type = "character", default = "Sample", 
+              help = "Comma-separated list of sample IDs", metavar = "character"),
+  make_option(c("--min_genes"), type="numeric", default=350, 
+              help="Minimum number of genes per cell [default %default]", metavar="number"),
+  make_option(c("--max_genes"), type="numeric", default=4000, 
+              help="Maximum number of genes per cell [default %default]", metavar="number"),
+  make_option(c("--max_mito"), type="numeric", default=15, 
+              help="Maximum percentage of mitochondrial transcripts [default %default]", metavar="number"),
+  make_option(c("--min_housekeeping_expr"), type="numeric", default=0, 
+              help="Minimum expression of housekeeping genes per cell [default %default]", metavar="number"),
+  make_option(c("--remove_ribo"), type="logical", default=FALSE, 
+              help="Remove ribosomal genes from the data [default %default]", metavar="logical"),
+  make_option(c("--species"), type="character", default="mouse", 
+              help="Species for the analysis ('mouse' or 'human') [default %default]", metavar="character"),
+  make_option(c("--cell_cycle_regression"), type="logical", default=FALSE, 
+              help="Perform cell cycle regression [default %default]", metavar="logical"),
+  make_option(c("--sex_scoring"), type="logical", default=FALSE, 
+              help="Perform sex scoring regression [default %default]", metavar="logical")
+)
+
+opt_parser <- OptionParser(option_list=option_list)
+opt <- parse_args(opt_parser)
+
+# List all .R files in the specified directory & source them
+scripts_dir <- opt$dir
+cat("Using .R scripts from directory:", scripts_dir, "\n")
+r_files <- list.files(path = scripts_dir, pattern = "\\.R$", full.names = TRUE)
+if (length(r_files) > 0) {
+  for (file in r_files) {
+    if (file.exists(file)) {
+      cat("Sourcing file:", file, "\n")
+      source(file)
+    } else {
+      warning(sprintf("File %s does not exist. Skipping.", file))
+    }
+  }
+} else {
+  stop("No .R files found in the specified directory.")
+}
+
+# Check and split input files and sample IDs
+if (is.null(opt$files)) {
+  print_help(opt_parser)
+  stop("File path must be provided. See --help for details.", call.=FALSE)
+}
+
+# Split comma-separated file paths and sample IDs into vectors
+input_files <- unlist(strsplit(opt$files, ","))
+sample_ids <- unlist(strsplit(opt$sample_id, ","))
+
+if (length(input_files) != length(sample_ids)) {
+  stop("The number of input files does not match the number of sample IDs.", call.=FALSE)
+}
+
+if (!dir.exists(opt$output)) {
+  dir.create(opt$output, recursive = TRUE)
+}
+
+cat("Input files: ", paste(input_files, collapse=", "), "\n")
+cat("Sample IDs: ", paste(sample_ids, collapse=", "), "\n")
+cat("Project prefix: ", opt$prefix, "\n")
+cat("Minimum genes per cell: ", opt$min_genes, "\n")
+cat("Maximum genes per cell: ", opt$max_genes, "\n")
+cat("Maximum mitochondrial percentage: ", opt$max_mito, "\n")
+
+# Define housekeeping file based on the specified species
+if (tolower(opt$species) == "human") {
+  housekeeper_file <- file.path(scripts_dir, "Housekeeper_human.R")
+  mito_pattern <- "^MT-"
+  hb_pattern <- "^Hb"
+  ribo_patterns <- c("^RPS", "^RPL")
+  female.features <- female.features.human
+  male.features <- male.features.human
+} else if (tolower(opt$species) == "mouse") {
+  housekeeper_file <- file.path(scripts_dir, "Housekeeper_mouse.R")
+  mito_pattern <- "^mt-"
+  hb_pattern <- "^Hb"
+  ribo_patterns <- c("^Rp")
+  female.features <- female.features.mouse
+  male.features <- male.features.mouse
+} else {
+  stop("Invalid species specified. Use 'human' or 'mouse'.", call.=FALSE)
+}
+
+# Source the housekeeping gene file
+if (file.exists(housekeeper_file)) {
+  source(housekeeper_file)
+} else {
+  stop(sprintf("Housekeeping file %s does not exist.", housekeeper_file), call.=FALSE)
+}
+
+# Load reference datasets based on the specified species
+if (tolower(opt$species) == "human") {
+  hpca <- celldex::HumanPrimaryCellAtlasData()
+  dice <- celldex::DatabaseImmuneCellExpressionData()
+  housekeeper_genes <- housekeeper_human
+} else if (tolower(opt$species) == "mouse") {
+  hpca <- celldex::MouseRNAseqData()
+  dice <- celldex::ImmGenData()
+  housekeeper_genes <- housekeeper_mouse
+} else {
+  stop("Invalid species specified. Use 'human' or 'mouse'.", call.=FALSE)
+}
+
+# Add reference-specific labels
+hpca$label.main <- paste0(toupper(opt$species), '.', hpca$label.main)
+dice$label.main <- paste0(toupper(opt$species), '.', dice$label.main)
+
+# Create a combined reference based on shared genes
+shared <- intersect(rownames(hpca), rownames(dice))
+combined <- cbind(hpca[shared,], dice[shared,])
+
+# Loop through each file and sample ID
+for (i in seq_along(input_files)) {
+  cat("Processing file: ", input_files[i], " for sample: ", sample_ids[i], "\n")
+  
+  # Check if the file exists
+  if (!file.exists(input_files[i])) {
+    warning(sprintf("File %s does not exist. Skipping.", input_files[i]))
+    next
+  }
+  
+  # Import data & create Seurat object
+  txi <- tximport(input_files[i], type="alevin")
+  project_name <- paste(opt$prefix, sample_ids[i], sep = "")
+  
+  seurat_obj <- CreateSeuratObject(counts = txi$counts, 
+                                   min.cells = 3, 
+                                   min.features = 200, 
+                                   project = project_name)
+  
+  # Save the raw Seurat object
+  saveRDS(seurat_obj, file = file.path(opt$output, paste0(sample_ids[i], "_Seurat_raw.rds")))
+  cat("Seurat object saved for sample: ", sample_ids[i], "\n")
+
+  # Fetch data for mitochondrial, hemoglobin, and ribosomal genes
+  seurat_obj[["percent.mt"]] <- PercentageFeatureSet(seurat_obj, pattern = mito_pattern)
+  seurat_obj[["percent.hb"]] <- PercentageFeatureSet(seurat_obj, pattern = hb_pattern)
+  
+  if (length(ribo_patterns) > 0) {
+    seurat_obj[["percent.ribo"]] <- PercentageFeatureSet(seurat_obj, pattern = ribo_patterns)
+  }
+
+  # Exclude hemoglobin and ribosomal genes
+  genes_to_exclude <- unique(c(grep(hb_pattern, rownames(seurat_obj), value = TRUE), 
+                              grep(paste(ribo_patterns, collapse = "|"), rownames(seurat_obj), value = TRUE)))
+
+
+  cat("Number of genes before filtering: ", nrow(seurat_obj), "\n")
+  cat("Number of genes to exclude (hemoglobin or ribosomal): ", length(genes_to_exclude), "\n")
+
+  # Filter out the identified genes from the Seurat object
+  seurat_obj <- subset(seurat_obj, features = setdiff(rownames(seurat_obj), genes_to_exclude))
+  cat("Number of genes after filtering: ", nrow(seurat_obj), "\n")
+
+  # Add number of genes per UMI for each cell to metadata
+  seurat_obj[["log10GenesPerUMI"]] <- log10(seurat_obj$nFeature_RNA) / log10(seurat_obj$nCount_RNA)
+      
+  # Add percent expression of housekeeping genes to metadata
+  if (exists("housekeeper_genes")) {
+  # Get the RNA layer
+  rna_data <- GetAssayData(seurat_obj, assay = "RNA", layer = "counts")
+  # Check if the housekeeping genes are present in the dataset
+  common_genes <- intersect(rownames(rna_data), housekeeper_genes)
+
+  if (length(common_genes) > 0) {
+    # Compute housekeeping gene expression only if common genes are found
+    seurat_obj[["percent.housekeeping"]] <- rowMeans(rna_data[common_genes, ]) / seurat_obj$nCount_RNA * 100
+  } else {
+    warning("No housekeeping genes found in the dataset.")
+  }
+  } else {
+  warning("Housekeeping genes not defined.")
+  }
+
+  cat("Available metadata columns:\n")
+  print(colnames(seurat_obj@meta.data))
+
+  # Plot UMI Counts vs Percent Mito
+  qc_output_file <- file.path(opt$output, paste0(sample_ids[i], "_QC_plots.pdf"))
+  pdf(qc_output_file)
+  plot(seurat_obj$nCount_RNA, seurat_obj$percent.mt, main = "UMI Counts x Percent Mito", xlab = "UMI_count", ylab = "percent.mito")
+  dev.off()  
+
+  vln_output_file <- file.path(opt$output, paste0(sample_ids[i], "_VlnPlots.pdf"))
+  pdf(vln_output_file, width = 10, height = 8)
+  print(VlnPlot(seurat_obj, features = c("nFeature_RNA", "nCount_RNA", "percent.mt", "percent.ribo", "percent.hb", "percent.housekeeping"), 
+                      ncol = 6, pt.size = 0) + theme(legend.position = 'none'))
+  dev.off()
+
+  cat("Summary of the data before filtering:\n")
+  cat("Number of cells: ", ncol(seurat_obj), "\n")
+  cat("Number of features: ", nrow(seurat_obj), "\n")
+
+  # Define the filtering criteria
+  filter_criteria <- seurat_obj@meta.data$nFeature_RNA > opt$min_genes & 
+                      seurat_obj@meta.data$nFeature_RNA < opt$max_genes
+
+  # Apply additional filters if corresponding columns are present
+  if ("percent.mt" %in% colnames(seurat_obj@meta.data)) {
+    filter_criteria <- filter_criteria & seurat_obj@meta.data$percent.mt < opt$max_mito
+  } else {
+    cat("Warning: 'percent.mt' column not found. Skipping mitochondrial percentage filter.\n")
+  }
+
+  if ("percent.housekeeping" %in% colnames(seurat_obj@meta.data)) {
+    filter_criteria <- filter_criteria & seurat_obj@meta.data$percent.housekeeping > opt$min_housekeeping_expr
+  } else {
+    cat("Warning: 'percent.housekeeping' column not found. Skipping housekeeping percentage filter.\n")
+  }
+
+  cat("First few values of nFeature_RNA:\n")
+  print(head(seurat_obj@meta.data$nFeature_RNA))
+
+  if ("percent.mt" %in% colnames(seurat_obj@meta.data)) {
+    cat("First few values of percent.mt:\n")
+    print(head(seurat_obj@meta.data$percent.mt))
+  }
+
+  if ("percent.housekeeping" %in% colnames(seurat_obj@meta.data)) {
+    cat("First few values of percent.housekeeping:\n")
+    print(head(seurat_obj@meta.data$percent.housekeeping))
+  }
+
+  cat("First few filter criteria values:\n")
+  print(head(filter_criteria))
+  cat("Filter criteria summary:\n")
+  print(summary(filter_criteria))
+  # Check for non-NA values in the filter criteria
+  cat("Number of cells passing filter criteria before subsetting: ", sum(filter_criteria), "\n")
+
+  # Print the range of values for each filtering criterion if present
+  cat("Range of nFeature_RNA: ", range(seurat_obj@meta.data$nFeature_RNA), "\n")
+  cat("Range of percent.mt: ", if ("percent.mt" %in% colnames(seurat_obj@meta.data)) {
+    range(seurat_obj@meta.data$percent.mt)
+  } else {
+    "percent.mt is not present in metadata."
+  }, "\n")
+  cat("Range of percent.housekeeping: ", if ("percent.housekeeping" %in% colnames(seurat_obj@meta.data)) {
+    range(seurat_obj@meta.data$percent.housekeeping)
+  } else {
+    "percent.housekeeping is not present in metadata."
+  }, "\n")
+
+  # Subset manually using which
+  if (any(filter_criteria)) {
+    cells_to_keep <- which(filter_criteria)
+    seurat_obj_filtered <- seurat_obj[, cells_to_keep]
+    print(dim(seurat_obj_filtered))
+    cat("Number of cells after filtering: ", ncol(seurat_obj_filtered), "\n")
+  } else {
+    cat("No cells meet the filtering criteria. Consider adjusting the thresholds.\n")
+    seurat_obj_filtered <- seurat_obj
+  }
+
+  # Save UMI Counts vs Percent Mito for filtered data
+  filtered_output_file <- file.path(opt$output, paste0(sample_ids[i], "_filtered_QC_plots.pdf"))
+  pdf(filtered_output_file)
+  plot(seurat_obj_filtered$nCount_RNA, seurat_obj_filtered$percent.mt, main = "UMI Counts x Percent Mito (Filtered)", xlab = "UMI_count", ylab = "percent mito")
+  dev.off() 
+
+  # Generate and save the violin plot for the unfiltered object
+  vln_filtered_output_file <- file.path(opt$output, paste0(sample_ids[i], "_filtered_VlnPlots.pdf"))
+  pdf(vln_filtered_output_file, width = 10, height = 8)
+  print(VlnPlot(seurat_obj, features = c("nFeature_RNA", "nCount_RNA", "percent.mt", "percent.ribo", "percent.hb", "percent.housekeeping"), 
+                ncol = 6, pt.size = 0) + theme(legend.position = 'none'))
+  dev.off()
+  
+  # Single R annotation added to metadata
+  counts_data <- GetAssayData(seurat_obj_filtered, layer = 'counts') 
+  singleR_results <- SingleR(test = counts_data, ref = combined, labels = combined$label.main)
+  seurat_obj_filtered$singleR.labels <- singleR_results$labels[match(rownames(seurat_obj_filtered@meta.data), rownames(singleR_results))]
+
+  # Save filtered object with SingleR metadata
+  saveRDS(seurat_obj_filtered, file = file.path(opt$output, paste0(sample_ids[i], "_SingleR_filtered.rds")))
+
+  # Normalization
+  message('Normalization')
+  seurat_obj_filtered <- NormalizeData(object = seurat_obj_filtered)
+  message('Normalization done')
+
+  # Cell Cycle Scoring and Regression
+  if (opt$cell_cycle_regression) {
+      s.genes <- cc.genes$s.genes
+      g2m.genes <- cc.genes$g2m.genes
+      
+      message('Cell Cycle Scoring')
+      seurat_obj_filtered <- FindVariableFeatures(object = seurat_obj_filtered)
+      seurat_obj_filtered <- CellCycleScoring(seurat_obj_filtered, s.features = s.genes, g2m.features = g2m.genes)
+      
+      message('Cell cycle regression')
+      seurat_obj_filtered <- ScaleData(seurat_obj_filtered, vars.to.regress = c("S.Score", "G2M.Score"), features = rownames(seurat_obj_filtered))
+      
+      # Perform PCA before saving plot
+      seurat_obj_filtered <- RunPCA(seurat_obj_filtered)
+      dimplot_cellcycle_output_file <- file.path(opt$output, paste0(sample_ids[i], "_DimPlot_CellCycle.pdf"))
+      pdf(dimplot_cellcycle_output_file)
+      print(DimPlot(seurat_obj_filtered, reduction = "pca"))
+      dev.off()
+  }
+
+  # Sex Scoring and Regression
+  if (opt$sex_scoring) {
+      message('Sex Scoring')
+      seurat_obj_filtered <- SexScoring(
+        object = seurat_obj_filtered, 
+        female.features = female.features, 
+        male.features = male.features, 
+        set.ident = TRUE
+      )
+      
+      # Calculate Sex Difference
+      seurat_obj_filtered$Sex.Difference <- seurat_obj_filtered$Female.Score - seurat_obj_filtered$Male.Score
+      message('Sex regression')
+      seurat_obj_filtered <- FindVariableFeatures(object = seurat_obj_filtered)
+      seurat_obj_filtered <- ScaleData(seurat_obj_filtered, vars.to.regress = "Sex.Difference", features = rownames(seurat_obj_filtered))
+      
+      # PCA Analysis on Sex-related Genes & save plot
+      PCA_sex <- RunPCA(seurat_obj_filtered, features = c(male.features, female.features))
+      dimplot_sex_output_file <- file.path(opt$output, paste0(sample_ids[i], "_DimPlot_Sex.pdf"))
+      pdf(dimplot_sex_output_file)
+      print(DimPlot(PCA_sex, reduction = "pca"))
+      dev.off()
+  }
+
+  # Regular Scaling (if neither cell cycle nor sex scoring is enabled)
+  if (!opt$cell_cycle_regression && !opt$sex_scoring) {
+    message('Scale data')
+    seurat_obj_filtered <- ScaleData(object = seurat_obj_filtered, features = rownames(seurat_obj_filtered))
+  } else {
+    # Perform scaling without specifying features or handle specific cases
+    # (Assume custom logic here, or adapt it as needed for cell cycle or sex scoring scenarios)
+    message('Scale data')
+    seurat_obj_filtered <- ScaleData(object = seurat_obj_filtered)
+  }
+  message('Scale data done')
+
+  message('Find variable features')
+  seurat_obj_filtered <- FindVariableFeatures(seurat_obj_filtered)
+  message('Find variable features done')
+
+  message('PCA')
+  seurat_obj_filtered <- RunPCA(object = seurat_obj_filtered)
+  message('PCA done')
+  # Save PCA DimPlot & object
+  dimplot_pca_output_file <- file.path(opt$output, paste0(sample_ids[i], "_DimPlot_PCA.pdf"))
+  pdf(dimplot_pca_output_file)
+  print(DimPlot(seurat_obj_filtered, reduction = "pca"))
+  dev.off()
+  message('Save final Seurat object in rds format')
+  saveRDS(seurat_obj_filtered, file = file.path(opt$output, paste0(sample_ids[i], "_final_filtered.rds")))
+  
+}
+cat("Processing completed for all files.\n")

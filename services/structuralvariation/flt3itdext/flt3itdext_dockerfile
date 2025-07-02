@@ -1,0 +1,31 @@
+##############################################################
+# Module :             Structural Variation
+# Submodule :          ITD Ext
+# Services :           cli
+# Version :            1.0
+# Description:         Dockerfile to build container image
+##############################################################
+
+# PROD version 1 : 10/09/2023
+# Authoring : Thomas LAVAUX
+
+# Ubuntu based (minimal focal)
+FROM condaforge/mambaforge
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update --fix-missing && \
+	apt-get install -y perl rsync unzip vim
+
+# Mamba install 
+RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
+    python=3.12 \
+	samtools~=1.21 bcftools~=1.21 bedtools~=2.31 \
+	snakemake~=8.30 graphviz~=12.2 pandas~=2.2 \
+	sumaclust~=1.0.31 fgbio~=2.4 bwa~=0.7.17 picard~=3.3 bbmap~=39.13  vcf-validator~=0.10 \
+	&& mamba clean -afy
+
+# Copy applications files (/app)
+COPY ./app /app
+COPY ./STARK.docker-compose.yml /app/config/module/
+
+WORKDIR "/app"
+ENTRYPOINT [ "/bin/bash", "-l", "-c" ]

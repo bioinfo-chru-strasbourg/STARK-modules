@@ -1,0 +1,91 @@
+##########################################################################
+# Config Yaml Version:     0.2
+# Description:             Yaml file to run Snakefile FLT3_ITD_EXT module
+##########################################################################
+# DEV version 0.2 : 05/03/2023
+# Authoring : Thomas LAVAUX
+################## Directories and variables ##################
+# Name of the submodule = {serviceName} from listener.py/launcher.py
+serviceName: "FLT3ITDEXT"
+# Name of the module
+moduleName: "structuralvariation"
+# Databases folder
+databases: "/databases"
+# Service folder
+services: "/services"
+# Config folder
+config: "/config"
+# Specify a DATE_TIME value (for rerun)
+DATE_TIME: ""
+# Output directory
+OUTPUT_DIR: ""
+# Other path to copy results, leave empty to not copy, add a path to copy to this folder
+# Replace by "depository" will copy the results in a second folder based on OUTPUT_DIR, replacing "repository" with "depository" if repository exist
+DEPOT_DIR: "depository"
+# Default path to the input datas == {run} from listener.py/launcher.py
+run: ""
+
+# Bed file
+BED_FILE: ""
+# Genes file
+GENES_FILE: ""
+# Transcripts file
+TRANSCRIPTS_FILE: ""
+# List genes
+LIST_GENES: ""
+
+# Files to index into the dictionary depending on extension (endwith)
+EXT_INDEX_LIST : [".cram", ".cram.crai", ".transcripts", ".manifest.genes", ".design.bed", ".bam", ".bam.bai"]
+# List of files extension to process
+PROCESS_FILE: ['.bam', 'bam.bai']
+# How to copy input files (bam, bai, cram) : ln or leave empty (it will rsync files or index for bai from bam)
+PROCESS_CMD: ''
+# Append an aligner name if no empty (from sample.bam to sample.alignername.bam)
+ALIGNER_NAME:
+# Only analyse sample.validation.aligner.bam/cram files
+VALIDATION_ONLY: False
+
+# Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
+EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
+# Sample filter
+FILTER_SAMPLE: []
+
+# Extension files to copy after pipeline success
+# using brace extension, remove space between extensions
+INCLUDE_RSYNC: "{'*.vcf.gz.tbi','*.vcf.gz','*/'}"
+# Extensions files to copy after pipeline failure
+INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
+
+# Search parameters
+RECURSIVE_SEARCH: False
+SEARCH_ARGUMENT: ["/*/STARK/*"]
+
+# Path of the template (template is template.html)
+TEMPLATE_DIR: "/app/template"
+# List of extensions to include in the report.html
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi']
+
+# Folder for scripts & dummy files
+DUMMY_FILES: "/app/scripts/dummy"
+SCRIPT_PATH: "/app/scripts"
+
+# LOG level 30=logging.WARNING or 20=logging.INFO
+LOG_LEVEL: 30
+# Command use to download db
+COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
+
+################## Tools parameters ##################
+# DB path
+REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
+# Option to filter vcf with bcftools
+# ex "-i 'FORMAT/DP>=30 && FORMAT/RAF>=0.01'"
+BCFTOOLS_FILTER: "-i 'INFO/RAF>=0.01'"
+################## flt3_itd_ext ##################
+# REF_ITD_PATH: "/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
+REF_ITD_PATH: "/app/config/reference/FLT3/flt3itdext/FLT3_dna_e14e15"
+# Assembly (hg19/hg38)
+ASSEMBLY: "hg19"
+# Type of sequencing technology (HC = capture)
+NGS_TYPE: "HC"
+# Min of reads to considere an ITD
+MINREADS: "5"

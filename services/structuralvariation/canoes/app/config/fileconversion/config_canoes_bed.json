@@ -1,0 +1,130 @@
+{
+	"GENERAL": {
+		"origin": "canoes_bed",
+		"input_format": "tsv",
+		"output_format": "vcf",
+		"skip_rows": 0,
+		"comment": "",
+		"unique_variant_id": ["Chrom", "Start", "End", "CNV"]
+	},
+	"GENOME": {
+		"assembly": "hg19",
+		"path": "/databases/genomes/current/hg19.fa",
+		"vcf_header": ["##contig=<ID=chr1,length=249250621,assembly=hg19>",
+		"##contig=<ID=chr2,length=243199373,assembly=hg19>",
+		"##contig=<ID=chr3,length=198022430,assembly=hg19>",
+		"##contig=<ID=chr4,length=191154276,assembly=hg19>",
+		"##contig=<ID=chr5,length=180915260,assembly=hg19>",
+		"##contig=<ID=chr6,length=171115067,assembly=hg19>",
+		"##contig=<ID=chr7,length=159138663,assembly=hg19>",
+		"##contig=<ID=chr8,length=146364022,assembly=hg19>",
+		"##contig=<ID=chr9,length=141213431,assembly=hg19>",
+		"##contig=<ID=chr10,length=135534747,assembly=hg19>",
+		"##contig=<ID=chr11,length=135006516,assembly=hg19>",
+		"##contig=<ID=chr12,length=133851895,assembly=hg19>",
+		"##contig=<ID=chr13,length=115169878,assembly=hg19>",
+		"##contig=<ID=chr14,length=107349540,assembly=hg19>",
+		"##contig=<ID=chr15,length=102531392,assembly=hg19>",
+		"##contig=<ID=chr16,length=90354753,assembly=hg19>",
+		"##contig=<ID=chr17,length=81195210,assembly=hg19>",
+		"##contig=<ID=chr18,length=78077248,assembly=hg19>",
+		"##contig=<ID=chr19,length=59128983,assembly=hg19>",
+		"##contig=<ID=chr20,length=63025520,assembly=hg19>",
+		"##contig=<ID=chr21,length=48129895,assembly=hg19>",
+		"##contig=<ID=chr22,length=51304566,assembly=hg19>",
+		"##contig=<ID=chrM,length=16571,assembly=hg19>",
+		"##contig=<ID=chrX,length=155270560,assembly=hg19>",
+		"##contig=<ID=chrY,length=59373566,assembly=hg19>",
+		"##reference=file:///databases/genomes/current/hg19.fa"]
+	},
+	"VCF_COLUMNS": {
+		"#CHROM": "Chrom",
+		"POS": "Start",
+		"ID": "",
+		"REF": ["HELPER_FUNCTION", "get_ref_from_canoes_bed", "Chrom", "Start"],
+		"ALT": ["HELPER_FUNCTION", "get_alt_from_canoes_bed", "CNV"],
+		"QUAL": "",
+		"FILTER": "",
+		"INFO": {
+			"SVTYPE": "CNV",
+			"SVLEN": ["HELPER_FUNCTION", "get_svlen_from_decon", "Start", "End"],
+			"END": "End",
+			"INTERVAL": "INTERVAL",
+			"KB": "KB",
+			"MID_BP": "MID_BP",
+			"TARGETS": "TARGETS",
+			"NUM_TARG": "NUM_TARG",
+			"MLCN": "MLCN",
+			"Q_SOME" : "Q_SOME"
+		},
+		"FORMAT": {
+			"GT": ""
+		},
+		"SAMPLE": "SAMPLE"
+	},
+	"COLUMNS_DESCRIPTION": {
+		"ALT": {
+			"DUP": "Duplication",
+			"DEL": "Deletion"
+		},
+		"INFO": {
+			"SVTYPE": {
+				"Type": "String",
+				"Number": "1",
+				"Description": "Type of structural variant"
+			},
+			"SVLEN": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "Difference in length between REF and ALT positions"
+			},
+			"END": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "Second breakpoint of the SV, for SVs given in a single record"
+			},
+			"INTERVAL": {
+				"Type": "String",
+				"Number": ".",
+				"Description": "CNV coordinates in the form chr:start-stop"
+			},
+			"KB": {
+				"Type": "Float",
+				"Number": "1",
+				"Description": "Length of CNV in kilobases"
+			},
+			"MID_BP": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "Middle base pair of CNV"
+			},
+			"TARGETS": {
+				"Type": "String",
+				"Number": "1",
+				"Description": "Target numbers of CNV in the form start..stop"
+			},
+			"NUM_TARG": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "how many targets are in the CNV"
+			},
+			"MLCN": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "Maximum likelihood copy number"
+			},
+			"Q_SOME": {
+				"Type": "Float",
+				"Number": "1",
+				"Description": "Phred-scaled quality score for the CNV"
+			}
+		},
+		"FORMAT": {
+			"GT": {
+				"Type": "String",
+				"Number": "1",
+				"Description": "Genotype"
+			}
+		}
+	}
+}

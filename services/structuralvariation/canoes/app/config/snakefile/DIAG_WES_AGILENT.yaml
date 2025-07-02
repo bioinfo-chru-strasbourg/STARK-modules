@@ -1,0 +1,9 @@
+# Bed file specific for EXOME with CANOES
+BED_FILE: "/config/structuralvariation/canoes/cli/WES_AGILENT.v1.bed"
+
+# path to the tsv file containing 2 columns : bam for the list of reference bams for CNV calling (full path of bams), and gender (F/M)
+# the bam files have to be indexed
+# number of reference patients should be 10 or more, and if the gender is considere, 10 per gender
+# the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
+# REF_BAM_LIST: "--refbams /app/res/list.tsv"
+REF_BAM_LIST: "/databases/CNV/bamrefset/bamreflist.tsv"

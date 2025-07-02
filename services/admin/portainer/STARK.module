@@ -7,7 +7,7 @@
           "name": "Portainer",
           "type": "IHM",
           "description": "Portainer makes managing containerized software environments quick and easy",
-          "release": "1.24.1",
+          "release": "2.27.1",
           "available": true,
           "link": {
             "available": true,

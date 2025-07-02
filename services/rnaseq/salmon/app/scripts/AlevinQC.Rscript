@@ -1,0 +1,28 @@
+suppressPackageStartupMessages({
+    (library(alevinQC))
+    (library(eds))
+    (library(optparse))
+})
+
+option_list<-list(
+	make_option('--input',default='data', help='Folder were the data are stored',dest='baseDir'),
+	make_option('--output',default='results', help='Folder were to save the results',dest='outputDir'),
+	make_option('--sample',default='default', help='Sample name',dest='sample')
+)
+opt<-parse_args(OptionParser(option_list=option_list))
+
+FolderOutput=opt$outputDir
+DataInput=opt$baseDir
+sampleId=opt$sample
+
+#checkAlevinInputFiles(baseDir = DataInput)
+
+alevinQCReport(baseDir = DataInput, 
+            sampleId = sampleId, 
+            outputFile = paste(sampleId,"_alevinReport.html", sep = ""), 
+            outputFormat = "html_document",
+            outputDir = FolderOutput, forceOverwrite = TRUE)
+
+
+### Output the versions of all tools used in the analysis
+sessionInfo()

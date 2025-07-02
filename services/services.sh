@@ -86,8 +86,6 @@ function usage {
 }
 
 
-
-
 ####################################################################################################################################
 # Getting parameters from the input
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -101,8 +99,6 @@ if [ $? -ne 0 ]; then
 	usage;
 	exit;
 fi;
-
-
 
 
 PARAM=$@
@@ -195,21 +191,25 @@ done
 
 ## PARAM
 ##########
-
-# Copy Command
-#COMMAND_COPY="rsync -auczqAXhi --no-links --no-perms --no-owner --no-group"
 COMMAND_COPY="rsync -az --update"
-
-
-# TMP
 TMP_FOLDER=/tmp/STARK/services.$RANDOM
 mkdir -p $TMP_FOLDER
 
-
 # DOCKER
-DOCKER_VERSION=$(docker --version)
-(($VERBOSE)) && echo "#[INFO] STARK Module Docker version '$DOCKER_VERSION'"
+#DOCKER_VERSION=$(docker --version)
+#(($VERBOSE)) && echo "#[INFO] STARK Module Docker version '$DOCKER_VERSION'"
 
+# Get Docker version
+docker_version=$(docker --version | awk '{print $3}' | cut -d ',' -f1)
+echo "Docker version $docker_version"
+# Check if Docker version is greater than 20
+if [[ "$DOCKER_VERSION" > "20" ]]; then
+    DOCKER_COMMAND='docker-compose'
+else
+    DOCKER_COMMAND='docker compose'
+fi
+
+echo "Using $DOCKER_COMMAND for Docker commands."
 
 # ENV
 if [ -z "$ENV" ]; then
@@ -314,14 +314,9 @@ fi;
 
 
 # Main STARK prefix
-
 MAIN_MODULE_PREFIX="STARK"
 
-
-
 ### FUNCTIONS
-
-
 # list_include_item "10 11 12" "2"
 function list_include_item {
   local list="$1"
@@ -334,8 +329,6 @@ function list_include_item {
   fi
   return $result
 }
-
-
 
 ### Find services
 MODULE_checked=""
@@ -366,12 +359,10 @@ for service_module in \
 	
 		# Services list
 		list_services=""
-		# done;
 		for services_full_path in $(ls $service_module/*/$MAIN_MODULE_PREFIX*.docker-compose.yml ); do
 			list_services=$list_services" "$(echo $services_full_path | sed 's#'$service_module'/##' | sed 's/.docker-compose.yml$//' )
 		done;
 
-		#for service_prefix in "STARK" $list_services; do
 		for service_prefix in $list_services; do
 
 
@@ -472,17 +463,17 @@ for service_module in \
 
 						# DEBUG
 						(($DEBUG)) && cat $TMP_FOLDER/.env $TMP_FOLDER/.env.err
-						(($DEBUG)) && echo "    docker compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND"
-						(($DEBUG)) && docker compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config
+						(($DEBUG)) && echo "   $DOCKER_COMMAND --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND"
+						(($DEBUG)) && $DOCKER_COMMAND --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config
 
 
 						# patch for --env-file unavailable
-						if (( $(docker compose --help | grep "\-\-env\-file" -c) )); then
+						if (( $($DOCKER_COMMAND --help | grep "\-\-env\-file" -c) )); then
 							
 							# Command
-							if docker compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
+							if $DOCKER_COMMAND --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
 								> $TMP_FOLDER/docker-compose.err
-								if docker compose --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.err; then
+								if $DOCKER_COMMAND --file $service_module_yml --env-file $TMP_FOLDER/.env -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.err; then
 									(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.err | grep "Found orphan containers" -v
 								else
 									echo "#[ERROR] docker-compose error";
@@ -500,9 +491,9 @@ for service_module in \
 							(($VERBOSE)) &&  echo "#[WARNING] STARK Module Docker version does not provide '--env-file' parameter. STARK module is patched to work, but please update your docker version."
 
 							# Command
-							if env $(cat $TMP_FOLDER/.env | grep "#" -v) docker compose --file $service_module_yml -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
+							if env $(cat $TMP_FOLDER/.env | grep "#" -v) $DOCKER_COMMAND --file $service_module_yml -p $module_name config 1>$TMP_FOLDER/docker-compose.log 2>$TMP_FOLDER/docker-compose.err; then
 								> $TMP_FOLDER/docker-compose.err
-								if env $(cat $TMP_FOLDER/.env | grep "#" -v) docker compose --file $service_module_yml -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.out ; then
+								if env $(cat $TMP_FOLDER/.env | grep "#" -v) $DOCKER_COMMAND --file $service_module_yml -p $module_name $COMMAND $COMMAND_ARGS $SERVICES 2>>$TMP_FOLDER/docker-compose.out ; then
 									(($VERBOSE)) && cat $TMP_FOLDER/docker-compose.err | grep "Found orphan containers" -v
 								else
 									echo "#[ERROR] docker-compose error";

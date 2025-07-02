@@ -1,0 +1,106 @@
+##########################################################################
+# Config Yaml Version:     1.0
+# Description:             Yaml file to run Snakefile Salmon count module
+##########################################################################
+# DEV version 1 : 05/03/2023
+# Authoring : Thomas LAVAUX
+
+################## Directories and variables ##################
+# Name of the submodule = {serviceName} from listener.py/launcher.py
+serviceName: "SALMON"
+# Name of the module
+moduleName: "rnaseq"
+# Databases folder
+databases: "/databases"
+# Service folder
+services: "/services"
+# Config folder
+config: "/config"
+ 
+# Specify a DATE_TIME value (for rerun)
+DATE_TIME: ""
+# Output directory
+OUTPUT_DIR: ""
+# Other path to copy results, leave empty to not copy, add a path to copy to this folder
+# Replace by "depository" will copy the results in a second folder based on OUTPUT_DIR, replacing "repository" with "depository" if repository exist
+DEPOT_DIR: ""
+# Default path to the input datas == {run} from listener.py/launcher.py
+run: ""
+
+# Files to index into the dictionary depending on extension (endwith)
+EXT_INDEX_LIST : [".R1.fastq.gz",".R2.fastq.gz"]
+# List of files extension to process
+PROCESS_FILE: [".R1.fastq.gz",".R2.fastq.gz"]
+# How to copy input files (bam, bai, cram) : ln or leave empty (it will rsync files or index for bai from bam)
+PROCESS_CMD: ''
+
+# Samples list exclusion (not to be analysed) ; exclude if startwith, case insensitive
+EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
+# Sample filter : only analyse those samples
+FILTER_SAMPLE: []
+
+# Extension files to copy after pipeline success
+# using brace extension, remove space between extensions
+INCLUDE_RSYNC: "{'*.sf','/*'}"
+# Extensions files to copy after pipeline failure
+INCLUDE_LOG_RSYNC: "{'*Failed.txt','*.log','*.err'}"
+
+# Search parameters
+RECURSIVE_SEARCH: False
+SEARCH_ARGUMENT: ["/*"]
+
+# Only analyse sample.validation.aligner.bam/cram files
+VALIDATION_ONLY: False
+
+# Path of the template (template is serviceName_template.html)
+TEMPLATE_DIR: "/app/template"
+# For result html report, list of extensions to report
+RESULT_EXT_LIST: ['.sf']
+
+# LOG level 30=logging.WARNING or 20=logging.INFO
+LOG_LEVEL: 30
+
+# Command used to download db
+COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
+
+################## Gencode version for DB setup ##################
+# GRch38 assembly and gencode.vxx.transcripts.fa.gz can be found on https://www.gencodegenes.org/human/
+# release can be change (actually v41 is used, relase is 07.2022)
+# for GRch38 primary assembly v42 : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
+# for gencode transcripts : https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
+# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/GRCh38.primary_assembly.genome.fa.gz
+# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_41/gencode.v41.transcripts.fa.gz
+# https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M33/_README.TXT
+GENCODE_VERSION: "41"
+ASSEMBLY: "GRCh38"
+SPECIES: "human"
+
+GENCODE_GENOME_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{SPECIES}/release_{GENCODE_VERSION}/{ASSEMBLY}.primary_assembly.genome.fa.gz"
+GENCODE_TRANSCRIPTS_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{SPECIES}/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.transcripts.fa.gz"
+GENCODE_README_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{SPECIES}/release_{GENCODE_VERSION}/_README.TXT"
+
+#GENCODE_GTF_LINK: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_{SPECIES}/release_{GENCODE_VERSION}/gencode.v{GENCODE_VERSION}.annotation.gtf.gz"
+
+# Bcl convert
+BCL_DIRECTORY: ""
+SAMPLE_SHEET: ""
+
+################## Tools parameters ##################
+# Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
+REFGENOMEFA_PATH: "/databases/genomes/current/hg19.fa"
+################## Salmon ##################
+# FASTP params globals : -D to activate deduplication, with UMI the sequence of the UMIs shoud be left in the reads to identify duplicate with them
+FASTP_GLOBALS_PARAMS: "--disable_quality_filtering --disable_trim_poly_g --disable_length_filtering --disable_adapter_trimming"
+# Others options
+FASTP_COMPRESSION: 1
+FASTP_TRIM: "" # ex FASTP_TRIM: "--trim_front2=5 --trim_tail2=5"
+FASTP_UMI: "" #  -U --umi_loc=per_read --umi_len=5 for XTHS2
+
+# For Salmon quantification fastq mode, path to the index file
+REFSALMONINDEX_PATH: "/databases/salmon/GRCh38.v41/salmon_index/"
+
+# Sequence-Specific Bias Correction (--seqBias)
+# Helps correct for biases that might cause overrepresentation of certain reads.
+# GC Content Normalization (--gcBias)
+# Adjusts for biases related to GC content, which can be amplified differently in PCR.
+MISC_SALMON_OPTIONS: ""

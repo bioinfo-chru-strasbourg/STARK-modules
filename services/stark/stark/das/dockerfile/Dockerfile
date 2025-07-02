@@ -1,5 +1,4 @@
-# Dockerfile
-FROM centos:7
+FROM almalinux:8
 
 EXPOSE 5000
 WORKDIR /app

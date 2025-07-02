@@ -1,0 +1,38 @@
+##############################################################
+# Module :             Structural variation
+# Submodule :          FILT3R
+# Services :           cli
+# Version :            1.0
+# Description:         Dockerfile to build container image FILT3R
+##############################################################
+
+# Ubuntu based
+FROM condaforge/mambaforge
+
+# Need to set timezone for cmake
+ENV TZ=Europe/Paris
+RUN ln -snf "/usr/share/zoneinfo/$TZ" /etc/localtime
+RUN echo "$TZ" > /etc/timezone
+
+# Libs
+RUN apt-get update --fix-missing && \
+	apt-get install -y tzdata git unzip vim time cmake g++ zlib1g-dev rsync
+
+# Mamba install 
+RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
+    python=3.12 \
+	samtools~=1.21 bcftools~=1.21 bedtools~=2.31  vcf-validator~=0.10 \
+	snakemake~=8.30 graphviz~=12.2 pandas~=2.2 && mamba clean -afy
+
+# we use the precompiled version in /app/bin
+# Install FILT3R from source https://gitlab.univ-lille.fr/filt3r/filt3r/-/archive/fix-vcf-format/filt3r-fix-vcf-format.zip
+# RUN git clone https://gitlab.univ-lille.fr/filt3r/filt3r.git 
+# RUN cd filt3r && make gatb && make
+
+# Copy applications files (/app)
+COPY ./app /app
+COPY ./STARK.docker-compose.yml /app/config/module/
+RUN chmod +x /app/bin/filt3r
+
+WORKDIR "/app"
+ENTRYPOINT [ "/bin/bash", "-l", "-c" ]

@@ -1,0 +1,33 @@
+{
+  "submodules": {
+    "filt3r": {
+      "description" : "FILT3R analysis for ITDs",
+      "services": {
+        "cli": {
+          "code": "cli",
+          "name": "CLI service",
+          "type": "CLI",
+          "description": "cli service, create image and configure service.",
+          "release": "1.0",
+          "available": false
+        },
+        "listener": {
+          "code": "listener",
+          "name": "LISTENER service",
+          "type": "listener",
+          "description": "listener service, create image and configure service.",
+          "release": "2.0",
+          "available": false
+		    },
+		    "setup": {
+          "code": "setup",
+          "name": "SETUP service",
+          "type": "setup",
+          "description": "setup service, create image and configure service.",
+          "release": "1.0",
+          "available": false
+        }
+      }
+    }
+  }
+}

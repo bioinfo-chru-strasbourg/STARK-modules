@@ -1,0 +1,69 @@
+{
+	"services": {
+		"DECON": {
+			"infos": {
+				"name": "DECON",
+				"description": "DECON analysis",
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (DECONRunning.txt AND DECONComplete.txt AND DECONFailed.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
+			},
+			"triggers": {
+				"AND_1":{
+					"file":[
+						"STARKCopyComplete.txt",
+						"!DECONRunning.txt",
+						"!DECONComplete.txt",
+						"!DECONFailed.txt"
+					],
+					"OR_1":{
+						"tags":[
+							"DECON"
+						],
+						"AND_2":{
+							"group":[
+								"HUSDIAGGEN",
+								"DIAG",
+								"HUSTUMSOL"
+							],
+							"project":[
+								"BBS_RP",
+								"DI",
+								"DIPAI",
+								"DPI",
+								"INFERTILITE",
+								"MYOPATHIE",
+								"PC_NEURO",
+								"PMDA",
+								"XTHS",
+								"WES_AGILENT",
+								"GOMV1_GERMLINE",
+								"GOMV1_SOMATIC"
+							]
+						}
+					},
+				"OR_2":{
+					"tags":[
+						"!POOL"
+					],
+					"AND_3":{
+						"tags":[
+							"POOL"
+						],
+						"OR_3":{
+							"OR_4":{
+								"file":[
+									"POOLRunning.txt"
+								]
+							},
+							"OR_5":{
+								"file":[
+									"POOLComplete.txt"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
