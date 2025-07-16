@@ -9,10 +9,10 @@
 # Authoring : Thomas LAVAUX
 
 # PROD version 2 : 16/06/2022 changelog
-	# yaml files can be defined by groupe_name + project_name or groupe_name only
+# yaml files can be defined by groupe_name + project_name or groupe_name only
 
 # PROD version 3.0 : 28/11/2023 changelog
-	# docker compose to run containers
+# docker compose to run containers
 
 ################## Context ##################
 # type python launcher.py -h for help
@@ -43,80 +43,151 @@ from os.path import join as osj
 
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 
+
 # Function to compare versions
 def version_gt(version1, version2):
-	return version1 > version2
+    return version1 > version2
+
 
 # Function to get Docker version
 def get_docker_version():
-	docker_version_output = subprocess.check_output(["docker", "--version"]).decode().strip()
-	docker_version = docker_version_output.split()[2].split(',')[0]
-	return docker_version
+    docker_version_output = (
+        subprocess.check_output(["docker", "--version"]).decode().strip()
+    )
+    docker_version = docker_version_output.split()[2].split(",")[0]
+    return docker_version
+
 
 def readconfig(configFile, serviceName, configkey):
-	""" Function to extract a specific key configuration variable from a json configuration file"""
-	with open(configFile,'r') as f:
-		json_config = json.load(f)
-	outputconfig = json_config['services'][serviceName][configkey]
-	return outputconfig
+    """Function to extract a specific key configuration variable from a json configuration file"""
+    with open(configFile, "r") as f:
+        json_config = json.load(f)
+    outputconfig = json_config["services"][serviceName][configkey]
+    return outputconfig
 
-def launch(run, serviceName, containersFile=None, montage=None, image=None, launchCommand=None, configFile=None, microserviceRepo=None):
-	""" Function to start a docker container with a specific command """
-	if configFile:
-		launchCommand = readconfig(configFile, serviceName, 'launch')
-		image = readconfig(configFile, serviceName, 'image')
-	if run:
-		containerName = f"{serviceName}_{date_time}_{os.path.basename(run)}"
-		group_name = run.split('/')[4]
-		project_name = run.split('/')[5]
-	
-	if group_name and project_name:
-		yaml_path = f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/cli"
-		yaml_config_file = f"{yaml_path}/{group_name}_{project_name}.yaml"
-		if not os.path.exists(yaml_config_file):
-			yaml_config_file = f"{yaml_path}/{group_name}.yaml"
-	else:
-		yaml_config_file = None
 
-	COMPOSE_PATH = f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/listener/"
-	
-	docker_version = get_docker_version()
-	if docker_version:
-		# Check if Docker version is greater than 20
-		if version_gt(docker_version, "20"):
-			DOCKER_COMMAND = 'docker-compose'
-		else:
-			DOCKER_COMMAND = 'docker compose'
-		
-		print(f"Using {DOCKER_COMMAND} for Docker commands.")
-	else:
-		print("Docker is not installed.")
-	
-	if yaml_config_file and os.path.exists(yaml_config_file):
-		cmd = f"{DOCKER_COMMAND} -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} '{launchCommand} --config run={run} --configfile {yaml_config_file}'"
-		print(cmd)
-	else:
-		cmd = f"{DOCKER_COMMAND} -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} '{launchCommand} --config run={run}'"
-		print(cmd)
-	subprocess.call(cmd, shell = True)
-	
+def launch(
+    run,
+    serviceName,
+    containersFile=None,
+    montage=None,
+    image=None,
+    launchCommand=None,
+    configFile=None,
+    microserviceRepo=None,
+):
+    """Function to start a docker container with a specific command"""
+    if configFile:
+        launchCommand = readconfig(configFile, serviceName, "launch")
+        image = readconfig(configFile, serviceName, "image")
+    if run:
+        containerName = f"{serviceName}_{date_time}_{os.path.basename(run)}"
+        group_name = run.split("/")[3]
+        project_name = run.split("/")[4]
+
+    if group_name and project_name:
+        yaml_path = (
+            f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/cli"
+        )
+        yaml_config_file = f"{yaml_path}/{group_name}_{project_name}.yaml"
+        if not os.path.exists(yaml_config_file):
+            yaml_config_file = f"{yaml_path}/{group_name}.yaml"
+    else:
+        yaml_config_file = None
+
+    COMPOSE_PATH = (
+        f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/listener/"
+    )
+
+    docker_version = get_docker_version()
+    if docker_version:
+        # Check if Docker version is greater than 20
+        if version_gt(docker_version, "20"):
+            DOCKER_COMMAND = "docker-compose"
+        else:
+            DOCKER_COMMAND = "docker compose"
+
+        print(f"Using {DOCKER_COMMAND} for Docker commands.")
+    else:
+        print("Docker is not installed.")
+
+    if yaml_config_file and os.path.exists(yaml_config_file):
+        cmd = f"{DOCKER_COMMAND} -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} '{launchCommand} --config run={run} --configfile {yaml_config_file}'"
+        print(cmd)
+    else:
+        cmd = f"{DOCKER_COMMAND} -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} '{launchCommand} --config run={run}'"
+        print(cmd)
+    subprocess.call(cmd, shell=True)
+
+
 def myoptions():
-	'''
-	*arg parser*
-	*return options*
-	'''
-	parser = argparse.ArgumentParser()
-	parser.add_argument("-r", "--run", type = str, default = "", help = "Run to launch", dest = 'run')
-	parser.add_argument("-s", "--service", type = str, default = "", help = "Service name", dest = 'serviceName')
-	parser.add_argument("-log", "--log", type = str, default = "", help = "Path for the log file", dest = 'containersFile')
-	parser.add_argument("-v", "--volume", type = str, default = "", help = "Docker volumes to add", dest = 'montage')
-	parser.add_argument("-i", "--image", type = str, default = "", help = "Docker image to use", dest = 'image')
-	parser.add_argument("-l", "--launchcommand", type = str, default = "", help = "Command to launch inside the container", dest = 'launchCommand')
-	parser.add_argument("-c", "--config", type = str, default = "", help = "Config file to read from", dest = 'configFile')
-	parser.add_argument("-repo", "--repo", type = str, default = "", help = "Microservice repository name", dest = 'microserviceRepo')
-	return parser.parse_args()
+    """
+    *arg parser*
+    *return options*
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-r", "--run", type=str, default="", help="Run to launch", dest="run"
+    )
+    parser.add_argument(
+        "-s", "--service", type=str, default="", help="Service name", dest="serviceName"
+    )
+    parser.add_argument(
+        "-log",
+        "--log",
+        type=str,
+        default="",
+        help="Path for the log file",
+        dest="containersFile",
+    )
+    parser.add_argument(
+        "-v",
+        "--volume",
+        type=str,
+        default="",
+        help="Docker volumes to add",
+        dest="montage",
+    )
+    parser.add_argument(
+        "-i", "--image", type=str, default="", help="Docker image to use", dest="image"
+    )
+    parser.add_argument(
+        "-l",
+        "--launchcommand",
+        type=str,
+        default="",
+        help="Command to launch inside the container",
+        dest="launchCommand",
+    )
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=str,
+        default="",
+        help="Config file to read from",
+        dest="configFile",
+    )
+    parser.add_argument(
+        "-repo",
+        "--repo",
+        type=str,
+        default="",
+        help="Microservice repository name",
+        dest="microserviceRepo",
+    )
+    return parser.parse_args()
+
 
 if __name__ == "__main__":
-	doctest.testmod()
-	args = myoptions()
-	launch(args.run, args.serviceName, args.containersFile, args.montage, args.image, args.launchCommand, args.configFile, args.microserviceRepo)
+    doctest.testmod()
+    args = myoptions()
+    launch(
+        args.run,
+        args.serviceName,
+        args.containersFile,
+        args.montage,
+        args.image,
+        args.launchCommand,
+        args.configFile,
+        args.microserviceRepo,
+    )
