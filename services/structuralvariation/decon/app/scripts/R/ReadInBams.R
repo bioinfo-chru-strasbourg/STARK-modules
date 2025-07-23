@@ -76,49 +76,43 @@ sort_chromosome_df <- function(df) {
 
 
 process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
-    bams <- read_bam_files(bamfiles)
-    
-    if (!is.null(rbams) && file.exists(rbams)) {
-        refbams <- read_reference_bams(rbams)
-        bams <- append(refbams, bams)
-    }
-    
-    sample.names <- get_sample_names(bams)
-    bed.file <- read_bed_file(bed)
-    bed.file <- sort_chromosome_df(bed.file)
+  bams <- read_bam_files(bamfiles)
 
-    nfiles <- length(bams)
-    message(paste('Parse', nfiles, 'BAM files'))
-    numCores <- min(detectCores(), maxcores)
-    cl <- parallel::makeForkCluster(numCores)
-    doParallel::registerDoParallel(cl)
-    
-    unfilteredcounts <- foreach(i = 1:nfiles, .combine='cbind') %dopar% {
-        bam <- bams[i]
-        getBamCounts(bed.frame = bed.file, bam.files = bam, include.chr = FALSE, referenceFasta = fasta)
-    }
-    
-    parallel::stopCluster(cl)
-    
-    filtercount1 <- basename(bams)
-    filtercount2 <- c("chromosome", "start", "end", "exon", "GC")
-    filtercount <- append(filtercount2, filtercount1)
-    
-    counts <- dplyr::select(unfilteredcounts, all_of(filtercount))
-    names(counts) <- unlist(lapply(strsplit(names(counts), "\\."), "[[", 1))
-    colnames(counts)[colnames(counts) == "exon"] <- "gene"
-   
-    if (ncol(bed.file) == 5) {
-        counts <- dplyr::bind_cols(counts, bed.file["exon_number"])
-        counts <- counts %>%
-            dplyr::relocate(exon_number, .after = gene)
-        colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
-    }
-    
-    counts <- counts[!duplicated(counts[, c("chromosome", "start", "end", "gene")]), ]
+  if (!is.null(rbams) && file.exists(rbams)) {
+    refbams <- read_reference_bams(rbams)
+    bams <- append(refbams, bams)
+  }
 
-    save(counts, bams, bed.file, sample.names, fasta, file=output)
-    warnings()
+  sample.names <- get_sample_names(bams)
+  bed.file <- read_bed_file(bed)
+  bed.file <- sort_chromosome_df(bed.file)
+
+  message(paste('Parse', length(bams), 'BAM files'))
+
+  # Call getBamCounts on all BAMs at once (like original)
+  counts <- getBamCounts(
+    bed.frame = bed.file,
+    bam.files = bams,
+    include.chr = FALSE,
+    referenceFasta = fasta
+  )
+
+  # Remove file extensions to get sample names as column names
+  names(counts) <- unlist(lapply(strsplit(names(counts), "\\."), "[[", 1))
+
+  colnames(counts)[colnames(counts) == "exon"] <- "gene"
+
+  if (ncol(bed.file) == 5) {
+    counts <- dplyr::bind_cols(counts, bed.file["exon_number"])
+    counts <- counts %>%
+      dplyr::relocate(exon_number, .after = gene)
+    colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
+  }
+
+  counts <- counts[!duplicated(counts[, c("chromosome", "start", "end", "gene")]), ]
+
+  save(counts, bams, bed.file, sample.names, fasta, file = output)
+  warnings()
 }
 
 read_bam_files <- function(bam_file) {

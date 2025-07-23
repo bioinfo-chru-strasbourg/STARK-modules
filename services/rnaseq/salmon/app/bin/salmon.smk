@@ -242,7 +242,7 @@ else:
 	filtered_files = filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
 
 print('[INFO] Construct the dictionary for the run')
-runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, ['analysis'])
+runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, None)
 print('[INFO] Dictionary done')
 print(dict(runDict))
 # Log

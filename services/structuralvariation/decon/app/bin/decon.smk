@@ -591,7 +591,7 @@ else:
 	filtered_files = filter_files(files_list, None ,filter_out='validation', extensions=config['PROCESS_FILE'])
 
 print('[INFO] Construct the dictionary for the run')
-runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None, ['analysis'])
+runDict = populate_dictionary(sample_list, config['EXT_INDEX_LIST'], filtered_files, None,  ['analysis','list.transcripts'])
 print('[INFO] Dictionary done')
 
 # Set a filelist with all the files tag ; file format is sample.tag
@@ -915,7 +915,7 @@ rule split_tsv:
 		specific_sample = "{sample}" 
 	shell:
 		"""
-		python {params.split_script} -i {input} --sample_column 'Sample' --output {output} --specific_sample {params.specific_sample}
+		python {params.split_script} -i {input} --sample_column 'Sample' --output {output} --specific_sample {params.specific_sample} && [[ -s {output} ]] || touch {output}
 		"""
 
 rule variantconvert:
