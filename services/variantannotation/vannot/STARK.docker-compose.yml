@@ -53,7 +53,7 @@ services:
             - DOCKER_SERVICE_CLI_RELEASE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_RELEASE}
             # Host environment variables
             - HOST_TMP=${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_TMP}
-            - HOST_DATABASES=/home1/DB/HOWARD/
+            - HOST_DATABASES=/home1/HUB/DB/
             - HOST_CONFIG=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}
             - HOST_MODULE_CONFIG=${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_CONFIG}/${DOCKER_STARK_MODULE_NAME}/${DOCKER_STARK_MODULE_SUBMODULE_NAME}
             - HOST_REPOSITORY=${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}
@@ -75,10 +75,10 @@ services:
             # Volumes for vannot configuration
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}:rw
             # Volumes for databases
-            - /home1/DB/HOWARD/:/home1/DB/HOWARD/:ro
-            - /home1/DB/HOWARD/dejavu/:/home1/DB/HOWARD/dejavu/:rw
+            - /home1/HUB/DB/:/home1/HUB/DB/:ro
+            - /home1/HUB/DB/dejavu/:/home1/HUB/DB/dejavu/:rw
             # Volume for developing, to comment if not used
-            - /home1/bin/STARK-modules/dev_MR/services/variantannotation/vannot/cli/dockerfile/bin/:/tools/vannot/:rw
+            - /home1/bin/STARK-modules/mr_bigvannot/services/variantannotation/vannot/cli/dockerfile/bin/:/tools/vannot/:rw
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
         # healthcheck:

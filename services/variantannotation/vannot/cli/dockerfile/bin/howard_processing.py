@@ -109,7 +109,7 @@ def folder_initialisation(run_informations):
 
         sample_list = subprocess.run(["bcftools", "query", "-l", cleaned_vcf],universal_newlines=True,stdout=subprocess.PIPE,).stdout.strip().split("\n")
 
-        if run_informations["run_platform_application"] != None and len(sample_list) >= 1:
+        if run_informations["run_platform_application"] != None and len(sample_list) >= 1 and run_informations["onco"] == False:
             output_exomiser = osj(
                 run_informations["tmp_analysis_folder"],
                 "exomized_" + os.path.basename(cleaned_vcf),
@@ -589,7 +589,6 @@ def info_to_format_script(vcf_file, run_informations):
         os.rename(output_file, vcf_file)
         return vcf_file
 
-
 def howard_proc(run_informations, vcf_file):
     log.info(f"Launching HOWARD analysis for {vcf_file}")
     if run_informations["type"] == "run":
@@ -645,9 +644,14 @@ def howard_proc(run_informations, vcf_file):
         log.error("param.default.json not found, please check your config directory")
         raise ValueError(configfile)
 
-    howard_config = osj(
-        os.environ["HOST_MODULE_CONFIG"], "howard", "howard_config.json"
-    )
+    if run_informations["onco"] == True:
+        howard_config = osj(
+            os.environ["HOST_MODULE_CONFIG"], "howard", "howard_onco_config.json"
+        )
+    else:
+        howard_config = osj(
+            os.environ["HOST_MODULE_CONFIG"], "howard", "howard_config.json"
+        )
     threads = commons.get_threads("threads_annotation")
     memory = commons.get_memory("memory_annotation")
 
@@ -655,7 +659,6 @@ def howard_proc(run_informations, vcf_file):
     local_time = time.localtime(exact_time)
     actual_time = time.strftime("%H%M%S", local_time)
     start = actual_time
-
     container_name = f"VANNOT_annotate_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
     launch_annotate_arguments = [
         "process",
@@ -673,6 +676,7 @@ def howard_proc(run_informations, vcf_file):
         threads,
         "--config",
         howard_config,
+        "--debug",
     ]
 
     log.info("Annotating input files with HOWARD")
@@ -714,11 +718,13 @@ def gmc_score(run_informations):
 #     vcf_file, run_informations, memory, start, transcript_param, threads = args
 #     prioritize_worker(vcf_file, run_informations, memory, start, transcript_param, threads)
 #Fix parallelization prio
-def howard_score_transcripts(run_informations):
+
+def howard_score_transcripts_chunked(run_informations):
+    #Warning it's not working when there is more than one parquet per chromosome
+    print("Chunking now")
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
     print(vcf_files)
     howard_config = osj(os.environ["HOST_CONFIG"], "howard", "howard_config.json")
-
 
     if len(vcf_files) > 1:
         for vcf_file in vcf_files:
@@ -730,6 +736,141 @@ def howard_score_transcripts(run_informations):
         "howard",
         "param.transcripts.json",
     )
+
+    threads = commons.get_threads("threads_annotation")
+    memory = commons.get_memory("memory_annotation")
+
+    exact_time = time.time() + 7200
+    local_time = time.localtime(exact_time)
+    actual_time = time.strftime("%H%M%S", local_time)
+    start = actual_time
+    print(vcf_files)
+    for vcf_file in vcf_files:
+        container_name = f"VANNOT_chunking_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+        output_chunked = osj(run_informations["tmp_analysis_folder"], f"chunked_{os.path.basename(vcf_file).split('.')[0]}.parquet")
+        cmd = ["convert",
+                "--input",
+                vcf_file,
+                "--output",
+                output_chunked,
+                "--parquet_partitions",
+                "#CHROM",
+                "--debug",
+                "--config",
+                howard_config,
+                "--chunk_size",
+                "1000000000",
+                "--duckdb_settings",
+                "/home1/data/STARK/config/variantannotation/vannot/howard/duckdb_settings.json",
+        ]        
+        howard_launcher.launch(container_name, cmd)
+        os.remove(vcf_file)
+
+        chunked_chroms = glob.glob(osj(output_chunked, "*"))
+        for chunked_chrom in chunked_chroms:
+            number_of_parquets = len(glob.glob(osj(chunked_chrom, "*.parquet")))
+            if number_of_parquets > 1:
+                log.error(f"Chunked chrom {chunked_chrom} has more than one parquet file, this should not happen")
+                raise ValueError(chunked_chrom)
+
+        chunked_parquets_files = glob.glob(osj(output_chunked, "*", "*.parquet"))
+
+        for parquet_file in chunked_parquets_files:
+            header = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(output_chunked)}.hdr")
+            shutil.copy(header, osj(os.path.dirname(parquet_file), f"{os.path.basename(parquet_file).split(".")[0]}.parquet.hdr"))
+        
+        for parquet_file in chunked_parquets_files:
+            output_file_transcripts = osj(os.path.dirname(parquet_file), f"{os.path.basename(parquet_file).split(".")[0]}_output_transcripts.parquet")
+            header = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(output_chunked)}.hdr")
+
+            container_name = f"VANNOT_chunked_transcripts_{start}_{run_informations['run_name']}_{os.path.basename(parquet_file).split('.')[0]}"
+            launch_annotate_arguments = [
+                "process",
+                "--input",
+                parquet_file,
+                "--output",
+                output_file_transcripts,
+                "--param",
+                transcript_param,
+                "--config",
+                howard_config,
+                "--memory",
+                memory,
+                "--threads",
+                threads,
+                "--debug"
+            ]
+            log.info("Prioritization of transcripts")
+            howard_launcher.launch(container_name, launch_annotate_arguments)
+
+            os.remove(parquet_file)
+            os.remove(parquet_file + ".hdr")
+            shutil.copy(output_file_transcripts + ".hdr", output_chunked + ".hdr")
+            os.rename(output_file_transcripts, parquet_file)
+            os.remove(output_file_transcripts + ".hdr")
+
+            with open(
+                osj(os.environ["HOST_MODULE_CONFIG"], "howard", "param.transcripts.json"),
+                "r",
+            ) as read_file:
+                data = json.load(read_file)
+                transcripts_output = data["transcripts"]["export"]["output"]
+
+            sample_name = f"{os.path.basename(vcf_file).split('.')[0].removeprefix("VANNOT_")}_{os.path.basename(os.path.dirname(parquet_file).split("=")[1])}"
+            transcripts_output_renamed = f"transcripts_{sample_name}.tsv"
+            shutil.copy(
+                transcripts_output,
+                osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed),
+            )
+            
+            os.remove(transcripts_output)
+        
+        container_name = f"VANNOT_convert_transcripts_{start}_{run_informations['run_name']}_{os.path.basename(parquet_file).split('.')[0]}"
+        launch_convert_arguments = [
+            "convert",
+            "--input",
+            output_chunked,
+            "--output",
+            vcf_file
+        ]
+        log.info("Conversion of parquet into vcf")
+        howard_launcher.launch(container_name, launch_convert_arguments)
+        shutil.rmtree(output_chunked)
+        os.remove(output_chunked + ".hdr")
+        sample_name = f"{os.path.basename(vcf_file).split('.')[0].removeprefix("VANNOT_")}"
+        transcript_files = glob.glob(osj(run_informations["tmp_analysis_folder"], f"transcripts_{sample_name}_*.tsv"))
+        output_transcript = osj(run_informations["tmp_analysis_folder"], f"VANNOT_transcripts_{sample_name}.tsv")
+        with open(output_transcript, "a") as write_file:
+            first_tsv = True
+            for transcript_file in transcript_files:
+                with open(transcript_file, "r") as read_file:
+                    lines = read_file.readlines()
+                    if first_tsv:
+                        write_file.write(lines[0])
+                        first_tsv = False
+                    for line in lines[1:]:
+                        write_file.write(line)
+                os.remove(transcript_file)
+
+def howard_score_transcripts(run_informations):
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    print(vcf_files)
+    if run_informations["onco"] == True:
+        howard_config = osj(
+            os.environ["HOST_MODULE_CONFIG"], "howard", "howard_onco_config.json"
+        )
+        transcript_param = osj(os.environ["HOST_MODULE_CONFIG"],"howard","param.transcripts.onco.json",)
+
+    else:
+        howard_config = osj(os.environ["HOST_MODULE_CONFIG"], "howard", "howard_config.json")
+        transcript_param = osj(os.environ["HOST_MODULE_CONFIG"],"howard","param.transcripts.json",)
+
+    if len(vcf_files) > 1:
+        for vcf_file in vcf_files:
+            os.rename(vcf_file, osj(os.path.dirname(vcf_file), os.path.basename(vcf_file).removeprefix("unmerged_")))
+        vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+
+
 
     threads = commons.get_threads("threads_annotation")
     memory = commons.get_memory("memory_annotation")
@@ -762,17 +903,28 @@ def howard_score_transcripts(run_informations):
             threads,
             "--debug"
         ]
-
         log.info("Prioritization of transcripts")
         howard_launcher.launch(container_name, launch_annotate_arguments)
         os.remove(vcf_file)
         os.rename(output_file_transcripts, vcf_file)
 
         with open(
-            osj(os.environ["HOST_MODULE_CONFIG"], "howard", "param.transcripts.json"),
+            osj(os.environ["HOST_MODULE_CONFIG"], "howard", "param.transcripts.onco.json"),
             "r",
         ) as read_file:
             data = json.load(read_file)
+            if "transcripts" not in data:
+                log.warning("Transcripts section not found in howard config")
+                transcripts_output = ""
+                break
+            if "export" not in data["transcripts"]:
+                log.warning("Export section not found in howard config")
+                transcripts_output = ""
+                break
+            if "output" not in data["transcripts"]["export"]:
+                log.warning("Output section not found in howard config")
+                transcripts_output = ""
+                break
             transcripts_output = data["transcripts"]["export"]["output"]
 
         sample_name = (os.path.basename(vcf_file).split(".")[0]).removeprefix("VANNOT_")
@@ -781,10 +933,10 @@ def howard_score_transcripts(run_informations):
             transcripts_output,
             osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed),
         )
-        shutil.copy(
-            transcripts_output,
-            "/home1/data/STARK/data/samtranscripts/",
-        )
+            # shutil.copy(
+            #     transcripts_output,
+            #     "/home1/data/STARK/data/samtranscripts/",
+            # )
         print("sam: howard_score_transcripts output", osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed))
 
 
@@ -889,38 +1041,41 @@ def format_explode(vcf_file, tsv_file):
                     tsv_lines.append(line)
 
         is_second_ad_alt = False
-        is_varscan_ad = False
+        # is_varscan_ad = False
         for values in format_dict.values():
             if "AD" in values[0]:
                 ad_index = values[0].index("AD")
                 ad_value = values[1][ad_index]
                 if ad_value.count(",") == 2:
                     is_second_ad_alt = True
-                elif "," not in ad_value and ad_value != ".":
-                    is_varscan_ad = True
+                # elif "," not in ad_value and ad_value != ".":
+                #     is_varscan_ad = True
 
         modified_header = []
         new_tsv_lines = []
+
         for column_name in header:
             if column_name == "#CHROM":
                 modified_header.append("chr")
             elif column_name == "AD":
-                if is_varscan_ad == False:
-                    ad_index = header.index(column_name)
-                    column_name = "AD_ref"
-                    modified_header.append(column_name)
-                    modified_header.append("AD_alt")
-                    if is_second_ad_alt is True:
-                        modified_header.append("AD_alt2")
-                else:
-                    modified_header.append(column_name)
+                # if is_varscan_ad == False:
+                column_name = "AD_ref"
+                modified_header.append(column_name)
+                modified_header.append("AD_alt")
+                if is_second_ad_alt is True:
+                    modified_header.append("AD_alt2")
+                # else:
+                #     modified_header.append(column_name)
             else:
                 modified_header.append(column_name)
+
+        ad_index = modified_header.index("AD_ref")
 
         for line in tsv_lines:
             modified_tsv_line = []
             line = line.rstrip("\n").split("\t")
             for count, content in enumerate(line):
+                # if count == ad_index and is_varscan_ad is False:
                 if count == ad_index:
                     modified_tsv_line.append(content)
                     modified_tsv_line.append("")
@@ -957,33 +1112,37 @@ def format_explode(vcf_file, tsv_file):
             alt_index = index_dict["ALT"]
             ref_index = index_dict["REF"]
             tsv_variant = line[chr_index] + "_" + line[pos_index] + "_" + line[ref_index] + "_" + line[alt_index]
+
             if tsv_variant in format_dict.keys():
                 format_value_per_type = {}
                 for count, format_type in enumerate(format_dict[tsv_variant][0]):
                     format_value_per_type[format_type] = format_dict[tsv_variant][1][count]
                 for key, value in format_value_per_type.items():
-                    ad_ref_index = index_dict["AD_ref"]
-                    ad_alt_index = index_dict["AD_alt"]
                     if key == "AD":
-                        if is_varscan_ad is False and value != ".":
+                        ad_ref_index = index_dict["AD_ref"]
+                        ad_alt_index = index_dict["AD_alt"]
+                        if value.count(",") == 0:
+                            ad_ref = value
+                            line[ad_ref_index] = ad_ref
+                            ad_alt = ""
+                            line[ad_alt_index] = ad_alt
+                        elif value.count(",") == 1:
                             ad_ref = value.split(",")[0]
                             line[ad_ref_index] = ad_ref
                             ad_alt = value.split(",")[1]
                             line[ad_alt_index] = ad_alt
-                            if value.count(",") == 2:
-                                ad_alt_bis_index = index_dict["AD_alt"]
-                                ad_alt_bis = value.split(",")[2]
-                                line[ad_alt_bis_index] = ad_alt_bis
-                        else:
-                            line[index_dict[key]] = value
+                        if value.count(",") == 2:
+                            ad_alt_bis_index = index_dict["AD_alt"]
+                            ad_alt_bis = value.split(",")[2]
+                            line[ad_alt_bis_index] = ad_alt_bis
                     else:
                         line[index_dict[key]] = value
                 with open(output_file, "a") as write_file:
                     write_file.write("\t".join(line) + "\n")
-
         os.remove(tsv_file)
         os.rename(output_file, tsv_file)
         return tsv_file
+        
     
     else:
         with open(tsv_file, "r") as tsv_read:
