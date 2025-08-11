@@ -13,6 +13,8 @@ def launch_folder(args):
 
     run_informations = {
         "assembly": args.assembly,
+        "chunking": args.chunking,
+        "onco": args.onco,
         "parameters_file": args.param,
         "output_format": args.output_format,
         "type": "folder",
@@ -42,27 +44,20 @@ def launch_folder(args):
     if analysis_folder.startswith("/home1/data/STARK/services/"):
         run_informations["run_application"] = analysis_folder_name[-1]
         run_informations["run_platform"] = analysis_folder_name[-2]
-        run_informations["run_platform_application"] = (
+        run_informations["run_platform_applicastion"] = (
             f"{analysis_folder_name[-2]}.{analysis_folder_name[-1]}"
         )
-
-        print("run_informations")
-        for k, v in run_informations.items():
-            print(k, ":", v)
         howard_processing.project_folder_initialisation(run_informations)
-        print("sam:hello there")
         merged_vcf = howard_processing.merge_vcf(run_informations, "1", "")
         fambarcode_vcf = howard_processing.fambarcode_vcf(
         run_informations,
         merged_vcf,
         )
-        print("done for now")
-        import sys
-        sys.exit()
         annotated_merged_vcf = howard_processing.howard_proc(
-            run_informations, fambarcode_vcf
-        )
+        run_informations, fambarcode_vcf
+    )
         howard_processing.howard_score_transcripts(run_informations)
+
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
         howard_processing.gmc_score(run_informations)
         print(howard_processing.merge_vcf(run_informations, "2", ""))
@@ -75,13 +70,18 @@ def launch_folder(args):
             run_informations["run_application"] = args.param.split("/")[-1].removesuffix(".json").removeprefix("param.").split(".")[1]
             run_informations["run_platform"] = args.param.split("/")[-1].removesuffix(".json").removeprefix("param.").split(".")[0]
             run_informations["run_platform_application"] = args.param.split("/")[-1].removesuffix(".json").removeprefix("param.")
+
         howard_processing.folder_initialisation(run_informations)
-        merged_vcf = howard_processing.merge_vcf(run_informations, "1", "")
-        annotated_merged_vcf = howard_processing.howard_proc(
-            run_informations, merged_vcf
-        )
-        howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
-        howard_processing.howard_score_transcripts(run_informations)
+        merged_vcf = howard_processing.merge_vcf(run_informations, "1", "") 
+        annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
+        exit()
+        # howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
+
+        if run_informations["chunking"] is True:
+            howard_processing.howard_score_transcripts_chunked(run_informations)
+        else:
+            howard_processing.howard_score_transcripts(run_informations)
+
         howard_processing.gmc_score(run_informations)
         print(howard_processing.merge_vcf(run_informations, "2", ""))
         howard_processing.convert_to_final_tsv(run_informations)
