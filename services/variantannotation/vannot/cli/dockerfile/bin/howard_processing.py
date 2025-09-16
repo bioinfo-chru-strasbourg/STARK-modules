@@ -811,7 +811,7 @@ def convert_to_final_tsv(run_informations):
     )
 
     for vcf_file in vcf_files:
-
+        
         panel_name = vcf_file.split(".")[-3]
         exact_time = time.time() + 7200
         local_time = time.localtime(exact_time)
@@ -1025,6 +1025,10 @@ def tsv_modifier(input_file, run_informations):
         data = json.load(read_file)
         values_to_delete = data["tsv_columns_to_remove"]
 
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        last_order = data["vcf_to_tsv_column_order"][f"{run_informations["run_platform_application"]}"][-1]
+
     values_to_delete.append(sample)
     dejavu_to_keep = []
     prefix_to_keep = [run_informations["run_application"], "WES_AGILENT", "WES_TWIST", "WES_ROCHE"]
@@ -1036,6 +1040,8 @@ def tsv_modifier(input_file, run_informations):
         dejavu_to_keep.append(f"{i}_SAMPLECOUNT")
 
     index_to_keep = []
+    alphanumerical_list_index = []
+    last_order_exec = False
 
     with open(output_file, "w") as write_file:
         with open(input_file, "r") as read_file:
@@ -1043,13 +1049,34 @@ def tsv_modifier(input_file, run_informations):
                 line = line.rstrip("\n").split("\t")
                 if line[0] == "chr":
                     for i in range(len(line)):
-                        if line[i] not in values_to_delete and not (line[i].endswith("_ALLELECOUNT") or line[i].endswith("_HETCOUNT") or line[i].endswith("_HOMCOUNT") or line[i].endswith("_ALLELEFREQ") or line[i].endswith("_SAMPLECOUNT")) :
-                            index_to_keep.append(i)
-                        elif line[i].endswith("_ALLELECOUNT") or line[i].endswith("_HETCOUNT") or line[i].endswith("_HOMCOUNT") or line[i].endswith("_ALLELEFREQ") or line[i].endswith("_SAMPLECOUNT"):
+                        if last_order_exec == False and line[i] not in values_to_delete and not (line[i].endswith("_ALLELECOUNT") or line[i].endswith("_HETCOUNT") or line[i].endswith("_HOMCOUNT") or line[i].endswith("_ALLELEFREQ") or line[i].endswith("_SAMPLECOUNT")) :
+                            if line[i] == last_order:
+                                index_to_keep.append(i)
+                                last_order_exec = True
+                            else:
+                                index_to_keep.append(i)
+                        elif last_order_exec == False and line[i].endswith("_ALLELECOUNT") or line[i].endswith("_HETCOUNT") or line[i].endswith("_HOMCOUNT") or line[i].endswith("_ALLELEFREQ") or line[i].endswith("_SAMPLECOUNT"):
                             if line[i] in dejavu_to_keep:
                                 index_to_keep.append(i)
                             else:
                                 continue
+                        elif last_order_exec == True:
+                            if line[i].endswith("_ALLELECOUNT") or line[i].endswith("_HETCOUNT") or line[i].endswith("_HOMCOUNT") or line[i].endswith("_ALLELEFREQ") or line[i].endswith("_SAMPLECOUNT"):
+                                if line[i] in dejavu_to_keep:
+                                    alphanumerical_list_index.append(i)
+                            else:
+                                alphanumerical_list_index.append(i)
+
+                    alphanumerical_list = [line[i] for i in alphanumerical_list_index]
+                    alphanumerical_list.sort()
+                    alphanumerical_list_new_index = []
+                    for i in alphanumerical_list:
+                        for j in range(len(line)):
+                            if line[j] == i:
+                                alphanumerical_list_new_index.append(j)
+                            else:
+                                continue
+                    index_to_keep = index_to_keep + alphanumerical_list_new_index
                     write_file.write("\t".join([line[i] for i in index_to_keep]) + "\n")
                 else:
                     # print(line)
