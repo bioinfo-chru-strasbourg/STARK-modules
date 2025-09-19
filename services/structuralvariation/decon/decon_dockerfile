@@ -2,7 +2,7 @@
 # Module :             Structural Variation
 # Submodule :          DECoN
 # Services :           cli
-# Version :            3.0
+# Version :            3.1
 # Description:         Dockerfile to build container image DECoN
 ##############################################################
 
@@ -13,6 +13,7 @@
 	# switch to Mamba installer & Ubuntu OS, add aria2
 	# update AnnotSV 3.4 (vcf converter is included) and several dependencies (iproute2 for exomiser), version of each package is specified
     # snakemake~=8.26
+    # fix parallelisation in ReadinBams.R & exomedepth 1.18 (bgfix)
 
 # Image based on Ubuntu minimal focal
 FROM condaforge/mambaforge
@@ -29,7 +30,7 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     bedtools~=2.31 snakemake~=8.30 graphviz~=12.2 pandas~=2.2 unidecode~=1.3 \
     vcf2tsvpy~=0.6 pyfasta~=0.5 fasta~=36.3 \
     natsort~=8.3 pyfaidx~=0.8 pypdf~=5.4 \
-    r-exomedepth~=1.1.16 r-r.utils~=2.12 r-optparse~=1.7 r-reshape~=0.8 \
+    r-exomedepth~=1.1.18 r-r.utils~=2.12 r-optparse~=1.7 r-reshape~=0.8 \
     r-ggplot2~=3.5 r-doparallel~=1.0 r-foreach~=1.5 r-reshape2~=1.4 && \
     mamba clean -afy
 

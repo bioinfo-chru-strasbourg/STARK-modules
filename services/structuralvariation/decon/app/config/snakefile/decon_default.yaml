@@ -64,7 +64,7 @@ VALIDATION_ONLY: False
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*Full.vcf.gz','*Full.vcf.gz.tbi','*Design.vcf.gz','*Design.vcf.gz.tbi','*Panel*.vcf.gz','*Panel*.vcf.gz.tbi','*AnnotSV*.Full.tsv','*AnnotSV*.Design.tsv','*AnnotSV*.Panel.tsv','*Metrics*.ttsv','*.pdf','*.html','*.css','*/'}"
+INCLUDE_RSYNC: "{'*.vcf.gz','*.vcf.gz.tbi','*.tsv','*.pdf','*.html','*.css','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt','*.bed','*/'}"
 
@@ -78,7 +78,7 @@ LOG_LEVEL: 30
 # Path of the template foldre (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'Design.merge.pdf', 'Panel.merge.pdf', 'Design.tsv', 'Metrics.tsv']
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'Design.merge.pdf', 'Panel.merge.pdf', '.tsv']
 
 ############## Tools specific parameters ##############
 ### TOOLS PATH ###

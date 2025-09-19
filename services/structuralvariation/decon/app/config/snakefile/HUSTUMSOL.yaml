@@ -1,4 +1,0 @@
-# Patch for some gene name
-EXON_SEP: "_ex"
-# Old Bed formating
-OLD_BED: True

@@ -364,10 +364,23 @@ rule correct_chr:
 		awk 'BEGIN {{ OFS="\\t" }} {{ if ($1 ~ /^[0-9XY]+$/) $1 = "chr"$1; print }}' {input} > {output}
 		"""
 
+rule fix_and_filter_vcf:
+	"""
+	Fix VCF header (add missing FORMAT definitions), then filter and sort VCF.
+	"""
+	input: rules.correct_chr.output        
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixed.filtered.sorted.vcf")
+	params: "/app/scripts/dummy/add_format_header.txt"
+	shell:
+		"""
+		echo "[INFO] Fixing header, filtering, and sorting in one pipe for {input}"
+		bcftools annotate --header-lines {params} {input} | bcftools view -i 'INFO/RAF>=0.01' - | bcftools sort -O v -o {output}
+		"""
+
 
 rule bcftools_filter:
 	"""	Filter with bcftools """
-	input: rules.correct_chr.output
+	input: rules.fix_and_filter_vcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf"
 	params:	config['BCFTOOLS_FILTER']
 	shell:
@@ -377,7 +390,7 @@ rule bcftools_filter:
 			cp {input} {output}
 		else
 			echo "[INFO] Filtering {input}."
-			bcftools view {params} {input} -o {output}
+			bcftools view {params} {input} | bcftools sort -o {output}
 		fi
 		"""
 

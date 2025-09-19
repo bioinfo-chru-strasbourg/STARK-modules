@@ -32,7 +32,7 @@ OUTPUT_DIR: ""
 DEPOT_DIR: "depository"
 # Default path to the input datas == {run} from listener.py/launcher.py
 run: ""
-
+ 
 # Bed file
 BED_FILE: ""
 # Genes file
@@ -60,7 +60,7 @@ VALIDATION_ONLY: False
 
 # Extension files to copy after pipeline success
 # using brace extension, remove space between extensions
-INCLUDE_RSYNC: "{'*Full.vcf.gz','*Full.vcf.gz.tbi','*Design.vcf.gz','*Design.vcf.gz.tbi','*Panel*.vcf.gz','*Panel*.vcf.gz.tbi','*AnnotSV*.Full.tsv','*AnnotSV*.Design.tsv','*AnnotSV*.Panel.tsv','*.html','*.css','*/'}"
+INCLUDE_RSYNC: "{'*.vcf.gz','*.vcf.gz.tbi','*.tsv','*.pdf','*.html','*.css','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
 

@@ -1,0 +1,12 @@
+##fileformat=VCFv4.3
+##INFO=<ID=RAF,Number=1,Type=Float,Description="Raw Allele Frequency">
+##FORMAT=<ID=RAF,Number=1,Type=Float,Description="Raw Allele Frequency">
+##FORMAT=<ID=AF,Number=1,Type=Float,Description="Allele Frequency">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=VD,Number=1,Type=Float,Description="Variant Depth">
+##FORMAT=<ID=AR,Number=1,Type=Float,Description="Allelic Ratio">
+##FORMAT=<ID=AAR,Number=1,Type=Float,Description="Adjusted Allelic Ratio">
+##FORMAT=<ID=AAF,Number=1,Type=Float,Description="Adjusted Allele Frequency">
+##FORMAT=<ID=RAR,Number=1,Type=Float,Description="Raw Allelic Ratio">
+##FORMAT=<ID=RDP,Number=1,Type=Float,Description="Raw Total Depth">
+##FORMAT=<ID=RVD,Number=1,Type=Float,Description="Raw Variant Depth">

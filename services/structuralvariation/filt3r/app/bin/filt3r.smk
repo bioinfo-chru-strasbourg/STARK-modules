@@ -411,7 +411,7 @@ rule bcftools_filter:
 			cp {input} {output}
 		else
 			echo "[INFO] Filtering {input}."
-			bcftools view {params} {input} -o {output}
+			bcftools view {params} {input} | bcftools sort -o {output}
 		fi
 		"""
 

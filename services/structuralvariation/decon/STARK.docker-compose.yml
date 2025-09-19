@@ -6,7 +6,7 @@ version: '3.9'
 services:
 
     stark-module-structuralvariation-submodule-decon-service-setup:
-        image: stark/stark-module-structuralvariation-submodule-decon-service-common:3.0
+        image: stark/stark-module-structuralvariation-submodule-decon-service-common:3.1
         build:
             context: ./
             dockerfile: decon_dockerfile
@@ -23,7 +23,7 @@ services:
             - stark_stark
 
     stark-module-structuralvariation-submodule-decon-service-cli:
-        image: stark/stark-module-structuralvariation-submodule-decon-service-common:3.0
+        image: stark/stark-module-structuralvariation-submodule-decon-service-common:3.1
         build:
             context: ./
             dockerfile: decon_dockerfile

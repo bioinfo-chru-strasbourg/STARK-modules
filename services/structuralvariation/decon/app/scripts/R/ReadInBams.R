@@ -89,7 +89,7 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
 
   message(paste('Parse', length(bams), 'BAM files'))
 
-  # Call getBamCounts on all BAMs at once (like original)
+  # Run getBamCounts on all BAMs at once
   counts <- getBamCounts(
     bed.frame = bed.file,
     bam.files = bams,
@@ -97,23 +97,39 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
     referenceFasta = fasta
   )
 
-  # Remove file extensions to get sample names as column names
-  names(counts) <- unlist(lapply(strsplit(names(counts), "\\."), "[[", 1))
+  # Clean column/sample names
+  colnames(counts) <- sapply(basename(colnames(counts)), tools::file_path_sans_ext)
 
+  # ---- Missing sample check ----
+  non_sample_cols <- c("chromosome", "start", "end", "GC", "exon", "gene", "exon_number")
+  present_samples <- setdiff(colnames(counts), non_sample_cols)
+  missing_samples <- setdiff(sample.names, present_samples)
+
+  if (length(missing_samples) > 0) {
+    warning(sprintf("[WARN] %d sample(s) missing from counts table: %s",
+                    length(missing_samples),
+                    paste(missing_samples, collapse = ", ")))
+  }
+
+  # Rename "exon" to "gene" if needed
   colnames(counts)[colnames(counts) == "exon"] <- "gene"
 
-  if (ncol(bed.file) == 5) {
+  # Optionally add exon_number
+  if ("exon_number" %in% colnames(bed.file)) {
     counts <- dplyr::bind_cols(counts, bed.file["exon_number"])
     counts <- counts %>%
       dplyr::relocate(exon_number, .after = gene)
     colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
   }
 
+  # Remove duplicate rows
   counts <- counts[!duplicated(counts[, c("chromosome", "start", "end", "gene")]), ]
 
+  # Save results
   save(counts, bams, bed.file, sample.names, fasta, file = output)
   warnings()
 }
+
 
 read_bam_files <- function(bam_file) {
     # Log message before reading the file
