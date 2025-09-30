@@ -349,40 +349,43 @@ rule filt3r:
 		"""
 
 rule vcf_infofix:
-	""" Fix VAF type (Float) """
+	"""Fix ALT tag and file format version"""
 	input: rules.filt3r.output
-	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixfloat.vcf")
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixfloat.vcf"
 	shell:
 		"""
-		sed '/^#CHROM/i ##ALT=<ID=DUP,Description="Duplication">' {input} | sed 's/##INFO=<ID=VAF,Number=.,Type=String,Description="Variant Allele Frequency (ratio)">/##INFO=<ID=VAF,Number=.,Type=Float,Description="Variant Allele Frequency (ratio)">/g' | sed 's/##fileformat=VCFv4.4/##fileformat=VCFv4.3/' > {output}
+		sed '/^#CHROM/i ##ALT=<ID=DUP,Description="Duplication">' {input} | sed 's/##fileformat=VCFv4.4/##fileformat=VCFv4.3/' > {output}
 		"""
 
 rule correctvcf:
-	"""	Correction of vcf output, add genotype to be consistent with the vcf format specification """
+	"""Correction of vcf output, add genotype to be consistent with the vcf format specification and remove trailing ;DUP from INFO."""
 	input: rules.vcf_infofix.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixGT.vcf")
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixGT.vcf"
 	shell:
 		"""
 		if ! grep -q -v '^#' {input}; then
 			echo "[INFO] No variant data found in {input}. Copying input file to {output}."
 			cp {input} {output}
 		else
-			echo "[INFO] Fixing genotype FORMAT field and removing trailing semicolons from INFO."
+			echo "[INFO] Fixing genotype FORMAT field and removing trailing semicolons and ;DUP from INFO."
 			# Extract header lines and write to output
 			grep "^##" {input} > {output}
 			# Add the FORMAT field definition
 			echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' >> {output}
 			# Modify the header CHROM line to include FORMAT and sample
 			grep "^#CHROM" {input} | sed 's/$/\\tFORMAT\\t{wildcards.sample}/' >> {output}
-			# Process the variant lines, remove trailing semicolons from INFO, and add genotypes
-			grep -v "^#" {input} | sed 's/;$//; s/$/\\tGT\\t0\\/1/' >> {output}
+			# Process the variant lines:
+			# 1. Remove trailing semicolons from INFO
+			# 2. Remove the ";DUP" part from INFO
+			# 3. Add genotypes
+			grep -v "^#" {input} | sed 's/;$//; s/;DUP$//; s/$/\\tGT\\t0\\/1/' >> {output}
 		fi
 		"""
 
 rule correct_chr:
 	"""Correction of VCF output: add 'chr' prefix to contig and #CHROM values."""
 	input: rules.correctvcf.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixchr.vcf")
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixchr.vcf"
 	shell:
 		"""
 		input={input}
@@ -401,10 +404,16 @@ rule correct_chr:
 		done < "$input"
 		"""
 
+rule sortvcf:
+	""" Sort vcf """
+	input: rules.correct_chr.output
+	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.sort.vcf"
+	shell: "({{ grep '^#' {input} || true; grep -v '^#' {input} || true | sort -k1,1V -k2,2g; }}) > {output}"
+
 
 rule bcftools_filter:
 	"""	Filter with bcftools """
-	input: rules.correct_chr.output
+	input: rules.sortvcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf"
 	params:	config['BCFTOOLS_FILTER'] 
 	shell:

@@ -1297,8 +1297,11 @@ onsuccess:
 	replaced_paths = replace_path(result_files_list, resultDir, "")
 	sample_list_orig = sample_list
 	sample_list.insert(0,"allsamples")
-	resultDict = populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)	
+	resultDict = populate_dictionary(sample_list, config['RESULT_EXT_LIST'], replaced_paths, pattern_include=serviceName, split_index=2)
 	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender", "Design.merge.pdf", "Panel.merge.pdf"], remove_none_samples=sample_list_orig, restrict_none_keys=["Metrics.tsv"])
+	list_XX = [os.path.basename(file).split('.')[0] for file in files_list_XX]
+	list_XY = [os.path.basename(file).split('.')[0] for file in files_list_XY]
+	none_gender_samples = [sample for sample, data in runDict.items() if data.get('gender') == 'None']
 	print('[INFO] Generating html report')
 	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html")
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)

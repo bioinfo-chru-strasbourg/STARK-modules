@@ -316,7 +316,7 @@ rule flt3_itd_ext:
 	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.raw.vcf")
 	params:
 		output = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/",
-		outputfile = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.{{aligner}}.rawvcf",
+		outputfile = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.{{aligner}}.vcf",
 		assembly = config['ASSEMBLY'],
 		index = config['REF_ITD_PATH'],
 		ngstype = config['NGS_TYPE'],
@@ -391,11 +391,9 @@ rule bcftools_filter:
 			cp {input} {output}
 		else
 			echo "[INFO] Filtering {input}."
-			bcftools sort {input} -o {output} 
+			bcftools view {params} {input} | bcftools sort -o {output}
 		fi
 		"""
-
-#bcftools view {params} {input} | bcftools sort -o {output}
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""

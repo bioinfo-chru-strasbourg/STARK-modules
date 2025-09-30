@@ -1070,7 +1070,8 @@ onsuccess:
 		shell(f"bcftools view -S final_sample_list.txt -Oz -o {resultDir}/{serviceName}.{date_time}.allsamples.Design.filtered.vcf.gz {resultDir}/{serviceName}.{date_time}.allsamples.Design.unfiltered.vcf.gz")
 		shell(f"bcftools view -c 1 -Oz -o {resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz {resultDir}/{serviceName}.{date_time}.allsamples.Design.filtered.vcf.gz")
 		# And convert vcf to tsv
-		shell(f"vcf2tsvpy --keep_rejected_calls --input_vcf {resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz --out_tsv {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp && cat {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp | grep -v '^#' > {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv ")
+		shell(f"conda activate vcf2tsv && vcf2tsvpy --keep_rejected_calls --input_vcf {resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz --out_tsv {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp && cat {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp | grep -v '^#' > {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv && conda deactivate")
+
 
 	# Generate dictionary from outputdir
 	search_args = [arg.format(serviceName=serviceName) if '{serviceName}' in arg else arg for arg in ["/*/{serviceName}/*/*", "/*"]]

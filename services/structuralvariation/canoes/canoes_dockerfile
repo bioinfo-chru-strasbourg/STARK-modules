@@ -29,7 +29,7 @@ RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
     r-mgcv~=1.9_2 r-reshape2~=1.4 r-gtools~=3.9 r-stringr~=1.5 r-reshape~=0.8 \
     && mamba clean -afy
 
-# vcf2tsvpy~=0.6.1 
+RUN mamba create -n vcf2tsv -y -c conda-forge -c bioconda -c biobuilds vcf2tsvpy~=0.6.1 && mamba clean -afy
 
 # Variant convert
 WORKDIR /usr/lib
