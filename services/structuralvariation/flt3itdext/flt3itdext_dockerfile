@@ -2,25 +2,28 @@
 # Module :             Structural Variation
 # Submodule :          ITD Ext
 # Services :           cli
-# Version :            1.0
+# Version :            1.1
 # Description:         Dockerfile to build container image
 ##############################################################
 
 # PROD version 1 : 10/09/2023
 # Authoring : Thomas LAVAUX
 
+# 1.1 Update snakemake, samtools, etc.
+
 # Ubuntu based (minimal focal)
 FROM condaforge/mambaforge
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update --fix-missing && \
-	apt-get install -y perl rsync unzip vim
+	apt-get install -y perl rsync unzip vim libxml2 libxml2-dev
+
 
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds \
-    python=3.12 \
-	samtools~=1.21 bcftools~=1.21 bedtools~=2.31 \
-	snakemake~=8.30 graphviz~=12.2 pandas~=2.2 \
-	sumaclust~=1.0.31 fgbio~=2.4 bwa~=0.7.17 picard~=3.3 bbmap~=39.13  vcf-validator~=0.10 \
+    python=3.13 \
+	samtools~=1.22.1 bcftools~=1.22 bedtools~=2.31 vcf-validator~=0.10.2  \
+	snakemake~=9.11 graphviz~=13.1 pandas~=2.3  \
+	sumaclust~=1.0.31 fgbio~=2.4 bwa~=0.7.17 picard~=3.3 bbmap~=39.13 \
 	&& mamba clean -afy
 
 # Copy applications files (/app)

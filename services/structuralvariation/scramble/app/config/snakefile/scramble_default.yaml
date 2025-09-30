@@ -63,6 +63,8 @@ VALIDATION_ONLY: False
 INCLUDE_RSYNC: "{'*.vcf.gz','*.vcf.gz.tbi','*.tsv','*.pdf','*.html','*.css','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
+# Set to true if you don't want to copy files
+NOCOPY: False
 
 ##### Search parameters for inputs ####
 RECURSIVE_SEARCH: False
@@ -74,7 +76,7 @@ LOG_LEVEL: 30
 # Path of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', "gender", "hpo"]
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'Design.tsv', 'Panel*.tsv', "gender", "hpo"]
 
 
 # Option to filter vcf with bcftools
@@ -118,8 +120,8 @@ REFMEI_PATH: "/opt/conda/share/scramble/resources/MEI_consensus_seqs.fa"
 
 ################## AnnotSV params for DB setup ##################
 # don't forget to change application.properties from /app/config/annotsv
-ANNOTSV_VERSION: "3.4"
-EXOMISER_VERSION: "2402"
+ANNOTSV_VERSION: "3.5"
+EXOMISER_VERSION: "2406"
 # Other params
 ASSEMBLY: "hg19" # must be consistant with genomeBuild variable
 # accessory db
@@ -132,6 +134,7 @@ GENEHANCER_VERSION: "GeneHancer_hg19_v5.9"
 ANNOTSV_DOWNLOAD_LINK: "https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
 EXOMISER_DOWNLOAD_LINK1: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_{assembly}.zip"
 EXOMISER_DOWNLOAD_LINK2: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_phenotype.zip"
+EXOMISER_JAR: "https://github.com/exomiser/Exomiser/releases/download/14.1.0/exomiser-rest-prioritiser-14.1.0.jar"
 
 # Command use to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
@@ -141,7 +144,7 @@ ANNOTSV_ANNOTATION: True
 genomeBuild: GRCh37 # GRCh38 default, set to GRCh37 for hg19
 overlap: 100 # default 100
 annotationMode: both # split, full or both (defaut both)
-annotationdir: "/databases/AnnotSV/3.4/" # path to the annotation database
+annotationdir: "/databases/AnnotSV/3.5/" # path to the annotation database
 vcf_extension: ".final.vcf.gz" # vcf extension to annotate with the -snvIndelFiles option ; extension should be in EXT_INDEX_LIST
 # Limit of attempt to perform AnnotSV annotation
 annotSV_limit: 30

@@ -367,14 +367,17 @@ rule correctvcf:
 			echo "[INFO] No variant data found in {input}. Copying input file to {output}."
 			cp {input} {output}
 		else
-			echo "[INFO] Fixing genotype FORMAT field."
+			echo "[INFO] Fixing genotype FORMAT field and removing trailing semicolons from INFO."
+			# Extract header lines and write to output
 			grep "^##" {input} > {output}
+			# Add the FORMAT field definition
 			echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">' >> {output}
+			# Modify the header CHROM line to include FORMAT and sample
 			grep "^#CHROM" {input} | sed 's/$/\\tFORMAT\\t{wildcards.sample}/' >> {output}
-			grep -v "^#" {input} | sed 's/$/\\tGT\\t0\\/1/' >> {output}
+			# Process the variant lines, remove trailing semicolons from INFO, and add genotypes
+			grep -v "^#" {input} | sed 's/;$//; s/$/\\tGT\\t0\\/1/' >> {output}
 		fi
 		"""
-
 
 rule correct_chr:
 	"""Correction of VCF output: add 'chr' prefix to contig and #CHROM values."""
@@ -403,15 +406,15 @@ rule bcftools_filter:
 	"""	Filter with bcftools """
 	input: rules.correct_chr.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf"
-	params:	config['BCFTOOLS_FILTER']
+	params:	config['BCFTOOLS_FILTER'] 
 	shell:
 		"""
 		if ! grep -q -v '^#' {input}; then
 			echo "[INFO] No variant data found in {input}. Copying input file to {output}."
 			cp {input} {output}
 		else
-			echo "[INFO] Filtering {input}."
-			bcftools view {params} {input} | bcftools sort -o {output}
+			echo "[INFO] Sorting and filtering {input}."
+			bcftools sort {input} | bcftools view {params} -o {output}
 		fi
 		"""
 
@@ -459,11 +462,14 @@ onsuccess:
 	update_results(runDict, resultDict, config['RESULT_EXT_LIST'], exclude_samples=["allsamples"], exclude_keys=["hpo", "gender"])
 
 	# Clear existing output directories & copy results
-	for sample in sample_list:
-		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
-	for sample in sample_list:
-		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+	if not config['NOCOPY']:
+		for sample in sample_list:
+			shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
+		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
+		for sample in sample_list:
+			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+	else:
+		print('[INFO] Skipping file copy due to NOCOPY option')
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR'] and outputDir != depotDir:

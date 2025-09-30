@@ -6,12 +6,12 @@ version: '3.9'
 services:
 
     stark-module-structuralvariation-submodule-canoes-service-setup:
-        image: stark/stark-module-structuralvariation-submodule-canoes-service-common:3.0
+        image: stark/stark-module-structuralvariation-submodule-canoes-service-common:3.1
         build:
             context: ./
             dockerfile: canoes_dockerfile
-        entrypoint: "snakemake"
-        command: "-p -s /app/bin/canoes_setup.smk"
+        entrypoint: ["snakemake"]
+        command: ["-s", "/app/bin/canoes_setup.smk", "-c1"]
         container_name: stark-module-structuralvariation-submodule-canoes-service-setup
         restart: "no"
         volumes:
@@ -23,7 +23,7 @@ services:
             - stark_stark
 
     stark-module-structuralvariation-submodule-canoes-service-cli:
-        image: stark/stark-module-structuralvariation-submodule-canoes-service-common:3.0
+        image: stark/stark-module-structuralvariation-submodule-canoes-service-common:3.1
         build:
             context: ./
             dockerfile: canoes_dockerfile

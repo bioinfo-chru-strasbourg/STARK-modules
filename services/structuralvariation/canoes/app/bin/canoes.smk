@@ -582,6 +582,8 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 wildcard_constraints:
 	aligner="|".join(aligner_list)
 
+samples_str = "\t".join(sample_list)
+
 rule all:
 	"""Output a design vcf.gz with the bams and the bed provided, optionally using a reference set and generating plots if specified"""
 	input:
@@ -656,7 +658,7 @@ rule gc_percent:
 	input: config['REFGENEFA_PATH']
 	output: 
 		gc_percent_header=temp(f"{resultDir}/{serviceName}.{date_time}.GCpercent_header.tsv"),
-		gc_percent = f"{resultDir}/{serviceName}.{date_time}.GCpercent.tsv"
+		gc_percent = temp(f"{resultDir}/{serviceName}.{date_time}.GCpercent.tsv")
 	params: 
 		java_option = config['JAVA_OPTION']
 	log: f"{resultDir}/{serviceName}.{date_time}.GCpercent.log"
@@ -671,7 +673,7 @@ rule bam_to_multicov:
 	input: 
 		bam=f"{resultDir}/{{sample}}.{{aligner}}.bam",
 		bai=f"{resultDir}/{{sample}}.{{aligner}}.bam.bai"
-	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv"
+	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv")
 	params: config['BEDCOV_SCRIPT']
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.log"
 	shell:" python {params} --bam {input.bam} --bed {canoesbed_file} -q 20 -o {output} 1> {log} "
@@ -680,7 +682,7 @@ rule bam_to_multicov:
 rule bam_to_multicov_for_refbam:
 	""" From a tsv list of bams generate a coverage file filtered with the bed provided, including the header """
 	input: config['REF_BAM_LIST']
-	output:	f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv"
+	output:	temp(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv")
 	params: config['BEDCOV_SCRIPT']
 	log: f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.log"
 	shell:" python {params} --tsv {input} --bed {canoesbed_file} -q 20 -o {output} 1> {log} "
@@ -689,7 +691,7 @@ rule bam_to_multicov_for_refbam:
 rule merge_multicov:
 	""" Merge all coverage files and add header """
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.multicov.tsv", aligner=aligner_list, sample=sample_list)
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.reads.tsv"
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.reads.tsv")
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.reads.log"
 	params: config['MERGEMULTICOV_SCRIPT']
 	shell: " python {params} {input} -o {output} "
@@ -698,7 +700,7 @@ rule merge_multicov:
 rule plot_coverage_stats:
 	""" Generate coverage calculation """
 	input:  rules.merge_multicov.output
-	output:	f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.multicoverage_stats.tsv"
+	output:	temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.multicoverage_stats.tsv")
 	params: config['PLOT_COVERAGE_SCRIPT']
 	shell: " python {params} {input} {output} "
 
@@ -774,19 +776,28 @@ rule split_tsv:
 		"""
 
 rule bedtovcf:
-	""" Convert CANOES bed to vcf """
 	input: rules.correct_1based.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf")
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
-	params:	config['VARIANT_CONVERT_CANOES']
-	shell: " variantconvert convert -i {input} -o {output} -c {params} 2> {log} "
+	params:
+		json = config['VARIANT_CONVERT_CANOES'],
+		specific_sample = samples_str
+	shell:
+		r"""
+		if [ $(wc -l < {input}) -le 1 ]; then
+			sed '/^#CHROM/,$d' /app/scripts/dummy/empty.vcf > {output}
 
+			echo -e "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{params.specific_sample}" >> {output}
+		else
+			variantconvert convert -i {input} -o {output} -c {params.json} 2> {log}
+		fi
+		"""
 
 rule sortvcf:
 	""" Sort vcf """
 	input: rules.bedtovcf.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_sort.vcf")
-	shell: " {{ grep '^#' {input} && grep -v '^#' {input} | sort -k1,1V -k2,2g; }} > {output} "
+	shell: "({{ grep '^#' {input} || true; grep -v '^#' {input} || true | sort -k1,1V -k2,2g; }}) > {output}"
 
 
 rule add_chr_to_vcf:
@@ -939,7 +950,7 @@ rule variantconvert:
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.varianconvert.log"
 	shell:
 		"""
-		variantconvert convert -i {input} -o {output} -c {params.variantconvertannotsv} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
+		variantconvert convert -i {input} -o {output} -c {params.variantconvertannotsv} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} 
 		"""
 
 rule correct_vcf:
@@ -1082,11 +1093,14 @@ onsuccess:
 	for sample in sample_list_to_copy:
 		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 	
-	print('[INFO] Copying files')
-	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
-	for sample in sample_list_to_copy:
-		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
-	print('[INFO] Copying files done')
+	if not config['NOCOPY']:
+		print('[INFO] Copying files')
+		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
+		for sample in sample_list_to_copy:
+			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+		print('[INFO] Copying files done')
+	else:
+		print('[INFO] Skipping file copy due to NOCOPY option')
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR'] and outputDir != depotDir:

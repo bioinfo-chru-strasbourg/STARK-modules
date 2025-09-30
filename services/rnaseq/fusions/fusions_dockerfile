@@ -2,11 +2,12 @@
 # Module :             fusions
 # Submodule :          fusions
 # Services :           cli
-# Version :            1.0
+# Version :            1.1
 # Description:         Dockerfile to build container image fusions
 ##############################################################
 # DEV version 1 : 22/11/2024
 # Authoring : Thomas LAVAUX
+	# 1.1 Update snakemake & other conda dependencies
 
 # Ubuntu based (minimal focal)
 FROM condaforge/mambaforge
@@ -21,10 +22,12 @@ RUN alien -i -d /app/tools/bcl-convert-4.3.6-2.el7.x86_64.rpm
 
 # Mamba install 
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds -c bih-cubi  \ 
-    python=3.12 \
-	samtools~=1.21 bcftools~=1.21 bedtools~=2.31  vcf-validator~=0.10 bcl2fastq2~=2.20 \
-	snakemake~=8.30 graphviz~=12.2 pandas~=2.2 vcf2tsvpy~=0.6  \ 
-	arriba~=2.4.0 star~=2.7.11a && mamba clean -afy
+    python=3.13 \
+	samtools~=1.21 bcftools~=1.21 bedtools~=2.31 vcf-validator~=0.10.2 bcl2fastq2~=2.20 fastp~=1.0 \
+	snakemake~=9.11 graphviz~=13.1 pandas~=2.3  \ 
+	arriba~=2.5.1 star~=2.7.11b && mamba clean -afy
+
+# vcf2tsvpy~=0.6 
 
 # Variantconvert
 WORKDIR /usr/lib
@@ -37,7 +40,7 @@ RUN python /usr/lib/variantconvert/src/variantconvert/__main__.py init
 # star-fusion 1.13.0 uses STAR aligner 2.7.11a
 # To activate the environnement use : mamba activate starfusion
 # To deactivate use : mamba deactivate
-RUN mamba create -n starfusion -y -c conda-forge -c bioconda -c biobuilds star-fusion~=1.14.0 && mamba clean -afy
+RUN mamba create -n starfusion -y -c conda-forge -c bioconda -c biobuilds star-fusion~=1.15.1 && mamba clean -afy
 
 # Copy applications files (/app)
 COPY ./app /app

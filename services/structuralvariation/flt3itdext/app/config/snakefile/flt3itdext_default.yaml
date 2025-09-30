@@ -55,6 +55,8 @@ FILTER_SAMPLE: []
 INCLUDE_RSYNC: "{'*.vcf.gz.tbi','*.vcf.gz','.vcf','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
+# Set to true if you don't want to copy files
+NOCOPY: False
 
 # Search parameters
 RECURSIVE_SEARCH: False
@@ -79,7 +81,9 @@ COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/RAF>=0.01'"
-BCFTOOLS_FILTER: "-i 'INFO/RAF>=0.01'"
+BCFTOOLS_FILTER: "-i 'FORMAT/RAF>=0.01'"   
+# Header for vcf
+VCF_HEADER: "/app/scripts/dummy/add_format_header.txt"
 ################## flt3_itd_ext ##################
 # REF_ITD_PATH: "/databases/ITDs/FLT3/flt3itdext/FLT3_dna_e14e15"
 REF_ITD_PATH: "/app/config/reference/FLT3/flt3itdext/FLT3_dna_e14e15"

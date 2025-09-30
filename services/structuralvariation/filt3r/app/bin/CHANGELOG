@@ -1,0 +1,9 @@
+# Changelog
+
+## 2025-05-23 [8a5fb066ee]
+- Fix reference nucleotide given in the VCF on the forward strand, with gaps larger than k
+## 2025-05-23 [6a709f152f]
+- Fix issue with --low-mem option and when more than 1024 breakpoints were detected.
+  Too many files were opened, leading to a crash of the program
+## 2025-05-03 [9750eafa24]
+- Fix some issues with the VCF output (most notably the sequence and positions on the reverse strand)

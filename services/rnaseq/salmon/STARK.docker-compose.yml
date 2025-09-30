@@ -6,12 +6,12 @@ version: '3.9'
 services:
 
     stark-module-rnaseq-submodule-salmon-service-setup:
-        image: stark/stark-module-rnaseq-submodule-salmon-service-common:1.0
+        image: stark/stark-module-rnaseq-submodule-salmon-service-common:1.1
         build:
             context: ./
             dockerfile: salmon_dockerfile
-        entrypoint: "snakemake"
-        command: "-p -s /app/bin/salmon_setup.smk -c16"
+        entrypoint: ["snakemake"]
+        command: ["-s", "/app/bin/salmon_setup.smk", "-c1"]
         container_name: stark-module-rnaseq-submodule-salmon-service-setup
         restart: "no"
         volumes:
@@ -23,7 +23,7 @@ services:
             - stark_stark
 
     stark-module-rnaseq-submodule-salmon-service-cli:
-        image: stark/stark-module-rnaseq-submodule-salmon-service-common:1.0
+        image: stark/stark-module-rnaseq-submodule-salmon-service-common:1.1
         build:
             context: ./
             dockerfile: salmon_dockerfile

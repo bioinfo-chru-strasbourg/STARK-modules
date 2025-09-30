@@ -407,11 +407,14 @@ onsuccess:
 	shell("rm -rf {resultDir}/tmp/")
 
 	# Clear existing output directories & copy results
-	for sample in sample_list:
-		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
-	for sample in sample_list:
-		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+	if not config['NOCOPY']:
+		for sample in sample_list:
+			shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
+		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
+		for sample in sample_list:
+			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+	else:
+		print('[INFO] Skipping file copy due to NOCOPY option')
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR'] and outputDir != depotDir:

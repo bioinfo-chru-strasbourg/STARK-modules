@@ -57,7 +57,7 @@
         <p style="color:red;font-weight:bold;">WARNING : "Some samples did not have a specified gender :</p>
         {% for sample in none_gender_samples %} {{ sample }} {% if not loop.last %} , {% endif %} {% endfor %}
         {% endif %}
-        <p>Here are the details for each samples in the run</p><br>
+        <p>Here are the details for each samples in the run</p><br> 
         {% for run_id, details in runDict.items() %}
             <h1 id="{{ run_id }}">{{ run_id }}</h1>
             <table>
@@ -68,6 +68,7 @@
                 {% for file, path in details.items() %}
                     <tr>
                         <td>{{ file }}</td>
+                        <td>
                         {% if file == "gender" or file == "hpo" %}
                             {{ path }}
                         {% elif path is not none %}

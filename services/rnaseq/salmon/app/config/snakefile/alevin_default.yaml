@@ -38,6 +38,8 @@ FILTER_SAMPLE: []
 INCLUDE_RSYNC: "{'*','/*'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*Failed.txt','*.log','*.err'}"
+# Set to true if you don't want to copy files
+NOCOPY: False
 
 # Search parameters
 RECURSIVE_SEARCH: False

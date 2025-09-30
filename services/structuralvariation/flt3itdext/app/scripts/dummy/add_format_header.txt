@@ -1,5 +1,4 @@
 ##fileformat=VCFv4.3
-##INFO=<ID=RAF,Number=1,Type=Float,Description="Raw Allele Frequency">
 ##FORMAT=<ID=RAF,Number=1,Type=Float,Description="Raw Allele Frequency">
 ##FORMAT=<ID=AF,Number=1,Type=Float,Description="Allele Frequency">
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">

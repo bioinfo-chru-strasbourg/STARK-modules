@@ -821,14 +821,18 @@ onsuccess:
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 	print('[INFO] Generating html report done')
 
-	print('[INFO] Removing old results')
-	for sample in sample_list:
-		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-	print('[INFO] Copying files')
-	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
-	for sample in sample_list:
-		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
-	print('[INFO] Copying files done')
+	# Copy
+	if not config['NOCOPY']:
+		print('[INFO] Removing old results')
+		for sample in sample_list:
+			shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
+			print('[INFO] Copying files')
+			shell(f"rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
+			for sample in sample_list:
+				shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+			print('[INFO] Copying files done')
+	else:
+		print('[INFO] Skipping file copy due to NOCOPY option')
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR'] and outputDir != depotDir:

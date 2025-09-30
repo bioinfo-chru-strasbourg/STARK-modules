@@ -83,7 +83,8 @@ rule install_db:
 		assembly=config['ASSEMBLY'],
 		annotSV_link= config['ANNOTSV_DOWNLOAD_LINK'].format(ANNOTSV_VERSION=ANNOTSV_VERSION),
 		exomiser_link1= config['EXOMISER_DOWNLOAD_LINK1'].format(EXOMISER_VERSION=EXOMISER_VERSION, assembly=config['ASSEMBLY']),
-		exomiser_link2= config['EXOMISER_DOWNLOAD_LINK2'].format(EXOMISER_VERSION=EXOMISER_VERSION)
+		exomiser_link2= config['EXOMISER_DOWNLOAD_LINK2'].format(EXOMISER_VERSION=EXOMISER_VERSION),
+		exomiser_jar= config['EXOMISER_JAR']
 	shell:
 		"""
 		echo 'AnnotSV download and extraction'
@@ -93,13 +94,13 @@ rule install_db:
 		touch {output.annotSV_success}
 
 		echo 'Exomiser data download and extraction'
-		mkdir -p {params.folder_exomiser}
+		mkdir -p {params.folder_exomiser}/jar
+		{params.command} {params.exomiser_jar} --dir={params.folder_exomiser}/jar
 		{params.command} {params.exomiser_link1}
 		{params.command} {params.exomiser_link2}
 		unzip -q {EXOMISER_VERSION}_{params.assembly}.zip -d {params.folder_exomiser}
 		unzip -q {EXOMISER_VERSION}_phenotype.zip -d {params.folder_exomiser}
-		mkdir -p {params.folder_exomiser}/jar
-		cp -r /app/config/annotsv/exomiser-rest-prioritiser-12.1.0.jar {params.folder_exomiser}/jar
+
 		touch {output.exomiser_success}
 		"""
 

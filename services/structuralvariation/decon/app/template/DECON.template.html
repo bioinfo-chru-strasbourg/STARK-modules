@@ -19,16 +19,45 @@
     <div id="content">
         <h2>Welcome to the report for {{ serviceName }}</h2>
         <p>We analyse run {{ runName }}</p>
-        <p>Number of samples : {{ sample_list|length -1 }}</p>
-        <p>Sample list: 
-        {% set first_item = true %}
-        {% for item in sample_list %}
-        {% if not first_item %},{% endif %}
-        {% set first_item = false %}
-        {{ item|replace("allsamples", "") }}
-        {% endfor %}
-        </p> 
-        <p>Here are the details for each samples</p><br>
+        <p>Number of samples in the run: {{ sample_list|length -1 }} (30 samples is recommended)</p>
+        <p style="font-weight:bold;">Sample list:</p>
+        <p>  {% set first_item = true %}
+            {% for item in sample_list %}
+                {% if not first_item %},{% endif %}
+                {% set first_item = false %}
+                {% if "allsamples" not in item %}
+                    {{ item }}
+                    {% if not loop.last %}, {% endif %}
+                {% endif %}
+            {% endfor %}
+            </p>
+        {% if sample_list_added is defined and sample_list_added is not none %} 
+            <p> Number of samples added : {{ sample_list_added|length }} </p>
+            <p style="font-weight:bold;">Sample list added:</p>
+            <p> {% for item in sample_list_added %}{{ item }}{% if not loop.last %}, {% endif %} {% endfor %} </p>
+        {% endif %}
+        {% set sample_list_added = sample_list_added if sample_list_added is defined and sample_list_added is not none else [] %}
+        {% set combined_sample_list = sample_list + sample_list_added %}
+        <p>Total of samples used : {{ combined_sample_list|length -1 }}</p>
+        {% if gender_list|length == 1 and gender_list[0] == "A" %}
+        <p style="color:red;font-weight:bold;">WARNING : analysis was performed only for the autosomes</p>
+        {% endif %}
+        {% if gender_list|length == 2 or gender_list|length == 3 %}
+        <p style="color:red;font-weight:bold;">Analysis was performed for the sexual chromosomes without errors</p>
+        {% endif %}
+        {% if (gender_list|length == 2 or gender_list|length == 3) and (gender_list[1] == "XY" or gender_list[2] == "XY") %}
+        <p style="font-weight:bold;">Male patients list</p>
+        {% for item in list_XY %}  {{ item }} {% if not loop.last %} , {% endif %} {% endfor %}
+        {% endif %}
+        {% if (gender_list|length == 2 or gender_list|length == 3) and (gender_list[1] == "XX" or gender_list[2] == "XX") %}
+        <p style="font-weight:bold;">Female patients list</p>
+        {% for item in list_XX %}  {{ item }} {% if not loop.last %} , {% endif %} {% endfor %}
+        {% endif %}
+        {% if none_gender_samples %}
+        <p style="color:red;font-weight:bold;">WARNING : "Some samples did not have a specified gender :</p>
+        {% for sample in none_gender_samples %} {{ sample }} {% if not loop.last %} , {% endif %} {% endfor %}
+        {% endif %}
+        <p>Here are the details for each samples in the run</p><br> 
         {% for run_id, details in runDict.items() %}
             <h1 id="{{ run_id }}">{{ run_id }}</h1>
             <table>

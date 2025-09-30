@@ -884,7 +884,7 @@ rule makeCNVcalls:
 		refbamlist=("--refbams " + config['REF_BAM_LIST']) if config.get('REF_BAM_LIST') else "",
 		decondir=config['R_SCRIPTS']
 	output:
-		calltsv=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv",
+		calltsv=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv"),
 		rdata=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVcalls.RData"
 	log:
 		log=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.log",
@@ -941,7 +941,7 @@ rule sortvcf:
 	input: rules.correct_vcf_svtype.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_sort.vcf")
 	params: dummypath=config['DUMMY_FILES']
-	shell: "{{ grep \'^#\' {input} && grep -v \'^#\' {input} | sort -k1,1V -k2,2g; }} > {output}"
+	shell: "({{ grep '^#' {input} || true; grep -v '^#' {input} || true | sort -k1,1V -k2,2g; }}) > {output}"
 
 rule vcf2gz:
 	input: rules.sortvcf.output
@@ -1304,11 +1304,14 @@ onsuccess:
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 	print('[INFO] Generating html report done')
 
-	print('[INFO] Copying files')
-	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
-	for sample in sample_list:
-		shell(f"cp -r {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
-		print('[INFO] Copying files done')
+	if not config['NOCOPY']:
+		print('[INFO] Copying files')
+		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
+		for sample in sample_list:
+			shell(f"cp -r {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+			print('[INFO] Copying files done')
+	else:
+		print('[INFO] Skipping file copy due to NOCOPY option')
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR']:

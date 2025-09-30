@@ -56,6 +56,8 @@ FILTER_SAMPLE: []
 INCLUDE_RSYNC: "{'*.vcf.gz.tbi','*.vcf.gz','.vcf','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
+# Set to true if you don't want to copy files
+NOCOPY: False
 
 # Search parameters
 RECURSIVE_SEARCH: False
@@ -76,7 +78,7 @@ COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
 DUMMY_FILES: "/app/scripts/dummy"
 # Option to filter vcf with bcftools
 # ex "-i 'FORMAT/DP>=30 && FORMAT/VAF>=0.01'"
-BCFTOOLS_FILTER: "-i 'INFO/VAF>=0.01'"
+BCFTOOLS_FILTER: "-i 'INFO/VAF>=0.01'" 
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
 REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
 ################## filt3r ##################

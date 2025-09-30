@@ -313,10 +313,10 @@ rule flt3_itd_ext:
 	input:
 		bam = f"{resultDir}/{{sample}}.{{aligner}}.bam",
 		bai = rules.indexing.output
-	output:	f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.vcf"
+	output:	temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.raw.vcf")
 	params:
 		output = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/",
-		outputfile = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.{{aligner}}.vcf",
+		outputfile = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{{sample}}.{{aligner}}.rawvcf",
 		assembly = config['ASSEMBLY'],
 		index = config['REF_ITD_PATH'],
 		ngstype = config['NGS_TYPE'],
@@ -370,13 +370,14 @@ rule fix_and_filter_vcf:
 	"""
 	input: rules.correct_chr.output        
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.fixed.filtered.sorted.vcf")
-	params: "/app/scripts/dummy/add_format_header.txt"
+	params: 
+			header = config['VCF_HEADER'],
+			filter = config['BCFTOOLS_FILTER']
 	shell:
 		"""
 		echo "[INFO] Fixing header, filtering, and sorting in one pipe for {input}"
-		bcftools annotate --header-lines {params} {input} | bcftools view -i 'INFO/RAF>=0.01' - | bcftools sort -O v -o {output}
+		bcftools annotate --header-lines {params.header} {input} | bcftools view {params.filter} - | bcftools sort -O v -o {output}
 		"""
-
 
 rule bcftools_filter:
 	"""	Filter with bcftools """
@@ -390,9 +391,11 @@ rule bcftools_filter:
 			cp {input} {output}
 		else
 			echo "[INFO] Filtering {input}."
-			bcftools view {params} {input} | bcftools sort -o {output}
+			bcftools sort {input} -o {output} 
 		fi
 		"""
+
+#bcftools view {params} {input} | bcftools sort -o {output}
 
 rule vcf2gz:
 	"""	Compress vcf with bgzip	"""
@@ -440,11 +443,15 @@ onsuccess:
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 
 	# Clear existing output directories & copy results
-	for sample in sample_list:
-		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-	shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
-	for sample in sample_list:
-		shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+	if not config['NOCOPY']:	
+		for sample in sample_list:
+			shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
+		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
+		for sample in sample_list:
+			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
+	else:
+		print('[INFO] Skipping file copy due to NOCOPY option')
+
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR'] and outputDir != depotDir:

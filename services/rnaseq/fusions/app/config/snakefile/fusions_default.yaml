@@ -62,6 +62,8 @@ FILTER_SAMPLE: []
 INCLUDE_RSYNC: "{'*arriba.tsv','*STAR.bam','*arriba.vcf.gz','*arriba.vcf.gz.tbi','*starfusion.tsv','*starfusion.vcf.gz','*starfusion.vcf.gz.tbi','*.pdf','*/'}"
 # Extensions files to copy after pipeline failure
 INCLUDE_LOG_RSYNC: "{'*.log','*.err','*Failed.txt'}"
+# Set to true if you don't want to copy files
+NOCOPY: False
 
 ##### Search parameters of input for the search function #####
 RECURSIVE_SEARCH: False
@@ -105,10 +107,10 @@ GTF_GENCODE: "/databases/gencode/GRCh37.v19/gencode.v19.annotation.gtf.gz"
 GENOME_FA: "/databases/genomes/current/hg19.fa"
 # Arriba specifics databases (default is /opt/conda/var/lib/arriba)
 #arriba: "https://github.com/suhrig/arriba/releases/download/v2.4.0/arriba_v2.4.0.tar.gz"
-REFPROTDOMAIN_PATH: "/opt/conda/var/lib/arriba/protein_domains_hg19_hs37d5_GRCh37_v2.4.0.gff3"
-REFCYTOBAND_PATH: "/opt/conda/var/lib/arriba/cytobands_hg19_hs37d5_GRCh37_v2.4.0.tsv"
-BLACKLIST_PATH: "/opt/conda/var/lib/arriba/blacklist_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
-REFFUSION_PATH: "/opt/conda/var/lib/arriba/known_fusions_hg19_hs37d5_GRCh37_v2.4.0.tsv.gz"
+REFPROTDOMAIN_PATH: "/opt/conda/var/lib/arriba/protein_domains_hg19_hs37d5_GRCh37_v2.5.1.gff3"
+REFCYTOBAND_PATH: "/opt/conda/var/lib/arriba/cytobands_hg19_hs37d5_GRCh37_v2.5.1.tsv"
+BLACKLIST_PATH: "/opt/conda/var/lib/arriba/blacklist_hg19_hs37d5_GRCh37_v2.5.1.tsv.gz"
+REFFUSION_PATH: "/opt/conda/var/lib/arriba/known_fusions_hg19_hs37d5_GRCh37_v2.5.1.tsv.gz"
 # Internal duplicate marking is the default. Arriba then detects PCR duplicates automatically based on identical end coordinates of fragments. The library attribute (LB) of the read group tag (RG) in the BAM header is not respected by Arriba's internal duplicate marking.
 # -u When this switch is set, internal marking of duplicates is disabled and Arriba assumes that duplicates have been marked by a preceding program. It requires that alignments be marked as duplicates via the BAM_FDUP flag. External duplicate marking is advisable when the LB attribute should be respected or when a library with unique molecular identifiers (UMIs) is used (and other scenarios where duplicates cannot be identified merely based on mapping coordinates)
 ARRIBA_UMI: ""

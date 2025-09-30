@@ -6,12 +6,12 @@ version: '3.9'
 services:
 
     stark-module-structuralvariation-submodule-filt3r-service-setup:
-        image: stark/stark-module-structuralvariation-submodule-filt3r-service-common:1.0
+        image: stark/stark-module-structuralvariation-submodule-filt3r-service-common:1.1
         build:
             context: ./
             dockerfile: filt3r_dockerfile
-        entrypoint: "snakemake"
-        command: "-p -s /app/bin/filt3r_setup.smk"
+        entrypoint: ["snakemake"]
+        command: ["-s", "/app/bin/filt3r_setup.smk", "-c1"]
         container_name: stark-module-structuralvariation-submodule-filt3r-service-setup
         restart: "no"
         volumes:
@@ -23,7 +23,7 @@ services:
             - stark_stark
 
     stark-module-structuralvariation-submodule-filt3r-service-cli:
-        image: stark/stark-module-structuralvariation-submodule-filt3r-service-common:1.0
+        image: stark/stark-module-structuralvariation-submodule-filt3r-service-common:1.1
         build:
             context: ./
             dockerfile: filt3r_dockerfile
