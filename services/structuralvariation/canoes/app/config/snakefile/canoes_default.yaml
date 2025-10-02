@@ -77,7 +77,7 @@ VARIANT_CONVERT_CANOES: "/app/config/fileconversion/config_canoes_bed.json"
 # Path folder of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
 # List of extensions to include in the report.html
-RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'Design*.tsv', 'Panel*.tsv', 'gender', 'hpo'] # add '.pdf' if you want graphs 
+RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'Design.tsv', 'gender', 'hpo'] # add '.pdf' if you want graphs 
 
 # LOG level 30=logging.WARNING or 20=logging.INFO
 LOG_LEVEL: 30

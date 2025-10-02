@@ -208,9 +208,14 @@ def keep_unknown(df, columnname, pattern, prefix):
 
 def extract_tag(tagfile, tag, tagsep, sep):
 	""" Function to extract a tag """
-	row = open(tagfile, 'r').readline().strip().split(tagsep)
-	output_tag = next((items.split(sep)[-1] for items in row if tag in items and sep in items), "")
-	return output_tag
+	with open(tagfile, 'r') as f:
+		row = f.readline().strip().split(tagsep)
+	for item in row:
+		if tag in item and sep in item:
+			value = item.split(sep)[-1]
+			if value:  # Only return if value is non-empty
+				return value
+	return None  # Return None if tag not found or empty
 
 def kmerisation(kmerSize, kmerBedFile, df=None, bedFile=None):
 	""" 
@@ -271,7 +276,7 @@ def write_kmers(writeKbed, chr, start, end, gene, kmerSize):
 def replace_path(file_paths, old_substring, new_substring):
 	return [path.replace(old_substring, new_substring).lstrip("/") for path in file_paths]
 
-def generate_html_report(result_dict, run_name, service_name, sample_list, template_name, output_file='report.html'):
+def generate_html_report(result_dict, run_name, service_name, sample_list, template_name, output_file='report.html', sample_list_added=None, gender_list=None, list_XX=None, list_XY=None, none_gender_samples=None):
 	env = Environment(loader=FileSystemLoader(config['TEMPLATE_DIR']))
 	template = env.get_template(template_name)
 
@@ -279,7 +284,12 @@ def generate_html_report(result_dict, run_name, service_name, sample_list, templ
 		runDict=result_dict,
 		runName=run_name,
 		serviceName=service_name,
-		sample_list=sample_list
+		sample_list=sample_list,
+		sample_list_added=sample_list_added,
+		gender_list=gender_list,
+		list_XX=list_XX,
+		list_XY=list_XY,
+		none_gender_samples=none_gender_samples
 	)
 
 	with open(output_file, 'w') as f:
@@ -616,13 +626,18 @@ else:
 	print('[INFO] No pedigree files found, reading gender from tag files')
 	tagfile_list = [runDict[sample].get('.tag') for sample in sample_list if '.tag' in runDict.get(sample, {})]
 	tagfile_list = [tag for tag in tagfile_list if tag is not None]
+
 	if not tagfile_list:
 		print('[INFO] No tag files found to find the genders of the samples')
 		print('[WARN] The calling of chrXX & chrXY will not be done')
 	else:
 		for tagfile in tagfile_list:
 			sample_name = os.path.basename(tagfile).split(".")[0]
-			runDict[sample_name]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
+			gender = extract_tag(tagfile, 'SEX', '!', '#')
+			if gender:
+				runDict[sample_name]['gender'] = gender
+			else:
+				print(f'[WARN] SEX tag missing or empty in tag file for sample {sample_name}')
 		print('[INFO] Gender found in the tag files')
 
 # Extract the gender_list from dictionary with the key gender
@@ -1303,7 +1318,7 @@ onsuccess:
 	list_XY = [os.path.basename(file).split('.')[0] for file in files_list_XY]
 	none_gender_samples = [sample for sample, data in runDict.items() if data.get('gender') == 'None']
 	print('[INFO] Generating html report')
-	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html")
+	generate_html_report(resultDict, runName, serviceName, sample_list, f"{serviceName}.template.html" , f"{resultDir}/{serviceName}.{date_time}.report.html", sample_list_added=None, gender_list=gender_list, list_XX=list_XX, list_XY=list_XY, none_gender_samples=none_gender_samples)
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 	print('[INFO] Generating html report done')
 

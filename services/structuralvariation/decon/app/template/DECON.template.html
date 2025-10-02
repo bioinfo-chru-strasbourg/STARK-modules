@@ -19,7 +19,7 @@
     <div id="content">
         <h2>Welcome to the report for {{ serviceName }}</h2>
         <p>We analyse run {{ runName }}</p>
-        <p>Number of samples in the run: {{ sample_list|length -1 }} (30 samples is recommended)</p>
+        <p>Number of samples in the run: {{ sample_list|length -1 }} </p>
         <p style="font-weight:bold;">Sample list:</p>
         <p>  {% set first_item = true %}
             {% for item in sample_list %}

@@ -176,9 +176,14 @@ def create_list(txtlistoutput, file_list, ext_list, pattern, append_name=None):
 
 def extract_tag(tagfile, tag, tagsep, sep):
 	""" Function to extract a tag """
-	row = open(tagfile, 'r').readline().strip().split(tagsep)
-	output_tag = next((items.split(sep)[-1] for items in row if tag in items and sep in items), "")
-	return output_tag
+	with open(tagfile, 'r') as f:
+		row = f.readline().strip().split(tagsep)
+	for item in row:
+		if tag in item and sep in item:
+			value = item.split(sep)[-1]
+			if value:  # Only return if value is non-empty
+				return value
+	return None  # Return None if tag not found or empty
 
 def kmerisation(kmerSize, kmerBedFile, df=None, bedFile=None):
 	""" 
@@ -447,13 +452,18 @@ else:
 	print('[INFO] No pedigree files found, reading gender from tag files')
 	tagfile_list = [runDict[sample].get('.tag') for sample in sample_list if '.tag' in runDict.get(sample, {})]
 	tagfile_list = [tag for tag in tagfile_list if tag is not None]
+
 	if not tagfile_list:
 		print('[INFO] No tag files found to find the genders of the samples')
 		print('[WARN] The calling of chrXX & chrXY will not be done')
 	else:
 		for tagfile in tagfile_list:
 			sample_name = os.path.basename(tagfile).split(".")[0]
-			runDict[sample_name]['gender'] = extract_tag(tagfile, 'SEX', '!', '#')
+			gender = extract_tag(tagfile, 'SEX', '!', '#')
+			if gender:
+				runDict[sample_name]['gender'] = gender
+			else:
+				print(f'[WARN] SEX tag missing or empty in tag file for sample {sample_name}')
 		print('[INFO] Gender found in the tag files')
 
 # Extract the gender_list from dictionary with the key gender
