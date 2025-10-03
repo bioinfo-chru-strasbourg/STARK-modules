@@ -1,0 +1,4 @@
+# VCF on/off
+VCF: True
+# AnnotSV annotation on/off
+ANNOTSV_ANNOTATION: True

@@ -21,6 +21,7 @@
 						"AND_2":{
 							"group":[
 								"HUSDIAGGEN",
+								"HUSTUMSOL",
 								"DIAG"
 							],
 							"project":[
@@ -33,7 +34,8 @@
 								"PC_NEURO",
 								"PMDA",
 								"GOMV1_GERMLINE",
-								"GOMV1_SOMATIC"
+								"GOMV1_SOMATIC",
+								"IGC"
 							]
 						}
 					},

@@ -45,6 +45,8 @@ GENES_FILE: ""
 TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
+# VCF on/off
+VCF: True
 
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
