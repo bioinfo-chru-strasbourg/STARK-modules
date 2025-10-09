@@ -781,11 +781,11 @@ def howard_score_transcripts(run_informations):
             transcripts_output,
             osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed),
         )
-        shutil.copy(
-            transcripts_output,
-            "/home1/data/STARK/data/samtranscripts/",
-        )
-        print("sam: howard_score_transcripts output", osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed))
+        # shutil.copy(
+        #     transcripts_output,
+        #     "/home1/data/STARK/data/samtranscripts/",
+        # )
+        # print("sam: howard_score_transcripts output", osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed))
 
 
 def convert_to_final_tsv(run_informations):
