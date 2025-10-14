@@ -1,0 +1,2 @@
+# Option to call Y (True is not, False is yes)
+REMOVE_Y: False

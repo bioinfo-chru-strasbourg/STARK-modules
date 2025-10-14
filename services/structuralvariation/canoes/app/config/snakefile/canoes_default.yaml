@@ -86,7 +86,7 @@ LOG_LEVEL: 30
 KMER: ""
 # Remove M (XY) or F (XX) or A (autosome) analysis, ex ['XY', 'XX'] for autosome only
 REMOVE_GENDER: ""
-# Option to call Y 
+# Option to call Y (True is not, False is yes)
 REMOVE_Y: TRUE
 
 ################## Misc params ##################
@@ -142,7 +142,7 @@ homdel: "0.2" # threeshold for homozygous deletion
 # number of reference patients should be 10 or more, and if the gender is considere, 10 per gender
 # the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
 # REF_BAM_LIST: "/pathtoyourbamlist/list.tsv" ; in snakemake command it is REF_BAM_LIST="/databases/CNV/bamrefset/bamreflist.tsv"
-REF_BAM_LIST: ""
+REF_BAM_LIST: []
 
 # AnnotSV needs the "CosmicCompleteCNA.tsv.gz" file from https://cancer.sanger.ac.uk/cosmic/download (Copy Number Variants part, Download Whole file)
 # Put the "CosmicCompleteCNA.tsv.gz" file in the corresponding directory: "$ANNOTSV/share/AnnotSV/Annotations_Human/FtIncludedInSV/COSMIC/GRCh37/

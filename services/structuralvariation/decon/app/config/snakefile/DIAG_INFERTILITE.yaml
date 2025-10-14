@@ -1,3 +1,6 @@
+# Option to call Y (True is not, False is yes)
+REMOVE_Y: False
+
 # Bed file specific for EXOME with CANOES
 #BED_FILE: "/config/structuralvariation/canoes/cli/WES_AGILENT.v1.bed"
 
