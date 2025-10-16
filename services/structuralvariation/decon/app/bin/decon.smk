@@ -653,7 +653,7 @@ gender_list = list(set(gender_list)) # Removing duplicate
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
 if not config['BED_FILE']:
 	print('[ERROR] No bed found, DECON cannot continue, exiting')
-	exit()
+	sys.exit(1)
 
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
 config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes.bed', '.list.genes')
@@ -785,6 +785,8 @@ ruleorder: copy_bam > copy_cram > cramtobam > indexing
 wildcard_constraints:
 	aligner="|".join(aligner_list)
 
+samples_str = "\t".join(sample_list)
+
 rule all:
 	""" Output a design vcf.gz with the bams list and the bed provided """
 	input:
@@ -876,7 +878,7 @@ rule IdentifyFailures:
 	params:
 		mincorr=config['mincorr'],
 		mincov=config['mincov'],
-		analysisfailure=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.MetricsFailed",
+		fail=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.Failed",
 		decondir=config['R_SCRIPTS']
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.tsv"
 	log:
@@ -884,7 +886,7 @@ rule IdentifyFailures:
 		err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Metrics.err"
 	shell:
 		"""
-		Rscript {params.decondir}/IdentifyFailures.R --rdata {input} --mincorr {params.mincorr} --mincov {params.mincov} --tsv {output} 1> {log.log} 2> {log.err} && [[ -s {output} ]] || touch {params.analysisfailure} ; [[ -s {output} ]] || touch {output}
+		Rscript {params.decondir}/IdentifyFailures.R --rdata {input} --mincorr {params.mincorr} --mincov {params.mincov} --tsv {output} 1> {log.log} 2> {log.err} && [[ -s {output} ]] || touch {params.fail} && touch {output}
 		"""
 
 rule makeCNVcalls:
@@ -892,12 +894,12 @@ rule makeCNVcalls:
 	input: rules.ReadInBams.output
 	params:
 		prob=config['transProb'],
-		analysisfailure=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVCalledFailed",
 		bamlist=f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
 		chromosome="{gender}",
 		removeY=config['REMOVE_Y'],
 		refbamlist=("--refbams " + config['REF_BAM_LIST']) if config.get('REF_BAM_LIST') else "",
-		decondir=config['R_SCRIPTS']
+		decondir=config['R_SCRIPTS'],
+		fail=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.DECON.Failed"
 	output:
 		calltsv=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv"),
 		rdata=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVcalls.RData"
@@ -906,7 +908,10 @@ rule makeCNVcalls:
 		err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.err"
 	shell:
 		"""
-		Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --removeY {params.removeY} {params.refbamlist} --tsv {output.calltsv} --outrdata {output.rdata} 1> {log.log} 2> {log.err} && [[ -s {output.calltsv} ]] || touch {params.analysisfailure} ; [[ -s {output.calltsv} ]] || touch {output.calltsv}
+		Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --removeY {params.removeY} {params.refbamlist} --tsv {output.calltsv} --outrdata {output.rdata} 1> {log.log} 2> {log.err} && \
+		( [[ -s {output.calltsv} ]] || touch {params.fail} ) && touch {output.calltsv} && touch {output.rdata}; \
+		if [[ -f {params.fail} ]]; then exit 1; fi
+
 		"""
  
 rule merge_makeCNVcalls:
@@ -938,10 +943,19 @@ rule variantconvert:
 	input: rules.fix_makeCNVcalls.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_convert.vcf")
 	params:
-		variantconvertdecon=config['VARIANT_CONVERT_DECON'],
+		json=config['VARIANT_CONVERT_DECON'],
+		specific_sample = samples_str,
 		dummypath=config['DUMMY_FILES']
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.variantconvert.log"
-	shell: "variantconvert convert -i {input} -o {output} -c {params.variantconvertdecon} 2> {log}"
+	shell:
+		r"""
+		if [ $(wc -l < {input}) -le 1 ]; then
+			sed '/^#CHROM/,$d' {params.dummypath}/empty.vcf > {output}
+			echo -e "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{params.specific_sample}" >> {output}
+		else
+			variantconvert convert -i {input} -o {output} -c {params.json} 2> {log}
+		fi
+		"""
 
 rule correct_vcf_svtype:
 	input: rules.variantconvert.output
@@ -1113,7 +1127,7 @@ rule variantconvert_annotsv:
 	params:
 			variantconvertannotsv=config['VARIANT_CONVERT_ANNOTSV'],
 			dummypath=config['DUMMY_FILES']
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.varianconvert.log"
+	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.variantconvert_annotsv.log"
 	shell:
 		"""
 		variantconvert convert -i {input} -o {output} -c {params.variantconvertannotsv} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output}
@@ -1246,12 +1260,6 @@ onsuccess:
 	with open(logfile, "a+") as f:
 		f.write(f"End of the analysis : {date_time_end}\n")
 	
-	print('[INFO] Removing old results')
-	for sample in sample_list:
-		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-		shell(f"rm -rf {outputDir}/{sample}/{serviceName}/*Design*.pdf || true")
-		shell(f"rm -rf {outputDir}/{sample}/{serviceName}/*Panel*.pdf || true")
-
 	if config['DECON_PLOT']:
 		print('[INFO] Processing pdfs')
 		temp_folder = f"{resultDir}/{serviceName}.{date_time}.temp.pdf"
@@ -1323,6 +1331,10 @@ onsuccess:
 	print('[INFO] Generating html report done')
 
 	if not config['NOCOPY']:
+		print('[INFO] Removing old results')
+		for sample in sample_list:
+			shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
+			shell(f"rm -rf {outputDir}/{sample}/{serviceName}/*Design.pdf || true")
 		print('[INFO] Copying files')
 		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 		for sample in sample_list:
@@ -1332,8 +1344,7 @@ onsuccess:
 		print('[INFO] Skipping file copy due to NOCOPY option')
 
 	# Optionally, perform DEPOT_DIR copy
-	if config['DEPOT_DIR']:
-
+	if config['DEPOT_DIR'] and outputDir != depotDir and not config['NOCOPY']:
 		print('[INFO] Removing old results from archives')
 		for sample in sample_list:
 			shell(f"rm -f {depotDir}/{sample}/{serviceName}/* || true")

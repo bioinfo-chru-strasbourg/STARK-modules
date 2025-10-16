@@ -452,7 +452,7 @@ onsuccess:
 
 
 	# Optionally, perform DEPOT_DIR copy
-	if config['DEPOT_DIR'] and outputDir != depotDir:
+	if config['DEPOT_DIR'] and outputDir != depotDir and not config['NOCOPY']:
 		for sample in sample_list:
 			shell(f"rm -f {depotDir}/{sample}/{serviceName}/* || true")
 		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {depotDir}")

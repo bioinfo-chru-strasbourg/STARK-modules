@@ -480,7 +480,7 @@ gender_list = list(set(gender_list)) # Removing duplicate
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
 if not config['BED_FILE']:
 	print('No bed found, CANOES cannot continue, exiting')
-	exit()
+	sys.exit(1)
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
 config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes.bed', '.list.genes')
 # Find transcripts files (NM)
@@ -743,10 +743,10 @@ rule canoes_calling:
 		numreference = config['numref'],
 		hom = config['homdel'],
 		refbamlist= "--refbams {}".format(config['REF_BAM_LIST']) if config['REF_BAM_LIST'] else "",
-		refmulticovtsv = f" --readsrefs {resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv" if config['REF_BAM_LIST'] else ""
+		refmulticovtsv = f" --readsrefs {resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv" if config['REF_BAM_LIST'] else "",
+		fail=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOES.Failed"
 	output:
 		cnvcall = temp(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv"),
-		success = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.success",
 		rdata = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOES.Rdata"
 	log: 
 		log = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.log",
@@ -755,7 +755,9 @@ rule canoes_calling:
 		"""
 		Rscript {params.Rscripts}/CANOES.v2.2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} --removeY {params.removeY} \
 		--samples {params.bamlist} --homdel {params.hom} --numref {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
-		--pvalue {params.pvalue} {params.refbamlist} {params.refmulticovtsv} --output {output.cnvcall} --rdata {output.rdata} 1> {log.log} 2> {log.err} && touch {output.success}
+		--pvalue {params.pvalue} {params.refbamlist} {params.refmulticovtsv} --output {output.cnvcall} --rdata {output.rdata} 1> {log.log} 2> {log.err} && \
+		( [[ -s {output.cnvcall} ]] || touch {params.fail} ) && touch {output.cnvcall} && touch {output.rdata}; \
+		if [[ -f {params.fail} ]]; then exit 1; fi
 		"""
 
 rule merge_makeCNVcalls:
@@ -785,18 +787,18 @@ rule split_tsv:
 		python {params.split_script} -i {input} --sample_column 'Sample' --output {output} --specific_sample {params.specific_sample} && [[ -s {output} ]] || touch {output}
 		"""
 
-rule bedtovcf:
+rule variantconvert:
 	input: rules.correct_1based.output
-	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.vcf")
-	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.bedtovcf.log"
+	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unsorted.vcf")
+	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.variantconvert.log"
 	params:
 		json = config['VARIANT_CONVERT_CANOES'],
-		specific_sample = samples_str
+		specific_sample = samples_str,
+		dummypath=config['DUMMY_FILES']
 	shell:
 		r"""
 		if [ $(wc -l < {input}) -le 1 ]; then
-			sed '/^#CHROM/,$d' /app/scripts/dummy/empty.vcf > {output}
-
+			sed '/^#CHROM/,$d' {params.dummypath}/empty.vcf > {output}
 			echo -e "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{params.specific_sample}" >> {output}
 		else
 			variantconvert convert -i {input} -o {output} -c {params.json} 2> {log}
@@ -805,7 +807,7 @@ rule bedtovcf:
 
 rule sortvcf:
 	""" Sort vcf """
-	input: rules.bedtovcf.output
+	input: rules.variantconvert.output
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_sort.vcf")
 	shell: "({{ grep '^#' {input} || true; grep -v '^#' {input} || true | sort -k1,1V -k2,2g; }}) > {output}"
 
@@ -951,20 +953,20 @@ rule correct_chr:
 		awk '{{{{FS=OFS="\t"}};if(NR==1){{print; next}}; $2="chr"$2; print}}' {input} > {output}
 		"""
 
-rule variantconvert:
+rule variantconvert_annotsv:
 	input: rules.correct_chr.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_unfix.vcf")
 	params:
 			variantconvertannotsv=config['VARIANT_CONVERT_ANNOTSV'],
 			dummypath=config['DUMMY_FILES']
-	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.varianconvert.log"
+	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.variantconvert_annotsv.log"
 	shell:
 		"""
 		variantconvert convert -i {input} -o {output} -c {params.variantconvertannotsv} 2> {log} && [[ -s {output} ]] || cat {params.dummypath}/emptyAnnotSV.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' > {output} 
 		"""
 
 rule correct_vcf:
-	input: rules.variantconvert.output
+	input: rules.variantconvert_annotsv.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Design_fix.vcf")
 	shell:
 		""" 
@@ -1020,13 +1022,13 @@ use rule correct_chr as correct_chr_panel with:
 	input: rules.correct_tsv_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_chr.{{panel}}.tsv")
 
-use rule variantconvert as variantconvert_panel with:
+use rule variantconvert_annotsv as variantconvert_annotsv_panel with:
 	input: rules.correct_chr_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_uncorr.{{panel}}.vcf")
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.varianconvert.log"
 
 use rule correct_vcf as correct_vcf_panel with:
-	input: rules.variantconvert_panel.output
+	input: rules.variantconvert_annotsv_panel.output
 	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel_unfix.{{panel}}.vcf")
 
 rule sortvcf_panel:
@@ -1100,11 +1102,10 @@ onsuccess:
 	copy2(config['TEMPLATE_DIR'] + '/' + serviceName + '.style.css', resultDir)
 	print('[INFO] Generating html report done')
 
-	print('[INFO] Removing old results')
-	for sample in sample_list_to_copy:
-		shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
-	
 	if not config['NOCOPY']:
+		print('[INFO] Removing old results')
+		for sample in sample_list_to_copy:
+			shell(f"rm -f {outputDir}/{sample}/{serviceName}/* || true")
 		print('[INFO] Copying files')
 		shell("rsync -azvh --include={include} --exclude='*' {resultDir}/ {outputDir}")
 		for sample in sample_list_to_copy:
@@ -1114,7 +1115,7 @@ onsuccess:
 		print('[INFO] Skipping file copy due to NOCOPY option')
 
 	# Optionally, perform DEPOT_DIR copy
-	if config['DEPOT_DIR'] and outputDir != depotDir:
+	if config['DEPOT_DIR'] and outputDir != depotDir and not config['NOCOPY']:
 		print('[INFO] Removing old results from archives')
 		for sample in sample_list_to_copy:
 			shell(f"rm -f {depotDir}/{sample}/{serviceName}/* || true")

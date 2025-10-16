@@ -526,8 +526,8 @@ rule scramble:
 	output:
 		temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Full_raw.vcf")
 	log: 
-		log = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.ScrambleR.log", 
-		err = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.ScrambleR.err"
+		log = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Scramble.log", 
+		err = f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Scramble.err"
 	message: """ Starting Scramble on {input} file """
 	shell:
 		"""
@@ -845,7 +845,7 @@ onsuccess:
 		print('[INFO] Skipping file copy due to NOCOPY option')
 
 	# Optionally, perform DEPOT_DIR copy
-	if config['DEPOT_DIR'] and outputDir != depotDir:
+	if config['DEPOT_DIR'] and outputDir != depotDir and not config['NOCOPY']:
 		print('[INFO] Removing old results from archives')
 		for sample in sample_list:
 			shell(f"rm -f {depotDir}/{sample}/{serviceName}/* || true")
