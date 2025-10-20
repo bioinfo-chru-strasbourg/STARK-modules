@@ -734,6 +734,17 @@ if config['ALIGNER_NAME']:
 files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']))
 files_list_XY = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']))
 
+# Remove sample from files_list_XX or files_list_XY if REMOVE_SAMPLE_XX is set
+if config['REMOVE_SAMPLE_XX']:
+	files_list_XX = [
+		f for f in files_list_XX
+		if not any(sample in os.path.basename(f) for sample in config['REMOVE_SAMPLE_XX'])
+	]
+	files_list_XY = [
+		f for f in files_list_XY
+		if not any(sample in os.path.basename(f) for sample in config['REMOVE_SAMPLE_XX'])
+	]
+
 # Creating a txt list for the bam files per aligner per gender (A, M & F)
 for aligner in aligner_list:
 	for gender in gender_list:
@@ -899,17 +910,17 @@ rule makeCNVcalls:
 		removeY=config['REMOVE_Y'],
 		refbamlist=("--refbams " + config['REF_BAM_LIST']) if config.get('REF_BAM_LIST') else "",
 		decondir=config['R_SCRIPTS'],
-		fail=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.DECON.Failed"
-	output:
-		calltsv=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv"),
+		fail=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.DECON.Failed",
 		rdata=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVcalls.RData"
+	output:
+		calltsv=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv")
 	log:
 		log=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.log",
 		err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.err"
 	shell:
 		"""
-		Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --removeY {params.removeY} {params.refbamlist} --tsv {output.calltsv} --outrdata {output.rdata} 1> {log.log} 2> {log.err} && \
-		( [[ -s {output.calltsv} ]] || touch {params.fail} ) && touch {output.calltsv} && touch {output.rdata}; \
+		Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --removeY {params.removeY} {params.refbamlist} --tsv {output.calltsv} --outrdata {params.rdata} 1> {log.log} 2> {log.err} && \
+		( [[ -s {output.calltsv} ]] || touch {params.fail} ) && touch {output.calltsv}; \
 		if [[ -f {params.fail} ]]; then exit 1; fi
 
 		"""

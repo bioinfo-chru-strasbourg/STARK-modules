@@ -88,6 +88,8 @@ KMER: ""
 REMOVE_GENDER: ""
 # Option to call Y (True is not, False is yes)
 REMOVE_Y: TRUE
+# Remove sample for chrX & Y calling
+REMOVE_SAMPLE_XX: []
 
 ################## Misc params ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)

@@ -119,6 +119,8 @@ CHR_LIST_RESTRICT: []
 customexon: FALSE
 # kmerisation of DECON bed (integer) (ex 250)
 KMER: ""
+# Remove sample for chrX & Y calling
+REMOVE_SAMPLE_XX: []
 
 # Path for scripts and dummy files folders
 DUMMY_FILES: "/app/scripts/dummy"

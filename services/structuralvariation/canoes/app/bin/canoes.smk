@@ -534,14 +534,25 @@ else:
 # A = all ; XX = Female only ; XY = Male only
 # files_list_A contains the full path of all files (bam files for ex)
 # Warning the key dictionary for sexe is A/M/F but the gender_list is A/XY/XX
+print('[INFO] Creating the files text list for CNV calling')
 files_list_A = list(set([os.path.join(resultDir, os.path.basename(runDict[sample][".bam"])) for sample in sample_list if sample in runDict and ".bam" in runDict[sample]]))
 if config['ALIGNER_NAME']:
 	update_file_list_with_aligner(files_list_A, config['ALIGNER_NAME'])
 files_list_XX = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'F']))
 files_list_XY = list(set([files for files in files_list_A if runDict.get(os.path.basename(files).split(".")[0], {}).get('gender') == 'M']))
 
+# Remove sample from files_list_XX or files_list_XY if REMOVE_SAMPLE_XX is set
+if config['REMOVE_SAMPLE_XX']:
+	files_list_XX = [
+		f for f in files_list_XX
+		if not any(sample in os.path.basename(f) for sample in config['REMOVE_SAMPLE_XX'])
+	]
+	files_list_XY = [
+		f for f in files_list_XY
+		if not any(sample in os.path.basename(f) for sample in config['REMOVE_SAMPLE_XX'])
+	]
+
 # Creating a txt list for the bam files per aligner per gender (A, M & F)
-print('[INFO] Creating the files text list for CNV calling')
 for aligner in aligner_list:
 	for gender in gender_list:
 		bamlist = f"{resultDir}/{serviceName}.{date_time}.{gender}.list.txt"
@@ -744,10 +755,10 @@ rule canoes_calling:
 		hom = config['homdel'],
 		refbamlist= "--refbams {}".format(config['REF_BAM_LIST']) if config['REF_BAM_LIST'] else "",
 		refmulticovtsv = f" --readsrefs {resultDir}/{serviceName}.{date_time}.{{aligner}}.refsamples.reads.tsv" if config['REF_BAM_LIST'] else "",
-		fail=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOES.Failed"
-	output:
-		cnvcall = temp(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv"),
+		fail=f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOES.Failed",
 		rdata = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOES.Rdata"
+	output:
+		cnvcall = temp(f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CNVCall.tsv")
 	log: 
 		log = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.log",
 		err = f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.CANOEScalling.err"
@@ -755,8 +766,8 @@ rule canoes_calling:
 		"""
 		Rscript {params.Rscripts}/CANOES.v2.2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} --removeY {params.removeY} \
 		--samples {params.bamlist} --homdel {params.hom} --numref {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
-		--pvalue {params.pvalue} {params.refbamlist} {params.refmulticovtsv} --output {output.cnvcall} --rdata {output.rdata} 1> {log.log} 2> {log.err} && \
-		( [[ -s {output.cnvcall} ]] || touch {params.fail} ) && touch {output.cnvcall} && touch {output.rdata}; \
+		--pvalue {params.pvalue} {params.refbamlist} {params.refmulticovtsv} --output {output.cnvcall} --rdata {params.rdata} 1> {log.log} 2> {log.err} && \
+		( [[ -s {output.cnvcall} ]] || touch {params.fail} ) && touch {output.cnvcall}; \
 		if [[ -f {params.fail} ]]; then exit 1; fi
 		"""
 
