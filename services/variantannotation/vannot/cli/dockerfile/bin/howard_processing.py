@@ -1136,10 +1136,10 @@ def panel_filtering(run_informations):
         panel = os.path.join(
             run_informations["tmp_analysis_folder"], os.path.basename(panel)
         )
-        if os.path.basename(panel).split(".")[3] != "genes":
-            panel_name = os.path.basename(panel).split(".")[1]
-        else:
+        if os.path.basename(panel).endswith(".manifest.genes"):
             panel_name = "_".join(os.path.basename(panel).split(".")[1].split("_")[1:])
+        else:
+            panel_name = os.path.basename(panel).split(".")[-2]
         for tmp_vcf_file in tmp_vcf_files:
             sample_name = tmp_vcf_file.split(".")[0]
             filtered_vcf = osj(

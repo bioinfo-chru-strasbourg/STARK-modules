@@ -20,6 +20,8 @@ def distribute(run_informations):
         run_informations["run_repository"],
         run_informations["run_depository"],
     ]
+    
+    sample_count = len(run_repository_sample_folder_list)
 
     for sample in run_repository_sample_folder_list:
         sample = os.path.basename(os.path.dirname(sample))
@@ -59,23 +61,42 @@ def distribute(run_informations):
                 )
             )
         )
-
-        merged_vcfs = glob.glob(
-            osj(
-                run_informations["archives_results_folder"],
-                f"VANNOT_merged_{run_informations["run_name"]}*.vcf.gz",
-            )
-        )
-        for merged_vcf in merged_vcfs:
-            if os.path.basename(merged_vcf).split(".")[1] != "design":
-                renamed_merged_vcf = f"VANNOT.{date}.panel.{os.path.basename(merged_vcf).split(".")[2]}.vcf.gz"
-            else:
-                renamed_merged_vcf = f"VANNOT.{date}.design.vcf.gz"
-            for output_folder in output_folders:
-                subprocess.run(
-                    ["rsync", "-rp", merged_vcf, osj(output_folder, renamed_merged_vcf)]
+        if sample_count > 1:
+            merged_vcfs = glob.glob(
+                osj(
+                    run_informations["archives_results_folder"],
+                    f"VANNOT_merged_{run_informations["run_name"]}*.vcf.gz",
                 )
-                log.info(f"Copied {renamed_merged_vcf} into {output_folder}")
+            )
+            for merged_vcf in merged_vcfs:
+                if os.path.basename(merged_vcf).split(".")[1] != "design":
+                    renamed_merged_vcf = f"VANNOT.{date}.panel.{os.path.basename(merged_vcf).split(".")[2]}.vcf.gz"
+                else:
+                    renamed_merged_vcf = f"VANNOT.{date}.design.vcf.gz"
+                for output_folder in output_folders:
+                    subprocess.run(
+                        ["rsync", "-rp", merged_vcf, osj(output_folder, renamed_merged_vcf)]
+                    )
+                    log.info(f"Copied {renamed_merged_vcf} into {output_folder}")
+                    
+        elif sample_count == 1:
+            sample_name = os.path.basename(sample)
+            vcfs = glob.glob(
+                osj(
+                    run_informations["archives_results_folder"],
+                    f"VANNOT_{sample_name}*.vcf.gz",
+                )
+            )
+            for vcf in vcfs:
+                if os.path.basename(vcf).split(".")[1] != "design":
+                    renamed_vcf = f"VANNOT.{date}.panel.{os.path.basename(vcf).split(".")[2]}.vcf.gz"
+                else:
+                    renamed_vcf = f"VANNOT.{date}.design.vcf.gz"
+                for output_folder in output_folders:
+                    subprocess.run(
+                        ["rsync", "-rp", vcf, osj(output_folder, renamed_vcf)]
+                    )
+                    log.info(f"Copied {renamed_vcf} into {output_folder}")
 
         non_redundants = glob.glob(
             osj(run_informations["archives_results_folder"], "Non_Redondant.*.tsv")
