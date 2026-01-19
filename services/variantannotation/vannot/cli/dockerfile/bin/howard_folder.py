@@ -72,9 +72,8 @@ def launch_folder(args):
             run_informations["run_platform_application"] = args.param.split("/")[-1].removesuffix(".json").removeprefix("param.")
 
         howard_processing.folder_initialisation(run_informations)
-        merged_vcf = howard_processing.merge_vcf(run_informations, "1", "") 
+        merged_vcf = howard_processing.merge_vcf(run_informations, "1", "")
         annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
-        exit()
         # howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
 
         if run_informations["chunking"] is True:
