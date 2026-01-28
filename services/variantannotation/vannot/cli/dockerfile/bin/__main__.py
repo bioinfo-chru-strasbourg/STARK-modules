@@ -164,6 +164,8 @@ def parse_args():
             assembly_parser,
             output_format_parser,
             param_parser,
+            chunking_parser,
+            onco_parser,
         ],
     )
     parser_run.add_argument(

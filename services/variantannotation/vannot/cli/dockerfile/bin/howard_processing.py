@@ -870,8 +870,6 @@ def howard_score_transcripts(run_informations):
             os.rename(vcf_file, osj(os.path.dirname(vcf_file), os.path.basename(vcf_file).removeprefix("unmerged_")))
         vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
 
-
-
     threads = commons.get_threads("threads_annotation")
     memory = commons.get_memory("memory_annotation")
 
