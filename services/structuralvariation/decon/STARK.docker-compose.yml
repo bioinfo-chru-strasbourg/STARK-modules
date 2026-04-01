@@ -1,7 +1,6 @@
 ########################
 # Docker compose DECON #
 ########################
-version: '3.9'
 
 services:
 
@@ -20,7 +19,7 @@ services:
             - /home1/data/STARK/databases:/databases:rw
         working_dir: /
         networks:
-            - stark_stark
+            - stark_stark 
 
     stark-module-structuralvariation-submodule-decon-service-cli:
         image: stark/stark-module-structuralvariation-submodule-decon-service-common:3.1

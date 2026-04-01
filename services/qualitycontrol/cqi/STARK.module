@@ -8,7 +8,7 @@
           "name": "CQI cli",
           "type": "CLI",
           "description": "A CQI CLI.",
-          "release": "1.0",
+          "release": "1.1",
           "available": true
         },
         "listener": {
