@@ -102,13 +102,12 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
     md5 = getMd5(run)
     containerName = f"{serviceName}-{md5}-NAME-{os.path.basename(run)}"
 
-    # Check if Docker Compose file exists
-    compose_file = os.getenv('DOCKER_COMPOSE_FILE', 'docker-compose.yml')
-    if not os.path.exists(compose_file):
-        raise FileNotFoundError(f"Could not find Docker Compose file: {compose_file}")
+    COMPOSE_PATH = (
+        f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/listener/" 
+    )
 
     # Build the Docker Compose command
-    cmd = f"docker compose -f {compose_file} run --rm --name={containerName} -v {run}:{run} {montage} {image} {' '.join(launchCommand)} --run={run}"
+    cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} {' '.join(launchCommand)} --run={run}"
 
     print(f"Running command: {cmd}")
     subprocess.call(cmd, shell=True)
