@@ -61,12 +61,29 @@ function pct() {
 }
 
 function prepare_intervals() {
-    local dir="$1" log="$2" out="$BED"
-    if [[ "$BED" == *","* ]]; then
-        out="$dir/CQI.$DATEFILE.intervals.genes.bed"
-        cat ${BED//,/ } | sort -k1,1V -k2,2n | bedtools merge -i stdin > "$out" 2>>"$log"
-        [ ! -s "$out" ] && { log_error "Gene file empty: $out"; exit 2; }
+    local dir="$1" log="$2"
+    local out=""
+
+    if [ -n "$BED" ]; then
+        if [[ "$BED" == *","* ]]; then
+            out="$dir/CQI.$DATEFILE.intervals.genes.bed"
+            cat ${BED//,/ } | sort -k1,1V -k2,2n | bedtools merge -i stdin > "$out" 2>>"$log"
+            [ ! -s "$out" ] && { log_error "Gene file empty: $out"; exit 2; }
+        else
+            out="$BED"
+        fi
+
+   else
+        out=$(find "$RUN/$CQI_SAMPLE" -name "$CQI_SAMPLE.*.genes" ! -name "*list*" -print -quit)
+
+        if [ -z "$out" ]; then
+            out=$(find "$RUN/$CQI_SAMPLE" -name "$CQI_SAMPLE.bed" ! -name "*list*" -print -quit)
+        fi
+
+        [ -z "$out" ] && { log_error "No BED or GENES file found"; exit 2; }
     fi
+
+    BED="$out"
     echo "$out"
 }
 
@@ -163,6 +180,7 @@ function main() {
         esac
     done
 
+    [ -z "$GENOME" ]              && GENOME="/databases/genomes/current/hg19.fa"
     [ -z "$JSON" ]                && JSON="/databases/CQI/latest/REF.json"
     [ ! -f "$JSON" ]              && { log_error "No VCF JSON file"; exit 2; }
     [ -f "$RUN/CQIComplete.txt" ] && { log_info  "CQI already completed."; exit 0; }
@@ -237,6 +255,10 @@ function main() {
             done
         done
     done
+
+    touch "$RUN/CQIComplete.txt" && chmod 777 "$RUN/CQIComplete.txt"
+    echo -e "$DATEFILE" >> "$RUN/CQIComplete.txt"
+    rm -f "$RUN/CQIRunning.txt"
 }
 
 main "$@"

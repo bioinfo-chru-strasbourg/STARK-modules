@@ -27,13 +27,14 @@ def readconfig(configFile, serviceName, configkey):
         raise ValueError(f"[ERROR] Missing {configkey} for service {serviceName} in the config file.")
 
 
-def createContainerFile(containersFile, run, containerName):
+def createContainerFile(containersFile, run, containerName, cmd):
     """Creates a log file for the container execution."""
     with open(osj(containersFile, containerName + ".log"), "w+") as file:
         file.write("RUN: " + os.path.basename(run) + "\n")
         file.write("FOLDER: " + run + "\n")
         file.write("EXEC_DATE: " + datetime.now().strftime("%d%m%Y-%H%M%S") + "\n")
         file.write("ID: " + containerName + "\n")
+        file.write("CMD: " + cmd + "\n")
 
 
 def getMd5(run):
@@ -80,7 +81,7 @@ def createRunningFile(run, serviceName):
         file.write(f"# [{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}] {os.path.basename(run)} running with {serviceName}\n")
 
 
-def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile):
+def launch(run, serviceName, containersFile=None, montage=None, image=None, launchCommand=None, configFile=None, microserviceRepo=None):
     """Launches the Docker container using Docker Compose with the necessary configurations."""
     createRunningFile(run, serviceName)
 
@@ -107,13 +108,13 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
     )
 
     # Build the Docker Compose command
-    cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} {' '.join(launchCommand)} --run={run}"
+    cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} {launchCommand} --run={run}"
 
     print(f"Running command: {cmd}")
     subprocess.call(cmd, shell=True)
 
     # Create log file after execution
-    createContainerFile(containersFile, run, containerName)
+    createContainerFile(containersFile, run, containerName, cmd)
 
 
 def myoptions():
@@ -126,6 +127,7 @@ def myoptions():
     parser.add_argument("-i", "--image", type=str, default="", help="Docker image to use", dest="image")
     parser.add_argument("-l", "--launchcommand", type=str, default="", help="Command to launch inside the container", dest="launchCommand")
     parser.add_argument("-c", "--config", type=str, default="", help="Config file to read from", dest="configFile")
+    parser.add_argument("-repo", "--repo", type=str, default="", help="Microservice repository name", dest="microserviceRepo")
     return parser.parse_args()
 
 
@@ -141,4 +143,5 @@ if __name__ == "__main__":
         args.image,
         args.launchCommand,
         args.configFile,
+        args.microserviceRepo,
     )

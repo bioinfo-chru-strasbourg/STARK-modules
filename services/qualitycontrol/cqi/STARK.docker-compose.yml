@@ -8,8 +8,7 @@ services:
             dockerfile: cqi_dockerfile
         container_name: stark-module-qualitycontrol-submodule-cqi-service-cli
         restart: "no"
-        entrypoint: ["/bin/bash", "-c"]
-        command: ["tail -f /dev/null"]  
+        entrypoint: ["/bin/bash"] 
         tty: true
         stdin_open: true
         volumes:

@@ -65,15 +65,41 @@ def createRunningFile(run, serviceName):
 	file = open(osj(run,serviceName+"Running.txt"), "w+")
 	file.write("# ["+datetime.now().strftime("%d/%m/%Y %H:%M:%S")+"] "+os.path.basename(run)+" running with "+serviceName+"\n")
 	file.close()
- 
-def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile):
+
+#def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile):
+#	createRunningFile(run, serviceName)
+#	samplesheet = find_any_samplesheet(run)
+#	assert samplesheet != "NO_SAMPLESHEET_FOUND",\
+#		"[ERROR] find_any_samplesheet() couldn't find any samplesheet in run"+run+"."
+#	bed = findAnyBed(run)
+#	md5 = getMd5(run)
+#	containerName = serviceName+"-"+md5+"-NAME-"+os.path.basename(run)
+#	cmd = "docker run --rm --name="+containerName+" -v /home1/data"+run+":"+run+" "+montage+" "+image+" "+launchCommand+" --run="+run+"'"
+#	subprocess.call(cmd, shell = True)
+#	createContainerFile(containersFile, run, containerName)
+
+def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile, repository):
 	createRunningFile(run, serviceName)
-	samplesheet = find_any_samplesheet(run)
-	assert samplesheet != "NO_SAMPLESHEET_FOUND",\
-		"[ERROR] find_any_samplesheet() couldn't find any samplesheet in run"+run+"."
-	bed = findAnyBed(run)
-	md5 = getMd5(run)
-	containerName = serviceName+"-"+md5+"-NAME-"+os.path.basename(run)
-	cmd = "docker run --rm --name="+containerName+" -v "+run+":"+run+" "+montage+" "+image+" "+launchCommand+" --run="+run+"'"
-	subprocess.call(cmd, shell = True)
-	createContainerFile(containersFile, run, containerName)
+	if run.startswith("/STARK/"):
+		runPath = run.replace("/STARK/output/repository", repository)
+		samplesheet = find_any_samplesheet(run)
+		assert samplesheet != "NO_SAMPLESHEET_FOUND",\
+			"[ERROR] find_any_samplesheet() couldn't find any samplesheet in run"+run+"."
+		bed = findAnyBed(run)
+		samplesheetPath = samplesheet.replace("/STARK/output/repository", repository)
+		bedPath = bed.replace("/STARK/output/repository", repository)
+		containerName = serviceName+"-NAME-"+os.path.basename(run)
+		if "HUSDIAGGEN" in run:
+			cmd = "docker run --rm --name="+containerName+" -v "+runPath+":"+runPath+" "+montage+" "+image+" "+launchCommand+" --run="+run+" --genes="+bed+"'"
+		else:
+			cmd = "docker run --rm --name="+containerName+" -v "+runPath+":"+runPath+" "+montage+" "+image+" "+launchCommand+" --run="+run+"'"
+		subprocess.call(cmd, shell = True)
+	else:
+		samplesheet = find_any_samplesheet(run)
+		assert samplesheet != "NO_SAMPLESHEET_FOUND",\
+			"[ERROR] find_any_samplesheet() couldn't find any samplesheet in run"+run+"."
+		bed = findAnyBed(run)
+		containerName = serviceName+"-NAME-"+os.path.basename(run)
+		cmd = "docker run --rm --name="+containerName+" -v "+run+":"+run+" "+montage+" "+image+" "+launchCommand+" --run="+run+"'"
+		subprocess.call(cmd, shell = True)
+		createContainerFile(containersFile, run, containerName)

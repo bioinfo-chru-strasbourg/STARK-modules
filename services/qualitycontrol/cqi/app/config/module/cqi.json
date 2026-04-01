@@ -4,13 +4,36 @@
 			"infos": {
 				"name": "CQI",
 				"description": "CQI analysis",
-				"triggers-description": "(STARKCopyComplete.txt AND !CQIComplete.txt AND !CQIRunning.txt AND CQI#)"
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (CQIRunning.txt AND CQIComplete.txt) AND (#CQI OR GROUP DIAG) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
 			},
 			"triggers": {
-				"AND":
-				{
-					"file": ["STARKCopyComplete.txt", "!CQIComplete.txt", "!CQIRunning.txt"],
-					"tags": ["CQI#"]
+				"AND_1":{
+					"file":[
+						"STARKCopyComplete.txt",
+						"!CQIRunning.txt",
+						"!CQIComplete.txt"
+					],
+					"tags":[
+						"CQI"
+					],
+					"OR_2":{
+						"tags":[
+							"!POOL"
+						],
+						"AND_2":{
+							"tags":[
+								"POOL"
+							],
+							"OR_3":{
+								"file":[
+									"POOLRunning.txt"
+								],
+								"file":[
+									"POOLComplete.txt"
+								]
+							}
+						}
+					}
 				}
 			}
 		}
