@@ -108,8 +108,10 @@ def launch(run, serviceName, containersFile=None, montage=None, image=None, laun
     )
 
     # Build the Docker Compose command
-    cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} {launchCommand} --run={run}"
-
+    if "HUSDIAGGEN" in run:
+        cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} {launchCommand} --run={run} --genes={bed}"
+    else:
+        cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} {launchCommand} --run={run}"
     print(f"Running command: {cmd}")
     subprocess.call(cmd, shell=True)
 
