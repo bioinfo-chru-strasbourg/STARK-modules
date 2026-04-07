@@ -59,10 +59,12 @@ SCRIPTS_FOLDER: "/app/scripts"
 BCL_DIRECTORY: ""
 SAMPLE_SHEET: ""
 # For alevin quantification fastq mode, path to the index file
-SALMON_INDEX: "/databases/salmon/GRCm39.v33/salmon_index/"
-ALEVIN_GENE_TABLE: "/databases/salmon/GRCm39.v33/txp2gene.tsv"
-MISC_ALEVIN_OPTIONS: "--chromiumV3"
-ALEVIN_LIBRARY: "ISR" # also for chromiumV3
+#SALMON_INDEX: "/databases/salmon/GRCm39.v33/salmon_index/"
+SALMON_INDEX: "/databases/salmon/GRCh38.v41/salmon_index/"
+ALEVIN_GENE_TABLE: "/databases/salmon/GRCh38.v41/salmon_index/txp2gene.tsv"
+#ALEVIN_GENE_TABLE: "/databases/salmon/GRCm39.v33/txp2gene.tsv"
+MISC_ALEVIN_OPTIONS: "--chromiumV3" # can be --chromium --celseq2 etc.
+ALEVIN_LIBRARY: "A" #"ISR" # also for chromiumV3
 
 # Seurat analysis parameters
 PROJECT_PREFIX: "10X"

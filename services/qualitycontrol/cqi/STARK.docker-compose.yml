@@ -1,14 +1,14 @@
 
 services:
 
-    stark-module-qualitycontrol-submodule-cqi-service-cli:
+    stark-module-qualitycontrol-submodule-cqi-service-cli: 
         image: stark/stark-module-qualitycontrol-submodule-cqi-service-cli:1.1
         build:
             context: ./
             dockerfile: cqi_dockerfile
         container_name: stark-module-qualitycontrol-submodule-cqi-service-cli
         restart: "no"
-        entrypoint: ["/bin/bash"] 
+        entrypoint: ["/bin/bash"]
         tty: true
         stdin_open: true
         volumes:

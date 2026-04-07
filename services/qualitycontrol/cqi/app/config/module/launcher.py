@@ -87,7 +87,7 @@ def launch(run, serviceName, containersFile=None, montage=None, image=None, laun
 
     # Read the image and launch command from the configuration file
     if not launchCommand:
-        launchCommand = readconfig(configFile, serviceName, "launch")
+        launchCommand = " ".join(readconfig(configFile, serviceName, "launch"))
     image = readconfig(configFile, serviceName, "image")[0]  # assuming only one image in the list
 
     # Ensure launchCommand is valid
@@ -106,12 +106,14 @@ def launch(run, serviceName, containersFile=None, montage=None, image=None, laun
     COMPOSE_PATH = (
         f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/listener/" 
     )
+    # Construct the archive path based on run
+    archive_path = run.replace("/repository/", "/depository/")
 
     # Build the Docker Compose command
     if "HUSDIAGGEN" in run:
-        cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} {launchCommand} --run={run} --genes={bed}"
+        cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} {launchCommand} --run={run} --genes={bed} --archives={archive_path}"
     else:
-        cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} {launchCommand} --run={run}"
+        cmd = f"docker compose -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} {launchCommand} --run={run} --archives={archive_path}"
     print(f"Running command: {cmd}")
     subprocess.call(cmd, shell=True)
 
