@@ -1,7 +1,6 @@
 ###########################
 # Docker compose SCRAMBLE #
 ###########################
-version: '3.9'
 
 services:
 

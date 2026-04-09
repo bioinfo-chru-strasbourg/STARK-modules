@@ -1,7 +1,6 @@
 #########################
 # Docker compose Salmon #
 #########################
-version: '3.9'
 
 services:
 
