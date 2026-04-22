@@ -6,7 +6,7 @@
 ##################################################################################
 
 # PROD version 2 : 28/11/2023 : changelog
-	# switch to alma linux 8, add docker compose
+# switch to alma linux 8, add docker compose
 
 FROM almalinux:8
 RUN rpm --import https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux
@@ -37,9 +37,9 @@ RUN chmod +x /usr/local/bin/docker-compose
 
 COPY . /app
 
-RUN chmod -R +x /app
-ENV PATH="/app:$PATH"
+# RUN chmod -R +x /app
+# ENV PATH="/app:$PATH"
 
-WORKDIR /app
+WORKDIR /app/bin
 
 CMD ["python3","listener.py","--help"]

@@ -25,7 +25,7 @@ import time
 
 from os.path import join as osj
 from datetime import datetime
-sys.path.insert(1,"/app/bin/config")
+# sys.path.insert(1,"/app/bin/config")
 from launcher import launch
 
 
