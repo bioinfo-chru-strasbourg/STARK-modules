@@ -1,92 +1,77 @@
-##########################################################################
-# Dockerfile Version:   1.2
-# Software:             POOL
-# Software Version:     1.2
-# Description:          Dockerfile to build POOL analysis container image
-##########################################################################
+FROM almalinux:9
+LABEL maintainer="bioinfo@chru-strasbourg.fr" \
+	Version="2.0.0" \
+	Description="POOL image"
 
-ARG STARK_IMAGE="stark/stark:0.9.18.2"
+ENV LC_CTYPE=en_US.UTF-8
 
-########
-# FROM #
-########
+RUN dnf -y update && \
+	dnf -y install python3.12 wget
 
-FROM $STARK_IMAGE
-LABEL maintainer="NICAISE Samuel <samuel.nicaise@chru-strasbourg.fr>" \
-    Software="DEJAVU" \
-	Version="1.2" \
-	Description="POOL"
+WORKDIR /tmp
+RUN wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh && \
+	bash Miniforge3-Linux-x86_64.sh -b -p /opt/conda && \
+	chmod -R 777 /opt/conda
+ENV PATH="/opt/conda/bin:$PATH"
 
+COPY . /app
+RUN chmod -R 777 /app
 
-ENV SRC=/src
-RUN yum -y install  epel-release
-RUN yum -y install  gcc gcc-c++ \
-					bzip2 bzip2-devel \
-					zlib2 zlib2-devel \
-					xz xz-devel \
-					unzip wget make docker
-	
-#############
-#  python3  #
-#############
-#RUN yum -y install https://centos7.iuscommunity.org/ius-release.rpm
-RUN yum -y install https://repo.ius.io/ius-release-el7.rpm
-RUN yum -y install python36u python36u-libs python36u-devel python36u-pip
+# htslib-tools contains bgzip and tabix
+RUN dnf install -y epel-release && \
+	dnf -y install bcftools htslib htslib-tools
 
-#############
-# Snakemake #
-#############
-RUN cd /tmp  && \
-	wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh  && \
-	bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/lib/miniconda3/ && \
-	echo 'export PATH="$PATH:/usr/local/lib/miniconda3/bin"' > /etc/profile.d/miniconda.sh && \
-	chmod 755 /etc/profile.d/miniconda.sh && \
-	export PATH="$PATH:/usr/local/lib/miniconda3/bin" && \
-	/usr/local/lib/miniconda3/bin/conda install -y -c bioconda -c conda-forge snakemake && \
-	chmod -R 755 /usr/local/lib/miniconda3/ && \
-	rm -f /tmp/Miniconda3-latest-Linux-x86_64.sh;
+WORKDIR /app
+RUN /opt/conda/bin/conda init --all && \
+	/opt/conda/bin/conda create -n py312 python=3.12 bioconda::vcf-validator -y && \
+	source /opt/conda/etc/profile.d/conda.sh && \
+	conda activate py312 && \
+	python -m ensurepip --upgrade && \
+	python -m pip install --upgrade pip && \
+	python -m pip install cyvcf2 && \
+	python -m pip cache purge && \
+	conda clean --all --yes
 
-##########
-#  java  #
-##########
-RUN yum -y install java java-1.8.0
+# mosdepth
+# RUN wget https://github.com/brentp/mosdepth/releases/download/v0.3.12/mosdepth && \
+# 	chmod +x mosdepth && \
+# 	mv mosdepth /usr/local/bin/
 
-##############
-#  Bedtools  #
-##############
-# RUN wget https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz  && \
-	# tar xf bedtools-2.27.1.tar.gz  && \
-	# rm -rf bedtools-2.27.1.tar.gz  && \
-	# cd bedtools2  && \
-	# make prefix=$SRC/bedtools/2.27.1 install  && \
-	# cd ../  && \
-	# rm -rf bedtools2;
-ENV BEDTOOLS=/STARK/tools/bedtools/current/bin
+# pandepth
+# WORKDIR /tmp
+# RUN wget -c https://github.com/HuiyangYu/PanDepth/releases/download/v2.26/PanDepth-2.26-Linux-x86_64.tar.gz && \
+# 	tar zvxf PanDepth-2.26-Linux-x86_64.tar.gz && \
+# 	rm -rf PanDepth-2.26-Linux-x86_64.tar.gz && \
+# 	cd PanDepth-2.26-Linux-x86_64 && \
+# 	chmod +x pandepth && \
+# 	mv pandepth /usr/local/bin/
 
+# bedtools
+# RUN dnf -y install gcc make zlib-devel bzip2-devel xz-devel gcc-c++ && \
+# 	wget https://github.com/arq5x/bedtools2/releases/download/v2.31.1/bedtools-2.31.1.tar.gz && \
+# 	tar -zxvf bedtools-2.31.1.tar.gz && \
+# 	rm -rf bedtools-2.31.1.tar.gz && \
+# 	cd bedtools2 &&	\
+# 	make && \
+# 	mv bin/* /usr/local/bin/
 
-##########
-#  GATK  #
-##########
-# RUN wget "https://software.broadinstitute.org/gatk/download/auth?package=GATK-archive&version=3.8-1-0-gf15c1c3ef" -O GenomeAnalysisTK-3.8-1-0.tar.bz2 && \
-	# tar -xf GenomeAnalysisTK-3.8-1-0.tar.bz2 && \
-	# rm -rf GenomeAnalysisTK-3.8-1-0.tar.bz2 && \
-	# cd GenomeAnalysisTK-3.8-1-0-gf15c1c3ef && \
-	# mkdir -p $SRC/gatk/3.8-1-0/bin && \
-	# cp GenomeAnalysisTK.jar $SRC/gatk/3.8-1-0/bin && \
-	# cd ../ && \
-	# rm -rf GenomeAnalysisTK-3.8-1-0-gf15c1c3ef;
-
-
-########
-# POOL #
-########
 COPY . /app
 #RUN echo -e '{\n\t"bedtools":"/src/bedtools/2.27.1/bin",\n\t"gatk":"/src/gatk/3.8-1-0/bin/GenomeAnalysisTK.jar",\n\t"java":"/usr/bin/java",\n\t"annotsv":"/src/AnnotSV/2.1",\n\t"R":"/usr/bin/R"\n}' > /app/config/config.json
 
 RUN chmod -R +x /app
-ENV PATH="/app/bin:$PATH"
+# ENV PATH="/app/bin:$PATH"
 
-WORKDIR /STARK
-ENTRYPOINT []
+RUN dnf -y install dnf-plugins-core && \
+	dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo && \
+	dnf -y install docker-ce docker-ce-cli containerd.io
 
-CMD ["/app/bin/pool","--help"]
+WORKDIR /app
+
+ARG STARK_MAIN_FOLDER
+ENV DOCKER_STARK_MAIN_FOLDER=${STARK_MAIN_FOLDER}
+RUN echo "DOCKER_STARK_MAIN_FOLDER=${DOCKER_STARK_MAIN_FOLDER}" > /app/.env
+
+# WORKDIR /STARK
+# ENTRYPOINT []
+
+# CMD ["/app/bin/pool","--help"]

@@ -27,20 +27,17 @@ tail -f /home1/data/WORK_DIR_VINCENT/dev/TEST_tristan/VaRank.log
 cp /home1/data/WORK_DIR_VINCENT/dev/TEST_tristan/*.tsv /home1/L_PROD/DIAG/DIAG/GENODENT/
 """
 
-from __future__ import division
-from __future__ import print_function
-
 import argparse
-import doctest
 import glob
 import os
 import re
 import shutil
 import subprocess
-import sys
 import time
 
 from os.path import join as osj
+
+from pools import main as pool_main
 
 def find_any_samplesheet(runDir, fromResDir = False):
 	"""
@@ -94,29 +91,6 @@ def get_sample_list_from_samplesheet(samplesheetPath):
 		if " " in sampleList[i]:
 			sampleList[i] = sampleList[i].replace(" ", "_")
 	return sampleList
-
-# def getDescriptionFromSample(sample, runDir):
-	# samplesheetPath = find_any_samplesheet(runDir)
-	# assert samplesheetPath != "NO_SAMPLESHEET_FOUND", \
-			# "[ERROR] find_any_samplesheet() couldn't find any samplesheet. Check if the --fromResultDir argument is set correctly."
-	# inDataTable = False
-	# description = []
-	# with open(samplesheetPath, "r") as f:
-			# for l in f:
-				# if not inDataTable:
-					# if l.startswith("Sample_ID,Sample_Name,"):
-						# inDataTable = True
-						# DescriptionIndex = l.strip().split(",").index("Description")
-				# else:
-					# if sample in l:
-						# description.append(l.strip().split(",")[DescriptionIndex])
-	# return description
-
-# def getPool(description, sexTag):
-	# if re.search("APP#[A-Z0-9]*.[A-Z0-9]*#POOL", description) and sexTag in description:
-		# return True
-	# else:
-		# return False
 
 def cleanList(str):
 	return [ x.strip() for x in str.split(",") ]
@@ -187,6 +161,7 @@ def is_pool(runDir, sample, sexTag):
 		return False
 
 def getPoolDict(sampleList, runDir):
+	print("hello getPoolDict")
 	poolDict = {}
 	for s in sampleList:
 		with open(osj(runDir, s, "STARK", s+".tag"), "r") as f:
@@ -208,6 +183,7 @@ def getPoolDict(sampleList, runDir):
 						poolList.append(s)
 		poolList.sort()
 		poolDict["#".join(poolList)] = sampleList
+	print("done getPoolDict", poolDict)
 	return poolDict
 
 def createSampleRepository(runDir, sample):
@@ -226,9 +202,9 @@ def writeErrorLog(sample, runDir, errorMessage):
 
 def bcftoolsCompress(vcf, folder):
 	vcfCompressed = osj(folder,os.path.splitext(os.path.basename(vcf))[0]+".vcf.gz")
-	cmd = "/STARK/tools/htslib/current/bin/bgzip -c "+vcf+" > "+vcfCompressed
+	cmd = "bgzip -c "+vcf+" > "+vcfCompressed
 	subprocess.call(cmd, shell = True)
-	cmd = "/STARK/tools/htslib/current/bin/tabix -f "+vcfCompressed
+	cmd = "tabix -f "+vcfCompressed
 	subprocess.call(cmd, shell = True)
 	return vcfCompressed
 
@@ -276,13 +252,13 @@ def launchAnalysis(sampleList, key, runDir, dockerOutputDir, genome, bcftools, s
 				vcf = osj(runDir, pool, "STARK", pool+".reports", pool+".final.vcf")
 				bam = osj(runDir, pool, "STARK", pool+".bwamem.bam")
 				vcfList.append(vcf)
-				poolMStr = "POOL_M:"+vcf+":"+bam
+				poolMStr = ":".join([pool, vcf, bam])
 			elif is_pool(runDir, pool, "SEX#F"):
 				assert poolFStr == "init", "[ERROR] More than one sample is named POOL_([A-Z]*)_F_([0-9]*) in the samplesheet"
 				vcf = osj(runDir, pool, "STARK", pool+".reports", pool+".final.vcf")
 				bam = osj(runDir, pool, "STARK", pool+".bwamem.bam")
 				vcfList.append(vcf)
-				poolFStr = "POOL_F:"+vcf+":"+bam
+				poolFStr = ":".join([pool, vcf, bam])
 			else:
 				for s in sampleList:
 					writeErrorLog(s, runDir, "[ERROR] Can't find "+pool+" sample's sex.")
@@ -296,28 +272,27 @@ def launchAnalysis(sampleList, key, runDir, dockerOutputDir, genome, bcftools, s
 	# assert poolMStr != "init"
 	# assert bed != "init"
 	if poolFStr == "init":
-		poolFStr = createEmptyVcfAndBam("POOL_F", dockerOutputDir, sampleList, runDir, bcftools, samtools)
-		# for s in sampleList:
-			# writeErrorLog(s, runDir, "[ERROR] Missing POOL_F for POOL analysis.")
-		# return "[ERROR] Missing POOL_F for POOL analysis."
+		# Why was this needed?
+		# poolFStr = createEmptyVcfAndBam("POOL_F", dockerOutputDir, sampleList, runDir, bcftools, samtools)
+		pass
 	if poolMStr == "init":
-		poolMStr = createEmptyVcfAndBam("POOL_M", dockerOutputDir, sampleList, runDir, bcftools, samtools)
-		# for s in sampleList:
-			# writeErrorLog(s, runDir, "[ERROR] Missing POOL_M for POOL analysis.")
-		# return "[ERROR] Missing POOL_M for POOL analysis."
+		# Why was this needed?
+		# poolMStr = createEmptyVcfAndBam("POOL_M", dockerOutputDir, sampleList, runDir, bcftools, samtools)
+		pass
 	if bed == "init":
 		for s in sampleList:
 			writeErrorLog(s, runDir, "[ERROR] Missing bed for POOL analysis.")
 		return "[ERROR] Missing bed for POOL analysis."
 	#TODO: be able to fetch a pool from a different run ?
-	cmd = 'python /app/lib/pool/pool.py sample -o '+dockerOutputDir+' -s "'+','.join(vcfList)+'" -p "'+poolFStr+","+poolMStr+'" -b '+bed+' -g '+genome
-	# cmd = 'python /home1/TOOLS/tools/pool/1.2/lib/pool/pool.py sample -o '+dockerOutputDir+' -s "'+','.join(vcfList)+'" -p "'+poolFStr+","+poolMStr+'" -b '+bed+' -g '+genome
-	print(cmd)
-	subprocess.call(cmd, shell=True)
-	copyResults(sampleList, runDir, dockerOutputDir)
+	# cmd = 'python /app/lib/pool/pool.py sample -o '+dockerOutputDir+' -s "'+','.join(vcfList)+'" -p "'+poolFStr+","+poolMStr+'" -b '+bed+' -g '+genome
+	print("Launching")
+	pool_main(dockerOutputDir, ','.join(vcfList), poolFStr, poolMStr, bed, genome)
+	print()
+	# subprocess.call(cmd, shell=True)
+	# copyResults(sampleList, runDir, dockerOutputDir)
 
 def main(args):
-	dockerOutputDir = "/app/res"
+	dockerOutputDir = "/dev/shm/pools"
 	# dockerOutputDir = osj(args.runDir,"res")
 	if not os.path.exists(dockerOutputDir):
 		os.mkdir(dockerOutputDir)
@@ -337,7 +312,10 @@ def main(args):
 	poolDict = getPoolDict(sampleList, args.runDir)
 	for key in poolDict:
 		launchAnalysis(poolDict[key], key, args.runDir, dockerOutputDir, args.genome, args.bcftools, args.samtools)
-	shutil.rmtree(dockerOutputDir)
+	
+	# TODO: put this up again
+	# shutil.rmtree(dockerOutputDir)
+	
 	with open(osj(args.runDir, "POOLComplete.txt"), "w") as f:
 		f.write(time.ctime())
 	if  os.path.exists(osj(args.runDir, "POOLRunning.txt")):
@@ -349,8 +327,8 @@ if __name__=="__main__":
 	parser.add_argument("-i", "--runDir", type=str, help="path to run in a STARK 0.9.18 repository",required=True)
 	parser.add_argument("-g","--genome", help="genome file", type=str, dest='genome',required=True)
 	parser.add_argument("-e","--exclude", help="list of tags for which samples are removed if have them", type=str, dest='exclude', default="CQI#")
-	parser.add_argument("-b","--bcftools", help="path to bcftools bin", type=str, dest='bcftools', default="/STARK/tools/bcftools/current/bin/bcftools")
-	parser.add_argument("-s","--samtools", help="path to samtools bin", type=str, dest='samtools', default="/STARK/tools/samtools/current/bin/samtools")
+	parser.add_argument("-b","--bcftools", help="path to bcftools bin", type=str, dest='bcftools', default="bcftools")
+	parser.add_argument("-s","--samtools", help="path to samtools bin", type=str, dest='samtools', default="samtools")
 	
 	args = parser.parse_args()
 	args.mode(args)
