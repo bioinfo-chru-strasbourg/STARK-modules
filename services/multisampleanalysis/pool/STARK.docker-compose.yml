@@ -1,4 +1,5 @@
 services:
+
     stark-module-multisampleanalysis-submodule-pool-service-cli:
         image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-multisampleanalysis-submodule-pool-service-cli:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_TAG}
         build:
@@ -26,8 +27,18 @@ services:
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
 
+    stark-module-multisampleanalysis-submodule-pool-service-setup:
+        image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-multisampleanalysis-submodule-pool-service-cli:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_TAG}
+        # if the files launcher.py and pool.json do not exist in the config folder, copy them from the image to the config folder
+        command: bash -c "for file in launcher.py pool.json; do if [ ! -f /config/\$file ]; then cp /app/bin/\$file /config/\$file; fi; done"
+        volumes:
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_CONFIG}:/config:rw
+        depends_on:
+            - stark-module-multisampleanalysis-submodule-pool-service-cli
+        networks:
+            - ${DOCKER_STARK_MAIN_NETWORK}
+
     stark-module-multisampleanalysis-submodule-pool-service-listener:
-        # image: almalinux:9
         image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-common-submodule-listener-service-listener:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE_TAG}
         container_name: stark-module-multisampleanalysis-submodule-pool-service-listener
         command: python3 /app/bin/listener.py --input=/STARK/output/repository --json /STARK/config/multisampleanalysis/pool/listener/pool.json --servicename=POOL --containersfile=/STARK/services --nbDaysBack=60 --minDelay=1
