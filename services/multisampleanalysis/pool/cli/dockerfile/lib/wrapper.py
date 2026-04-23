@@ -1,30 +1,7 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 @Goal: Start the pools pipeline and include its result properly in a STARK repository
 
 @Author: Samuel Nicaise (2020)
-
-#Build the Image
-bioinfo@int0663/home1/TOOLS/tools/pool/1.2$ docker build . -t pool:1.2
-
-/home1/TOOLS/tools/pool/dev/bin/pool sample \
-	-o /home1/data/WORK_DIR_VINCENT/tmp/test01 \
-	-s "/home1/L_PROD/DIAG/DIAG/DI/180112_NB551027_0230_AHWFMMAFXX/ASG160332/ASG160332.final.vcf,/home1/L_PROD/DIAG/DIAG/DI/180112_NB551027_0230_AHWFMMAFXX/ADN160249/ADN160249.final.vcf" \
-	-p "POOL_F:/home1/L_PROD/DIAG/DIAG/DI/180112_NB551027_0230_AHWFMMAFXX/POOL_AHWFMMAFXX_F_13/POOL_AHWFMMAFXX_F_13.final.vcf:/home1/L_PROD/DIAG/DIAG/DI/180112_NB551027_0230_AHWFMMAFXX/POOL_AHWFMMAFXX_F_13/DATA/POOL_AHWFMMAFXX_F_13.bwamem.bam,POOL_M:/home1/L_PROD/DIAG/DIAG/DI/180112_NB551027_0230_AHWFMMAFXX/POOL_AHWFMMAFXX_M_12/POOL_AHWFMMAFXX_M_12.final.vcf:/home1/L_PROD/DIAG/DIAG/DI/180112_NB551027_0230_AHWFMMAFXX/POOL_AHWFMMAFXX_M_12/DATA/POOL_AHWFMMAFXX_M_12.bwamem.bam" \
-	-b /home1/L_PROD/DIAG/DIAG/DI/180112_NB551027_0230_AHWFMMAFXX/ASG160332/DATA/ASG160332.bed \
-	-g /home1/TOOLS/genomes/hg19/hg19.fa
-
-##The following should be done with the results:
-#copier le configfile VaRank:
-cp /home1/TOOLS/tools/varank/VaRank_1.4.3/configfile.pool configfile
-#lancer VaRank:
-/home1/TOOLS/tools/stark/current/bin/launch.VaRank.sh -a /home1/data/WORK_DIR_VINCENT/dev/TEST_tristan
-#suivre le log
-tail -f /home1/data/WORK_DIR_VINCENT/dev/TEST_tristan/VaRank.log
-#copier les fichiers tsv sur EMCLABO
-cp /home1/data/WORK_DIR_VINCENT/dev/TEST_tristan/*.tsv /home1/L_PROD/DIAG/DIAG/GENODENT/
 """
 
 import argparse
@@ -200,50 +177,28 @@ def writeErrorLog(sample, runDir, errorMessage):
 	with open(osj(resDir, "ERROR.log"), "w") as f:
 		f.write(errorMessage)
 
-def bcftoolsCompress(vcf, folder):
-	vcfCompressed = osj(folder,os.path.splitext(os.path.basename(vcf))[0]+".vcf.gz")
-	cmd = "bgzip -c "+vcf+" > "+vcfCompressed
-	subprocess.call(cmd, shell = True)
-	cmd = "tabix -f "+vcfCompressed
-	subprocess.call(cmd, shell = True)
-	return vcfCompressed
-
-def createEmptyVcfAndBam(pool, dockerOutputDir, sampleList, runDir, bcftools, samtools):
-	if not os.path.exists(osj(dockerOutputDir, pool)):
-		os.mkdir(osj(dockerOutputDir, pool))
-	vcf = osj(dockerOutputDir, pool, pool+".vcf")
-	bam = osj(dockerOutputDir, pool, pool+".bam")
-	vcfCompressed = bcftoolsCompress(osj(runDir, sampleList[0], "STARK", sampleList[0]+".reports", sampleList[0]+".final.vcf"), dockerOutputDir)
-	cmd = bcftools+' view -h -o '+vcf+' -O v '+osj(runDir,sampleList[0],sampleList[0]+'.final.vcf.gz')
-	subprocess.call(cmd, shell=True)
-	cmd = samtools+' view -H -b -o '+bam+' '+osj(runDir,sampleList[0],"STARK",sampleList[0]+'.bwamem.bam')
-	subprocess.call(cmd, shell=True)
-	cmd = samtools+' index -b '+bam+' '+osj(bam+'.bai')
-	subprocess.call(cmd, shell=True)
-	poolStr = pool+":"+vcf+":"+bam
-	return poolStr
-
 def copyResults(sampleList, runDir, dockerOutputDir):
+	print("hello copyResults")
+	print("sampleList:", sampleList)
+	print("runDir:", runDir)
+	print("dockerOutputDir:", dockerOutputDir)
 	for s in sampleList:
+		print("path for sample s: ", osj(dockerOutputDir, s+".final.vcf.gz"))
 		if os.path.exists(osj(dockerOutputDir, s+".final.vcf.gz")):
+			print("path exists")
 			resDir, logDir = createSampleRepository(runDir, s)
 			shutil.copyfile(osj(dockerOutputDir, s+".final.vcf.gz"), osj(resDir, s+".final.vcf.gz"))
-			shutil.copyfile(osj(dockerOutputDir, s+".final.vcf.gz.tbi"), osj(resDir, s+".final.vcf.gz.tbi"))
-			shutil.copyfile(osj(dockerOutputDir, ".log", s+".bcftools.log"), osj(logDir, s+".bcftools.log"))
-			shutil.copyfile(osj(dockerOutputDir, ".log", s+".howard.log"), osj(logDir, s+".howard.log"))
-			for f in glob.glob(osj(dockerOutputDir, ".snakemake", "log", "*.log")):
-				shutil.copyfile(f, osj(logDir, os.path.basename(f)))
 		else:
-			writeErrorLog(s, runDir,  "[ERROR] Missing final VCF file. Are the input BAM & VCF correct?")
+			print("in error")
+			writeErrorLog(s, runDir,  "[ERROR] Missing final VCF file.")
 
-def launchAnalysis(sampleList, key, runDir, dockerOutputDir, genome, bcftools, samtools):
+def launchAnalysis(sampleList, key, runDir, workDir, genome):
 	vcfList = []
 	poolFStr = "init"
 	poolMStr = "init"
 	bed = "init"
 	for s in sampleList:
 		vcf = osj(runDir, s, "STARK", s+".reports", s+".final.vcf")
-		# bam = osj(runDir, s, "STARK", s+".bwamem.bam")
 		vcfList.append(vcf)
 	for pool in key.split('#'):
 		if os.path.exists(osj(runDir, pool, "STARK",pool+".tag")):
@@ -268,17 +223,6 @@ def launchAnalysis(sampleList, key, runDir, dockerOutputDir, genome, bcftools, s
 				writeErrorLog(s, runDir, "[ERROR] Specified "+pool+" sample not found.")
 			return "[ERROR] Specified "+pool+" sample not found."
 	bed = osj(runDir, pool, "STARK", pool+".bed")
-	# assert poolFStr != "init"
-	# assert poolMStr != "init"
-	# assert bed != "init"
-	if poolFStr == "init":
-		# Why was this needed?
-		# poolFStr = createEmptyVcfAndBam("POOL_F", dockerOutputDir, sampleList, runDir, bcftools, samtools)
-		pass
-	if poolMStr == "init":
-		# Why was this needed?
-		# poolMStr = createEmptyVcfAndBam("POOL_M", dockerOutputDir, sampleList, runDir, bcftools, samtools)
-		pass
 	if bed == "init":
 		for s in sampleList:
 			writeErrorLog(s, runDir, "[ERROR] Missing bed for POOL analysis.")
@@ -286,16 +230,14 @@ def launchAnalysis(sampleList, key, runDir, dockerOutputDir, genome, bcftools, s
 	#TODO: be able to fetch a pool from a different run ?
 	# cmd = 'python /app/lib/pool/pool.py sample -o '+dockerOutputDir+' -s "'+','.join(vcfList)+'" -p "'+poolFStr+","+poolMStr+'" -b '+bed+' -g '+genome
 	print("Launching")
-	pool_main(dockerOutputDir, ','.join(vcfList), poolFStr, poolMStr, bed, genome)
+	# pool_main(workDir, ','.join(vcfList), poolFStr, poolMStr, bed, genome)
 	print()
 	# subprocess.call(cmd, shell=True)
-	# copyResults(sampleList, runDir, dockerOutputDir)
+	copyResults(sampleList, runDir, workDir)
 
 def main(args):
-	dockerOutputDir = "/dev/shm/pools"
-	# dockerOutputDir = osj(args.runDir,"res")
-	if not os.path.exists(dockerOutputDir):
-		os.mkdir(dockerOutputDir)
+	if not os.path.exists(args.workDir):
+		os.mkdir(args.workDir)
 	
 	#get only samples that will be analysed
 	sampleList = get_sample_list_from_samplesheet(find_any_samplesheet(args.runDir))
@@ -311,10 +253,10 @@ def main(args):
 	#create a dictionary with POOL_ID1#POOL_ID2 as key, and samples as values, depending on tag POOL#POOL_ID1#POOL_ID2
 	poolDict = getPoolDict(sampleList, args.runDir)
 	for key in poolDict:
-		launchAnalysis(poolDict[key], key, args.runDir, dockerOutputDir, args.genome, args.bcftools, args.samtools)
+		launchAnalysis(poolDict[key], key, args.runDir, args.workDir, args.genome)
 	
 	# TODO: put this up again
-	# shutil.rmtree(dockerOutputDir)
+	# shutil.rmtree(workDir)
 	
 	with open(osj(args.runDir, "POOLComplete.txt"), "w") as f:
 		f.write(time.ctime())
@@ -327,8 +269,7 @@ if __name__=="__main__":
 	parser.add_argument("-i", "--runDir", type=str, help="path to run in a STARK 0.9.18 repository",required=True)
 	parser.add_argument("-g","--genome", help="genome file", type=str, dest='genome',required=True)
 	parser.add_argument("-e","--exclude", help="list of tags for which samples are removed if have them", type=str, dest='exclude', default="CQI#")
-	parser.add_argument("-b","--bcftools", help="path to bcftools bin", type=str, dest='bcftools', default="bcftools")
-	parser.add_argument("-s","--samtools", help="path to samtools bin", type=str, dest='samtools', default="samtools")
-	
+	parser.add_argument("-w","--workDir", help="work directory", type=str, dest='workDir', default="/dev/shm/pools")
+
 	args = parser.parse_args()
 	args.mode(args)
