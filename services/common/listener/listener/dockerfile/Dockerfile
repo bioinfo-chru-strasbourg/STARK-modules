@@ -14,7 +14,7 @@ RUN rpm --import https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux
 # YUM #
 #######
 RUN yum update -y
-RUN yum -y install python3 epel-release yum-utils device-mapper-persistent-data lvm2
+RUN yum -y install python3 epel-release yum-utils device-mapper-persistent-data lvm2 ncurses
 
 #############
 # DOCKER-CE #
@@ -27,7 +27,8 @@ RUN systemctl enable docker.service
 ##################
 # DOCKER-COMPOSE #
 ##################
-ENV DOCKER_COMPOSE_VERSION="v2.28.1"
+ENV DOCKER_COMPOSE_VERSION="v2.28.1" 
+# Last version 5.1.1 of docker compose is not compatible with docker-ce 24.0.5, so we need to use an older version of docker compose
 RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 RUN chmod +x /usr/local/bin/docker-compose
 

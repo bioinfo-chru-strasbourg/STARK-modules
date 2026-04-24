@@ -1,0 +1,36 @@
+##############################################################
+# Submodule :      CQI
+# Services :       cli
+# Version :        1.1
+# Description:     CQI submodule
+##############################################################
+# Updated : 04/2026
+# Authoring : Thomas LAVAUX 
+
+# Ubuntu based Mambaforge (Minimal Focal)
+FROM condaforge/mambaforge:latest
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update --fix-missing && \
+    apt-get install -y --no-install-recommends \
+    unzip \
+    vim \
+    rsync \
+    gzip \
+    ca-certificates && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
+RUN mamba install -y -c conda-forge -c bioconda \
+    bcftools \
+    bedtools \
+    jq \
+    bc \
+    && mamba clean -afy
+
+COPY ./app /app
+COPY ./STARK.docker-compose.yml /app/config/module/
+
+WORKDIR "/app"
+ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
+CMD ["/bin/bash"]

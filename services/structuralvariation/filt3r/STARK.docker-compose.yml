@@ -1,7 +1,6 @@
 ##########################
 # Docker compose FILT3R #
 ##########################
-version: '3.9'
 
 services:
 

@@ -310,7 +310,7 @@ onsuccess:
 		for sample in sample_list:
 			shell(f"cp {outputDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/* {outputDir}/{sample}/{serviceName}/ || true")
 	else:
-	print('[INFO] Skipping file copy due to NOCOPY option')
+		print('[INFO] Skipping file copy due to NOCOPY option')
 
 	# Optionally, perform DEPOT_DIR copy
 	if config['DEPOT_DIR'] and outputDir != depotDir:

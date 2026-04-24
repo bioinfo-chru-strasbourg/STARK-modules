@@ -1,7 +1,6 @@
 ###############################
 # Docker compose FLT3ITDEXT  #
 ###############################
-version: '3.9'
 
 services:
 

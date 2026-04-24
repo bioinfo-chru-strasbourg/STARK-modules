@@ -84,7 +84,7 @@ def panel_checker(run_informations):
 
 def find_panel(run_informations):
     samples = glob.glob(osj(run_informations["run_repository"], "*", ""))
-    panels = glob.glob(osj(samples[0], "STARK", "*.manifest.genes"))
+    panels = glob.glob(osj(samples[0], "STARK", "*.manifest.*genes"))
     return panels
 
 

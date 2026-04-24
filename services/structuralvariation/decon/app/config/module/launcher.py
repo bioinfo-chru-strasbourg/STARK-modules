@@ -96,9 +96,9 @@ def launch(
         yaml_config_file = None
 
     COMPOSE_PATH = (
-        f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/listener/"
+        f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/listener/" 
     )
-
+ 
     docker_version = get_docker_version()
     if docker_version:
         # Check if Docker version is greater than 20
