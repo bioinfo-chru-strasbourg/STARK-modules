@@ -5,7 +5,6 @@ cmd = 'python /app/lib/pool/pool.py sample -o '+dockerOutputDir+' -s "'+','.join
 """
 
 from dataclasses import dataclass
-import logging as log
 import os
 from pathlib import Path
 
@@ -57,7 +56,6 @@ def get_pool_data(
     A dictionary where the keys are variant IDs and the values are lists of annotations for that variant in the pool VCF.
     Relevant data: GT, depth, base counts
     """
-    # data = {}
     if pool is not None:
         # With gts012=True, gt_types will be 0=HOM_REF, 1=HET, 2=HOM_ALT, 3=UNKNOWN. If False, 3 and 2 are flipped.
         # Here, it is expected to be set to True.
@@ -103,8 +101,6 @@ def add_base_counts_to_data(
                     base_counts = base_counts.replace(" ", "|")
                     coverage_data[pos] = (depth, base_counts)
 
-        # print(f"Coverage data for chromosome {chrom} in pool {pool.name if pool is not None else 'None'}: {dict(list(coverage_data.items())[:10])}")
-
         for key in variants.keys():
             _, pos, _, _ = key.split(":")
             if pos in coverage_data:
@@ -112,12 +108,6 @@ def add_base_counts_to_data(
                 data[chrom][key]["DP"] = depth
                 data[chrom][key]["base_counts"] = base_counts
 
-    print("helloooo there @@@@@@@@@@@")
-    try:
-        print("checking", data["chr1"]["chr1:1454424:C:T"])
-    except:
-        pass
-    # print(f"Data for pool {pool.name if pool is not None else 'None'}: {dict(list(data.items())[:3])}")
     return data
 
 
@@ -289,7 +279,7 @@ def merge_variants(vcf_list: list[str]) -> DataByChromosome:
 
 
 def main(
-    output_dir: str,
+    work_dir: str,
     vcf_list_as_str: str,
     pool_f_str: str,
     pool_m_str: str,
@@ -303,7 +293,7 @@ def main(
     With 2 pairs of pools in a run there can be up to 6 pool analysis: with one or the other parent, or with the two parents, for each pair of pool.
 
     Args:
-    output_dir: in-container output dir. This is in fact more of a work dir, and the wrapper will copy the results to the actual output dir.
+    work_dir: in-container output dir. This used to be named output_dir, but is more of a work dir, and the wrapper will copy the results to the actual output dir.
     vcf_list_as_str: comma-separated list of VCF paths of samples attached to the pool(s) being analyzed.
     pool_f_str: identify the maternal pool being analyzed. Each string has the following form:
         <pool_id>:<path_to_vcf>:<path_to_bam>
@@ -327,30 +317,26 @@ def main(
 
     for p in [pool_f, pool_m]:
         if p is not None:
-            done_file_path = Path(output_dir) / f"{p.name}_coverage_done.txt"
+            done_file_path = Path(work_dir) / f"{p.name}_coverage_done.txt"
             if not done_file_path.exists():
-                generate_cov_data(p, output_dir, bed, genome)
+                generate_cov_data(p, work_dir, bed, genome)
 
     if pool_f is not None:
         all_variants = merge_variants(vcf_list + [str(pool_f.vcf_path)])
-        pool_f_data = get_pool_data(pool_f, output_dir, all_variants)
+        pool_f_data = get_pool_data(pool_f, work_dir, all_variants)
     else:
         pool_f_data = {}
 
     if pool_m is not None:
         all_variants = merge_variants(vcf_list + [str(pool_m.vcf_path)])
-        pool_m_data = get_pool_data(pool_m, output_dir, all_variants)
+        pool_m_data = get_pool_data(pool_m, work_dir, all_variants)
     else:
         pool_m_data = {}
 
     for vcf_path in vcf_list:
         print(f"Processing sample VCF: {vcf_path}")
         sample_vcf = Path(vcf_path)
-        output_vcf = Path(output_dir) / f"{sample_vcf.stem}.vcf.gz"
+        output_vcf = Path(work_dir) / f"{sample_vcf.stem}.vcf.gz"
         create_output_vcf(sample_vcf, output_vcf, pool_f_data, pool_m_data)
 
     print("Pool analysis completed successfully.")
-
-
-# TODO: split base counts with pipes
-# TODO: explain empty data on variant SGT2000780 chr1	1454424
