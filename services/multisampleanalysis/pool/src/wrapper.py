@@ -230,14 +230,15 @@ def launchAnalysis(sampleList, key, runDir, workDir, genome):
 	#TODO: be able to fetch a pool from a different run ?
 	# cmd = 'python /app/lib/pool/pool.py sample -o '+dockerOutputDir+' -s "'+','.join(vcfList)+'" -p "'+poolFStr+","+poolMStr+'" -b '+bed+' -g '+genome
 	print("Launching")
-	# pool_main(workDir, ','.join(vcfList), poolFStr, poolMStr, bed, genome)
+	pool_main(workDir, ','.join(vcfList), poolFStr, poolMStr, bed, genome)
 	print()
 	# subprocess.call(cmd, shell=True)
 	copyResults(sampleList, runDir, workDir)
 
 def main(args):
-	if not os.path.exists(args.workDir):
-		os.mkdir(args.workDir)
+	runWorkDir = osj(args.workDir, os.path.basename(args.runDir))
+	if not os.path.exists(runWorkDir):
+		os.mkdir(runWorkDir)
 	
 	#get only samples that will be analysed
 	sampleList = get_sample_list_from_samplesheet(find_any_samplesheet(args.runDir))
@@ -253,10 +254,9 @@ def main(args):
 	#create a dictionary with POOL_ID1#POOL_ID2 as key, and samples as values, depending on tag POOL#POOL_ID1#POOL_ID2
 	poolDict = getPoolDict(sampleList, args.runDir)
 	for key in poolDict:
-		launchAnalysis(poolDict[key], key, args.runDir, args.workDir, args.genome)
+		launchAnalysis(poolDict[key], key, args.runDir, runWorkDir, args.genome)
 	
-	# TODO: put this up again
-	# shutil.rmtree(workDir)
+	shutil.rmtree(runWorkDir)
 	
 	with open(osj(args.runDir, "POOLComplete.txt"), "w") as f:
 		f.write(time.ctime())

@@ -1,3 +1,9 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from __future__ import division
+from __future__ import print_function
+
 import glob
 import json
 import os
@@ -95,8 +101,8 @@ def launch(run, serviceName, containersFile, montage, image, launchCommand, conf
 	createRunningFile(run, serviceName)
 	containerName = serviceName+"-NAME-"+os.path.basename(run)
 	if run.startswith("/STARK/"):
-		runPath = run.replace("/STARK/output/repository", repository)
-		cmd = "docker run --rm --name="+containerName+" -v "+runPath+":"+runPath+" -v /home1/bin/STARK-modules/current/services/multisampleanalysis/pool/cli/dockerfile/lib/wrapper.py:/app/lib/wrapper.py "+montage+" "+image+" "+launchCommand+" -i "+runPath
+		outerRunPath = run.replace("/STARK/output/repository", repository)
+		cmd = "docker run --rm --name="+containerName+" -v "+outerRunPath+":"+run+" "+montage+" "+image+" "+launchCommand+" -i "+run
 		print(cmd)
 		subprocess.call(cmd, shell = True)
 	else:

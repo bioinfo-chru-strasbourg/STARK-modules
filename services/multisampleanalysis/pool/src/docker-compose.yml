@@ -5,6 +5,7 @@ services:
       - /dev/shm/pools:/dev/shm/pools:rw
       - ${DOCKER_STARK_MAIN_FOLDER}/data:/STARK/data:rw
       - ${DOCKER_STARK_MAIN_FOLDER}/output/tmp:/STARK/output/tmp:rw
+      - ${DOCKER_STARK_MAIN_FOLDER}/output/repository:/STARK/output/repository:ro
       - ${DOCKER_STARK_MAIN_FOLDER}/databases:/STARK/databases:ro
     networks:
       - stark_stark

@@ -8,22 +8,27 @@ ENV LC_CTYPE=en_US.UTF-8
 RUN dnf -y update && \
 	dnf -y install python3.12 wget
 
+RUN dnf -y install dnf-plugins-core && \
+	dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo && \
+	dnf -y install docker-ce docker-ce-cli containerd.io
+
 WORKDIR /tmp
 RUN wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh && \
 	bash Miniforge3-Linux-x86_64.sh -b -p /opt/conda && \
+	rm -rf Miniforge3-Linux-x86_64.sh && \
 	chmod -R 777 /opt/conda
 ENV PATH="/opt/conda/bin:$PATH"
-
-COPY . /app
-RUN chmod -R 777 /app
 
 # htslib-tools contains bgzip and tabix
 RUN dnf install -y epel-release && \
 	dnf -y install bcftools htslib htslib-tools
 
+COPY . /app
+RUN chmod -R 777 /app
+
 WORKDIR /app
 RUN /opt/conda/bin/conda init --all && \
-	/opt/conda/bin/conda create -n py312 python=3.12 bioconda::vcf-validator -y && \
+	/opt/conda/bin/conda create -n py312 python=3.12 -y && \
 	source /opt/conda/etc/profile.d/conda.sh && \
 	conda activate py312 && \
 	python -m ensurepip --upgrade && \
@@ -54,16 +59,6 @@ RUN /opt/conda/bin/conda init --all && \
 # 	cd bedtools2 &&	\
 # 	make && \
 # 	mv bin/* /usr/local/bin/
-
-COPY . /app
-#RUN echo -e '{\n\t"bedtools":"/src/bedtools/2.27.1/bin",\n\t"gatk":"/src/gatk/3.8-1-0/bin/GenomeAnalysisTK.jar",\n\t"java":"/usr/bin/java",\n\t"annotsv":"/src/AnnotSV/2.1",\n\t"R":"/usr/bin/R"\n}' > /app/config/config.json
-
-RUN chmod -R +x /app
-# ENV PATH="/app/bin:$PATH"
-
-RUN dnf -y install dnf-plugins-core && \
-	dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo && \
-	dnf -y install docker-ce docker-ce-cli containerd.io
 
 WORKDIR /app
 

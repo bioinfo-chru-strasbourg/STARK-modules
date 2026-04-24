@@ -3,7 +3,7 @@ services:
     stark-module-multisampleanalysis-submodule-pool-service-cli:
         image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-multisampleanalysis-submodule-pool-service-cli:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_TAG}
         build:
-            context: ./cli/dockerfile
+            context: .
             dockerfile: Dockerfile
             args:
                 STARK_MAIN_FOLDER: ${DOCKER_STARK_MAIN_FOLDER}
@@ -14,7 +14,8 @@ services:
         tty: true # docker run -t (pseudo-TTY)
         volumes:
             - ${DOCKER_STARK_MAIN_FOLDER}/output:/STARK/output:rw
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:/STARK/output/repository:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:/STARK/output/repository:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:/STARK/output/depository:rw
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:/STARK/output/archives:ro
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATA}:/STARK/data:rw
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:/STARK/databases:ro
@@ -23,14 +24,15 @@ services:
             - ${DOCKER_STARK_SOCK_MOUNT}
             - /dev/shm/pools:/dev/shm/pools:rw
             # for dev
-            - /home1/bin/STARK-modules/current/services/multisampleanalysis/pool/cli/dockerfile/lib:/app/lib
+            - /home1/bin/STARK-modules/current/services/multisampleanalysis/pool/src:/app/src:rw
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
 
+    # this service is designed to run once when the compose is launched then exit
     stark-module-multisampleanalysis-submodule-pool-service-setup:
         image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-multisampleanalysis-submodule-pool-service-cli:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_TAG}
         # if the files launcher.py and pool.json do not exist in the config folder, copy them from the image to the config folder
-        command: bash -c "for file in launcher.py pool.json; do if [ ! -f /config/\$file ]; then cp /app/bin/\$file /config/\$file; fi; done"
+        command: bash -c 'for file in launcher.py pool.json; do if [ ! -f "/config/$$file" ]; then cp "/app/config/$$file" "/config/"; fi; done'
         volumes:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_CONFIG}:/config:rw
         depends_on:
@@ -46,8 +48,9 @@ services:
         environment:
             - MICROSERVICE_IMAGE=${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-multisampleanalysis-submodule-pool-service-cli:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_TAG}
             - MICROSERVICE_MONTAGE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONTAINER_MOUNT}
-            - MICROSERVICE_LAUNCH=/opt/conda/envs/py312/bin/python /app/lib/wrapper.py -g /STARK/databases/genomes/current/hg19.fa
+            - MICROSERVICE_LAUNCH=/opt/conda/envs/py312/bin/python /app/src/wrapper.py -g /STARK/databases/genomes/current/${GENOME}/${GENOME}.fa
             - MICROSERVICE_REPOSITORY=${DOCKER_STARK_MAIN_FOLDER}/output/repository
+            - PYTHONUNBUFFERED=1
         volumes:
             - ${DOCKER_STARK_MAIN_FOLDER}/output:/STARK/output:rw
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:/STARK/output/depository:rw
@@ -57,6 +60,8 @@ services:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_SERVICES}:/STARK/services/multisampleanalysis/pool/listener:rw
             - ${DOCKER_STARK_MAIN_FOLDER}/config/multisampleanalysis/pool/listener/launcher.py:/app/bin/launcher.py:ro
             - ${DOCKER_STARK_SOCK_MOUNT}
+        depends_on:
+            - stark-module-multisampleanalysis-submodule-pool-service-setup
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
 

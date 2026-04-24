@@ -84,9 +84,9 @@ def add_base_counts_to_data(pool: Pool, work_dir: str, data:DataByChromosome) ->
                     depth = int(columns[3])
                     base_counts = columns[4]
                     coverage_data[pos] = (depth, base_counts)
-        
+
         # print(f"Coverage data for chromosome {chrom} in pool {pool.name if pool is not None else 'None'}: {dict(list(coverage_data.items())[:10])}")
-        
+
         for key in variants.keys():
             _, pos, _, _ = key.split(":")
             if pos in coverage_data:
@@ -105,7 +105,8 @@ def run_gatk(args) -> None:
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
     command = (
-        f"docker compose run --rm stark-module-multisampleanalysis-submodule-pool-service-gatk gatk DepthOfCoverage "
+        f"docker compose -f /app/src/docker-compose.yml --env-file /app/.env run --rm "
+        f"stark-module-multisampleanalysis-submodule-pool-service-gatk gatk DepthOfCoverage "
         f"-I {bam_path} "
         f"-L {interval_file} "
         f"-O {output_prefix} "
@@ -247,3 +248,6 @@ def main(output_dir: str, vcf_list_as_str: str, pool_f_str: str, pool_m_str: str
         create_output_vcf(sample_vcf, output_vcf, pool_f_data, pool_m_data)
 
     print("Pool analysis completed successfully.")
+
+#TODO: split base counts with pipes
+#TODO: explain empty data on variant SGT2000780 chr1	1454424	
