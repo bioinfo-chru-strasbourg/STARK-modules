@@ -40,7 +40,7 @@ class Pool:
 def get_variant_key(variant: cyvcf2.Variant) -> str:
     return f"{variant.CHROM}:{variant.POS}:{variant.REF}:{','.join(variant.ALT)}"
 
-def get_pool_data(pool: Pool, work_dir: str) -> DataByChromosome:
+def get_pool_data(pool: Pool, work_dir: str, all_variants: DataByChromosome) -> DataByChromosome:
     """
     Get the necessary data from a Pool.
 
@@ -48,7 +48,7 @@ def get_pool_data(pool: Pool, work_dir: str) -> DataByChromosome:
     A dictionary where the keys are variant IDs and the values are lists of annotations for that variant in the pool VCF.
     Relevant data: GT, depth, base counts
     """
-    data = {}
+    # data = {}
     if pool is not None:
         # With gts012=True, gt_types will be 0=HOM_REF, 1=HET, 2=HOM_ALT, 3=UNKNOWN. If False, 3 and 2 are flipped. 
         # Here, it is expected to be set to True.
@@ -56,15 +56,15 @@ def get_pool_data(pool: Pool, work_dir: str) -> DataByChromosome:
         if len(vcf.samples) != 1:
             raise ValueError(f"Expected exactly one sample in the pool VCF, but found {len(vcf.samples)} in {pool.vcf_path}")
         for variant in vcf:
-            if variant.CHROM not in data:
-                data[variant.CHROM] = {}
+            if variant.CHROM not in all_variants:
+                raise ValueError(f"Variant chromosome {variant.CHROM} not found in the merged variants from the sample VCFs. This should not happen since the merged variants are coming from the sample VCFs and the pool VCF. Variant: {get_variant_key(variant)}")
             key = get_variant_key(variant)
             gt = str(variant.gt_types[0])
-            # the previous pipeline fetched DP data from GATK too
+            # the previous pipeline fetched DP data from GATK too, so let's keep using it instead of the VCF
             # dp = int(variant.format("DP")[0][0])
-            data[variant.CHROM][key] = AnnotationData(GT=gt)
+            all_variants[variant.CHROM][key] = AnnotationData(GT=gt)
 
-    data = add_base_counts_to_data(pool, work_dir, data)
+    data = add_base_counts_to_data(pool, work_dir, all_variants)
 
     return data
 
@@ -83,6 +83,8 @@ def add_base_counts_to_data(pool: Pool, work_dir: str, data:DataByChromosome) ->
                     pos = columns[0].split(":")[1]
                     depth = int(columns[3])
                     base_counts = columns[4]
+                    # replace spaces with pipes to keep current formating
+                    base_counts = base_counts.replace(" ", "|")
                     coverage_data[pos] = (depth, base_counts)
 
         # print(f"Coverage data for chromosome {chrom} in pool {pool.name if pool is not None else 'None'}: {dict(list(coverage_data.items())[:10])}")
@@ -94,7 +96,12 @@ def add_base_counts_to_data(pool: Pool, work_dir: str, data:DataByChromosome) ->
                 data[chrom][key]["DP"] = depth
                 data[chrom][key]["base_counts"] = base_counts
     
-    # print(f"Data for pool {pool.name if pool is not None else 'None'}: {dict(list(data.items())[:10])}")
+    print("helloooo there @@@@@@@@@@@")
+    try:
+        print("checking", data["chr1"]["chr1:1454424:C:T"])
+    except:
+        pass
+    # print(f"Data for pool {pool.name if pool is not None else 'None'}: {dict(list(data.items())[:3])}")
     return data
 
 def run_gatk(args) -> None:
@@ -195,6 +202,25 @@ def create_output_vcf(index_vcf_path: Path, output_vcf_path: Path, pool_f_data: 
         output_vcf.write_record(variant)
     output_vcf.close()
 
+def merge_variants(vcf_list: list[str]) -> DataByChromosome:
+    """
+    Merge the variants from all the VCF paths in input. Used to have a list of variants from which coverage data should be fetched.
+    Fetching coverage data from variants present in pools only is not enough, as some variants can be present in index samples but not in pools.
+    """
+    merged_data = {}
+    for vcf_path in vcf_list:
+        vcf = cyvcf2.VCF(vcf_path, gts012=True)
+        if len(vcf.samples) != 1:
+            raise ValueError(f"Expected exactly one sample in the VCF, but found {len(vcf.samples)} in {vcf_path}")
+        for variant in vcf:
+            chrom = variant.CHROM
+            key = get_variant_key(variant)
+            if chrom not in merged_data:
+                merged_data[chrom] = {}
+            if key not in merged_data[chrom]:
+                merged_data[chrom][key] = {}
+    return merged_data
+
 def main(output_dir: str, vcf_list_as_str: str, pool_f_str: str, pool_m_str: str, bed: str, genome: str) -> None:
     """
     This function is called by the wrapper for each pool analysis to be performed.
@@ -232,12 +258,14 @@ def main(output_dir: str, vcf_list_as_str: str, pool_f_str: str, pool_m_str: str
                 generate_cov_data(p, output_dir, bed, genome)
 
     if pool_f is not None:
-        pool_f_data = get_pool_data(pool_f, output_dir)
+        all_variants = merge_variants(vcf_list + [str(pool_f.vcf_path)])
+        pool_f_data = get_pool_data(pool_f, output_dir, all_variants)
     else:
         pool_f_data = {}
 
     if pool_m is not None:
-        pool_m_data = get_pool_data(pool_m, output_dir)
+        all_variants = merge_variants(vcf_list + [str(pool_m.vcf_path)])
+        pool_m_data = get_pool_data(pool_m, output_dir, all_variants)
     else:
         pool_m_data = {}
 
