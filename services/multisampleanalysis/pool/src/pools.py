@@ -12,15 +12,18 @@ from pathlib import Path
 from cyvcf2 import cyvcf2
 from typing import TypedDict
 import subprocess
-from multiprocessing import Pool as ProcessPool # too many things are named Pool here
+from multiprocessing import Pool as ProcessPool  # too many things are named Pool here
+
 
 class AnnotationData(TypedDict, total=False):
     GT: str
     DP: int
     base_counts: str
 
+
 DataByVariantKey = dict[str, AnnotationData]
 DataByChromosome = dict[str, DataByVariantKey]
+
 
 @dataclass
 class Pool:
@@ -29,18 +32,24 @@ class Pool:
     bam_path: Path
 
     @staticmethod
-    def from_string(pool_str: str) -> 'Pool | None':
-        if pool_str == "init":  
+    def from_string(pool_str: str) -> "Pool | None":
+        if pool_str == "init":
             return None
         parts = pool_str.split(":")
         if len(parts) != 3:
-            raise ValueError(f"Invalid pool string format. Expected: either 'init' (no pool) or '<pool_id>:<path_to_vcf>:<path_to_bam>' ; Got instead: {pool_str}")
+            raise ValueError(
+                f"Invalid pool string format. Expected: either 'init' (no pool) or '<pool_id>:<path_to_vcf>:<path_to_bam>' ; Got instead: {pool_str}"
+            )
         return Pool(name=parts[0], vcf_path=Path(parts[1]), bam_path=Path(parts[2]))
+
 
 def get_variant_key(variant: cyvcf2.Variant) -> str:
     return f"{variant.CHROM}:{variant.POS}:{variant.REF}:{','.join(variant.ALT)}"
 
-def get_pool_data(pool: Pool, work_dir: str, all_variants: DataByChromosome) -> DataByChromosome:
+
+def get_pool_data(
+    pool: Pool, work_dir: str, all_variants: DataByChromosome
+) -> DataByChromosome:
     """
     Get the necessary data from a Pool.
 
@@ -50,14 +59,18 @@ def get_pool_data(pool: Pool, work_dir: str, all_variants: DataByChromosome) -> 
     """
     # data = {}
     if pool is not None:
-        # With gts012=True, gt_types will be 0=HOM_REF, 1=HET, 2=HOM_ALT, 3=UNKNOWN. If False, 3 and 2 are flipped. 
+        # With gts012=True, gt_types will be 0=HOM_REF, 1=HET, 2=HOM_ALT, 3=UNKNOWN. If False, 3 and 2 are flipped.
         # Here, it is expected to be set to True.
-        vcf = cyvcf2.VCF(pool.vcf_path, gts012=True) 
+        vcf = cyvcf2.VCF(pool.vcf_path, gts012=True)
         if len(vcf.samples) != 1:
-            raise ValueError(f"Expected exactly one sample in the pool VCF, but found {len(vcf.samples)} in {pool.vcf_path}")
+            raise ValueError(
+                f"Expected exactly one sample in the pool VCF, but found {len(vcf.samples)} in {pool.vcf_path}"
+            )
         for variant in vcf:
             if variant.CHROM not in all_variants:
-                raise ValueError(f"Variant chromosome {variant.CHROM} not found in the merged variants from the sample VCFs. This should not happen since the merged variants are coming from the sample VCFs and the pool VCF. Variant: {get_variant_key(variant)}")
+                raise ValueError(
+                    f"Variant chromosome {variant.CHROM} not found in the merged variants from the sample VCFs. This should not happen since the merged variants are coming from the sample VCFs and the pool VCF. Variant: {get_variant_key(variant)}"
+                )
             key = get_variant_key(variant)
             gt = str(variant.gt_types[0])
             # the previous pipeline fetched DP data from GATK too, so let's keep using it instead of the VCF
@@ -68,9 +81,12 @@ def get_pool_data(pool: Pool, work_dir: str, all_variants: DataByChromosome) -> 
 
     return data
 
-def add_base_counts_to_data(pool: Pool, work_dir: str, data:DataByChromosome) -> DataByChromosome:
-    #1) get gakt DepthOfCoverage data
-    #2) parse results and add data to the data dict if coordinates match
+
+def add_base_counts_to_data(
+    pool: Pool, work_dir: str, data: DataByChromosome
+) -> DataByChromosome:
+    # 1) get gakt DepthOfCoverage data
+    # 2) parse results and add data to the data dict if coordinates match
 
     for chrom, variants in data.items():
         coverage_file = f"{work_dir}/{pool.name}/depth_of_coverage_{chrom}"
@@ -95,7 +111,7 @@ def add_base_counts_to_data(pool: Pool, work_dir: str, data:DataByChromosome) ->
                 depth, base_counts = coverage_data[pos]
                 data[chrom][key]["DP"] = depth
                 data[chrom][key]["base_counts"] = base_counts
-    
+
     print("helloooo there @@@@@@@@@@@")
     try:
         print("checking", data["chr1"]["chr1:1454424:C:T"])
@@ -103,6 +119,7 @@ def add_base_counts_to_data(pool: Pool, work_dir: str, data:DataByChromosome) ->
         pass
     # print(f"Data for pool {pool.name if pool is not None else 'None'}: {dict(list(data.items())[:3])}")
     return data
+
 
 def run_gatk(args) -> None:
     interval_file, work_dir, pool_name, bam_path, genome = args
@@ -128,10 +145,11 @@ def run_gatk(args) -> None:
     with open(log_file, "a") as log:
         subprocess.run(command, shell=True, check=True, stdout=log, stderr=log)
 
+
 def generate_cov_data(pool: Pool, work_dir: str, bed: str, genome: str) -> None:
     """
     Run GATK DepthOfCoverage, parallelized by chromosome, to get the base counts on every position within the bed file.
-    
+
     Generate "{pool.name}_coverage_done.txt" in the work_dir when done. This is used to check if the data was already generated for a given pool, since the wrapper can launch an analysis containing the same pool twice. This happens when some samples are linked to only one pool, and others are linked to both parental pools, leading to two separate analysis.
     """
     intervals_dir = f"{work_dir}/intervals"
@@ -150,25 +168,70 @@ def generate_cov_data(pool: Pool, work_dir: str, bed: str, genome: str) -> None:
 
     with ProcessPool() as pool_executor:
         pool_executor.map(
-            run_gatk, 
-            [(interval_file, work_dir, pool.name, pool.bam_path, genome) for interval_file in
-            interval_files]
+            run_gatk,
+            [
+                (interval_file, work_dir, pool.name, pool.bam_path, genome)
+                for interval_file in interval_files
+            ],
         )
 
     done_file_path = Path(work_dir) / f"{pool.name}_coverage_done.txt"
     with open(done_file_path, "w") as done_file:
         done_file.write("DONE\n")
 
-def create_output_vcf(index_vcf_path: Path, output_vcf_path: Path, pool_f_data: DataByChromosome, pool_m_data: DataByChromosome) -> None:
+
+def create_output_vcf(
+    index_vcf_path: Path,
+    output_vcf_path: Path,
+    pool_f_data: DataByChromosome,
+    pool_m_data: DataByChromosome,
+) -> None:
     input_vcf = cyvcf2.VCF(str(index_vcf_path), gts012=True)
     if len(input_vcf.samples) != 1:
-        raise ValueError(f"Expected exactly one sample, but found {len(input_vcf.samples)} in {index_vcf_path}")
+        raise ValueError(
+            f"Expected exactly one sample, but found {len(input_vcf.samples)} in {index_vcf_path}"
+        )
 
-    input_vcf.add_info_to_header({"ID": "BARCODE", "Description": "POOL Barcode ordered as: index, maternal pool, paternal pool", "Type": "String", "Number": "1"})
-    input_vcf.add_info_to_header({"ID": "POOL_F_Depth", "Description": "Depth of the variant in the maternal pool", "Type": "Integer", "Number": "1"})
-    input_vcf.add_info_to_header({"ID": "POOL_F_BASE_COUNTS", "Description": "Base counts of the variant in the maternal pool", "Type": "String", "Number": "1"})
-    input_vcf.add_info_to_header({"ID": "POOL_M_Depth", "Description": "Depth of the variant in the paternal pool", "Type": "Integer", "Number": "1"})
-    input_vcf.add_info_to_header({"ID": "POOL_M_BASE_COUNTS", "Description": "Base counts of the variant in the paternal pool", "Type": "String", "Number": "1"})
+    input_vcf.add_info_to_header(
+        {
+            "ID": "BARCODE",
+            "Description": "POOL Barcode ordered as: index, maternal pool, paternal pool",
+            "Type": "String",
+            "Number": "1",
+        }
+    )
+    input_vcf.add_info_to_header(
+        {
+            "ID": "POOL_F_Depth",
+            "Description": "Depth of the variant in the maternal pool",
+            "Type": "Integer",
+            "Number": "1",
+        }
+    )
+    input_vcf.add_info_to_header(
+        {
+            "ID": "POOL_F_BASE_COUNTS",
+            "Description": "Base counts of the variant in the maternal pool",
+            "Type": "String",
+            "Number": "1",
+        }
+    )
+    input_vcf.add_info_to_header(
+        {
+            "ID": "POOL_M_Depth",
+            "Description": "Depth of the variant in the paternal pool",
+            "Type": "Integer",
+            "Number": "1",
+        }
+    )
+    input_vcf.add_info_to_header(
+        {
+            "ID": "POOL_M_BASE_COUNTS",
+            "Description": "Base counts of the variant in the paternal pool",
+            "Type": "String",
+            "Number": "1",
+        }
+    )
 
     output_vcf = cyvcf2.Writer(str(output_vcf_path), input_vcf)
     for variant in input_vcf:
@@ -202,6 +265,7 @@ def create_output_vcf(index_vcf_path: Path, output_vcf_path: Path, pool_f_data: 
         output_vcf.write_record(variant)
     output_vcf.close()
 
+
 def merge_variants(vcf_list: list[str]) -> DataByChromosome:
     """
     Merge the variants from all the VCF paths in input. Used to have a list of variants from which coverage data should be fetched.
@@ -211,7 +275,9 @@ def merge_variants(vcf_list: list[str]) -> DataByChromosome:
     for vcf_path in vcf_list:
         vcf = cyvcf2.VCF(vcf_path, gts012=True)
         if len(vcf.samples) != 1:
-            raise ValueError(f"Expected exactly one sample in the VCF, but found {len(vcf.samples)} in {vcf_path}")
+            raise ValueError(
+                f"Expected exactly one sample in the VCF, but found {len(vcf.samples)} in {vcf_path}"
+            )
         for variant in vcf:
             chrom = variant.CHROM
             key = get_variant_key(variant)
@@ -221,11 +287,19 @@ def merge_variants(vcf_list: list[str]) -> DataByChromosome:
                 merged_data[chrom][key] = {}
     return merged_data
 
-def main(output_dir: str, vcf_list_as_str: str, pool_f_str: str, pool_m_str: str, bed: str, genome: str) -> None:
+
+def main(
+    output_dir: str,
+    vcf_list_as_str: str,
+    pool_f_str: str,
+    pool_m_str: str,
+    bed: str,
+    genome: str,
+) -> None:
     """
     This function is called by the wrapper for each pool analysis to be performed.
 
-    In a given run, there can be multiple pools, and each sample can be attached to one or two pools. 
+    In a given run, there can be multiple pools, and each sample can be attached to one or two pools.
     With 2 pairs of pools in a run there can be up to 6 pool analysis: with one or the other parent, or with the two parents, for each pair of pool.
 
     Args:
@@ -241,9 +315,9 @@ def main(output_dir: str, vcf_list_as_str: str, pool_f_str: str, pool_m_str: str
     genome: STARK genome path
 
     The following results are copied by the wrapper to the run repository, hence are expected:
-    	for s in sampleList:
-			osj(dockerOutputDir, s+".final.vcf.gz")
-			osj(dockerOutputDir, s+".final.vcf.gz.tbi")
+        for s in sampleList:
+                        osj(dockerOutputDir, s+".final.vcf.gz")
+                        osj(dockerOutputDir, s+".final.vcf.gz.tbi")
         + log files that I will have to do
     """
     vcf_list = vcf_list_as_str.split(",")
@@ -277,5 +351,6 @@ def main(output_dir: str, vcf_list_as_str: str, pool_f_str: str, pool_m_str: str
 
     print("Pool analysis completed successfully.")
 
-#TODO: split base counts with pipes
-#TODO: explain empty data on variant SGT2000780 chr1	1454424	
+
+# TODO: split base counts with pipes
+# TODO: explain empty data on variant SGT2000780 chr1	1454424
