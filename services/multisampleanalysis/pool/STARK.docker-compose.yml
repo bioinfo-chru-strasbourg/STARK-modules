@@ -23,8 +23,6 @@ services:
             - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_SERVICES}:/STARK/services/multisampleanalysis/pool/cli:rw
             - ${DOCKER_STARK_SOCK_MOUNT}
             - /dev/shm/pools:/dev/shm/pools:rw
-            # for dev
-            - /home1/bin/STARK-modules/current/services/multisampleanalysis/pool/src:/app/src:rw
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
 
