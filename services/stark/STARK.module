@@ -1,8 +1,0 @@
-{
-  "code" : "stark",
-  "name": "STARK",
-  "fullname": "STARK main services",
-  "description": "STARK main services provides a CLI (Command Line Interface), an API (Application Program Interface), a Listener and its cleaner, and a DAS (DAta Sharing) service.",
-  "release": "1.0",
-  "available": true
-}
