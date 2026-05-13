@@ -33,7 +33,7 @@ RUN /opt/conda/bin/conda init --all && \
 	conda activate py312 && \
 	python -m ensurepip --upgrade && \
 	python -m pip install --upgrade pip && \
-	python -m pip install cyvcf2 && \
+	python -m pip install cyvcf2 fastapi "uvicorn[standard]" python-dotenv && \
 	python -m pip cache purge && \
 	conda clean --all --yes
 
