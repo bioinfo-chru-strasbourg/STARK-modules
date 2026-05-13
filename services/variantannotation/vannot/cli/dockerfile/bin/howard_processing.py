@@ -198,8 +198,11 @@ def cleaning_annotations(vcf_file, run_informations):
     info_to_keep = []
     for i in annotations_to_keep:
         for j in actual_info_fields:
-            if re.search(i, j):
-                info_to_keep.append("INFO/" + j.split(",")[0].split("=")[-1])
+            field_id_match = re.search(r"ID=([^,]+)", j)
+            if field_id_match:
+                field_id = field_id_match.group(1)
+                if re.fullmatch(i, field_id):
+                    info_to_keep.append("INFO/" + field_id)
 
     if len(info_to_keep) == 0:
         log.info(

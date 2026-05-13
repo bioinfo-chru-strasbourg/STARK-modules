@@ -44,7 +44,7 @@ def launch_folder(args):
     if analysis_folder.startswith("/home1/data/STARK/services/"):
         run_informations["run_application"] = analysis_folder_name[-1]
         run_informations["run_platform"] = analysis_folder_name[-2]
-        run_informations["run_platform_applicastion"] = (
+        run_informations["run_platform_application"] = (
             f"{analysis_folder_name[-2]}.{analysis_folder_name[-1]}"
         )
         howard_processing.project_folder_initialisation(run_informations)
