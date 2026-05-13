@@ -152,6 +152,10 @@ def minimize_worker(vcf_file: str, run_informations: dict, memory: str) -> None:
         run_informations["tmp_analysis_folder"],
         f"{os.path.basename(vcf_file).split(".")[0]}.parquet",
     )
+    output_parquet_tmp = osj(
+        run_informations["tmp_analysis_folder"],
+        f"{os.path.basename(vcf_file).split(".")[0]}.tmp.parquet",
+    )
     howard_config = osj(
         os.environ["HOST_MODULE_CONFIG"], "howard", "howard_config.json"
     )
@@ -171,17 +175,29 @@ def minimize_worker(vcf_file: str, run_informations: dict, memory: str) -> None:
         "--config",
         howard_config,
     ]
-    launch_parquet_arguments = [
+    launch_parquet_arguments_first = [
         "process",
         "--input",
         vcf_minimalize,
         "--output",
-        output_parquet,
+        output_parquet_tmp,
         "--calculations=BARCODE",
         "--config",
         howard_config,
+        "--threads",
+        "1",
+        "--memory",
+        memory,
+    ]
+    launch_parquet_arguments_second = [
+        "query",
+        "--input",
+        output_parquet_tmp,
+        "--output",
+        output_parquet,
+        "--config",
+        howard_config,
         "--explode_infos",
-        "--explode_infos_fields=barcode",
         '--query=SELECT "#CHROM", POS, ID, REF, ALT, QUAL, FILTER, INFO, barcode FROM variants',
         "--threads",
         "1",
@@ -191,7 +207,9 @@ def minimize_worker(vcf_file: str, run_informations: dict, memory: str) -> None:
     log.info("Minimalizing vcfs")
     howard_launcher.launch(container_name, launch_minimalize_arguments)
     log.info("Converting to parquet format")
-    howard_launcher.launch(container_name, launch_parquet_arguments)
+    howard_launcher.launch(container_name, launch_parquet_arguments_first)
+    howard_launcher.launch(container_name, launch_parquet_arguments_second)
+
     # os.remove(vcf_minimalize)
     # os.remove(vcf_minimalize + ".hdr")
 
@@ -252,9 +270,10 @@ def calculate_dejavu(run_informations):
     homcount = "HOMCOUNT"
     allelefreq = "ALLELEFREQ"
     samplecount = "SAMPLECOUNT"
-    query = f'SELECT "#CHROM", POS, REF, ALT, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq}, {sample_count} as {samplecount} FROM variants WHERE PROJECT=\'{project}\' GROUP BY "#CHROM", POS, REF, ALT'
+    # barcode peut être stocké sous forme '[2]' ou '2' -> on extrait le 1er entier
+    barcode_int = "CAST(REGEXP_EXTRACT(CAST(barcode AS VARCHAR), '\\d+') AS INT)"
+    query = f'SELECT "#CHROM", POS, REF, ALT, sum({barcode_int}) AS {allelecount}, count(barcode) FILTER(WHERE {barcode_int}=1) AS {hetcount}, count(barcode) FILTER(WHERE {barcode_int}=2) AS {homcount}, sum({barcode_int})/({sample_count}*2) AS {allelefreq}, {sample_count} as {samplecount} FROM variants WHERE PROJECT=\'{project}\' GROUP BY "#CHROM", POS, REF, ALT'
     # query = f"SELECT \"#CHROM\", POS, ANY_VALUE(ID) AS ID, REF, ALT, ANY_VALUE(QUAL) AS QUAL, ANY_VALUE(FILTER) AS FILTER, ANY_VALUE(INFO) AS INFO, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq} FROM variants WHERE PROJECT='{project}' GROUP BY \"#CHROM\", POS, REF, ALT"
-
     launch_query_arguments = [
         "query",
         "--input",
@@ -272,7 +291,6 @@ def calculate_dejavu(run_informations):
     ]
     
     day_time = time.strftime("%d%m%Y")
-
     howard_launcher.launch(container_name, launch_query_arguments)
     os.remove(dejavu_output_parquet_hdr)
     with open(dejavu_output_parquet_hdr, "w") as writefile:

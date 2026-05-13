@@ -762,7 +762,7 @@ def howard_score_transcripts_chunked(run_informations):
                 "1000000000",
                 "--duckdb_settings",
                 "/home1/data/STARK/config/variantannotation/vannot/howard/duckdb_settings.json",
-        ]        
+        ]
         howard_launcher.launch(container_name, cmd)
         os.remove(vcf_file)
 
@@ -907,7 +907,7 @@ def howard_score_transcripts(run_informations):
         os.rename(output_file_transcripts, vcf_file)
 
         with open(
-            osj(os.environ["HOST_MODULE_CONFIG"], "howard", "param.transcripts.onco.json"),
+            transcript_param,
             "r",
         ) as read_file:
             data = json.load(read_file)
