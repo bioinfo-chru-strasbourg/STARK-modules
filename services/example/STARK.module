@@ -1,0 +1,8 @@
+{
+  "code" : "Multi Sample Analysis",
+  "name": "Multi Sample Analysis",
+  "fullname": "Multi Sample Analysis",
+  "description": "Multi Sample Analysis from multiple VCF files, such as trio, subexample, composite heterozygous variants and previously DPNI analysis (removed on 24/04/2026)",
+  "release": "1.1",
+  "available": true
+}
