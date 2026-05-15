@@ -5,7 +5,7 @@
 
 For the development of a new STARK module, this is what you have to change in this file:
 - replace the subexample_main import by your actual module main
-- replace RunRequest parameters so they match the parameters of your main function. Keep the generic API parameters (module_name, threads, memory).
+- replace RunRequest parameters so they match the parameters of your main function
 - replace the content of the coroutine variable in the run_endpoint function by a call to your main function, with the parameters from the request
 """
 
@@ -49,21 +49,32 @@ def verify_api_key(authorization_header: str) -> None:
         raise HTTPException(status_code=403, detail="Invalid API key")
 
 
-# See this = Header(...) in the function arguments? It means that this parameter is expected to be in the header of the POST request, and it is required (if it was Header(None) it would be optional). FastAPI automatically parses the header and pass it to the function.
 @app.post("/run")
 async def run_endpoint(request: RunRequest, authorization: str = Header(...)) -> dict:
+    """
+    Main endpoint to start your module's task.
+
+    See this = Header(...) in the function arguments? It means that this parameter is expected to be in the header of the POST request, and it is required (if it was Header(None) it would be optional). FastAPI automatically parses the header and pass it to the function.
+    """
     verify_api_key(authorization)
 
     task_id = f"task-{len(tasks) + 1}"
 
     func = subexample_main
-    args = (request.run_dir, request.fibonacci_n, request.threads, request.memory, request.verbosity)
+    args = (
+        request.run_dir,
+        request.fibonacci_n,
+        request.threads,
+        request.memory,
+        request.verbosity,
+    )
     coroutine = run_task_with_cancellation(func, args)
 
     # With asyncio, creating a task automatically puts it in the event loop, so it starts running immediately.
     task = asyncio.create_task(coroutine)
     tasks[task_id] = task
     return {"task_id": task_id, "status": "started"}
+
 
 async def run_task_with_cancellation(func: Callable, args: tuple):
     """
@@ -76,6 +87,7 @@ async def run_task_with_cancellation(func: Callable, args: tuple):
         # Handle cleanup if necessary
         print("Task was cancelled")
         raise
+
 
 @app.post("/cancel")
 async def cancel_task(request: CancelRequest, authorization: str = Header(...)) -> dict:

@@ -10,6 +10,7 @@ import os
 from os.path import join as osj
 import time
 
+
 def set_log_level(verbosity):
     verbosity = verbosity.lower()
     configs = {
@@ -30,7 +31,13 @@ def set_log_level(verbosity):
     )
 
 
-def main(run_dir: str, fibonacci_n: int, threads: int = 1, memory: str = "1G", verbosity: str = "info") -> None:
+def main(
+    run_dir: str,
+    fibonacci_n: int,
+    threads: int = 1,
+    memory: str = "1G",
+    verbosity: str = "info",
+) -> None:
     set_log_level(verbosity)
     log.info(f"run_dir: {run_dir}")
     log.info(f"fibonacci_n: {fibonacci_n}")
@@ -46,29 +53,37 @@ def main(run_dir: str, fibonacci_n: int, threads: int = 1, memory: str = "1G", v
             out.append(a)
             a, b = b, a + b
         return out
+
     res = fib(fibonacci_n)
-    log.info(f"fibonacci done {res[0]}") #not writing the the last one to avoid that Python error when an int is too big to be cast to a string
+    log.info(
+        f"fibonacci done {res[0]}"
+    )  # not writing the the last one to avoid that Python error when an int is too big to be cast to a string
     ###############################
 
-    running_file = osj(run_dir,"SUBEXAMPLERunning.txt")
+    running_file = osj(run_dir, "SUBEXAMPLERunning.txt")
     complete_file = osj(run_dir, "SUBEXAMPLEComplete.txt")
     with open(complete_file, "w") as f:
         f.write(time.ctime())
     if os.path.exists(running_file):
         os.remove(running_file)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="subexample to launch routine analysis")
     parser.set_defaults(mode=main)
     parser.add_argument(
         "-i",
-        "--runDir",
+        "--run_dir",
         type=str,
         help="path to run in a STARK 0.9.18 repository",
         required=True,
     )
     parser.add_argument(
-        "-n", "--fibonacci_n", help="Input of a fibonacci function. Used to change the duration of this test function. The higher the longer", type=str, required=True
+        "-n",
+        "--fibonacci_n",
+        help="Input of a fibonacci function. Used to change the duration of this test function. The higher the longer",
+        type=str,
+        required=True,
     )
     parser.add_argument(
         "-t",
@@ -95,4 +110,10 @@ if __name__ == "__main__":
     if not hasattr(args, "mode"):
         parser.print_help()
     else:
-        args.mode(args.runDir, args.fibonacci_n, threads=args.threads, memory=args.memory, verbosity=args.verbosity)
+        args.mode(
+            args.run_dir,
+            args.fibonacci_n,
+            threads=args.threads,
+            memory=args.memory,
+            verbosity=args.verbosity,
+        )
