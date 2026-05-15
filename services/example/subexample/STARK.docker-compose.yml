@@ -10,10 +10,12 @@ services:
         container_name: stark-module-example-submodule-subexample-service-cli
         restart: no
         entrypoint: /bin/bash
+        command: -c "/opt/conda/envs/py312/bin/python /app/src/api.py"
         stdin_open: true # docker run -i (interactive stdin)
         tty: true # docker run -t (pseudo-TTY)
         environment:
-            - API_KEY=${SUBMODULE_API_KEY}
+            - SUBMODULE_API_KEY=${SUBMODULE_API_KEY}
+            - PYTHONUNBUFFERED=1
         volumes:
             - ${DOCKER_STARK_MAIN_FOLDER}/output:/STARK/output:rw
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:/STARK/output/repository:rw
@@ -24,6 +26,7 @@ services:
             - ${SUBMODULE_HOST_CONFIG}:/STARK/config/example/subexample/cli:ro
             - ${SUBMODULE_HOST_SERVICES}:/STARK/services/example/subexample/cli:rw
             - ${DOCKER_STARK_SOCK_MOUNT}
+            - ./src:/app/src
         ports:
             - ${SUBMODULE_API_EXTERNAL_PORT}:8000
         networks:

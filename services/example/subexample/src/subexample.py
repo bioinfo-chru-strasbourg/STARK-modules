@@ -8,6 +8,7 @@ import argparse
 import logging as log
 import os
 from os.path import join as osj
+import time
 
 def set_log_level(verbosity):
     verbosity = verbosity.lower()
@@ -32,13 +33,27 @@ def set_log_level(verbosity):
 def main(run_dir: str, genome: str, verbosity: str = "info") -> None:
     set_log_level(verbosity)
     log.info(f"run_dir: {run_dir}")
-    log.error(f"genome: {genome}")
+    log.info(f"genome: {genome}")
+
+    ###############################
+    # long duration task example so you can test canceling it
+    def fib(n):
+        a, b = 0, 1
+        out = []
+        for _ in range(n):
+            out.append(a)
+            a, b = b, a + b
+        return out
+    res = fib(10000000)
+    log.info(f"fib done {res[0]}")
+    ###############################
+
     running_file = osj(run_dir,"SUBEXAMPLERunning.txt")
     complete_file = osj(run_dir, "SUBEXAMPLEComplete.txt")
-    os.remove(running_file)
     with open(complete_file, "w") as f:
-        f.write("Process completed successfully.")
-
+        f.write(time.ctime())
+    if os.path.exists(running_file):
+        os.remove(running_file)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="subexample to launch routine analysis")
