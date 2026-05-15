@@ -26,7 +26,7 @@ services:
             - ${SUBMODULE_HOST_CONFIG}:/STARK/config/example/subexample/cli:ro
             - ${SUBMODULE_HOST_SERVICES}:/STARK/services/example/subexample/cli:rw
             - ${DOCKER_STARK_SOCK_MOUNT}
-            - ./src:/app/src
+            #- ./src:/app/src # uncomment this while developing
         ports:
             - ${SUBMODULE_API_EXTERNAL_PORT}:8000
         networks:
