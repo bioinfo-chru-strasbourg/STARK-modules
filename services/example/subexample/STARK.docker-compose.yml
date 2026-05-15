@@ -52,7 +52,7 @@ services:
         restart: always
         environment:
             - MICROSERVICE_IMAGE=${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-example-submodule-subexample-service-cli:${SUBMODULE_VERSION}
-            - MICROSERVICE_MONTAGE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONTAINER_MOUNT}
+            - MICROSERVICE_MONTAGE="" # This variable has to stay until we update the common listener
             - MICROSERVICE_LAUNCH=/opt/conda/envs/py312/bin/python /app/src/subexample.py
             - MICROSERVICE_REPOSITORY=${DOCKER_STARK_MAIN_FOLDER}/output/repository
             - PYTHONUNBUFFERED=1
