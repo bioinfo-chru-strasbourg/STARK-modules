@@ -4,26 +4,24 @@ import subprocess
 from datetime import datetime
 from os.path import join as osj
 
-def createContainerFile(containersFile, run, containerName):
-	file = open(osj(containersFile,containerName+".log"), "w+")
-	file.write("RUN: "+os.path.basename(run)+"\n")
-	file.write("FOLDER: "+run+"\n")
-	file.write("EXEC_DATE: "+datetime.now().strftime("%d%m%Y-%H%M%S")+"\n")
-	file.write("ID: "+containerName+"\n")
-	file.close()
+def write_services_log(stark_services_dir: str, run: str, container_name: str):
+	with open(osj(stark_services_dir,container_name+".log"), "w+") as f:
+		f.write("RUN: "+os.path.basename(run)+"\n")
+		f.write("FOLDER: "+run+"\n")
+		f.write("EXEC_DATE: "+datetime.now().strftime("%d%m%Y-%H%M%S")+"\n")
+		f.write("ID: "+container_name+"\n")
 
-def createRunningFile(run, serviceName):
-	print("run", run)
-	print("serviceName", serviceName)
-	print("osj", osj(run,serviceName+"Running.txt"))
-	file = open(osj(run,serviceName+"Running.txt"), "w+")
-	file.write("# ["+datetime.now().strftime("%d/%m/%Y %H:%M:%S")+"] "+os.path.basename(run)+" running with "+serviceName+"\n")
-	file.close()
+def create_running_file(run: str, service_name: str):
+	with open(osj(run,service_name+"Running.txt"), "w+") as f:
+		f.write("# ["+datetime.now().strftime("%d/%m/%Y %H:%M:%S")+"] "+os.path.basename(run)+" running with "+service_name+"\n")
 
-def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile, repository):
-	createRunningFile(run, serviceName)
-	containerName = serviceName+"-NAME-"+os.path.basename(run)
-	cmd = "docker run --rm --name="+containerName+" --volumes-from stark-module-example-submodule-subexample-service-cli "+image+" "+launchCommand+" -i "+run
+def launch(run: str, service_name: str, stark_services_dir: str, mounts: str, image: str, launch_command: str, config_file: str, repository: str):
+	"""
+	This function's args must follow the template defined in STARK's common listener service
+	"""
+	create_running_file(run, service_name)
+	container_name = service_name+"-NAME-"+os.path.basename(run)
+	cmd = "docker run --rm --name="+container_name+" --volumes-from stark-module-example-submodule-subexample-service-cli "+image+" "+launch_command+" -i "+run
 	print(cmd)
 	subprocess.call(cmd, shell = True)
-	createContainerFile(containersFile, run, containerName)
+	write_services_log(stark_services_dir, run, container_name)
