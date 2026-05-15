@@ -21,7 +21,7 @@ def launch(run: str, service_name: str, stark_services_dir: str, mounts: str, im
 	"""
 	create_running_file(run, service_name)
 	container_name = service_name+"-NAME-"+os.path.basename(run)
-	cmd = "docker run --rm --name="+container_name+" --volumes-from stark-module-example-submodule-subexample-service-cli "+image+" "+launch_command+" -i "+run
+	cmd = "docker run --rm --name="+container_name+" --volumes-from stark-module-example-submodule-subexample-service-cli "+image+" "+launch_command+" --fibonacci_n 10 -i "+run
 	print(cmd)
 	subprocess.call(cmd, shell = True)
 	write_services_log(stark_services_dir, run, container_name)

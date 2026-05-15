@@ -73,7 +73,7 @@ if __name__ == "__main__":
     parser.set_defaults(mode=main)
     parser.add_argument(
         "-i",
-        "--run_dir",
+        "--input_run",
         type=str,
         help="path to run in a STARK 0.9.18 repository",
         required=True,
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         "-n",
         "--fibonacci_n",
         help="Input of a fibonacci function. Used to change the duration of this test function. The higher the longer",
-        type=str,
+        type=int,
         required=True,
     )
     parser.add_argument(
@@ -111,7 +111,7 @@ if __name__ == "__main__":
         parser.print_help()
     else:
         args.mode(
-            args.run_dir,
+            args.input_run,
             args.fibonacci_n,
             threads=args.threads,
             memory=args.memory,
