@@ -7,24 +7,11 @@ For the development of a new STARK module, this is what you have to change in th
 - replace the subexample_main import by your actual module main
 - replace RunRequest parameters so they match the parameters of your main function. Keep the generic API parameters (module_name, threads, memory).
 - replace the content of the coroutine variable in the run_endpoint function by a call to your main function, with the parameters from the request
-
-
-This example API can be called 
-# From inside a container in the same docker network
-curl -X POST --noproxy stark-module-example-submodule-subexample-service-cli "http://stark-module-example-submodule-subexample-service-cli:8000/run" -H "Content-Type: application/json" -H "Authorization: Bearer key" -d '{"run_dir":"/tmp/run","genome":"hg38"}'
-
-# From the local server
-curl --noproxy localhost http://localhost:9999/run -H "Content-Type: application/json" -H "Authorization: Bearer key" -d '{"run_dir":"/tmp/run","genome":"hg38"}'
-
-Where 
-8000 is the internal port 
-9999 the external port
-key the API key
-See the STARK.docker-compose.yml and STARK.env for the actual values of these parameters.
 """
 
 import asyncio
 import os
+from typing import Callable
 
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
@@ -38,7 +25,9 @@ tasks = {}  # used to store running tasks, to be able to cancel them
 
 class RunRequest(BaseModel):
     run_dir: str
-    genome: str
+    fibonacci_n: int
+    threads: int = 1
+    memory: str = "1G"
     verbosity: str = "info"
 
 
@@ -68,7 +57,7 @@ async def run_endpoint(request: RunRequest, authorization: str = Header(...)) ->
     task_id = f"task-{len(tasks) + 1}"
 
     func = subexample_main
-    args = (request.run_dir, request.genome, request.verbosity)
+    args = (request.run_dir, request.fibonacci_n, request.threads, request.memory, request.verbosity)
     coroutine = run_task_with_cancellation(func, args)
 
     # With asyncio, creating a task automatically puts it in the event loop, so it starts running immediately.
@@ -76,7 +65,7 @@ async def run_endpoint(request: RunRequest, authorization: str = Header(...)) ->
     tasks[task_id] = task
     return {"task_id": task_id, "status": "started"}
 
-async def run_task_with_cancellation(func: callable, args: tuple):
+async def run_task_with_cancellation(func: Callable, args: tuple):
     """
     This runs the function subexample_main in a separate thread, so that it doesn't block the API.
     subexample_main arguments are directly passed in the call to to_thread
@@ -132,5 +121,5 @@ async def list_tasks(authorization: str = Header(...)) -> dict:
 
 
 if __name__ == "__main__":
-    # While developping, you can add reload=True to automatically restart the server when you edit the code
+    # While developping, you can add reload=True to automatically restart the server when you edit the code. Remove it in production.
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)

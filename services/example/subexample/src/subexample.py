@@ -30,10 +30,12 @@ def set_log_level(verbosity):
     )
 
 
-def main(run_dir: str, genome: str, verbosity: str = "info") -> None:
+def main(run_dir: str, fibonacci_n: int, threads: int = 1, memory: str = "1G", verbosity: str = "info") -> None:
     set_log_level(verbosity)
     log.info(f"run_dir: {run_dir}")
-    log.info(f"genome: {genome}")
+    log.info(f"fibonacci_n: {fibonacci_n}")
+    log.info(f"threads: {threads}")
+    log.info(f"memory: {memory}")
 
     ###############################
     # long duration task example so you can test canceling it
@@ -44,8 +46,8 @@ def main(run_dir: str, genome: str, verbosity: str = "info") -> None:
             out.append(a)
             a, b = b, a + b
         return out
-    res = fib(10000000)
-    log.info(f"fib done {res[0]}")
+    res = fib(fibonacci_n)
+    log.info(f"fibonacci done {res[0]}") #not writing the the last one to avoid that Python error when an int is too big to be cast to a string
     ###############################
 
     running_file = osj(run_dir,"SUBEXAMPLERunning.txt")
@@ -66,7 +68,21 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument(
-        "-g", "--genome", help="genome file", type=str, dest="genome", required=True
+        "-n", "--fibonacci_n", help="Input of a fibonacci function. Used to change the duration of this test function. The higher the longer", type=str, required=True
+    )
+    parser.add_argument(
+        "-t",
+        "--threads",
+        help="max number of threads to use (default: 1)",
+        type=int,
+        default=1,
+    )
+    parser.add_argument(
+        "-m",
+        "--memory",
+        help="max amount of usable memory(default: 1G)",
+        type=str,
+        default="1G",
     )
     parser.add_argument(
         "-v",
@@ -79,4 +95,4 @@ if __name__ == "__main__":
     if not hasattr(args, "mode"):
         parser.print_help()
     else:
-        args.mode(args.runDir, args.genome, verbosity=args.verbosity)
+        args.mode(args.runDir, args.fibonacci_n, threads=args.threads, memory=args.memory, verbosity=args.verbosity)
