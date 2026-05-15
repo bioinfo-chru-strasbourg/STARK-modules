@@ -1,7 +1,9 @@
-subexample
+Example STARK module
 ============
 
-## Running with service with launcher.py
+The module is named "example", the submodule is named "subexample".
+
+## Running this service with launcher.py
 
 Everything works as usual.
 
@@ -37,7 +39,6 @@ See the STARK.docker-compose.yml and STARK.env for the actual values of these pa
 # cancel a task
 curl --noproxy localhost http://localhost:9999/cancel -H "Content-Type: application/json" -H "Authorization: Bearer key" -d '{"task_id": "task-1"}'
 
-
-# get task list (useful if you forgot to store the id of a task you cant to cancel)
+# get task list (useful if you forgot to store the id of a task you want to cancel)
 curl --noproxy localhost http://localhost:9999/tasks -H "Authorization: Bearer key" 
 ```
