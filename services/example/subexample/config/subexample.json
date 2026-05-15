@@ -1,20 +1,16 @@
 {
 	"services": {
-		"subexample": {
+		"SUBEXAMPLE": {
 			"infos": {
-				"name": "subexample",
-				"description": "subexample analysis",
-				"triggers-description": "(STARKCopyComplete.txt AND !subexampleComplete.txt AND !subexampleRunning.txt AND #subexample)"
+				"name": "SUBEXAMPLE",
+				"description": "Submodule example"
 			},
 			"triggers": {
 				"AND": {
 					"file": [
 						"STARKCopyComplete.txt",
-						"!subexampleComplete.txt",
-						"!subexampleRunning.txt"
-					],
-					"tags": [
-						"subexample"
+						"!SUBEXAMPLEComplete.txt",
+						"!SUBEXAMPLERunning.txt"
 					]
 				}
 			}

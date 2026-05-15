@@ -23,6 +23,8 @@ ENV PATH="/opt/conda/bin:$PATH"
 RUN dnf install -y epel-release && \
 	dnf -y install bcftools htslib htslib-tools
 
+RUN echo 'alias ll="ls -alh --color"' >> ~/.bashrc
+
 COPY . /app
 RUN chmod -R 777 /app
 

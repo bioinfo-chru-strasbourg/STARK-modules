@@ -12,6 +12,8 @@ services:
         entrypoint: /bin/bash
         stdin_open: true # docker run -i (interactive stdin)
         tty: true # docker run -t (pseudo-TTY)
+        environment:
+            - API_KEY=${SUBMODULE_API_KEY}
         volumes:
             - ${DOCKER_STARK_MAIN_FOLDER}/output:/STARK/output:rw
             - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:/STARK/output/repository:rw
@@ -23,7 +25,7 @@ services:
             - ${SUBMODULE_HOST_SERVICES}:/STARK/services/example/subexample/cli:rw
             - ${DOCKER_STARK_SOCK_MOUNT}
         ports:
-            - ${API_EXTERNAL_PORT}:8000
+            - ${SUBMODULE_API_EXTERNAL_PORT}:8000
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
 
@@ -33,6 +35,7 @@ services:
         # if the files launcher.py and subexample.json do not exist in the config folder, copy them from the image to the config folder
         command: bash -c 'for file in launcher.py subexample.json; do if [ ! -f "/config/$$file" ]; then cp "/app/config/$$file" "/config/"; fi; done'
         volumes:
+            # - ./config:/app/config:ro #TODO: remove
             - ${LISTENER_HOST_CONFIG}:/config:rw
         depends_on:
             - stark-module-example-submodule-subexample-service-cli
@@ -42,7 +45,7 @@ services:
     stark-module-example-submodule-subexample-service-listener:
         image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-common-submodule-listener-service-listener:${LISTENER_VERSION}
         container_name: stark-module-example-submodule-subexample-service-listener
-        command: python3 /app/bin/listener.py --input=/STARK/output/repository --json /STARK/config/example/subexample/listener/subexample.json --servicename=subexample --containersfile=/STARK/services --nbDaysBack=60 --minDelay=1
+        command: python3 /app/bin/listener.py --input=/STARK/output/repository --json /STARK/config/example/subexample/listener/subexample.json --servicename=SUBEXAMPLE --containersfile=/STARK/services --nbDaysBack=60 --minDelay=1
         restart: always
         environment:
             - MICROSERVICE_IMAGE=${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-example-submodule-subexample-service-cli:${SUBMODULE_VERSION}

@@ -6,6 +6,8 @@
 
 import argparse
 import logging as log
+import os
+from os.path import join as osj
 
 def set_log_level(verbosity):
     verbosity = verbosity.lower()
@@ -27,9 +29,16 @@ def set_log_level(verbosity):
     )
 
 
-def main(run_dir: str, genome: str) -> None:
-    print("run_dir:", run_dir)
-    print("genome:", genome)
+def main(run_dir: str, genome: str, verbosity: str = "info") -> None:
+    set_log_level(verbosity)
+    log.info(f"run_dir: {run_dir}")
+    log.error(f"genome: {genome}")
+    running_file = osj(run_dir,"SUBEXAMPLERunning.txt")
+    complete_file = osj(run_dir, "SUBEXAMPLEComplete.txt")
+    os.remove(running_file)
+    with open(complete_file, "w") as f:
+        f.write("Process completed successfully.")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="subexample to launch routine analysis")
@@ -44,8 +53,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "-g", "--genome", help="genome file", type=str, dest="genome", required=True
     )
+    parser.add_argument(
+        "-v",
+        "--verbosity",
+        help="set the logging level (debug, info, warning, error, critical)",
+        type=str,
+        default="info",
+    )
     args = parser.parse_args()
     if not hasattr(args, "mode"):
         parser.print_help()
     else:
-        args.mode(args.runDir, args.genome)
+        args.mode(args.runDir, args.genome, verbosity=args.verbosity)

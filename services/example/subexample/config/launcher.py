@@ -13,6 +13,9 @@ def createContainerFile(containersFile, run, containerName):
 	file.close()
 
 def createRunningFile(run, serviceName):
+	print("run", run)
+	print("serviceName", serviceName)
+	print("osj", osj(run,serviceName+"Running.txt"))
 	file = open(osj(run,serviceName+"Running.txt"), "w+")
 	file.write("# ["+datetime.now().strftime("%d/%m/%Y %H:%M:%S")+"] "+os.path.basename(run)+" running with "+serviceName+"\n")
 	file.close()
@@ -20,13 +23,7 @@ def createRunningFile(run, serviceName):
 def launch(run, serviceName, containersFile, montage, image, launchCommand, configFile, repository):
 	createRunningFile(run, serviceName)
 	containerName = serviceName+"-NAME-"+os.path.basename(run)
-	if run.startswith("/STARK/"):
-		outerRunPath = run.replace("/STARK/output/repository", repository)
-		cmd = "docker run --rm --name="+containerName+" -v "+outerRunPath+":"+run+" "+montage+" "+image+" "+launchCommand+" -i "+run
-		print(cmd)
-		subprocess.call(cmd, shell = True)
-	else:
-		cmd = "docker run --rm --name="+containerName+" -v "+run+":"+run+" "+montage+" "+image+" "+launchCommand+" -i "+run
-		print(cmd)
-		subprocess.call(cmd, shell = True)
+	cmd = "docker run --rm --name="+containerName+" --volumes-from stark-module-example-submodule-subexample-service-cli "+image+" "+launchCommand+" -i "+run
+	print(cmd)
+	subprocess.call(cmd, shell = True)
 	createContainerFile(containersFile, run, containerName)
