@@ -19,7 +19,6 @@ def launch_run(args):
         "assembly": args.assembly,
         "parameters_file": args.param,
         "onco": args.onco,
-        "chunking": args.chunking,
         "output_format": args.output_format,
         "type": "run",
         "run_name": run_repository_list[-1],

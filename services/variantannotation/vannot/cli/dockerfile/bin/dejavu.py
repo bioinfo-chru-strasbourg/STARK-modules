@@ -12,6 +12,7 @@ def launch_dejavu(args):
 
     run_informations = {
         "assembly": args.assembly,
+        "onco": args.onco,
         "parameters_file": "",
         "output_format": "",
         "type": "dejavu",

@@ -722,139 +722,6 @@ def gmc_score(run_informations):
 #     prioritize_worker(vcf_file, run_informations, memory, start, transcript_param, threads)
 #Fix parallelization prio
 
-def howard_score_transcripts_chunked(run_informations):
-    #Warning it's not working when there is more than one parquet per chromosome
-    print("Chunking now")
-    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
-    print(vcf_files)
-    howard_config = osj(os.environ["HOST_CONFIG"], "howard", "howard_config.json")
-
-    if len(vcf_files) > 1:
-        for vcf_file in vcf_files:
-            os.rename(vcf_file, osj(os.path.dirname(vcf_file), os.path.basename(vcf_file).removeprefix("unmerged_")))
-        vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
-
-    transcript_param = osj(
-        os.environ["HOST_MODULE_CONFIG"],
-        "howard",
-        "param.transcripts.json",
-    )
-
-    threads = commons.get_threads("threads_annotation")
-    memory = commons.get_memory("memory_annotation")
-
-    exact_time = time.time() + 7200
-    local_time = time.localtime(exact_time)
-    actual_time = time.strftime("%H%M%S", local_time)
-    start = actual_time
-    print(vcf_files)
-    for vcf_file in vcf_files:
-        container_name = f"VANNOT_chunking_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
-        output_chunked = osj(run_informations["tmp_analysis_folder"], f"chunked_{os.path.basename(vcf_file).split('.')[0]}.parquet")
-        cmd = ["convert",
-                "--input",
-                vcf_file,
-                "--output",
-                output_chunked,
-                "--parquet_partitions",
-                "#CHROM",
-                "--debug",
-                "--config",
-                howard_config,
-                "--chunk_size",
-                "1000000000",
-                "--duckdb_settings",
-                "/home1/data/STARK/config/variantannotation/vannot/howard/duckdb_settings.json",
-        ]
-        howard_launcher.launch(container_name, cmd)
-        os.remove(vcf_file)
-
-        chunked_chroms = glob.glob(osj(output_chunked, "*"))
-        for chunked_chrom in chunked_chroms:
-            number_of_parquets = len(glob.glob(osj(chunked_chrom, "*.parquet")))
-            if number_of_parquets > 1:
-                log.error(f"Chunked chrom {chunked_chrom} has more than one parquet file, this should not happen")
-                raise ValueError(chunked_chrom)
-
-        chunked_parquets_files = glob.glob(osj(output_chunked, "*", "*.parquet"))
-
-        for parquet_file in chunked_parquets_files:
-            header = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(output_chunked)}.hdr")
-            shutil.copy(header, osj(os.path.dirname(parquet_file), f"{os.path.basename(parquet_file).split(".")[0]}.parquet.hdr"))
-        
-        for parquet_file in chunked_parquets_files:
-            output_file_transcripts = osj(os.path.dirname(parquet_file), f"{os.path.basename(parquet_file).split(".")[0]}_output_transcripts.parquet")
-            header = osj(run_informations["tmp_analysis_folder"], f"{os.path.basename(output_chunked)}.hdr")
-
-            container_name = f"VANNOT_chunked_transcripts_{start}_{run_informations['run_name']}_{os.path.basename(parquet_file).split('.')[0]}"
-            launch_annotate_arguments = [
-                "process",
-                "--input",
-                parquet_file,
-                "--output",
-                output_file_transcripts,
-                "--param",
-                transcript_param,
-                "--config",
-                howard_config,
-                "--memory",
-                memory,
-                "--threads",
-                threads,
-                "--debug"
-            ]
-            log.info("Prioritization of transcripts")
-            howard_launcher.launch(container_name, launch_annotate_arguments)
-
-            os.remove(parquet_file)
-            os.remove(parquet_file + ".hdr")
-            shutil.copy(output_file_transcripts + ".hdr", output_chunked + ".hdr")
-            os.rename(output_file_transcripts, parquet_file)
-            os.remove(output_file_transcripts + ".hdr")
-
-            with open(
-                osj(os.environ["HOST_MODULE_CONFIG"], "howard", "param.transcripts.json"),
-                "r",
-            ) as read_file:
-                data = json.load(read_file)
-                transcripts_output = data["transcripts"]["export"]["output"]
-
-            sample_name = f"{os.path.basename(vcf_file).split('.')[0].removeprefix("VANNOT_")}_{os.path.basename(os.path.dirname(parquet_file).split("=")[1])}"
-            transcripts_output_renamed = f"transcripts_{sample_name}.tsv"
-            shutil.copy(
-                transcripts_output,
-                osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed),
-            )
-            
-            os.remove(transcripts_output)
-        
-        container_name = f"VANNOT_convert_transcripts_{start}_{run_informations['run_name']}_{os.path.basename(parquet_file).split('.')[0]}"
-        launch_convert_arguments = [
-            "convert",
-            "--input",
-            output_chunked,
-            "--output",
-            vcf_file
-        ]
-        log.info("Conversion of parquet into vcf")
-        howard_launcher.launch(container_name, launch_convert_arguments)
-        shutil.rmtree(output_chunked)
-        os.remove(output_chunked + ".hdr")
-        sample_name = f"{os.path.basename(vcf_file).split('.')[0].removeprefix("VANNOT_")}"
-        transcript_files = glob.glob(osj(run_informations["tmp_analysis_folder"], f"transcripts_{sample_name}_*.tsv"))
-        output_transcript = osj(run_informations["tmp_analysis_folder"], f"VANNOT_transcripts_{sample_name}.tsv")
-        with open(output_transcript, "a") as write_file:
-            first_tsv = True
-            for transcript_file in transcript_files:
-                with open(transcript_file, "r") as read_file:
-                    lines = read_file.readlines()
-                    if first_tsv:
-                        write_file.write(lines[0])
-                        first_tsv = False
-                    for line in lines[1:]:
-                        write_file.write(line)
-                os.remove(transcript_file)
-
 def howard_score_transcripts(run_informations):
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
     print(vcf_files)
@@ -862,11 +729,10 @@ def howard_score_transcripts(run_informations):
         howard_config = osj(
             os.environ["HOST_MODULE_CONFIG"], "howard", "howard_onco_config.json"
         )
-        transcript_param = osj(os.environ["HOST_MODULE_CONFIG"],"howard","param.transcripts.onco.json",)
-
     else:
         howard_config = osj(os.environ["HOST_MODULE_CONFIG"], "howard", "howard_config.json")
-        transcript_param = osj(os.environ["HOST_MODULE_CONFIG"],"howard","param.transcripts.json",)
+        
+    transcript_param = osj(os.environ["HOST_MODULE_CONFIG"],"howard",f"param.transcripts.{run_informations["run_platform"].lower()}.json",)
 
     if len(vcf_files) > 1:
         for vcf_file in vcf_files:
@@ -914,19 +780,23 @@ def howard_score_transcripts(run_informations):
             "r",
         ) as read_file:
             data = json.load(read_file)
-            if "transcripts" not in data:
-                log.warning("Transcripts section not found in howard config")
+            if "calculation" not in data:
+                log.warning("Calculation section not found in howard config")
                 transcripts_output = ""
                 break
-            if "export" not in data["transcripts"]:
+            if "TRANSCRIPTS_EXPORT" not in data["calculation"]:
+                log.warning("TRANSCRIPTS_EXPORT section not found in howard config")
+                transcripts_output = ""
+                break
+            if "export" not in data["calculation"]["TRANSCRIPTS_EXPORT"]:
                 log.warning("Export section not found in howard config")
                 transcripts_output = ""
                 break
-            if "output" not in data["transcripts"]["export"]:
-                log.warning("Output section not found in howard config")
+            if "output" not in data["calculation"]["TRANSCRIPTS_EXPORT"]["export"]:
+                log.warning("Export section not found in howard config")
                 transcripts_output = ""
                 break
-            transcripts_output = data["transcripts"]["export"]["output"]
+            transcripts_output = data["calculation"]["transcripts"]["export"]["output"]
 
         sample_name = (os.path.basename(vcf_file).split(".")[0]).removeprefix("VANNOT_")
         transcripts_output_renamed = f"VANNOT_transcripts_{sample_name}.tsv"
@@ -955,9 +825,12 @@ def convert_to_final_tsv(run_informations):
         ordered_fields = data["vcf_to_tsv_column_order"][
             run_informations["run_platform_application"]
         ]
+        fields_to_keep_raw = data.get("fields_to_keep_raw", {}).get(
+            run_informations["run_platform_application"], []
+        )
 
-    explode_infos_fields = ",".join(ordered_fields)
-    explode_infos_fields = explode_infos_fields + ",*"
+    explode_infos_fields = ",".join(re.escape(field) for field in ordered_fields)
+    explode_infos_fields = explode_infos_fields + ",.*"
     print(explode_infos_fields)
     howard_config = osj(
         os.environ["HOST_MODULE_CONFIG"], "howard", "howard_config.json"
@@ -971,6 +844,20 @@ def convert_to_final_tsv(run_informations):
         actual_time = time.strftime("%H%M%S", local_time)
         start = actual_time
         container_name = f"VANNOT_convert_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+        # FORMAT + sample column(s) must go to the END of the TSV.
+        # --explode_infos only adds INFO columns, so FORMAT/sample stay in their
+        # original VCF position. DuckDB's "* EXCLUDE (...)" keeps every column but
+        # lets us re-append FORMAT and the sample(s) last.
+        sample = subprocess.run(
+            ["bcftools", "query", "-l", vcf_file],
+            universal_newlines=True,
+            stdout=subprocess.PIPE,
+        ).stdout.strip().split("\n")
+
+        trailing_cols = ["FORMAT"] + sample
+        trailing_quoted = ", ".join(f'"{c}"' for c in trailing_cols)
+        select_query = f"SELECT * EXCLUDE ({trailing_quoted}), {trailing_quoted} FROM variants"
+        
         if run_informations["type"] == "run":
             if panel_name != "design":
                 output_file = osj(
@@ -989,6 +876,7 @@ def convert_to_final_tsv(run_informations):
             )
 
         if "merged" not in vcf_file:
+            force_info_fields_as_string(vcf_file, fields_to_keep_raw)
             launch_convert_arguments = [
                 "query",
                 "--input",
@@ -999,7 +887,7 @@ def convert_to_final_tsv(run_informations):
                 "--explode_infos_fields",
                 explode_infos_fields,
                 "--query",
-                "SELECT * FROM variants",
+                select_query,
                 "--threads",
                 threads,
                 "--memory",
@@ -1008,7 +896,22 @@ def convert_to_final_tsv(run_informations):
                 howard_config,
             ]
             howard_launcher.launch(container_name, launch_convert_arguments)
-            output_file = format_explode(vcf_file, output_file)
+
+            header_fixed = osj(
+                os.path.dirname(output_file), "hdrfix_" + os.path.basename(output_file)
+            )
+            with open(output_file, "r") as read_file, open(header_fixed, "w") as write_file:
+                is_header = True
+                for line in read_file:
+                    if is_header:
+                        write_file.write(line.replace("\\", ""))
+                        is_header = False
+                    else:
+                        write_file.write(line)
+            os.replace(header_fixed, output_file)
+
+            if run_informations["onco"] == False:
+                output_file = format_explode(vcf_file, output_file)
             tsv_modifier(output_file, run_informations)
 
 def format_explode(vcf_file, tsv_file):
@@ -1170,8 +1073,79 @@ def format_explode(vcf_file, tsv_file):
         os.remove(tsv_file)
         os.rename(output_file, tsv_file)
         return tsv_file
+    
+def check_if_tsv_empty(input_file, run_informations):
+    def get_sample_name(file_path):
+        name = os.path.basename(file_path).removesuffix(".tsv").removeprefix("VANNOT_")
+        if name.endswith(".design"):
+            name = name.removesuffix(".design")
+        elif len(name.split(".")) > 1 and name.split(".")[1] == "panel":
+            name = name.split(".")[0]
+        return name
+
+    with open(input_file, "r") as read_file:
+        first_line = read_file.readline()
+
+    if first_line.strip() != "":
+        return
+
+    log.info(
+        f"{os.path.basename(input_file)} is empty, retrieving a header from another tsv"
+    )
+    empty_sample = get_sample_name(input_file)
+    tsv_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.tsv"))
+
+    for tsv_file in tsv_files:
+        if tsv_file == input_file or "transcripts" in os.path.basename(tsv_file):
+            continue
+        with open(tsv_file, "r") as read_file:
+            candidate_header = read_file.readline()
+        if candidate_header.strip() == "":
+            continue
+        donor_sample = get_sample_name(tsv_file)
+        header = [
+            empty_sample if column == donor_sample else column
+            for column in candidate_header.rstrip("\n").split("\t")
+        ]
+        with open(input_file, "w") as write_file:
+            write_file.write("\t".join(header) + "\n")
+        log.info(
+            f"Used header from {os.path.basename(tsv_file)} for {os.path.basename(input_file)}"
+        )
+        return
+
+    log.warning(
+        f"No non-empty tsv found to retrieve a header for {os.path.basename(input_file)}"
+    )
+
+def force_info_fields_as_string(vcf_file, fields_to_keep_raw):
+    """
+    Rewrite the VCF header so the given INFO fields become Number=1,Type=String.
+    Prevents HOWARD explode_infos from re-typing comma lists (Float -> adds '.0'
+    to ints and drops trailing missing '.' entries). Keeps the raw INFO value
+    exactly as written, like STARK.
+    """
+    if not fields_to_keep_raw:
+        return vcf_file
+    tmp_output = osj(
+        os.path.dirname(vcf_file), "rawstr_" + os.path.basename(vcf_file)[:-3]
+    )
+    id_pattern = re.compile(r"##INFO=<ID=([^,]+),")
+    with gzip.open(vcf_file, "rt") as read_file, open(tmp_output, "w") as write_file:
+        for line in read_file:
+            if line.startswith("##INFO=<ID="):
+                match = id_pattern.match(line)
+                if match and match.group(1) in fields_to_keep_raw:
+                    line = re.sub(r"Number=[^,]+", "Number=.", line, count=1)
+                    line = re.sub(r"Type=[^,]+", "Type=String", line, count=1)
+            write_file.write(line)
+    os.remove(vcf_file)
+    subprocess.call(["bgzip", tmp_output], universal_newlines=True)
+    os.rename(tmp_output + ".gz", vcf_file)
+    return vcf_file
 
 def tsv_modifier(input_file, run_informations):
+    check_if_tsv_empty(input_file, run_informations)
     sample = os.path.basename(input_file).removesuffix(".tsv").removeprefix("VANNOT_")
     if sample.endswith(".design"):
         sample = sample.removesuffix(".design")
@@ -1181,23 +1155,30 @@ def tsv_modifier(input_file, run_informations):
         os.path.dirname(input_file), "tmp_" + os.path.basename(input_file)
     )
     module_config = osj(os.environ["HOST_MODULE_CONFIG"],f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json")
-    with open(module_config, "r") as read_file:
-        data = json.load(read_file)
-        values_to_delete = data["tsv_columns_to_remove"]
+
+    if run_informations["onco"] == False:
+        with open(module_config, "r") as read_file:
+            data = json.load(read_file)
+            values_to_delete = data["tsv_columns_to_remove_diag"]
+    else:
+        with open(module_config, "r") as read_file:
+            data = json.load(read_file)
+            values_to_delete = data["tsv_columns_to_remove_onco"]    
 
     with open(module_config, "r") as read_file:
         data = json.load(read_file)
         last_order = data["vcf_to_tsv_column_order"][f"{run_informations["run_platform_application"]}"][-1]
 
-    values_to_delete.append(sample)
     dejavu_to_keep = []
-    prefix_to_keep = [run_informations["run_application"], "WES_AGILENT", "WES_TWIST", "WES_ROCHE"]
-    for i in prefix_to_keep:
-        dejavu_to_keep.append(f"{i}_ALLELECOUNT")
-        dejavu_to_keep.append(f"{i}_HETCOUNT")
-        dejavu_to_keep.append(f"{i}_HOMCOUNT")
-        dejavu_to_keep.append(f"{i}_ALLELEFREQ")
-        dejavu_to_keep.append(f"{i}_SAMPLECOUNT")
+    if run_informations["onco"] == False:
+        values_to_delete.append(sample)
+        prefix_to_keep = [run_informations["run_application"], "WES_AGILENT", "WES_TWIST", "WES_ROCHE"]
+        for i in prefix_to_keep:
+            dejavu_to_keep.append(f"{i}_ALLELECOUNT")
+            dejavu_to_keep.append(f"{i}_HETCOUNT")
+            dejavu_to_keep.append(f"{i}_HOMCOUNT")
+            dejavu_to_keep.append(f"{i}_ALLELEFREQ")
+            dejavu_to_keep.append(f"{i}_SAMPLECOUNT")
 
     index_to_keep = []
     alphanumerical_list_index = []
@@ -1207,7 +1188,7 @@ def tsv_modifier(input_file, run_informations):
         with open(input_file, "r") as read_file:
             for line in read_file:
                 line = line.rstrip("\n").split("\t")
-                if line[0] == "chr":
+                if line[0] == "chr" or line[0] == "#CHROM":
                     for i in range(len(line)):
                         if last_order_exec == False and line[i] not in values_to_delete and not (line[i].endswith("_ALLELECOUNT") or line[i].endswith("_HETCOUNT") or line[i].endswith("_HOMCOUNT") or line[i].endswith("_ALLELEFREQ") or line[i].endswith("_SAMPLECOUNT")) :
                             if line[i] == last_order:
@@ -1239,14 +1220,14 @@ def tsv_modifier(input_file, run_informations):
                     index_to_keep = index_to_keep + alphanumerical_list_new_index
                     write_file.write("\t".join([line[i] for i in index_to_keep]) + "\n")
                 else:
-                    # print(line)
-                    for count, element in enumerate(line):
-                        if "/" in element:
-                            line[count] = f'="{element}"'
-                        if "." in element:
-                            element = element.split(".")
-                            if element[0].isdigit() and element[1].isdigit():
-                                line[count] = element[0] + "," + element[1]
+                    if run_informations["run_platform"] != "DIAGGEN":
+                        for count, element in enumerate(line): 
+                            if "/" in element and element.count("/") == 1 and element.split("/")[0].isdigit() and element.split("/")[1].isdigit():
+                                line[count] = f'="{element}"' #fix the problem with excel reading dates instead of fractions
+                            elif "," not in element and element.count(".") == 1: #replace decimales with . to , not with lists
+                                element = element.split(".")
+                                if element[0].isdigit() and element[1].isdigit():
+                                    line[count] = element[0] + "," + element[1]
                     # print("\t".join([line[i] for i in index_to_keep]) + "\n")
                     write_file.write("\t".join([line[i] for i in index_to_keep]) + "\n")
     os.remove(input_file)

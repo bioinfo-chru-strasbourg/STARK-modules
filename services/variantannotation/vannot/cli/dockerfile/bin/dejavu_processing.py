@@ -6,9 +6,12 @@ import shutil
 import subprocess
 import commons
 import time
+import json
+
 from time import sleep
 from multiprocessing import Pool
-
+from synchronizer import find_samplesheet
+from synchronizer import find_tag
 import howard_launcher
 import howard_processing
 
@@ -22,7 +25,11 @@ def convert_vcf_parquet(run_informations, args):
     threads = commons.get_threads("threads_dejavu")
     memory = commons.get_memory("memory_dejavu")
     run_dict = {}
-    
+    module_config = osj(
+        os.environ["HOST_MODULE_CONFIG"],
+        f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
+    )
+
     log.info(
         f"Generating new dejavu database for {run_informations["run_platform_application"]}"
     )
@@ -45,6 +52,35 @@ def convert_vcf_parquet(run_informations, args):
         vcf_files_archives = glob.glob(
             osj(run_informations["archives_project_folder"], "VCF", "*", "*.vcf.gz")
         )
+        
+    if run_informations["onco"] == True:
+        control_samples = []
+        kept_vcf = []
+        with open(module_config, "r") as read_file:
+            data = json.load(read_file)
+            ignored_samples = data["ignored_samples"]
+        if run_informations["type"] == "run":
+            samplesheet = find_samplesheet(run_informations)
+            control_samples = find_tag(samplesheet, "CQI#")
+
+        ignored_samples = ignored_samples + control_samples
+        log.info(
+            "Ignoring following sample patterns for the analysis and dejavu generation : "
+            + ", ".join(ignored_samples)
+        )
+        for vcf_file in vcf_files_archives:
+            sample_name = vcf_file.split("/")[-1].split(".")[0]
+            run_name = vcf_file.split("/")[-2]
+            run_date = run_name.split("_")[0]
+            existing_vcf = next((v for v in kept_vcf if v.split("/")[-1].split(".")[0] == sample_name), None)
+            if existing_vcf is None and sample_name not in ignored_samples:
+                kept_vcf.append(vcf_file)
+            elif existing_vcf is not None and run_date > existing_vcf.split("/")[-2].split("_")[0]:
+                kept_vcf.remove(existing_vcf)
+                kept_vcf.append(vcf_file)
+                log.debug(f"Kept {vcf_file.split("/")[-2]} instead of {existing_vcf.split("/")[-2]} for sample {sample_name}")
+
+    vcf_files_archives = kept_vcf
 
     for vcf_file in vcf_files_archives:
         output = subprocess.check_output(f'zgrep -v \"#\" {vcf_file} | wc -l', shell=True, text=True)
@@ -226,27 +262,35 @@ def calculate_dejavu(run_informations):
 
     container_name = f"VANNOT_dejavu_{run_informations["run_name"]}"
     parquet_db_project = run_informations["parquet_db_howard_folder"]
+    platform = run_informations["run_platform"]
     project = run_informations["run_application"]
 
     inner_dejavu_root_folder = os.path.dirname(parquet_db_project)
     inner_dejavu_output_parquet = osj(
-        inner_dejavu_root_folder,
+        inner_dejavu_root_folder, 
+        platform,
         f"dejavu.{run_informations["run_application"]}.parquet",
     )
 
     output_root_folder = os.path.dirname(run_informations["parquet_db_folder"])
     dejavu_output_parquet_hdr = osj(
-        output_root_folder, f"dejavu.{run_informations["run_application"]}.parquet.hdr"
+        output_root_folder,
+        platform,
+        f"dejavu.{run_informations["run_application"]}.parquet.hdr"
     )
     dejavu_output_parquet = osj(
-        output_root_folder, f"dejavu.{run_informations["run_application"]}.parquet"
+        output_root_folder,
+        platform,
+        f"dejavu.{run_informations["run_application"]}.parquet"
     )
     dejavu_previous_output_parquet_hdr = osj(
         output_root_folder,
+        platform,
         f"previous.dejavu.{run_informations["run_application"]}.parquet.hdr",
     )
     dejavu_previous_output_parquet = osj(
         output_root_folder,
+        platform,
         f"previous.dejavu.{run_informations["run_application"]}.parquet",
     )
 
@@ -272,7 +316,7 @@ def calculate_dejavu(run_informations):
     samplecount = "SAMPLECOUNT"
     # barcode peut être stocké sous forme '[2]' ou '2' -> on extrait le 1er entier
     barcode_int = "CAST(REGEXP_EXTRACT(CAST(barcode AS VARCHAR), '\\d+') AS INT)"
-    query = f'SELECT "#CHROM", POS, REF, ALT, sum({barcode_int}) AS {allelecount}, count(barcode) FILTER(WHERE {barcode_int}=1) AS {hetcount}, count(barcode) FILTER(WHERE {barcode_int}=2) AS {homcount}, sum({barcode_int})/({sample_count}*2) AS {allelefreq}, {sample_count} as {samplecount} FROM variants WHERE PROJECT=\'{project}\' GROUP BY "#CHROM", POS, REF, ALT'
+    query = f'SELECT "#CHROM", POS, REF, ALT, sum({barcode_int}) AS {allelecount}, count(barcode) FILTER(WHERE {barcode_int}=1) AS {hetcount}, count(barcode) FILTER(WHERE {barcode_int}=2) AS {homcount}, sum({barcode_int})/({sample_count}*2) AS {allelefreq}, {sample_count} as {samplecount} FROM variants WHERE PROJECT=\'{project}\' AND "GROUP"=\'{platform}\' GROUP BY "#CHROM", POS, REF, ALT'
     # query = f"SELECT \"#CHROM\", POS, ANY_VALUE(ID) AS ID, REF, ALT, ANY_VALUE(QUAL) AS QUAL, ANY_VALUE(FILTER) AS FILTER, ANY_VALUE(INFO) AS INFO, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq} FROM variants WHERE PROJECT='{project}' GROUP BY \"#CHROM\", POS, REF, ALT"
     launch_query_arguments = [
         "query",

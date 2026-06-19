@@ -35,14 +35,16 @@ def vcf_synchronizer(run_informations):
         os.environ["HOST_MODULE_CONFIG"],
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
-    with open(module_config, "r") as read_file:
-        data = json.load(read_file)
-        ignored_samples = data["ignored_samples"]
-    samplesheet = find_samplesheet(run_informations)
-    control_samples = find_tag(samplesheet, "CQI#")
-    platform_application = run_informations["run_platform_application"]
-    pool_tag = f"APP#{platform_application}#POOL"
-    pool_samples = find_tag(samplesheet, pool_tag)
+    ignored_samples = []
+    if run_informations["onco"] == False:
+        with open(module_config, "r") as read_file:
+            data = json.load(read_file)
+            ignored_samples = data["ignored_samples"]
+        samplesheet = find_samplesheet(run_informations)
+        control_samples = find_tag(samplesheet, "CQI#")
+        platform_application = run_informations["run_platform_application"]
+        pool_tag = f"APP#{platform_application}#POOL"
+        pool_samples = find_tag(samplesheet, pool_tag)
 
     ignored_samples = ignored_samples + control_samples + pool_samples
     log.info(

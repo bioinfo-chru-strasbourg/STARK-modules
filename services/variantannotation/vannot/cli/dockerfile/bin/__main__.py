@@ -137,6 +137,7 @@ def parse_args():
         parents=[
             verbosity_parser,
             assembly_parser,
+            onco_parser,
         ],
     )
     parser_folder.add_argument(
