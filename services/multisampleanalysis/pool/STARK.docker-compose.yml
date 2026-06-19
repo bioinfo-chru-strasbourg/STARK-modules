@@ -1,75 +1,68 @@
-#########
-# STARK #
-#########
-# Usage: docker-compose up
-
-version: '3'
-
-# SERVICES
-##########
-
 services:
 
-    # cli
     stark-module-multisampleanalysis-submodule-pool-service-cli:
-        image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
+        image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-multisampleanalysis-submodule-pool-service-cli:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_TAG}
         build:
-            context: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT}
-            dockerfile: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_CONTEXT_DOCKERFILE}
+            context: .
+            dockerfile: Dockerfile
             args:
-                STARK_IMAGE: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_BUILD_ARGS_STARK_IMAGE}
-        container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_NAME}
-        restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_RESTART}
-        entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_ENTRYPOINT}
-        command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_CONTAINER_COMMAND}
-        environment:
-            - SLEEP=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_PARAM_SLEEP}
+                STARK_MAIN_FOLDER: ${DOCKER_STARK_MAIN_FOLDER}
+        container_name: stark-module-multisampleanalysis-submodule-pool-service-cli
+        restart: no
+        entrypoint: /bin/bash
+        stdin_open: true # docker run -i (interactive stdin)
+        tty: true # docker run -t (pseudo-TTY)
         volumes:
-            # Main configuration
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:rw
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_DEPOSITORY}:rw
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:ro
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATA}:${DOCKER_STARK_INNER_FOLDER_DATA}:rw
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_CONFIG}:ro
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_INNER_FOLDER_SERVICES}:rw
-        networks:
-            - ${DOCKER_STARK_MAIN_NETWORK}
-
-    # listener
-    stark-module-multisampleanalysis-submodule-pool-service-listener:
-        image: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE}
-        container_name: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_NAME}
-        entrypoint: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_ENTRYPOINT}
-        command: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_COMMAND}
-        restart: ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_CONTAINER_RESTART}
-        environment:
-            - MICROSERVICE_IMAGE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE}
-            - MICROSERVICE_MONTAGE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONTAINER_MOUNT}
-            - MICROSERVICE_LAUNCH=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_LAUNCH}
-            - MICROSERVICE_NAME=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_MICROSERVICE_NAME}
-            - MICROSERVICE_REPOSITORY=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_REPOSITORY_FOLDER}
-            - JSON=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_JSON}
-            - CONTAINERFILE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}
-            - DAEMON_RUN_EXISTENCE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_DAEMON_RUN_EXISTENCE}
-            - DAEMON_DELAY=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_DAEMON_DELAY}
-        volumes:
-            # Main configuration
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_REPOSITORY}:rw
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_DEPOSITORY}:rw
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:${DOCKER_STARK_INNER_FOLDER_OUTPUT_ARCHIVES}:ro
-            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:${DOCKER_STARK_INNER_FOLDER_DATABASES}:ro
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_CONFIG}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_CONFIG}:ro
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_SERVICES}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_SERVICES}:rw
-            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_CONFIG_LAUNCHER}:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_INNER_FOLDER_CONFIG_LAUNCHER}:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/output:/STARK/output:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:/STARK/output/repository:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:/STARK/output/depository:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:/STARK/output/archives:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATA}:/STARK/data:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:/STARK/databases:ro
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_CONFIG}:/STARK/config/multisampleanalysis/pool/cli:ro
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_HOST_FOLDER_SERVICES}:/STARK/services/multisampleanalysis/pool/cli:rw
             - ${DOCKER_STARK_SOCK_MOUNT}
+            - /dev/shm/pools:/dev/shm/pools:rw
         networks:
             - ${DOCKER_STARK_MAIN_NETWORK}
 
-# NETWORK
-###########
+    # this service is designed to run once when the compose is launched then exit
+    stark-module-multisampleanalysis-submodule-pool-service-setup:
+        image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-multisampleanalysis-submodule-pool-service-cli:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_TAG}
+        # if the files launcher.py and pool.json do not exist in the config folder, copy them from the image to the config folder
+        command: bash -c 'for file in launcher.py pool.json; do if [ ! -f "/config/$$file" ]; then cp "/app/config/$$file" "/config/"; fi; done'
+        volumes:
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_CONFIG}:/config:rw
+        depends_on:
+            - stark-module-multisampleanalysis-submodule-pool-service-cli
+        networks:
+            - ${DOCKER_STARK_MAIN_NETWORK}
+
+    stark-module-multisampleanalysis-submodule-pool-service-listener:
+        image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-common-submodule-listener-service-listener:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_IMAGE_TAG}
+        container_name: stark-module-multisampleanalysis-submodule-pool-service-listener
+        command: python3 /app/bin/listener.py --input=/STARK/output/repository --json /STARK/config/multisampleanalysis/pool/listener/pool.json --servicename=POOL --containersfile=/STARK/services --nbDaysBack=60 --minDelay=1
+        restart: always
+        environment:
+            - MICROSERVICE_IMAGE=${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-multisampleanalysis-submodule-pool-service-cli:${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_CLI_IMAGE_TAG}
+            - MICROSERVICE_MONTAGE=${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_PARAM_CONTAINER_MOUNT}
+            - MICROSERVICE_LAUNCH=/opt/conda/envs/py312/bin/python /app/src/wrapper.py -g /STARK/databases/genomes/current/${GENOME}/${GENOME}.fa
+            - MICROSERVICE_REPOSITORY=${DOCKER_STARK_MAIN_FOLDER}/output/repository
+            - PYTHONUNBUFFERED=1
+        volumes:
+            - ${DOCKER_STARK_MAIN_FOLDER}/output:/STARK/output:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:/STARK/output/depository:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:/STARK/output/archives:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:/STARK/databases:ro
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_CONFIG}:/STARK/config/multisampleanalysis/pool/listener:ro
+            - ${DOCKER_STARK_MODULE_SUBMODULE_SERVICE_LISTENER_HOST_FOLDER_SERVICES}:/STARK/services/multisampleanalysis/pool/listener:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/config/multisampleanalysis/pool/listener/launcher.py:/app/bin/launcher.py:ro
+            - ${DOCKER_STARK_SOCK_MOUNT}
+        depends_on:
+            - stark-module-multisampleanalysis-submodule-pool-service-setup
+        networks:
+            - ${DOCKER_STARK_MAIN_NETWORK}
 
 networks:
-
     stark_stark:
         external: true

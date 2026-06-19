@@ -1,4 +1,0 @@
-#!/bin/bash
-
-[[ -z "$@" ]] && python /app/lib/dpni/wrapper.py --help || python /app/lib/dpni/wrapper.py "$@"
-

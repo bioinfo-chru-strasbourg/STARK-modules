@@ -1,0 +1,46 @@
+##################################################################################
+# Dockerfile Version:   2.0
+# Software:             listener
+# Software Version:     2.0
+# Description:          Dockerfile to build Microservices Listener container image
+##################################################################################
+
+# PROD version 2 : 28/11/2023 : changelog
+# switch to alma linux 8, add docker compose
+
+FROM almalinux:8
+RUN rpm --import https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux
+#######
+# YUM #
+#######
+RUN yum update -y
+RUN yum -y install python3 epel-release yum-utils device-mapper-persistent-data lvm2 ncurses
+
+#############
+# DOCKER-CE #
+#############
+RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+RUN yum -y install docker-ce
+RUN usermod -aG docker $(whoami)
+RUN systemctl enable docker.service
+
+##################
+# DOCKER-COMPOSE #
+##################
+ENV DOCKER_COMPOSE_VERSION="v2.28.1" 
+# Last version 5.1.1 of docker compose is not compatible with docker-ce 24.0.5, so we need to use an older version of docker compose
+RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+RUN chmod +x /usr/local/bin/docker-compose
+
+############
+# LISTENER #
+############
+
+COPY . /app
+
+# RUN chmod -R +x /app
+# ENV PATH="/app:$PATH"
+
+WORKDIR /app/bin
+
+CMD ["python3","listener.py","--help"]
