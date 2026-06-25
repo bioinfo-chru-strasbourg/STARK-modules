@@ -93,22 +93,24 @@ def get_sample_list_from_samplesheet(samplesheetPath):
         application = json.load(jf)["application"][0].split("+")[0]
     with open(samplesheetPath, "r") as f:
         for l in f:
+            if l.startswith("Description"):
+                main_application = l.strip().split(",")[-1].split("#")[1]
             if not inDataTable:
                 if l.startswith("Sample_ID,"):
                     inDataTable = True
             else:
-                if "," in l:
-                    if (
-                        "APP" in l.strip().split(",")[-1]
-                        and application not in l.strip().split(",")[-1]
-                    ):
-                        continue
+                if "," in l and application != main_application and application in l.strip().split(",")[-1]:
                     sampleList.append(l.strip().split(",")[0])
+                elif "," in l and application == main_application:
+                    if "APP#" not in l.strip().split(",")[-1] or application in l.strip().split(",")[-1]:
+                        sampleList.append(l.strip().split(",")[0])
+                    
     # if there are spaces in samplesheet names, change them to "_" because that's what demultiplexing.sh will do
     # otherwise the fastq won't be found when looking in the DEM dir
     for i in range(len(sampleList)):
         if " " in sampleList[i]:
             sampleList[i] = sampleList[i].replace(" ", "_")
+
     return sampleList
 
 
