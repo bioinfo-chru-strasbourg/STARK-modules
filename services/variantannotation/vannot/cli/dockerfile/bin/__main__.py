@@ -91,14 +91,6 @@ def parse_args():
         "--param",
         help="Parameters JSON file (or string) defines parameters to process annotations, calculations, prioritizations, convertions and queries.",
     )
-    chunking_parser = argparse.ArgumentParser(add_help=False)
-    chunking_parser.add_argument(
-        "-ch",
-        "--chunking",
-        default=False,
-        type=bool,
-        help="True or False to chunk the vannot analysis during the prioritization step, default is False",
-    )
     onco_parser = argparse.ArgumentParser(add_help=False)
     onco_parser.add_argument(
         "-on",
@@ -119,7 +111,6 @@ def parse_args():
             assembly_parser,
             output_format_parser,
             param_parser,
-            chunking_parser,
             onco_parser,
         ],
     )
@@ -165,7 +156,6 @@ def parse_args():
             assembly_parser,
             output_format_parser,
             param_parser,
-            chunking_parser,
             onco_parser,
         ],
     )

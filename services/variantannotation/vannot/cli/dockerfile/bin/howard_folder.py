@@ -47,7 +47,10 @@ def launch_folder(args):
             f"{analysis_folder_name[-2]}.{analysis_folder_name[-1]}"
         )
         howard_processing.project_folder_initialisation(run_informations)
-        merged_vcf = howard_processing.merge_vcf(run_informations, "1", "")
+        howard_processing.qual_filter_id_to_format(run_informations)
+        
+        merge_header_backup = {}
+        merged_vcf = howard_processing.merge_vcf(run_informations, "1", "", merge_header_backup)
         fambarcode_vcf = howard_processing.fambarcode_vcf(
         run_informations,
         merged_vcf,
@@ -55,10 +58,19 @@ def launch_folder(args):
         annotated_merged_vcf = howard_processing.howard_proc(
         run_informations, fambarcode_vcf
     )
-        howard_processing.howard_score_transcripts(run_informations)
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
-        howard_processing.gmc_score(run_informations)
-        print(howard_processing.merge_vcf(run_informations, "2", ""))
+
+        howard_processing.howard_score_transcripts(run_informations)
+        howard_processing.format_to_info(run_informations)
+        if run_informations["onco"] == False:
+            howard_processing.gmc_score(run_informations)
+        merged_vcf = howard_processing.merge_vcf(run_informations, "2", "", merge_header_backup)
+        howard_processing.restore_merged_header(run_informations, merged_vcf)
+        howard_processing.restore_merge_headers(run_informations, merge_header_backup)
+        howard_processing.format_to_qual_filter_id(run_informations)
+        howard_processing.format_to_info(run_informations)
+        howard_processing.restore_flags_samples(run_informations)
+
         howard_processing.convert_to_final_tsv(run_informations)
         non_redundant.generate(run_informations)
         howard_processing.cleaner(run_informations)
@@ -70,19 +82,25 @@ def launch_folder(args):
             run_informations["run_platform_application"] = args.param.split("/")[-1].removesuffix(".json").removeprefix("param.")
 
         howard_processing.folder_initialisation(run_informations)
-        merged_vcf = howard_processing.merge_vcf(run_informations, "1", "")
+        howard_processing.qual_filter_id_to_format(run_informations)
 
+        merge_header_backup = {}
+        merged_vcf = howard_processing.merge_vcf(run_informations, "1", "", merge_header_backup)
         annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
-
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
-
+    
         howard_processing.howard_score_transcripts(run_informations)
+        if run_informations["onco"] == False:
+            howard_processing.gmc_score(run_informations)
 
-        howard_processing.gmc_score(run_informations)
-        print(howard_processing.merge_vcf(run_informations, "2", ""))
+        merged_vcf = howard_processing.merge_vcf(run_informations, "2", "", merge_header_backup)
+        howard_processing.restore_merged_header(run_informations, merged_vcf)
+        howard_processing.restore_merge_headers(run_informations, merge_header_backup)
+        howard_processing.format_to_qual_filter_id(run_informations)
+        howard_processing.format_to_info(run_informations)
+        howard_processing.restore_flags_samples(run_informations)
         howard_processing.convert_to_final_tsv(run_informations)
         exit()
-
         # if run_informations["run_platform"]:
         #     non_redundant.generate(run_informations)
         howard_processing.cleaner(run_informations)

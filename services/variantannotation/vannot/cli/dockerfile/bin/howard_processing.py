@@ -17,6 +17,170 @@ from vannotplus.__main__ import load_config, main_config
 
 import howard_launcher
 import commons
+import synchronizer
+
+def ignore_samples(run_informations):
+    module_config = osj(
+        os.environ["HOST_MODULE_CONFIG"],
+        f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
+    )
+    ignored_samples = []
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        ignored_samples = data["ignored_samples"]
+    if run_informations["type"] == "run":
+        samplesheet = synchronizer.find_samplesheet(run_informations)
+        control_samples = synchronizer.find_tag(samplesheet, "CQI#")
+        ignored_samples = ignored_samples + control_samples
+        
+    log.info(
+        "Ignoring following sample patterns for the merge vcf file : "
+        + ", ".join(ignored_samples)
+    )
+    return ignored_samples
+
+def format_to_qual_filter_id(run_informations):
+    """
+    Reverse of qual_filter_id_to_format.
+    Take the VID, VQUAL and VFILTER values stored in the FORMAT column of each
+    per-sample VCF and write them back into the site-level ID, QUAL and FILTER
+    columns, then drop the VID/VQUAL/VFILTER FORMAT subfields and their headers.
+    Replaces the backup_sample/restore_sample pair: QUAL/FILTER/ID travel with
+    the variants through merge/annotate/unmerge instead of a side backup folder.
+    """
+    restore_fields = ("VID", "VQUAL", "VFILTER")
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    for vcf_file in vcf_files:
+        if "merged" in os.path.basename(vcf_file):
+            continue
+        log.info(
+            f"Restoring QUAL, FILTER and ID from the FORMAT column for {os.path.basename(vcf_file)}"
+        )
+
+        is_gz = vcf_file.endswith(".gz")
+        open_func = gzip.open if is_gz else open
+        base = os.path.basename(vcf_file)[:-3] if is_gz else os.path.basename(vcf_file)
+        tmp_output = osj(os.path.dirname(vcf_file), "qfirestore_" + base)
+
+        with open_func(vcf_file, "rt") as read_file, open(tmp_output, "w") as write_file:
+            for line in read_file:
+                if line.startswith("##FORMAT=<ID="):
+                    match = re.match(r"##FORMAT=<ID=([^,]+),", line)
+                    if match and match.group(1) in restore_fields:
+                        continue  # drop VID/VQUAL/VFILTER header definitions
+                    write_file.write(line)
+                elif line.startswith("#"):
+                    write_file.write(line)
+                else:
+                    parts = line.rstrip("\n").split("\t")
+                    fmt_keys = parts[8].split(":")
+                    fmt_map = dict(zip(fmt_keys, parts[9].split(":")))
+
+                    # restore the original values verbatim
+                    if "VID" in fmt_map:
+                        parts[2] = fmt_map["VID"]
+                    if "VQUAL" in fmt_map:
+                        parts[5] = fmt_map["VQUAL"]
+                    if "VFILTER" in fmt_map:
+                        parts[6] = fmt_map["VFILTER"]
+
+                    # remove VID/VQUAL/VFILTER from FORMAT and every sample column
+                    keep_idx = [i for i, k in enumerate(fmt_keys) if k not in restore_fields]
+                    parts[8] = ":".join(fmt_keys[i] for i in keep_idx)
+                    for col in range(9, len(parts)):
+                        values = parts[col].split(":")
+                        parts[col] = ":".join(values[i] for i in keep_idx if i < len(values))
+
+                    write_file.write("\t".join(parts) + "\n")
+
+        os.remove(vcf_file)
+        if is_gz:
+            subprocess.call(["bgzip", tmp_output], universal_newlines=True)
+            os.rename(tmp_output + ".gz", vcf_file)
+        else:
+            os.rename(tmp_output, vcf_file)
+
+def qual_filter_id_to_format(run_informations):
+    """
+    Copy the site-level QUAL, FILTER and ID values into the FORMAT column of
+    each per-sample VCF as new FORMAT subfields (VID, VQUAL, VFILTER).
+    HOWARD cannot move QUAL/FILTER/ID into FORMAT, so it is done with bcftools.
+    Must be called while the per-sample VCFs are present in the tmp folder
+    (e.g. right after restore_sample).
+    """
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    for vcf_file in vcf_files:
+        if "merged" in os.path.basename(vcf_file):
+            continue
+        log.info(
+            f"Copying QUAL, FILTER and ID into the FORMAT column for {os.path.basename(vcf_file)}"
+        )
+        sample = (
+            subprocess.run(
+                ["bcftools", "query", "-l", vcf_file],
+                universal_newlines=True,
+                stdout=subprocess.PIPE,
+            )
+            .stdout.strip()
+            .split("\n")[0]
+        )
+
+        tmp_annot = osj(os.path.dirname(vcf_file), "qfi_annot.txt.tmp")
+        tmp_annot_fixed = osj(os.path.dirname(vcf_file), "qfi_annot.fixed.txt.tmp")
+        tmp_hdr = osj(os.path.dirname(vcf_file), "qfi_hdr.txt.tmp")
+
+        # Extract site-level ID, QUAL and FILTER per variant
+        query = "%CHROM\\t%POS\\t%REF\\t%ALT\\t%ID\\t%QUAL\\t%FILTER\n"
+        cmd = ["bcftools", "query", "-f", query, vcf_file]
+        with open(tmp_annot, "w") as writefile:
+            subprocess.call(cmd, universal_newlines=True, stdout=writefile)
+
+        # ";" is not the FORMAT separator (":"), so ID/QUAL/FILTER can be
+        # stored verbatim inside the FORMAT subfield without loss
+        with open(tmp_annot, "r") as readfile, open(tmp_annot_fixed, "w") as writefile:
+            for line in readfile:
+                writefile.write(line)
+        subprocess.call(["bgzip", tmp_annot_fixed], universal_newlines=True)
+        tmp_annot_fixed = tmp_annot_fixed + ".gz"
+        subprocess.call(
+            ["tabix", "-s1", "-b2", "-e2", tmp_annot_fixed], universal_newlines=True
+        )
+
+        # Header defining the new FORMAT fields
+        with open(tmp_hdr, "w") as writefile:
+            writefile.write('##FORMAT=<ID=VID,Number=1,Type=String,Description="Original variant ID">\n')
+            writefile.write('##FORMAT=<ID=VQUAL,Number=1,Type=String,Description="Original variant QUAL">\n')
+            writefile.write('##FORMAT=<ID=VFILTER,Number=1,Type=String,Description="Original variant FILTER">\n')
+
+        output_file = osj(
+            os.path.dirname(vcf_file), "qfi_" + os.path.basename(vcf_file)
+        )
+        cmd = [
+            "bcftools",
+            "annotate",
+            "-s",
+            sample,
+            "-a",
+            tmp_annot_fixed,
+            "-h",
+            tmp_hdr,
+            "-c",
+            "CHROM,POS,REF,ALT,FORMAT/VID,FORMAT/VQUAL,FORMAT/VFILTER",
+            "-O",
+            "z",
+            "-o",
+            output_file,
+            vcf_file,
+        ]
+        log.debug(" ".join(cmd))
+        subprocess.call(cmd, universal_newlines=True)
+
+        os.remove(tmp_annot)
+        os.remove(tmp_annot_fixed)
+        os.remove(tmp_annot_fixed + ".tbi")
+        os.remove(tmp_hdr)
+        os.remove(vcf_file)
+        os.rename(output_file, vcf_file)
 
 def project_folder_initialisation(run_informations):
     print("sam:project_folder_initialisation")
@@ -224,6 +388,66 @@ def cleaning_annotations(vcf_file, run_informations):
         subprocess.call(cmd, stdout=output, universal_newlines=True)
     os.remove(vcf_file)
 
+    if run_informations["onco"] == True:
+        log.info("Keeping sample based annotations from STARK into format column if any remaining")
+        #if there are duplicates, keep both but renaming the incoming one adding a digit to the end of the name (BCF -> BCF2, BCFS -> BCFS2)
+        #howard calculation --input=2506278.final.vcf.gz --output=test.vcf --calculations="INFO_TO_FORMAT" --param='{"calculation": {"calculations": {"INFO_TO_FORMAT": {"annotation_fields": {"ADP":null},"remove_info_fields": true}}}}'
+
+        with open(module_config, "r") as read_file:
+            data = json.load(read_file)
+            annotation_fields = data["howard_ift"][
+                run_informations["run_platform_application"]
+            ]
+        cleaned_vcf = convert_flag_to_integer(cleaned_vcf, annotation_fields)
+        json_query = json.dumps(
+            {
+                "calculation": {
+                    "calculations": {
+                        "INFO_TO_FORMAT": {
+                            "annotation_fields": annotation_fields,
+                            "remove_info_fields": True,
+                        }
+                    }
+                }
+            }
+        )
+
+        howard_config = osj(
+            os.environ["HOST_MODULE_CONFIG"], "howard", "howard_onco_config.json"
+        )
+
+        threads = commons.get_threads("threads_annotation")
+        memory = commons.get_memory("memory_annotation")
+
+        exact_time = time.time() + 7200
+        local_time = time.localtime(exact_time)
+        actual_time = time.strftime("%H%M%S", local_time)
+        start = actual_time
+        vcf_file = vcf_file.replace(".vcf.gz", ".vcf")
+        container_name = f"VANNOT_itf_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+        launch_annotate_arguments = [
+            "calculation",
+            "--input",
+            cleaned_vcf,
+            "--output",
+            vcf_file,
+            "--calculations",
+            "INFO_TO_FORMAT",
+            "--param",
+            json_query,
+            "--memory",
+            memory,
+            "--threads",
+            threads,
+            "--config",
+            howard_config,
+            "--debug",
+        ]
+
+        log.info("ITF generation with HOWARD")
+        howard_launcher.launch(container_name, launch_annotate_arguments)
+        os.rename(vcf_file, cleaned_vcf)
+
     subprocess.call(["bgzip", cleaned_vcf], universal_newlines=True)
     renamed_clean = osj(
         os.path.dirname(cleaned_vcf),
@@ -233,7 +457,395 @@ def cleaning_annotations(vcf_file, run_informations):
     os.rename(cleaned_vcf, renamed_clean)
     return renamed_clean
 
+def convert_integer_to_flag(vcf_file, flag_fields):
+    """
+    Reverse of convert_flag_to_integer.
+    FIELD=1 -> FLAG present (FIELD, no value)
+    FIELD=0 -> FLAG absent (removed from INFO)
+    Header: Number=1,Type=Integer -> Number=0,Type=Flag
+    """
+    flag_fields = set(flag_fields)
+    if not flag_fields:
+        return vcf_file
 
+    is_gz = vcf_file.endswith(".gz")
+    open_func = gzip.open if is_gz else open
+
+    log.info(f"Converting Integer INFO fields back to FLAG: {', '.join(sorted(flag_fields))}")
+
+    if is_gz:
+        tmp_output = osj(os.path.dirname(vcf_file), "flagrestore_" + os.path.basename(vcf_file)[:-3])
+    else:
+        tmp_output = osj(os.path.dirname(vcf_file), "flagrestore_" + os.path.basename(vcf_file))
+
+    info_pattern = re.compile(r"##INFO=<ID=([^,]+),")
+
+    with open_func(vcf_file, "rt") as read_file, open(tmp_output, "w") as write_file:
+        for line in read_file:
+            if line.startswith("##INFO=<ID="):
+                match = info_pattern.match(line)
+                if match and match.group(1) in flag_fields:
+                    line = re.sub(r"Number=[^,]+", "Number=0", line, count=1)
+                    line = re.sub(r"Type=[^,]+", "Type=Flag", line, count=1)
+                write_file.write(line)
+            elif line.startswith("#"):
+                write_file.write(line)
+            else:
+                parts = line.rstrip("\n").split("\t")
+                if len(parts) > 7:
+                    info_items = parts[7].split(";") if parts[7] != "." else []
+                    new_info = []
+                    for item in info_items:
+                        key = item.split("=")[0]
+                        if key in flag_fields:
+                            value = item.split("=")[1] if "=" in item else ""
+                            if value == "1":
+                                new_info.append(key)  # flag present
+                            # "0" / autre -> drop (flag absent)
+                        else:
+                            new_info.append(item)
+                    parts[7] = ";".join(new_info) if new_info else "."
+                    write_file.write("\t".join(parts) + "\n")
+                else:
+                    write_file.write(line)
+
+    os.remove(vcf_file)
+    if is_gz:
+        subprocess.call(["bgzip", tmp_output], universal_newlines=True)
+        os.rename(tmp_output + ".gz", vcf_file)
+    else:
+        os.rename(tmp_output, vcf_file)
+
+    return vcf_file
+
+
+def restore_flags_samples(run_informations):
+    """
+    Restore Integer -> Flag on every per-sample VCF in the tmp folder,
+    using the converted_flags.json record produced by convert_flag_to_integer.
+    Must be called while the per-sample VCFs still exist (before merge step 2).
+    """
+    record_file = osj(run_informations["tmp_analysis_folder"], "converted_flags.json")
+    if not os.path.isfile(record_file):
+        log.info("No converted_flags.json record found, skipping flag restoration on samples")
+        return
+    with open(record_file, "r") as rf:
+        flag_fields = json.load(rf)
+    if not flag_fields:
+        log.info("Empty converted flags record, nothing to restore on samples")
+        return
+
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    for vcf_file in vcf_files:
+        log.info(f"Restoring flags on sample VCF {os.path.basename(vcf_file)}")
+        convert_integer_to_flag(vcf_file, flag_fields)
+    os.remove(record_file)
+
+def convert_flag_to_integer(vcf_file, annotation_fields):
+    """
+    Convert FLAG type INFO fields to Integer before HOWARD INFO_TO_FORMAT.
+    FLAG present  -> FIELD=1
+    FLAG absent   -> FIELD=0
+    Header: Number=0,Type=Flag -> Number=1,Type=Integer
+    annotation_fields: dict (keys = field names) or set/list
+    """
+    is_gz = vcf_file.endswith(".gz")
+    open_func = gzip.open if is_gz else open
+
+    field_names = set(annotation_fields.keys()) if isinstance(annotation_fields, dict) else set(annotation_fields)
+
+    flag_pattern = re.compile(r"##INFO=<ID=([^,]+),[^>]*Type=Flag")
+    flag_fields = set()
+
+    with open_func(vcf_file, "rt") as read_file:
+        for line in read_file:
+            if not line.startswith("#"):
+                break
+            match = flag_pattern.match(line)
+            if match and match.group(1) in field_names:
+                flag_fields.add(match.group(1))
+
+    if not flag_fields:
+        log.info("No FLAG fields to convert")
+        return vcf_file
+
+    log.info(f"Converting FLAG INFO fields to Integer: {', '.join(sorted(flag_fields))}")
+
+    # Persist the converted flag fields so they can be restored later
+    record_file = osj(os.path.dirname(vcf_file), "converted_flags.json")
+    existing = set()
+    if os.path.isfile(record_file):
+        with open(record_file, "r") as rf:
+            existing = set(json.load(rf))
+    existing |= flag_fields
+    with open(record_file, "w") as wf:
+        json.dump(sorted(existing), wf)
+
+    if is_gz:
+        tmp_output = osj(os.path.dirname(vcf_file), "flagfix_" + os.path.basename(vcf_file)[:-3])
+    else:
+        tmp_output = osj(os.path.dirname(vcf_file), "flagfix_" + os.path.basename(vcf_file))
+
+    with open_func(vcf_file, "rt") as read_file, open(tmp_output, "w") as write_file:
+        for line in read_file:
+            if line.startswith("##INFO=<ID="):
+                match = flag_pattern.match(line)
+                if match and match.group(1) in flag_fields:
+                    line = re.sub(r"Number=0", "Number=1", line, count=1)
+                    line = re.sub(r"Type=Flag", "Type=Integer", line, count=1)
+                write_file.write(line)
+            elif line.startswith("#"):
+                write_file.write(line)
+            else:
+                parts = line.rstrip("\n").split("\t")
+                if len(parts) > 7:
+                    info_items = parts[7].split(";") if parts[7] != "." else []
+                    new_info = []
+                    flags_found = set()
+
+                    for item in info_items:
+                        field_name = item.split("=")[0]
+                        if field_name in flag_fields:
+                            new_info.append(f"{field_name}=1")
+                            flags_found.add(field_name)
+                        else:
+                            new_info.append(item)
+
+                    # Absent flags -> 0
+                    for flag in flag_fields:
+                        if flag not in flags_found:
+                            new_info.append(f"{flag}=0")
+
+                    parts[7] = ";".join(new_info) if new_info else "."
+                    write_file.write("\t".join(parts) + "\n")
+                else:
+                    log.warning("No FORMAT field")
+                    write_file.write(line)
+
+    os.remove(vcf_file)
+    if is_gz:
+        subprocess.call(["bgzip", tmp_output], universal_newlines=True)
+        os.rename(tmp_output + ".gz", vcf_file)
+    else:
+        os.rename(tmp_output, vcf_file)
+
+    return vcf_file
+
+def restore_merged_header(run_informations, merged_vcf, reference_vcf=None):
+    """
+    Put the correct FORMAT/INFO definitions back onto the merged VCF using a
+    corrected per-sample VCF as reference. The merged VCF body (and the FORMAT
+    values of every sample) is left untouched: no FORMAT_TO_INFO is applied here.
+    Must be called while the per-sample VCFs still exist.
+    """
+    if reference_vcf is None:
+        candidates = glob.glob(
+            osj(run_informations["tmp_analysis_folder"], "VANNOT_*.vcf.gz")
+        )
+        candidates = [
+            v for v in candidates
+            if os.path.realpath(v) != os.path.realpath(merged_vcf)
+        ]
+        if not candidates:
+            log.warning("No corrected per-sample VCF found, merged header left unchanged")
+            return merged_vcf
+        reference_vcf = candidates[0]
+
+    log.info(f"Restoring merged header from {os.path.basename(reference_vcf)}")
+
+    # Collect correct FORMAT/INFO definitions from the reference sample VCF
+    reference_header = subprocess.run(
+        ["bcftools", "view", "-h", reference_vcf],
+        universal_newlines=True, stdout=subprocess.PIPE,
+    ).stdout
+    correct_def = {}  # (FORMAT|INFO, ID) -> full meta line
+    for line in reference_header.splitlines(keepends=True):
+        match = re.match(r"##(FORMAT|INFO)=<ID=([^,]+),", line)
+        if match:
+            correct_def[(match.group(1), match.group(2))] = line
+
+    # Rebuild the merged header, swapping only matching FORMAT/INFO lines and
+    # keeping the merged #CHROM line (all sample columns) intact.
+    merged_header = subprocess.run(
+        ["bcftools", "view", "-h", merged_vcf],
+        universal_newlines=True, stdout=subprocess.PIPE,
+    ).stdout
+    new_hdr = osj(os.path.dirname(merged_vcf), "merged_hdr.txt.tmp")
+    with open(new_hdr, "w") as writefile:
+        for line in merged_header.splitlines(keepends=True):
+            match = re.match(r"##(FORMAT|INFO)=<ID=([^,]+),", line)
+            key = (match.group(1), match.group(2)) if match else None
+            writefile.write(correct_def.get(key, line) if key else line)
+
+    restored_merged = osj(
+        os.path.dirname(merged_vcf), "reheader_" + os.path.basename(merged_vcf)
+    )
+    subprocess.call(
+        ["bcftools", "reheader", "-h", new_hdr, "-o", restored_merged, merged_vcf],
+        universal_newlines=True,
+    )
+    os.remove(new_hdr)
+    os.remove(merged_vcf)
+    os.rename(restored_merged, merged_vcf)
+    log.info(f"Correct header restored on merged VCF {os.path.basename(merged_vcf)}")
+    return merged_vcf
+
+def format_to_info(run_informations):
+    module_config = run_informations["module_config"]
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        annotation_fields = data["format_to_info"]
+        if run_informations["run_platform_application"] not in annotation_fields:
+            log.info(
+                f"No FORMAT_TO_INFO annotations defined for {run_informations['run_platform_application']}, skipping"
+            )
+            return
+
+    format_to_info_columns_config = annotation_fields[
+        run_informations["run_platform_application"]
+    ]
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    for vcf_file in vcf_files:
+        if "merged" in os.path.basename(vcf_file):
+            vcf_files.remove(vcf_file)
+
+    for vcf_file in vcf_files:
+        log.info(
+            f"Copying FORMAT fields into the INFO column for {os.path.basename(vcf_file)}"
+        )
+
+        # Filter to FORMAT fields that actually exist in this VCF
+        vcf_header = subprocess.run(
+            ["bcftools", "view", "-h", vcf_file],
+            universal_newlines=True,
+            stdout=subprocess.PIPE,
+        ).stdout
+        existing_format_fields = set(re.findall(r"##FORMAT=<ID=([^,]+)", vcf_header))
+        format_to_info_columns = [f for f in format_to_info_columns_config if f in existing_format_fields]
+
+        if not format_to_info_columns:
+            log.info(f"No matching FORMAT fields found in {os.path.basename(vcf_file)}, skipping")
+            continue
+
+        log.info(f"FORMAT fields to copy to INFO: {format_to_info_columns}")
+
+        sample = (
+            subprocess.run(
+                ["bcftools", "query", "-l", vcf_file],
+                universal_newlines=True,
+                stdout=subprocess.PIPE,
+            )
+            .stdout.strip()
+            .split("\n")[0]
+        )
+        tmp_annot = osj(os.path.dirname(vcf_file), "annot.txt.tmp")
+        tmp_hdr = osj(os.path.dirname(vcf_file), "hdr.txt.tmp")
+
+        # Extract the FORMAT values (per site) for the first sample
+        format_to_info_columns_query = "\\t%".join(format_to_info_columns)
+        format_to_info_columns_query = (
+            "%CHROM\\t%POS\\t%REF\\t%ALT[\\t%" + format_to_info_columns_query + "]\n"
+        )
+        cmd = [
+            "bcftools",
+            "query",
+            "-s",
+            sample,
+            "-f",
+            format_to_info_columns_query,
+            vcf_file,
+        ]
+        with open(tmp_annot, "w") as writefile:
+            subprocess.call(cmd, universal_newlines=True, stdout=writefile)
+        subprocess.call(["bgzip", tmp_annot], universal_newlines=True)
+        tmp_annot = tmp_annot + ".gz"
+        subprocess.call(
+            ["tabix", "-s1", "-b2", "-e2", tmp_annot], universal_newlines=True
+        )
+
+        # Build matching INFO header lines from the existing FORMAT definitions
+        original_info_headers = {}  # column -> original INFO header line
+        vcf_file_gunzip = vcf_file[:-3]
+        subprocess.call(["gunzip", vcf_file])
+        with open(vcf_file_gunzip, "r") as readfile, open(tmp_hdr, "w") as writefile:
+            for line in readfile:
+                if not line.startswith("#"):
+                    break
+                for column in format_to_info_columns:
+                    if line.startswith("##FORMAT=<ID=" + column + ","):
+                        # Save the correct INFO line for later restoration
+                        original_info_headers[column] = line.replace("##FORMAT=<ID=", "##INFO=<ID=", 1)
+                        # Write with forced Number=.,Type=String to avoid bcftools segfault
+                        new_line = line.replace("##FORMAT=<ID=", "##INFO=<ID=", 1)
+                        new_line = re.sub(r"Number=[^,]+", "Number=.", new_line, count=1)
+                        new_line = re.sub(r"Type=[^,]+", "Type=String", new_line, count=1)
+                        writefile.write(new_line)
+        subprocess.call(["bgzip", vcf_file_gunzip], universal_newlines=True)
+
+        format_to_info_columns_annotate = ",INFO/".join(format_to_info_columns)
+        format_to_info_columns_annotate = (
+            "CHROM,POS,REF,ALT,INFO/" + format_to_info_columns_annotate
+        )
+
+        # Add the new INFO fields without touching the FORMAT column
+        output_file = osj(
+            os.path.dirname(vcf_file), "fti_" + os.path.basename(vcf_file)
+        )
+        cmd = [
+            "bcftools",
+            "annotate",
+            "-a",
+            tmp_annot,
+            "-h",
+            tmp_hdr,
+            "-c",
+            format_to_info_columns_annotate,
+            "-O",
+            "z",
+            "-o",
+            output_file,
+            vcf_file,
+        ]
+        log.debug(" ".join(cmd))
+        subprocess.call(cmd, universal_newlines=True)
+
+        # Restore the correct Number/Type in the output header
+        if original_info_headers:
+            restore_hdr = osj(os.path.dirname(vcf_file), "restore_hdr.txt.tmp")
+            current_header = subprocess.run(
+                ["bcftools", "view", "-h", output_file],
+                universal_newlines=True,
+                stdout=subprocess.PIPE,
+            ).stdout
+            with open(restore_hdr, "w") as writefile:
+                for hdr_line in current_header.splitlines(keepends=True):
+                    replaced = False
+                    for column, original_line in original_info_headers.items():
+                        if hdr_line.startswith("##INFO=<ID=" + column + ","):
+                            writefile.write(original_line)
+                            replaced = True
+                            break
+                    if not replaced:
+                        writefile.write(hdr_line)
+
+            restored_output = osj(os.path.dirname(output_file), "restored_" + os.path.basename(output_file))
+            subprocess.call([
+                "bcftools", "reheader",
+                "-h", restore_hdr,
+                "-o", restored_output,
+                output_file,
+            ], universal_newlines=True)
+            os.remove(output_file)
+            os.remove(restore_hdr)
+            os.rename(restored_output, output_file)
+            log.info("Restored original Number/Type in INFO header after FORMAT_TO_INFO")
+
+        os.remove(tmp_annot)
+        os.remove(tmp_annot + ".tbi")
+        os.remove(tmp_hdr)
+        os.remove(vcf_file)
+        os.rename(output_file, vcf_file)
+    
 def fambarcode_vcf(run_informations, input_vcf):
     output = osj(
         run_informations["tmp_analysis_folder"],
@@ -356,45 +968,134 @@ def fambarcode_vcf(run_informations, input_vcf):
     # output = output + ".gz" 
     # return output
 
-def merge_vcf(run_informations, step, base_vcf):
+def normalize_merge_headers(vcf_file, header_backup):
+    """
+    Rewrite VAF/AD/FT/PL/AS_FilterStatus/reference header lines to a single
+    canonical definition so every VCF agrees before bcftools merge.
+    header_backup: a plain dict owned by the caller, mutated in place. The
+    first original line seen for each field is kept; later calls on an
+    already-normalized file won't overwrite it.
+    """
+    field_descriptions = {
+        "VAF": "VAF Variant Frequency, calculated from quality",
+        "AD": "Allelic depths for the ref and alt alleles in the order listed",
+        "FT": "Genotype-level filter",
+        "PL": (
+            "Normalized, Phred-scaled likelihoods for genotypes "
+            "as defined in the VCF specification"
+        ),
+        "AS_FilterStatus": (
+            "Filter status for each allele, as assessed by ApplyVQSR. "
+            "Note that the VCF filter field will reflect the most lenient/sensitive "
+            "status across all alleles."
+        ),
+    }
+    merge_format_types = {
+        "VAF": ("1", "Float"),
+        "AD": ("R", "Integer"),
+        "FT": (".", "String"),
+        "PL": ("G", "Integer"),
+        "AS_FilterStatus": (".", "String"),
+    }
+    reference_prefix = "##reference=file:"
+    reference_line = "##reference=file:///STARK/databases/genomes/current/hg19.fa\n"
+
+    def format_prefix(field):
+        return f"##FORMAT=<ID={field},Number="
+
+    def format_line(field):
+        number, type_ = merge_format_types[field]
+        return (
+            f'##FORMAT=<ID={field},Number={number},Type={type_},'
+            f'Description="{field_descriptions[field]}">\n'
+        )
+
+    tmp_output = osj(
+        os.path.dirname(vcf_file), "hdrfix_" + os.path.basename(vcf_file)[:-3]
+    )
+    with gzip.open(vcf_file, "rt") as read_file, open(tmp_output, "w") as write_file:
+        for line in read_file:
+            if line.startswith(reference_prefix):
+                if reference_prefix not in header_backup:
+                    header_backup[reference_prefix] = line
+                    log.info("Saving original header line for reference")
+                write_file.write(reference_line)
+                continue
+
+            field = next(
+                (f for f in merge_format_types if line.startswith(format_prefix(f))),
+                None,
+            )
+            if field is None:
+                write_file.write(line)
+                continue
+
+            prefix = format_prefix(field)
+            if prefix not in header_backup:
+                header_backup[prefix] = line
+                log.info(f"Saving original header line for {field}")
+            write_file.write(format_line(field))
+
+    os.remove(vcf_file)
+    subprocess.call(["bgzip", tmp_output], universal_newlines=True)
+    os.rename(tmp_output + ".gz", vcf_file)
+
+
+def restore_merge_headers(run_informations, header_backup):
+    """
+    Reverse of normalize_merge_headers: put the original FORMAT/reference
+    header lines back on every vcf.gz in the tmp folder (per-sample AND
+    merged). header_backup is the same dict filled in earlier by merge_vcf/
+    normalize_merge_headers during this run. Must run AFTER restore_merged_header.
+    """
+    if not header_backup:
+        log.info("No merge header backup collected, skipping header restoration")
+        return
+
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    for vcf_file in vcf_files:
+        log.info(f"Restoring original header lines for {os.path.basename(vcf_file)}")
+        tmp_output = osj(
+            os.path.dirname(vcf_file), "hdrrestore_" + os.path.basename(vcf_file)[:-3]
+        )
+        with gzip.open(vcf_file, "rt") as read_file, open(tmp_output, "w") as write_file:
+            for line in read_file:
+                prefix = next((p for p in header_backup if line.startswith(p)), None)
+                write_file.write(header_backup[prefix] if prefix else line)
+
+        os.remove(vcf_file)
+        subprocess.call(["bgzip", tmp_output], universal_newlines=True)
+        os.rename(tmp_output + ".gz", vcf_file)
+
+def merge_vcf(run_informations, step, base_vcf, header_backup=None):
+    if header_backup is None:
+        header_backup = {}
     if step == "0":
         vcf_file_to_merge = glob.glob(osj(run_informations["tmp_analysis_folder"], "fixed_unmerged_*.vcf*"))
         if len(vcf_file_to_merge) == 0:
             vcf_file_to_merge = glob.glob(osj(run_informations["tmp_analysis_folder"], "unmerged_*.vcf*"))
+    elif step == "2":
+        ignored_samples = ignore_samples(run_informations)
+        vcf_file_to_merge = glob.glob(
+            osj(run_informations["tmp_analysis_folder"], "*.vcf*")
+        )
+        for ignored_sample in ignored_samples:
+            for vcf_file in vcf_file_to_merge:
+                if ignored_sample in os.path.basename(vcf_file):
+                    vcf_file_to_merge.remove(vcf_file)
+                    log.info(f"Sample {ignored_sample} is ignored, not included in the merge")
     else:
         print("sam: running merge_vcf step=1")
         print("run_informations['tmp_analysis_folder']", run_informations["tmp_analysis_folder"])
         vcf_file_to_merge = glob.glob(
             osj(run_informations["tmp_analysis_folder"], "*.vcf*")
         )
+        
+    print(vcf_file_to_merge)
     if len(vcf_file_to_merge) > 1:
         for vcf_file in vcf_file_to_merge:
-            tmp_output = osj(os.path.dirname(vcf_file), "tmp_" + os.path.basename(vcf_file))
-            with gzip.open(vcf_file, "rt") as read_file:
-                with open(tmp_output, "w") as write_file:
-                    lines = read_file.readlines()
-                    for line in lines:
-                        if line.startswith("##FORMAT=<ID=VAF,Number="):
-                            log.info(f"Fixing VAF for sample {vcf_file}")
-                            write_file.write("##FORMAT=<ID=VAF,Number=1,Type=Float,Description=\"VAF Variant Frequency, calculated from quality\">\n")
-                        elif line.startswith("##FORMAT=<ID=AD,Number="):
-                            log.info(f"Fixing AD for sample {vcf_file}")
-                            write_file.write("##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Allelic depths for the ref and alt alleles in the order listed\">\n")
-                        elif line.startswith("##FORMAT=<ID=FT,Number="):
-                            log.info(f"Fixing FT for sample {vcf_file}")
-                            write_file.write("##FORMAT=<ID=FT,Number=.,Type=String,Description=\"Genotype-level filter\">\n")
-                        elif line.startswith("##reference=file:"):
-                            log.info(f"Fixing reference for sample {vcf_file}")
-                            write_file.write("##reference=file:///STARK/databases/genomes/current/hg19.fa\n")
-                        elif line.startswith("##FORMAT=<ID=PL,Number="):
-                            log.info(f"Fixing PL for sample {vcf_file}")
-                            write_file.write("##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification\">\n")
-                        else:
-                            write_file.write(line)
-            os.remove(vcf_file)
-            subprocess.call("bgzip " + tmp_output, shell=True)
-            os.rename(tmp_output + ".gz", vcf_file)
-        
+            normalize_merge_headers(vcf_file, header_backup)
+
         log.info(f"Merging {len(vcf_file_to_merge)} vcf files")
         for i in vcf_file_to_merge:
             subprocess.call(["tabix", i], universal_newlines=True)
@@ -456,7 +1157,8 @@ def unmerge_vcf(input, run_informations):
                 output_file = osj(
                     os.path.dirname(vcf_file_to_unmerge), f"unmerged_VANNOT_{sample}.vcf"
                 )
-            cmd = ["bcftools", "view", "-c1", "-s", sample, vcf_file_to_unmerge]
+            cmd = ["bcftools", "view", "-c1", "-I", "-s", sample, vcf_file_to_unmerge]
+            
             with open(output_file, "w") as writefile:
                 subprocess.call(cmd, universal_newlines=True, stdout=writefile)
             subprocess.call(["bgzip", output_file], universal_newlines=True)
@@ -747,6 +1449,17 @@ def howard_score_transcripts(run_informations):
     actual_time = time.strftime("%H%M%S", local_time)
     start = actual_time
 
+    with open(transcript_param, "r") as read_file:
+        data = json.load(read_file)
+    try:
+        transcripts_output = data["calculation"]["TRANSCRIPTS_EXPORT"]["export"]["output"]
+    except (KeyError, TypeError):
+        log.warning(
+            "transcripts export output not found in howard param; "
+            "transcript TSV will not be copied"
+        )
+        transcripts_output = ""
+
 #     with Pool(1) as pool:
 #         pool.map(prioritize_worker_unpacker, [(vcf_file, run_informations, divide_memory(threads, memory), start, transcript_param, threads
 # ) for vcf_file in vcf_files])
@@ -775,40 +1488,14 @@ def howard_score_transcripts(run_informations):
         os.remove(vcf_file)
         os.rename(output_file_transcripts, vcf_file)
 
-        with open(
-            transcript_param,
-            "r",
-        ) as read_file:
-            data = json.load(read_file)
-            if "calculation" not in data:
-                log.warning("Calculation section not found in howard config")
-                transcripts_output = ""
-                break
-            if "TRANSCRIPTS_EXPORT" not in data["calculation"]:
-                log.warning("TRANSCRIPTS_EXPORT section not found in howard config")
-                transcripts_output = ""
-                break
-            if "export" not in data["calculation"]["TRANSCRIPTS_EXPORT"]:
-                log.warning("Export section not found in howard config")
-                transcripts_output = ""
-                break
-            if "output" not in data["calculation"]["TRANSCRIPTS_EXPORT"]["export"]:
-                log.warning("Export section not found in howard config")
-                transcripts_output = ""
-                break
-            transcripts_output = data["calculation"]["transcripts"]["export"]["output"]
-
         sample_name = (os.path.basename(vcf_file).split(".")[0]).removeprefix("VANNOT_")
         transcripts_output_renamed = f"VANNOT_transcripts_{sample_name}.tsv"
-        shutil.copy(
-            transcripts_output,
-            osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed),
-        )
-            # shutil.copy(
-            #     transcripts_output,
-            #     "/home1/data/STARK/data/samtranscripts/",
-            # )
-        print("sam: howard_score_transcripts output", osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed))
+        if transcripts_output:
+            shutil.copy(
+                transcripts_output,
+                osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed),
+            )
+        print("howard_score_transcripts output", osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed))
 
 
 def convert_to_final_tsv(run_informations):
@@ -1167,7 +1854,10 @@ def tsv_modifier(input_file, run_informations):
 
     with open(module_config, "r") as read_file:
         data = json.load(read_file)
-        last_order = data["vcf_to_tsv_column_order"][f"{run_informations["run_platform_application"]}"][-1]
+        ordered_fields = data["vcf_to_tsv_column_order"][
+            run_informations["run_platform_application"]
+        ]
+        last_order = ordered_fields[-1] if ordered_fields else None
 
     dejavu_to_keep = []
     if run_informations["onco"] == False:
@@ -1190,6 +1880,8 @@ def tsv_modifier(input_file, run_informations):
                 line = line.rstrip("\n").split("\t")
                 if line[0] == "chr" or line[0] == "#CHROM":
                     for i in range(len(line)):
+                        if last_order is None:
+                            last_order_exec = True
                         if last_order_exec == False and line[i] not in values_to_delete and not (line[i].endswith("_ALLELECOUNT") or line[i].endswith("_HETCOUNT") or line[i].endswith("_HOMCOUNT") or line[i].endswith("_ALLELEFREQ") or line[i].endswith("_SAMPLECOUNT")) :
                             if line[i] == last_order:
                                 index_to_keep.append(i)

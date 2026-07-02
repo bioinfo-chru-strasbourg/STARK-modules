@@ -112,7 +112,10 @@ def launch_run(args):
     dejavu_processing.convert_vcf_parquet(run_informations, args)
     dejavu_processing.calculate_dejavu(run_informations)
     howard_processing.run_initialisation(run_informations)
-    merged_vcf = howard_processing.merge_vcf(run_informations, "1", "")
+    howard_processing.qual_filter_id_to_format(run_informations)
+
+    merge_header_backup = {}
+    merged_vcf = howard_processing.merge_vcf(run_informations, "1", "", merge_header_backup)
     fambarcode_vcf = howard_processing.fambarcode_vcf(
         run_informations,
         merged_vcf,
@@ -121,9 +124,19 @@ def launch_run(args):
         run_informations, fambarcode_vcf
     )
     howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
+
     howard_processing.howard_score_transcripts(run_informations)
-    howard_processing.gmc_score(run_informations)
-    print(howard_processing.merge_vcf(run_informations, "2", ""))
+
+    if run_informations["onco"] == False:
+        howard_processing.gmc_score(run_informations)
+
+    merged_vcf = howard_processing.merge_vcf(run_informations, "2", "", merge_header_backup)
+    howard_processing.restore_merged_header(run_informations, merged_vcf)
+    howard_processing.restore_merge_headers(run_informations, merge_header_backup)
+    howard_processing.format_to_qual_filter_id(run_informations)
+    howard_processing.format_to_info(run_informations)
+    howard_processing.restore_flags_samples(run_informations)
+    
     if run_informations["run_panels"] != "":
         howard_processing.panel_filtering(run_informations)
     howard_processing.convert_to_final_tsv(run_informations)
