@@ -125,7 +125,14 @@ def launch_run(args):
     )
     howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
 
+    howard_processing.format_to_info(run_informations)
+    howard_processing.restore_flags_samples(run_informations)
+    howard_processing.restore_merge_headers(run_informations, merge_header_backup)
+
     howard_processing.howard_score_transcripts(run_informations)
+
+    howard_processing.strip_format_to_info_copies(run_informations)
+    howard_processing.reconvert_flags_to_integer(run_informations)
 
     if run_informations["onco"] == False:
         howard_processing.gmc_score(run_informations)

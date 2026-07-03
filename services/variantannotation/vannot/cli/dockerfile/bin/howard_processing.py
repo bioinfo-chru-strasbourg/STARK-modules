@@ -539,7 +539,81 @@ def restore_flags_samples(run_informations):
     for vcf_file in vcf_files:
         log.info(f"Restoring flags on sample VCF {os.path.basename(vcf_file)}")
         convert_integer_to_flag(vcf_file, flag_fields)
-    os.remove(record_file)
+
+def strip_format_to_info_copies(run_informations):
+    """
+    Reverse of format_to_info(): remove the INFO copies that format_to_info
+    added. format_to_info never removes the original FORMAT fields, so
+    nothing needs to be re-added to FORMAT here - we only need to strip the
+    INFO duplicates so they don't leak into the merged VCF as fake
+    site-level values shared by every sample. Must run before merge step 2.
+    """
+    module_config = run_informations["module_config"]
+    with open(module_config, "r") as read_file:
+        data = json.load(read_file)
+        annotation_fields = data["format_to_info"]
+        if run_informations["run_platform_application"] not in annotation_fields:
+            log.info(
+                f"No FORMAT_TO_INFO annotations defined for {run_informations['run_platform_application']}, skipping"
+            )
+            return
+    format_to_info_columns_config = annotation_fields[
+        run_informations["run_platform_application"]
+    ]
+
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    for vcf_file in vcf_files:
+        if "merged" in os.path.basename(vcf_file):
+            continue
+
+        vcf_header = subprocess.run(
+            ["bcftools", "view", "-h", vcf_file],
+            universal_newlines=True,
+            stdout=subprocess.PIPE,
+        ).stdout
+        existing_info_fields = set(re.findall(r"##INFO=<ID=([^,]+)", vcf_header))
+        columns_to_strip = [f for f in format_to_info_columns_config if f in existing_info_fields]
+
+        if not columns_to_strip:
+            log.info(f"No matching INFO copies found in {os.path.basename(vcf_file)}, skipping")
+            continue
+
+        log.info(f"Removing INFO copies added by format_to_info for {os.path.basename(vcf_file)}: {columns_to_strip}")
+        remove_arg = "INFO/" + ",INFO/".join(columns_to_strip)
+
+        output_file = osj(os.path.dirname(vcf_file), "sfic_" + os.path.basename(vcf_file))
+        cmd = ["bcftools", "annotate", "-x", remove_arg, "-O", "z", "-o", output_file, vcf_file]
+        log.debug(" ".join(cmd))
+        subprocess.call(cmd, universal_newlines=True)
+
+        os.remove(vcf_file)
+        os.rename(output_file, vcf_file)
+
+
+def reconvert_flags_to_integer(run_informations):
+    """
+    Reverse of restore_flags_samples(): convert the FLAG INFO fields back to
+    Integer on every per-sample VCF, reusing the same converted_flags.json
+    record (restore_flags_samples must not delete this record, since it's
+    needed again here and one last time at the final restore later in the
+    pipeline). Must run before merge step 2.
+    """
+    record_file = osj(run_informations["tmp_analysis_folder"], "converted_flags.json")
+    if not os.path.isfile(record_file):
+        log.info("No converted_flags.json record found, skipping flag reconversion on samples")
+        return
+    with open(record_file, "r") as rf:
+        flag_fields = json.load(rf)
+    if not flag_fields:
+        log.info("Empty converted flags record, nothing to reconvert on samples")
+        return
+
+    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
+    for vcf_file in vcf_files:
+        if "merged" in os.path.basename(vcf_file):
+            continue
+        log.info(f"Reconverting flags to Integer on sample VCF {os.path.basename(vcf_file)}")
+        convert_flag_to_integer(vcf_file, flag_fields)
 
 def convert_flag_to_integer(vcf_file, annotation_fields):
     """

@@ -60,8 +60,16 @@ def launch_folder(args):
     )
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
 
-        howard_processing.howard_score_transcripts(run_informations)
+
         howard_processing.format_to_info(run_informations)
+        howard_processing.restore_flags_samples(run_informations)
+        howard_processing.restore_merge_headers(run_informations, merge_header_backup)
+
+        howard_processing.howard_score_transcripts(run_informations)
+
+        howard_processing.strip_format_to_info_copies(run_informations)
+        howard_processing.reconvert_flags_to_integer(run_informations)
+
         if run_informations["onco"] == False:
             howard_processing.gmc_score(run_informations)
         merged_vcf = howard_processing.merge_vcf(run_informations, "2", "", merge_header_backup)
@@ -89,18 +97,25 @@ def launch_folder(args):
         annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
 
+        howard_processing.format_to_info(run_informations)
+        howard_processing.restore_flags_samples(run_informations)
+        howard_processing.restore_merge_headers(run_informations, merge_header_backup)
         howard_processing.howard_score_transcripts(run_informations)
         if run_informations["onco"] == False:
             howard_processing.gmc_score(run_informations)
 
+        howard_processing.strip_format_to_info_copies(run_informations)
+        howard_processing.reconvert_flags_to_integer(run_informations)
+
         merged_vcf = howard_processing.merge_vcf(run_informations, "2", "", merge_header_backup)
         howard_processing.restore_merged_header(run_informations, merged_vcf)
         howard_processing.restore_merge_headers(run_informations, merge_header_backup)
+
+
         howard_processing.format_to_qual_filter_id(run_informations)
         howard_processing.format_to_info(run_informations)
         howard_processing.restore_flags_samples(run_informations)
         howard_processing.convert_to_final_tsv(run_informations)
-        exit()
         # if run_informations["run_platform"]:
         #     non_redundant.generate(run_informations)
         howard_processing.cleaner(run_informations)

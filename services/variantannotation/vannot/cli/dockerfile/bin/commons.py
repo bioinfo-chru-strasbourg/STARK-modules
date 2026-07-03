@@ -120,6 +120,8 @@ def set_log_level(args):
         "logs",
         log_file,
     )
+    if not os.path.exists(os.path.dirname(log_file)):
+        os.makedirs(os.path.dirname(log_file))
 
     logger_header(log_file)
 
