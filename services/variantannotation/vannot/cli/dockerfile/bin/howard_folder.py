@@ -88,7 +88,7 @@ def launch_folder(args):
         merged_vcf = howard_processing.merge_vcf(run_informations, "1", "", merge_header_backup)
         annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
         howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
-    
+
         howard_processing.howard_score_transcripts(run_informations)
         if run_informations["onco"] == False:
             howard_processing.gmc_score(run_informations)
