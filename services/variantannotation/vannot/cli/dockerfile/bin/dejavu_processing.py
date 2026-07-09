@@ -316,7 +316,7 @@ def calculate_dejavu(run_informations):
     samplecount = "SAMPLECOUNT"
     # barcode peut être stocké sous forme '[2]' ou '2' -> on extrait le 1er entier
     barcode_int = "CAST(REGEXP_EXTRACT(CAST(barcode AS VARCHAR), '\\d+') AS INT)"
-    query = f'SELECT "#CHROM", POS, REF, ALT, sum({barcode_int}) AS {allelecount}, count(barcode) FILTER(WHERE {barcode_int}=1) AS {hetcount}, count(barcode) FILTER(WHERE {barcode_int}=2) AS {homcount}, sum({barcode_int})/({sample_count}*2) AS {allelefreq}, {sample_count} as {samplecount} FROM variants WHERE PROJECT=\'{project}\' AND "GROUP"=\'{platform}\' GROUP BY "#CHROM", POS, REF, ALT'
+    query = f'SELECT "#CHROM", POS, REF, ALT, sum({barcode_int}) AS {allelecount}, count(barcode) FILTER(WHERE {barcode_int}=1) AS {hetcount}, count(barcode) FILTER(WHERE {barcode_int}=2) AS {homcount}, ROUND(sum({barcode_int})/({sample_count}*2), 4) AS {allelefreq}, {sample_count} as {samplecount} FROM variants WHERE PROJECT=\'{project}\' AND "GROUP"=\'{platform}\' GROUP BY "#CHROM", POS, REF, ALT'
     # query = f"SELECT \"#CHROM\", POS, ANY_VALUE(ID) AS ID, REF, ALT, ANY_VALUE(QUAL) AS QUAL, ANY_VALUE(FILTER) AS FILTER, ANY_VALUE(INFO) AS INFO, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq} FROM variants WHERE PROJECT='{project}' GROUP BY \"#CHROM\", POS, REF, ALT"
     launch_query_arguments = [
         "query",
