@@ -540,81 +540,6 @@ def restore_flags_samples(run_informations):
         log.info(f"Restoring flags on sample VCF {os.path.basename(vcf_file)}")
         convert_integer_to_flag(vcf_file, flag_fields)
 
-def strip_format_to_info_copies(run_informations):
-    """
-    Reverse of format_to_info(): remove the INFO copies that format_to_info
-    added. format_to_info never removes the original FORMAT fields, so
-    nothing needs to be re-added to FORMAT here - we only need to strip the
-    INFO duplicates so they don't leak into the merged VCF as fake
-    site-level values shared by every sample. Must run before merge step 2.
-    """
-    module_config = run_informations["module_config"]
-    with open(module_config, "r") as read_file:
-        data = json.load(read_file)
-        annotation_fields = data["format_to_info"]
-        if run_informations["run_platform_application"] not in annotation_fields:
-            log.info(
-                f"No FORMAT_TO_INFO annotations defined for {run_informations['run_platform_application']}, skipping"
-            )
-            return
-    format_to_info_columns_config = annotation_fields[
-        run_informations["run_platform_application"]
-    ]
-
-    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
-    for vcf_file in vcf_files:
-        if "merged" in os.path.basename(vcf_file):
-            continue
-
-        vcf_header = subprocess.run(
-            ["bcftools", "view", "-h", vcf_file],
-            universal_newlines=True,
-            stdout=subprocess.PIPE,
-        ).stdout
-        existing_info_fields = set(re.findall(r"##INFO=<ID=([^,]+)", vcf_header))
-        columns_to_strip = [f for f in format_to_info_columns_config if f in existing_info_fields]
-
-        if not columns_to_strip:
-            log.info(f"No matching INFO copies found in {os.path.basename(vcf_file)}, skipping")
-            continue
-
-        log.info(f"Removing INFO copies added by format_to_info for {os.path.basename(vcf_file)}: {columns_to_strip}")
-        remove_arg = "INFO/" + ",INFO/".join(columns_to_strip)
-
-        output_file = osj(os.path.dirname(vcf_file), "sfic_" + os.path.basename(vcf_file))
-        cmd = ["bcftools", "annotate", "-x", remove_arg, "-O", "z", "-o", output_file, vcf_file]
-        log.debug(" ".join(cmd))
-        subprocess.call(cmd, universal_newlines=True)
-
-        os.remove(vcf_file)
-        os.rename(output_file, vcf_file)
-
-
-def reconvert_flags_to_integer(run_informations):
-    """
-    Reverse of restore_flags_samples(): convert the FLAG INFO fields back to
-    Integer on every per-sample VCF, reusing the same converted_flags.json
-    record (restore_flags_samples must not delete this record, since it's
-    needed again here and one last time at the final restore later in the
-    pipeline). Must run before merge step 2.
-    """
-    record_file = osj(run_informations["tmp_analysis_folder"], "converted_flags.json")
-    if not os.path.isfile(record_file):
-        log.info("No converted_flags.json record found, skipping flag reconversion on samples")
-        return
-    with open(record_file, "r") as rf:
-        flag_fields = json.load(rf)
-    if not flag_fields:
-        log.info("Empty converted flags record, nothing to reconvert on samples")
-        return
-
-    vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
-    for vcf_file in vcf_files:
-        if "merged" in os.path.basename(vcf_file):
-            continue
-        log.info(f"Reconverting flags to Integer on sample VCF {os.path.basename(vcf_file)}")
-        convert_flag_to_integer(vcf_file, flag_fields)
-
 def convert_flag_to_integer(vcf_file, annotation_fields):
     """
     Convert FLAG type INFO fields to Integer before HOWARD INFO_TO_FORMAT.
@@ -775,33 +700,38 @@ def format_to_info(run_informations):
             )
             return
 
+    # {source_FORMAT_field: dest_INFO_field_or_None} - None/empty keeps the same name
     format_to_info_columns_config = annotation_fields[
         run_informations["run_platform_application"]
     ]
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
     for vcf_file in vcf_files:
         if "merged" in os.path.basename(vcf_file):
-            vcf_files.remove(vcf_file)
+            continue
 
-    for vcf_file in vcf_files:
         log.info(
             f"Copying FORMAT fields into the INFO column for {os.path.basename(vcf_file)}"
         )
 
-        # Filter to FORMAT fields that actually exist in this VCF
         vcf_header = subprocess.run(
             ["bcftools", "view", "-h", vcf_file],
             universal_newlines=True,
             stdout=subprocess.PIPE,
         ).stdout
         existing_format_fields = set(re.findall(r"##FORMAT=<ID=([^,]+)", vcf_header))
-        format_to_info_columns = [f for f in format_to_info_columns_config if f in existing_format_fields]
+        # source FORMAT field -> destination INFO field (fills in the name if not renamed)
+        rename_map = {
+            src: (dest if dest else src)
+            for src, dest in format_to_info_columns_config.items()
+            if src in existing_format_fields
+        }
 
-        if not format_to_info_columns:
+        if not rename_map:
             log.info(f"No matching FORMAT fields found in {os.path.basename(vcf_file)}, skipping")
             continue
 
-        log.info(f"FORMAT fields to copy to INFO: {format_to_info_columns}")
+        format_to_info_columns = list(rename_map.keys())
+        log.info(f"FORMAT fields to copy to INFO: {rename_map}")
 
         sample = (
             subprocess.run(
@@ -815,81 +745,54 @@ def format_to_info(run_informations):
         tmp_annot = osj(os.path.dirname(vcf_file), "annot.txt.tmp")
         tmp_hdr = osj(os.path.dirname(vcf_file), "hdr.txt.tmp")
 
-        # Extract the FORMAT values (per site) for the first sample
+        # Extraction still reads the original FORMAT field names
         format_to_info_columns_query = "\\t%".join(format_to_info_columns)
         format_to_info_columns_query = (
             "%CHROM\\t%POS\\t%REF\\t%ALT[\\t%" + format_to_info_columns_query + "]\n"
         )
         cmd = [
-            "bcftools",
-            "query",
-            "-s",
-            sample,
-            "-f",
-            format_to_info_columns_query,
-            vcf_file,
+            "bcftools", "query", "-s", sample, "-f", format_to_info_columns_query, vcf_file,
         ]
         with open(tmp_annot, "w") as writefile:
             subprocess.call(cmd, universal_newlines=True, stdout=writefile)
         subprocess.call(["bgzip", tmp_annot], universal_newlines=True)
         tmp_annot = tmp_annot + ".gz"
-        subprocess.call(
-            ["tabix", "-s1", "-b2", "-e2", tmp_annot], universal_newlines=True
-        )
+        subprocess.call(["tabix", "-s1", "-b2", "-e2", tmp_annot], universal_newlines=True)
 
-        # Build matching INFO header lines from the existing FORMAT definitions
-        original_info_headers = {}  # column -> original INFO header line
+        # Header lines are written under the renamed (destination) IDs
+        original_info_headers = {}  # dest column -> original INFO header line
         vcf_file_gunzip = vcf_file[:-3]
         subprocess.call(["gunzip", vcf_file])
         with open(vcf_file_gunzip, "r") as readfile, open(tmp_hdr, "w") as writefile:
             for line in readfile:
                 if not line.startswith("#"):
                     break
-                for column in format_to_info_columns:
-                    if line.startswith("##FORMAT=<ID=" + column + ","):
-                        # Save the correct INFO line for later restoration
-                        original_info_headers[column] = line.replace("##FORMAT=<ID=", "##INFO=<ID=", 1)
-                        # Write with forced Number=.,Type=String to avoid bcftools segfault
-                        new_line = line.replace("##FORMAT=<ID=", "##INFO=<ID=", 1)
-                        new_line = re.sub(r"Number=[^,]+", "Number=.", new_line, count=1)
+                for src, dest in rename_map.items():
+                    if line.startswith("##FORMAT=<ID=" + src + ","):
+                        renamed_line = line.replace(
+                            "##FORMAT=<ID=" + src + ",", "##INFO=<ID=" + dest + ",", 1
+                        )
+                        original_info_headers[dest] = renamed_line
+                        new_line = re.sub(r"Number=[^,]+", "Number=.", renamed_line, count=1)
                         new_line = re.sub(r"Type=[^,]+", "Type=String", new_line, count=1)
                         writefile.write(new_line)
         subprocess.call(["bgzip", vcf_file_gunzip], universal_newlines=True)
 
-        format_to_info_columns_annotate = ",INFO/".join(format_to_info_columns)
-        format_to_info_columns_annotate = (
-            "CHROM,POS,REF,ALT,INFO/" + format_to_info_columns_annotate
-        )
+        format_to_info_columns_annotate = "CHROM,POS,REF,ALT,INFO/" + ",INFO/".join(rename_map.values())
 
-        # Add the new INFO fields without touching the FORMAT column
-        output_file = osj(
-            os.path.dirname(vcf_file), "fti_" + os.path.basename(vcf_file)
-        )
+        output_file = osj(os.path.dirname(vcf_file), "fti_" + os.path.basename(vcf_file))
         cmd = [
-            "bcftools",
-            "annotate",
-            "-a",
-            tmp_annot,
-            "-h",
-            tmp_hdr,
-            "-c",
-            format_to_info_columns_annotate,
-            "-O",
-            "z",
-            "-o",
-            output_file,
-            vcf_file,
+            "bcftools", "annotate", "-a", tmp_annot, "-h", tmp_hdr,
+            "-c", format_to_info_columns_annotate, "-O", "z", "-o", output_file, vcf_file,
         ]
         log.debug(" ".join(cmd))
         subprocess.call(cmd, universal_newlines=True)
 
-        # Restore the correct Number/Type in the output header
         if original_info_headers:
             restore_hdr = osj(os.path.dirname(vcf_file), "restore_hdr.txt.tmp")
             current_header = subprocess.run(
                 ["bcftools", "view", "-h", output_file],
-                universal_newlines=True,
-                stdout=subprocess.PIPE,
+                universal_newlines=True, stdout=subprocess.PIPE,
             ).stdout
             with open(restore_hdr, "w") as writefile:
                 for hdr_line in current_header.splitlines(keepends=True):
@@ -904,10 +807,7 @@ def format_to_info(run_informations):
 
             restored_output = osj(os.path.dirname(output_file), "restored_" + os.path.basename(output_file))
             subprocess.call([
-                "bcftools", "reheader",
-                "-h", restore_hdr,
-                "-o", restored_output,
-                output_file,
+                "bcftools", "reheader", "-h", restore_hdr, "-o", restored_output, output_file,
             ], universal_newlines=True)
             os.remove(output_file)
             os.remove(restore_hdr)
