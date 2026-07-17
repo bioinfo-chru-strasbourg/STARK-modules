@@ -24,7 +24,7 @@ RUN alien -i -d /app/tools/bcl-convert-4.3.6-2.el7.x86_64.rpm
 RUN mamba install -y -c conda-forge -c bioconda -c biobuilds -c bih-cubi  \ 
     python=3.13 \
 	samtools~=1.21 bcftools~=1.21 bedtools~=2.31 vcf-validator~=0.10.2 bcl2fastq2~=2.20 fastp~=1.0 \
-	snakemake~=9.11 graphviz~=13.1 pandas~=2.3  \ 
+	snakemake~=9.11 graphviz~=13.1 pandas~=2.3 vcf2tsvpy \ 
 	arriba~=2.5.1 star~=2.7.11b && mamba clean -afy
 
 # vcf2tsvpy~=0.6 
