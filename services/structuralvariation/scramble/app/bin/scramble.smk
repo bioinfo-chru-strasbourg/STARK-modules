@@ -601,7 +601,7 @@ rule filter_vcf_panel:
 		vcfgztbi=temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz.tbi")
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.bedtoolsfilter.{{panel}}.log"
-	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output.vcfgz} ; tabix {output.vcfgz}"
+	shell: "bedtools intersect -u -header -a {input} -b {params} 2> {log} | bgzip > {output.vcfgz} ; tabix {output.vcfgz}"
 
 # Panel vcf.gz individual samples no annotation
 rule vcf_normalization:

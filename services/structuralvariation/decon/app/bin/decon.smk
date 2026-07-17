@@ -788,6 +788,9 @@ for item in log_items:
 
 print(dict(runDict))
 
+
+print('Starting')
+
 ################################################## RULES ##################################################
 # Priority order
 ruleorder: copy_bam > copy_cram > cramtobam > indexing
@@ -901,30 +904,28 @@ rule IdentifyFailures:
 		"""
 
 rule makeCNVcalls:
-	""" Call exon CNVs in each sample using reference samples and output correlation results """
-	input: rules.ReadInBams.output
-	params:
-		prob=config['transProb'],
-		bamlist=f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
-		chromosome="{gender}",
-		removeY=config['REMOVE_Y'],
-		refbamlist=("--refbams " + config['REF_BAM_LIST']) if config.get('REF_BAM_LIST') else "",
-		decondir=config['R_SCRIPTS'],
-		fail=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.DECON.Failed",
-		rdata=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVcalls.RData"
-	output:
-		calltsv=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv")
-	log:
-		log=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.log",
-		err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.err"
-	shell:
-		"""
-		Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --removeY {params.removeY} {params.refbamlist} --tsv {output.calltsv} --outrdata {params.rdata} 1> {log.log} 2> {log.err} && \
-		( [[ -s {output.calltsv} ]] || touch {params.fail} ) && touch {output.calltsv}; \
-		if [[ -f {params.fail} ]]; then exit 1; fi
-
-		"""
- 
+    """ Call exon CNVs in each sample using reference samples and output correlation results """
+    input: rules.ReadInBams.output
+    params:
+        prob=config['transProb'],
+        bamlist=f"{resultDir}/{serviceName}.{date_time}.{{gender}}.list.txt",
+        chromosome="{gender}",
+        removeY=config['REMOVE_Y'],
+        refbamlist=("--refbams " + config['REF_BAM_LIST']) if config.get('REF_BAM_LIST') else "",
+        decondir=config['R_SCRIPTS'],
+        fail=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.DECON.Failed"
+    output:
+        calltsv=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv"),
+        rdata=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVcalls.RData"
+    log:
+        log=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.log",
+        err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.err"
+    shell:
+        """
+        Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --removeY {params.removeY} {params.refbamlist} --tsv {output.calltsv} --outrdata {output.rdata} 1> {log.log} 2> {log.err} && \
+        ( [[ -s {output.calltsv} ]] || touch {params.fail} ) && touch {output.calltsv}; \
+        if [[ -f {params.fail} ]]; then exit 1; fi
+        """ 
 rule merge_makeCNVcalls:
 	input: expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv", gender=gender_list, aligner=aligner_list)
 	output: temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_uncorr.tsv")
@@ -1003,7 +1004,7 @@ rule fix_vcf:
 rule vcf_normalization:
 	input: rules.fix_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-	shell: "bcftools norm -W=tbi -d all -o {output} -Oz {input}"
+	shell: "bcftools norm -W=tbi -d none -o {output} -Oz {input}"
 
 
 # # Design vcf.gz individual samples no annotation
