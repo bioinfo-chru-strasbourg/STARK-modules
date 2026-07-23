@@ -7,6 +7,7 @@ import howard_processing
 import results_provider
 import dejavu_processing
 import non_redundant
+import commons
 
 
 def launch_run(args):
@@ -103,32 +104,46 @@ def launch_run(args):
     checker.depository_checker(run_informations)
     checker.pattern_checker(run_informations)
     run_informations = checker.panel_checker(run_informations)
-    variantannotation_running_log = osj(run_repository, "VANNOTRunning.txt")
+    checker.platform_mapping(run_informations)
 
-    with open(variantannotation_running_log, "w") as write_file:
-        pass
+    # variantannotation_running_log = osj(run_repository, "VANNOTRunning.txt")
+
+    # with open(variantannotation_running_log, "w") as write_file:
+    #     pass
 
     synchronizer.vcf_synchronizer(run_informations)
+
     dejavu_processing.convert_vcf_parquet(run_informations, args)
     dejavu_processing.calculate_dejavu(run_informations)
     howard_processing.run_initialisation(run_informations)
+    commons.create_listbypipeline_vcf(run_informations)
+
     howard_processing.qual_filter_id_to_format(run_informations)
 
     merge_header_backup = {}
     merged_vcf = howard_processing.merge_vcf(run_informations, "1", "", merge_header_backup)
-    fambarcode_vcf = howard_processing.fambarcode_vcf(
-        run_informations,
-        merged_vcf,
-    )
+
+    if run_informations["onco"] == False:
+        merged_vcf = howard_processing.fambarcode_vcf(
+            run_informations,
+            merged_vcf,
+        )
+
     annotated_merged_vcf = howard_processing.howard_proc(
-        run_informations, fambarcode_vcf
+        run_informations, merged_vcf
     )
+
     howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
 
+    howard_processing.format_to_qual_filter_id(run_informations, remove_format=False)
+    howard_processing.pre_prio(run_informations, "transfer")
     howard_processing.howard_score_transcripts(run_informations)
+    howard_processing.pre_prio(run_informations, "strip")
 
     if run_informations["onco"] == False:
         howard_processing.gmc_score(run_informations)
+    else:
+        howard_processing.pz_to_format(run_informations)
 
     merged_vcf = howard_processing.merge_vcf(run_informations, "2", "", merge_header_backup)
     howard_processing.restore_merged_header(run_informations, merged_vcf)
@@ -141,7 +156,8 @@ def launch_run(args):
         howard_processing.panel_filtering(run_informations)
     howard_processing.convert_to_final_tsv(run_informations)
 
-    non_redundant.generate(run_informations)
+    if run_informations["onco"] == False:
+        non_redundant.generate(run_informations)
     howard_processing.cleaner(run_informations)
     results_provider.distribute(run_informations)
 

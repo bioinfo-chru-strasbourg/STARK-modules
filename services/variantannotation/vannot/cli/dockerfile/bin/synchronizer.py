@@ -9,9 +9,13 @@ import json
 import shutil
 
 
-def find_samplesheet(run_informations):
-    samples = glob.glob(osj(run_informations["run_repository"], "*", ""))
-    samplesheet = glob.glob(osj(samples[0], "STARK", "*.SampleSheet.csv"))
+def find_samplesheet(run_informations, archives):
+    if archives is True :
+        samples = glob.glob(osj(run_informations["run_archives"], "*", ""))
+        samplesheet = glob.glob(osj(samples[0], "*.SampleSheet.csv"))
+    else: 
+        samples = glob.glob(osj(run_informations["run_repository"], "*", ""))
+        samplesheet = glob.glob(osj(samples[0], "STARK", "*.SampleSheet.csv"))
     return samplesheet[0]
 
 
@@ -28,7 +32,13 @@ def find_tag(samplesheet, word):
 
 
 def vcf_synchronizer(run_informations):
-    run_repository = run_informations["run_repository"]
+    if run_informations["type"] == "run_dejavu" and run_informations["run_repository"] == "":
+        archives = True
+        run_path = run_informations["run_archives"]
+    else:
+        archives = False
+        run_path = run_informations["run_repository"]
+
     pattern = run_informations["vcf_pattern"]
 
     module_config = osj(
@@ -40,13 +50,15 @@ def vcf_synchronizer(run_informations):
         with open(module_config, "r") as read_file:
             data = json.load(read_file)
             ignored_samples = data["ignored_samples"]
-        samplesheet = find_samplesheet(run_informations)
-        control_samples = find_tag(samplesheet, "CQI#")
+        samplesheet = find_samplesheet(run_informations, archives)
+        control_samples = find_tag(samplesheet, "CQI#", archives)
         platform_application = run_informations["run_platform_application"]
         pool_tag = f"APP#{platform_application}#POOL"
-        pool_samples = find_tag(samplesheet, pool_tag)
+        pool_samples = find_tag(samplesheet, pool_tag, archives)
 
-    ignored_samples = ignored_samples + control_samples + pool_samples
+        ignored_samples = ignored_samples + control_samples + pool_samples
+    else:
+        ignored_samples = []
     log.info(
         "Ignoring following sample patterns for the analysis and dejavu generation : "
         + ", ".join(ignored_samples)
@@ -63,29 +75,42 @@ def vcf_synchronizer(run_informations):
     kept_vcf = []
     treated_samples = []
     for element in reversed(pattern):
-        vcf_files = glob.glob(osj(run_repository, element))
+        vcf_files = glob.glob(osj(run_path, element))
         for vcf_file in vcf_files:
             sample = vcf_file.split("/")[-1].split(".")[0]
-            dated_stark_vcf = (
-                run_repository
-                + "/"
-                + sample
-                + "\\/STARK\\/"
-                + sample
-                + ".reports\\/"
-                + sample
-                + ".\\d{8}-\\d{6}.final.vcf.gz"
-            )
+            if archives is False:
+                stark_vcf = (
+                    run_path
+                    + "/"
+                    + sample
+                    + "\\/STARK\\/"
+                    + sample
+                    + ".reports\\/"
+                    + sample
+                    + ".\\d{8}-\\d{6}.final.vcf.gz"
+                )
+            elif archives is True:
+                stark_vcf = (
+                    run_path
+                    + "/"
+                    + sample
+                    + "/"
+                    + sample
+                    + ".final.vcf.gz"
+                )
             if (
-                not re.match(dated_stark_vcf, vcf_file)
+                not re.match(stark_vcf, vcf_file)
                 and sample not in treated_samples
                 and sample not in ignored_samples
             ):
                 kept_vcf.append(vcf_file)
+            elif re.match(stark_vcf, vcf_file) and sample not in treated_samples and sample not in ignored_samples and archives is True:
+                kept_vcf.append(stark_vcf)
 
-            if element != commons.get_default_pattern():
-                log.info(f"Keeping the sample vcf with {pattern} pattern")
+            if element != commons.get_default_pattern(run_informations):
+                log.info(f"Keeping the sample vcf with {element} pattern")
                 treated_samples.append(sample)
+
     for ignored_sample in ignored_samples:
         for sample_vcf in kept_vcf:
             if ignored_sample in sample_vcf:
@@ -93,10 +118,8 @@ def vcf_synchronizer(run_informations):
 
     for vcf_file in kept_vcf:
         output = subprocess.check_output(f'zgrep -v \"#\" {vcf_file} | wc -l', shell=True, text=True)
-        if output == 0:
+        if int(output) == 0:
             kept_vcf.remove(vcf_file)
-    print(ignored_samples)
-    print(len(kept_vcf))
 
     for vcf_file in kept_vcf:
         vcf_file_output = os.path.basename(vcf_file).split(".")[0] + ".vcf.gz"

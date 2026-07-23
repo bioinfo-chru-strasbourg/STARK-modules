@@ -60,7 +60,7 @@ def parse_args():
         "-p",
         "--pattern",
         type=str,
-        default=commons.get_default_pattern(),
+        default=commons.get_default_pattern("default"),
         help="pattern describing which vcf files to synchronize in STARK folders, actual patterns : */STARK/*.reports/*.final.vcf.gz (default), */POOL/*.final.vcf.gz. You can use two patterns with space as separator",
     )
     mode_parser = argparse.ArgumentParser(add_help=False)
@@ -128,13 +128,26 @@ def parse_args():
         parents=[
             verbosity_parser,
             assembly_parser,
+            pattern_parser,
             onco_parser,
         ],
     )
     parser_folder.add_argument(
+        "-rd",
+        "--run_dejavu",
+        type=checker.absolute_run_path,
+        help="absolute path to the run you want to generate a dejavu, can be a run repository or archives folder",
+    )
+    parser_folder.add_argument(
+        "-fo",
+        "--force",
+        default=False,
+        type=bool,
+        help="force the dejavu generation even if the parquet database already exists, must be an absolute path to the run you want to generate a dejavu, can be a run repository or archives folder",
+    )
+    parser_folder.add_argument(
         "-dv",
         "--dejavu",
-        required=True,
         type=checker.absolute_folder_path,
         help="absolute path to the vannot archives folder to calculate dejavu",
     )
@@ -170,10 +183,10 @@ def parse_args():
     args = main_parser.parse_args()
 
     if hasattr(args, "pattern"):
-        if commons.get_default_pattern() not in args.pattern:
-            setattr(args, "pattern", [commons.get_default_pattern(), args.pattern])
-        elif args.pattern == commons.get_default_pattern():
-            setattr(args, "pattern", [commons.get_default_pattern()])
+        if commons.get_default_pattern("default") not in args.pattern:
+            setattr(args, "pattern", [commons.get_default_pattern("default"), args.pattern])
+        elif args.pattern == commons.get_default_pattern("default"):
+            setattr(args, "pattern", [commons.get_default_pattern("default")])
 
     if len(sys.argv) == 1:
         main_parser.print_help(sys.stderr)

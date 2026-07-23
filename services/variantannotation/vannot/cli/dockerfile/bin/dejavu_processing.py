@@ -46,21 +46,26 @@ def convert_vcf_parquet(run_informations, args):
         shutil.rmtree(run_informations["tmp_analysis_folder"])
         os.makedirs(run_informations["tmp_analysis_folder"], 0o775)
 
-    if "run" in args:
+    if "run" in args or "run_dejavu" in args:
         vcf_files_archives = glob.glob(osj(run_informations["archives_run_folder"], "*.vcf.gz"))
-    elif "dejavu" in args:
+    elif "dejavu" in args and not "run_dejavu" in args:
         vcf_files_archives = glob.glob(
             osj(run_informations["archives_project_folder"], "VCF", "*", "*.vcf.gz")
         )
         
     if run_informations["onco"] == True:
+        if run_informations["type"] == "run_dejavu" and run_informations["run_repository"] == "":
+            archives = True
+        else:
+            archives = False
+
         control_samples = []
         kept_vcf = []
         with open(module_config, "r") as read_file:
             data = json.load(read_file)
             ignored_samples = data["ignored_samples"]
-        if run_informations["type"] == "run":
-            samplesheet = find_samplesheet(run_informations)
+        if run_informations["type"] == "run" or run_informations["type"] == "run_dejavu":
+            samplesheet = find_samplesheet(run_informations, archives)
             control_samples = find_tag(samplesheet, "CQI#")
 
         ignored_samples = ignored_samples + control_samples
@@ -84,7 +89,7 @@ def convert_vcf_parquet(run_informations, args):
 
     for vcf_file in vcf_files_archives:
         output = subprocess.check_output(f'zgrep -v \"#\" {vcf_file} | wc -l', shell=True, text=True)
-        if output == 0:
+        if int(output) == 0:
             vcf_files_archives.remove(vcf_file)
 
     for vcf_file in vcf_files_archives:
