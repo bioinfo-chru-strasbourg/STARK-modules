@@ -1,5 +1,0 @@
-[webtatic]
-gpgcheck=0
-name=Webtatic Yum Repository (for PHP 5.5)
-mirrorlist=http://mirror.webtatic.com/yum/el7/$basearch/mirrorlist
-enabled=1

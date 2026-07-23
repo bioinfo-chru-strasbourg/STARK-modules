@@ -1,0 +1,19 @@
+{
+	"services": {
+		"SUBEXAMPLE": {
+			"infos": {
+				"name": "SUBEXAMPLE",
+				"description": "Submodule example"
+			},
+			"triggers": {
+				"AND": {
+					"file": [
+						"STARKCopyComplete.txt",
+						"!SUBEXAMPLEComplete.txt",
+						"!SUBEXAMPLERunning.txt"
+					]
+				}
+			}
+		}
+	}
+}

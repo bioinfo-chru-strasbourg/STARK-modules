@@ -1,0 +1,75 @@
+services:
+
+    stark-module-example-submodule-subexample-service-cli:
+        image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-example-submodule-subexample-service-cli:${SUBMODULE_VERSION}
+        build:
+            context: .
+            dockerfile: Dockerfile
+            args:
+                STARK_MAIN_FOLDER: ${DOCKER_STARK_MAIN_FOLDER}
+        container_name: stark-module-example-submodule-subexample-service-cli
+        restart: no
+        entrypoint: /bin/bash
+        command: -c "/opt/conda/envs/py312/bin/python /app/src/api.py"
+        stdin_open: true # docker run -i (interactive stdin)
+        tty: true # docker run -t (pseudo-TTY)
+        environment:
+            - SUBMODULE_API_KEY=${SUBMODULE_API_KEY}
+            - PYTHONUNBUFFERED=1
+        volumes:
+            - ${DOCKER_STARK_MAIN_FOLDER}/output:/STARK/output:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_REPOSITORY}:/STARK/output/repository:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:/STARK/output/depository:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:/STARK/output/archives:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATA}:/STARK/data:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:/STARK/databases:ro
+            - ${SUBMODULE_HOST_CONFIG}:/STARK/config/example/subexample/cli:ro
+            - ${SUBMODULE_HOST_SERVICES}:/STARK/services/example/subexample/cli:rw
+            - ${DOCKER_STARK_SOCK_MOUNT}
+            #- ./src:/app/src # uncomment this while developing
+        ports:
+            - ${SUBMODULE_API_EXTERNAL_PORT}:8000
+        networks:
+            - ${DOCKER_STARK_MAIN_NETWORK}
+
+    # this service is designed to run once when the compose is launched then exit
+    stark-module-example-submodule-subexample-service-setup:
+        image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-example-submodule-subexample-service-cli:${SUBMODULE_VERSION}
+        # if the files launcher.py and subexample.json do not exist in the config folder, copy them from the image to the config folder
+        command: bash -c 'for file in launcher.py subexample.json; do if [ ! -f "/config/$$file" ]; then cp "/app/config/$$file" "/config/"; fi; done'
+        volumes:
+            # - ./config:/app/config:ro #TODO: remove
+            - ${LISTENER_HOST_CONFIG}:/config:rw
+        depends_on:
+            - stark-module-example-submodule-subexample-service-cli
+        networks:
+            - ${DOCKER_STARK_MAIN_NETWORK}
+
+    stark-module-example-submodule-subexample-service-listener:
+        image: ${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-common-submodule-listener-service-listener:${LISTENER_VERSION}
+        container_name: stark-module-example-submodule-subexample-service-listener
+        command: python3 /app/bin/listener.py --input=/STARK/output/repository --json /STARK/config/example/subexample/listener/subexample.json --servicename=SUBEXAMPLE --containersfile=/STARK/services --nbDaysBack=60 --minDelay=1
+        restart: always
+        environment:
+            - MICROSERVICE_IMAGE=${DOCKER_STARK_SERVICE_IMAGE_REGISTRY}stark-module-example-submodule-subexample-service-cli:${SUBMODULE_VERSION}
+            - MICROSERVICE_MONTAGE="" # This variable has to stay until we update the common listener
+            - MICROSERVICE_LAUNCH=/opt/conda/envs/py312/bin/python /app/src/subexample.py
+            - MICROSERVICE_REPOSITORY=${DOCKER_STARK_MAIN_FOLDER}/output/repository
+            - PYTHONUNBUFFERED=1
+        volumes:
+            - ${DOCKER_STARK_MAIN_FOLDER}/output:/STARK/output:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_DEPOSITORY}:/STARK/output/depository:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_OUTPUT_ARCHIVES}:/STARK/output/archives:ro
+            - ${DOCKER_STARK_MAIN_FOLDER}/${DOCKER_STARK_FOLDER_DATABASES}:/STARK/databases:ro
+            - ${LISTENER_HOST_CONFIG}:/STARK/config/example/subexample/listener:ro
+            - ${LISTENER_HOST_SERVICES}:/STARK/services/example/subexample/listener:rw
+            - ${DOCKER_STARK_MAIN_FOLDER}/config/example/subexample/listener/launcher.py:/app/bin/launcher.py:ro
+            - ${DOCKER_STARK_SOCK_MOUNT}
+        depends_on:
+            - stark-module-example-submodule-subexample-service-setup
+        networks:
+            - ${DOCKER_STARK_MAIN_NETWORK}
+
+networks:
+    stark_stark:
+        external: true
