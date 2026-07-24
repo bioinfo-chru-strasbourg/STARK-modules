@@ -101,14 +101,14 @@ def absolute_run_path(path):
     if (
         os.path.isabs(path)
         and os.path.isdir(path)
-        and path.startswith(os.environ["HOST_REPOSITORY"])
+        and (path.startswith(os.environ["HOST_REPOSITORY"]) or path.startswith(os.environ["HOST_ARCHIVES"]))
         and "." not in os.path.basename(path)
     ):
         return path
     elif (
         not os.path.isabs(path)
         and os.path.isdir(path)
-        and os.path.abspath(path).startswith(os.environ["HOST_REPOSITORY"])
+        and (os.path.abspath(path).startswith(os.environ["HOST_REPOSITORY"]) or os.path.abspath(path).startswith(os.environ["HOST_ARCHIVES"]))
         and "." not in os.path.basename(path)
     ):
         return os.path.abspath(path)
