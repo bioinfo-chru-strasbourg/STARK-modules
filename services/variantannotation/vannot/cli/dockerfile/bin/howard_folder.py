@@ -86,35 +86,35 @@ def launch_folder(args):
             run_informations["run_platform"] = args.param.split("/")[-1].removesuffix(".json").removeprefix("param.").split(".")[0]
             run_informations["run_platform_application"] = args.param.split("/")[-1].removesuffix(".json").removeprefix("param.")
 
-        howard_processing.folder_initialisation(run_informations)
-        howard_processing.qual_filter_id_to_format(run_informations)
+    howard_processing.folder_initialisation(run_informations)
+    howard_processing.qual_filter_id_to_format(run_informations)
 
-        merge_header_backup = {}
-        merged_vcf = howard_processing.merge_vcf(run_informations, "1", "", merge_header_backup)
-        annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
+    merge_header_backup = {}
+    merged_vcf = howard_processing.merge_vcf(run_informations, "1", "", merge_header_backup)
+    annotated_merged_vcf = howard_processing.howard_proc(run_informations, merged_vcf)
 
-        howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
-        howard_processing.format_to_qual_filter_id(run_informations, remove_format=False)
-        howard_processing.pre_prio(run_informations, "transfer")
-        howard_processing.howard_score_transcripts(run_informations)
-        howard_processing.pre_prio(run_informations, "strip")
+    howard_processing.unmerge_vcf(annotated_merged_vcf, run_informations)
+    howard_processing.format_to_qual_filter_id(run_informations, remove_format=False)
+    howard_processing.pre_prio(run_informations, "transfer")
+    howard_processing.howard_score_transcripts(run_informations)
+    howard_processing.pre_prio(run_informations, "strip")
 
-        if run_informations["onco"] == False:
-            howard_processing.gmc_score(run_informations)
-        else:
-            howard_processing.pz_to_format(run_informations)
+    if run_informations["onco"] == False:
+        howard_processing.gmc_score(run_informations)
+    else:
+        howard_processing.pz_to_format(run_informations)
 
-        merged_vcf = howard_processing.merge_vcf(run_informations, "2", "", merge_header_backup)
-        howard_processing.restore_merged_header(run_informations, merged_vcf)
-        howard_processing.restore_merge_headers(run_informations, merge_header_backup)
+    merged_vcf = howard_processing.merge_vcf(run_informations, "2", "", merge_header_backup)
+    howard_processing.restore_merged_header(run_informations, merged_vcf)
+    howard_processing.restore_merge_headers(run_informations, merge_header_backup)
 
-        howard_processing.format_to_qual_filter_id(run_informations)
-        howard_processing.format_to_info(run_informations)
-        howard_processing.restore_flags_samples(run_informations)
-        howard_processing.convert_to_final_tsv(run_informations)
-        # if run_informations["run_platform"]:
-        #     non_redundant.generate(run_informations)
-        howard_processing.cleaner(run_informations)
+    howard_processing.format_to_qual_filter_id(run_informations)
+    howard_processing.format_to_info(run_informations)
+    howard_processing.restore_flags_samples(run_informations)
+    howard_processing.convert_to_final_tsv(run_informations)
+    # if run_informations["run_platform"]:
+    #     non_redundant.generate(run_informations)
+    howard_processing.cleaner(run_informations)
 
     log.info(f"vannot analysis for folder {run_informations['run_name']} ended well")
 
