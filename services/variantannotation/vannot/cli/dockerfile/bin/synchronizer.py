@@ -12,11 +12,19 @@ import shutil
 def find_samplesheet(run_informations, archives):
     if archives is True :
         samples = glob.glob(osj(run_informations["run_archives"], "*", ""))
-        samplesheet = glob.glob(osj(samples[0], "*.SampleSheet.csv"))
+        for sample in samples:
+            samplesheet = osj(sample, f"{os.path.basename(sample.strip('/'))}.SampleSheet.csv")
+            is_ss = os.path.isfile(samplesheet)
+            if is_ss is True:
+                break
     else: 
         samples = glob.glob(osj(run_informations["run_repository"], "*", ""))
-        samplesheet = glob.glob(osj(samples[0], "STARK", "*.SampleSheet.csv"))
-    return samplesheet[0]
+        for sample in samples:
+            samplesheet = osj(sample, f"{os.path.basename(sample.strip('/'))}.SampleSheet.csv")
+            is_ss = os.path.isfile(samplesheet)
+            if is_ss is True:
+                break
+    return samplesheet
 
 
 def find_tag(samplesheet, word):
@@ -74,6 +82,7 @@ def vcf_synchronizer(run_informations):
 
     kept_vcf = []
     treated_samples = []
+
     for element in reversed(pattern):
         vcf_files = glob.glob(osj(run_path, element))
         for vcf_file in vcf_files:
@@ -98,6 +107,7 @@ def vcf_synchronizer(run_informations):
                     + sample
                     + ".final.vcf.gz"
                 )
+
             if (
                 not re.match(stark_vcf, vcf_file)
                 and sample not in treated_samples
