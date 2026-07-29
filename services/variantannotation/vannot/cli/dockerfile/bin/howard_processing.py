@@ -944,33 +944,38 @@ def howard_score_transcripts(run_informations):
 def convert_to_final_tsv(run_informations):
     log.info("Converting output file into readable tsv")
     vcf_files = glob.glob(osj(run_informations["tmp_analysis_folder"], "*.vcf.gz"))
-    threads = commons.get_threads("threads_conversion")
-    memory = commons.get_memory("memory_conversion")
     module_config = osj(
         os.environ["HOST_MODULE_CONFIG"],
         f"{os.environ["DOCKER_SUBMODULE_NAME"]}_config.json",
     )
     with open(module_config, "r") as read_file:
         data = json.load(read_file)
-        ordered_fields = data["vcf_to_tsv_column_order"][
-            run_informations["run_platform_application"]
-        ]
+        # Explicitly listed INFO fields are kept in the given order; any INFO
+        # field declared in the VCF header but not listed here is appended
+        # afterwards (see fields_for_file below), so an empty/missing entry
+        # falls back to every INFO field in header order, and a partial list
+        # is completed with whatever else is present.
+        ordered_fields = data.get("vcf_to_tsv_column_order", {}).get(
+            run_informations["run_platform_application"], []
+        )
 
-    explode_infos_fields = ",".join(ordered_fields)
-    explode_infos_fields = explode_infos_fields + ",*"
-    print(explode_infos_fields)
-    howard_config = osj(
-        os.environ["HOST_MODULE_CONFIG"], "howard", "howard_config.json"
-    )
+    # Constant VCF columns always come first, followed by the INFO fields (and the
+    # "FORMAT"/"sample" placeholders) in the exact order given in the config.
+    constant_header = ["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER"]
+
+    # bcftools' %INFO/<tag> tag-name parser only accepts alnum/"_"/"." characters,
+    # so field names containing "-" or "+" (e.g. "PZFlag-GERMLINE", "GERP++_NR")
+    # would be silently truncated and corrupt the output. And the whole-column
+    # "%INFO" wildcard (no tag) isn't supported at all on older bcftools (e.g.
+    # 1.8 requires a "/" right after INFO). So bcftools query is only used here
+    # for the version-safe constant columns; INFO is read directly from the VCF
+    # further down, the same way FORMAT/sample values already are.
+    query_format = "%CHROM\t%POS\t%ID\t%REF\t%ALT\t%QUAL\t%FILTER\n"
 
     for vcf_file in vcf_files:
-        
+
         panel_name = vcf_file.split(".")[-3]
-        exact_time = time.time() + 7200
-        local_time = time.localtime(exact_time)
-        actual_time = time.strftime("%H%M%S", local_time)
-        start = actual_time
-        container_name = f"VANNOT_convert_{start}_{run_informations['run_name']}_{os.path.basename(vcf_file).split('.')[0]}"
+
         if run_informations["type"] == "run":
             if panel_name != "design":
                 output_file = osj(
@@ -989,25 +994,108 @@ def convert_to_final_tsv(run_informations):
             )
 
         if "merged" not in vcf_file:
-            launch_convert_arguments = [
-                "query",
-                "--input",
-                vcf_file,
-                "--output",
-                output_file,
-                "--explode_infos",
-                "--explode_infos_fields",
-                explode_infos_fields,
-                "--query",
-                "SELECT * FROM variants",
-                "--threads",
-                threads,
-                "--memory",
-                memory,
-                "--config",
-                howard_config,
+            samples = subprocess.run(
+                ["bcftools", "query", "-l", vcf_file],
+                universal_newlines=True,
+                stdout=subprocess.PIPE,
+            ).stdout.strip().split("\n")
+
+            # INFO, FORMAT and the per-sample values are read directly from the
+            # VCF (not via bcftools query, see comment above), in the same row
+            # order bcftools query itself would produce (no filtering/reordering
+            # is ever applied), so they can be zipped positionally further down.
+            # The header's own "##INFO=<ID=" declarations (in declaration order)
+            # are also collected here, to fill in any INFO field not already
+            # listed in ordered_fields (see fields_for_file below).
+            info_strings = []
+            format_values = []
+            sample_values = {sample: [] for sample in samples}
+            info_field_order = []
+            seen_info_fields = set()
+            with gzip.open(vcf_file, "rt") as read_vcf:
+                for line in read_vcf:
+                    if line.startswith("##INFO=<ID="):
+                        field_id = line[len("##INFO=<ID="):].split(",", 1)[0]
+                        if field_id not in seen_info_fields:
+                            seen_info_fields.add(field_id)
+                            info_field_order.append(field_id)
+                        continue
+                    if line.startswith("#"):
+                        continue
+                    parts = line.rstrip("\n").split("\t")
+                    info_strings.append(parts[7] if len(parts) > 7 else "")
+                    format_values.append(parts[8] if len(parts) > 8 else "")
+                    for i, sample in enumerate(samples):
+                        sample_values[sample].append(
+                            parts[9 + i] if len(parts) > 9 + i else ""
+                        )
+
+            # Build the final field order: explicitly-listed INFO fields first (in
+            # the order given in the config), then every other INFO field found in
+            # the VCF header that wasn't already listed, and finally the
+            # "FORMAT"/"sample" placeholders (in whichever order they were given),
+            # kept last regardless of where they appear in the config list.
+            info_prefix = []
+            trailing_tokens = []
+            seen_listed_fields = set()
+            for token in ordered_fields:
+                if token in ("FORMAT", "sample"):
+                    trailing_tokens.append(token)
+                else:
+                    info_prefix.append(token)
+                    seen_listed_fields.add(token)
+            remaining_fields = [
+                field for field in info_field_order if field not in seen_listed_fields
             ]
-            howard_launcher.launch(container_name, launch_convert_arguments)
+            fields_for_file = info_prefix + remaining_fields + trailing_tokens
+
+            header = list(constant_header)
+            for token in fields_for_file:
+                if token == "FORMAT":
+                    header.append("FORMAT")
+                elif token == "sample":
+                    header.extend(samples)
+                else:
+                    header.append(token)
+
+            intermediate_file = osj(
+                os.path.dirname(output_file), "bcfquery_" + os.path.basename(output_file)
+            )
+            subprocess.run(
+                [
+                    "bcftools",
+                    "query",
+                    "-f",
+                    query_format,
+                    "-o",
+                    intermediate_file,
+                    vcf_file,
+                ],
+                check=True,
+            )
+
+            with open(intermediate_file, "r") as read_file, open(output_file, "w") as write_file:
+                write_file.write("\t".join(header) + "\n")
+                for row_index, line in enumerate(read_file):
+                    row = line.rstrip("\n").split("\t")
+                    info_string = info_strings[row_index]
+                    info_dict = {}
+                    if info_string not in ("", "."):
+                        for entry in info_string.split(";"):
+                            key, _, value = entry.partition("=")
+                            info_dict[key] = value if value else "1"
+                    for token in fields_for_file:
+                        if token == "FORMAT":
+                            row.append(format_values[row_index])
+                        elif token == "sample":
+                            row.extend(
+                                sample_values[sample][row_index] for sample in samples
+                            )
+                        else:
+                            row.append(info_dict.get(token, ""))
+                    write_file.write("\t".join(row) + "\n")
+            os.remove(intermediate_file)
+
             output_file = format_explode(vcf_file, output_file)
             tsv_modifier(output_file, run_informations)
 
