@@ -1,5 +1,5 @@
 ##########################################################################
-# Launcher Version:			3.0
+# Launcher Version:			4.0
 # Description:				Launcher to run Snakemake module
 ##########################################################################
 
@@ -13,6 +13,9 @@
 
 # PROD version 3.0 : 28/11/2023 changelog
 # docker compose to run containers
+
+# PROD version 4.0 : 17/08/2026 changelog
+# Hg38 ready (hope so)
 
 ################## Context ##################
 # type python launcher.py -h for help
@@ -34,19 +37,29 @@
 
 import os
 import re
+import glob
 import subprocess
 import json
 import argparse
 import doctest
 from datetime import datetime
-from os.path import join as osj
 
 date_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
 # Function to compare versions
 def version_gt(version1, version2):
-    return version1 > version2
+    """Compare two dotted version strings numerically (e.g. '20.10.7' > '9.2' is True,
+    which a naive string comparison would get wrong)."""
+
+    def parse(version):
+        parts = []
+        for part in version.split("."):
+            digits = "".join(ch for ch in part if ch.isdigit())
+            parts.append(int(digits) if digits else 0)
+        return tuple(parts)
+
+    return parse(version1) > parse(version2)
 
 
 # Function to get Docker version
@@ -57,7 +70,7 @@ def get_docker_version():
         )
         docker_version = docker_version_output.split()[2].split(",")[0]
         return docker_version
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, FileNotFoundError, IndexError):
         return None
 
 
@@ -69,6 +82,66 @@ def readconfig(configFile, serviceName, configkey):
     return outputconfig
 
 
+# Matches an ASSEMBLY=value key, however it's prefixed (ex "#[INFO]        ASSEMBLY=hg19" in a STARK
+# run report, or a plain "ASSEMBLY=hg19" line). Anchored on "=" right after the word so it can't match
+# prose that merely mentions "genome assembly" or "reference assembly" without an "=" following it.
+ASSEMBLY_PATTERN = re.compile(r"(?<![A-Za-z0-9_])ASSEMBLY\s*=\s*([^\s;#]+)", re.IGNORECASE)
+
+
+def find_assembly_from_config(run):
+    """
+    Search the run folder for STARK '*.config' analysis-report files (the per-run ini-like
+    dumps STARK writes, ex KLA2602897_20260723-084645.config) and return the ASSEMBLY value
+    (ex hg19, hg38) from the most recently modified file that has one.
+    Returns None if run doesn't exist, no config file is found, or none contain an ASSEMBLY key.
+    """
+    if not run or not os.path.isdir(run):
+        return None
+
+    # Most runs have the report config directly at the top level; fall back to a recursive
+    # search only if that turns up nothing, to keep the common case fast.
+    config_files = glob.glob(os.path.join(run, "*.config"))
+    if not config_files:
+        config_files = glob.glob(os.path.join(run, "**", "*.config"), recursive=True)
+
+    for config_file in sorted(config_files, key=os.path.getmtime, reverse=True):
+        try:
+            with open(config_file, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    match = ASSEMBLY_PATTERN.search(line)
+                    if match:
+                        return match.group(1).strip()
+        except OSError:
+            continue
+    return None
+
+
+def find_yaml_config(yaml_path, group_name, project_name, assembly=None):
+    """
+    Return the most specific existing yaml config file, trying in order:
+      {group}_{project}_{assembly}.yaml
+      {group}_{project}.yaml
+      {group}_{assembly}.yaml
+      {group}.yaml
+    so an assembly-specific override is preferred when present, but everything falls back
+    to the pre-existing group/project convention when there's no assembly-specific file
+    (or no assembly could be determined at all).
+    Returns None if none of these exist.
+    """
+    candidates = []
+    if assembly:
+        candidates.append(f"{yaml_path}/{group_name}_{project_name}_{assembly}.yaml")
+    candidates.append(f"{yaml_path}/{group_name}_{project_name}.yaml")
+    if assembly:
+        candidates.append(f"{yaml_path}/{group_name}_{assembly}.yaml")
+    candidates.append(f"{yaml_path}/{group_name}.yaml")
+
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return candidate
+    return None
+
+
 def launch(
     run,
     serviceName,
@@ -78,23 +151,38 @@ def launch(
     launchCommand=None,
     configFile=None,
     microserviceRepo=None,
+    assembly=None,
 ):
     """Function to start a docker container with a specific command"""
     if configFile:
         launchCommand = readconfig(configFile, serviceName, "launch")
         image = readconfig(configFile, serviceName, "image")
+
+    # group_name/project_name previously stayed undefined whenever run was falsy, which
+    # crashed the "if group_name and project_name" check below with a NameError.
+    group_name = None
+    project_name = None
     if run:
         containerName = f"{serviceName}_{date_time}_{os.path.basename(run)}"
-        group_name = run.split("/")[3]
-        project_name = run.split("/")[4]
+        run_parts = run.split("/")
+        if len(run_parts) > 4:
+            group_name, project_name = run_parts[3], run_parts[4]
+    else:
+        containerName = f"{serviceName}_{date_time}"
 
     if group_name and project_name:
         yaml_path = (
             f"{os.getenv('DOCKER_STARK_MODULE_SUBMODULE_INNER_FOLDER_CONFIG')}/cli"
         )
-        yaml_config_file = f"{yaml_path}/{group_name}_{project_name}.yaml"
-        if not os.path.exists(yaml_config_file):
-            yaml_config_file = f"{yaml_path}/{group_name}.yaml"
+        # ASSEMBLY (hg19/hg38/...) is auto-detected from the run's STARK '*.config' report
+        # file unless explicitly overridden; an assembly-specific yaml is preferred when one
+        # exists, falling back to the pre-existing group/project convention otherwise.
+        detected_assembly = assembly or find_assembly_from_config(run)
+        if detected_assembly:
+            print(f"[INFO] Using ASSEMBLY={detected_assembly} for yaml selection")
+        else:
+            print("[INFO] No ASSEMBLY value found for this run, falling back to group/project yaml only")
+        yaml_config_file = find_yaml_config(yaml_path, group_name, project_name, detected_assembly)
     else:
         yaml_config_file = None
 
@@ -103,16 +191,20 @@ def launch(
     )
 
     docker_version = get_docker_version()
-    if docker_version:
-        # Check if Docker version is greater than 20
-        if version_gt(docker_version, "20"):
-            DOCKER_COMMAND = "docker-compose"
-        else:
-            DOCKER_COMMAND = "docker compose"
+    if not docker_version:
+        # DOCKER_COMMAND was previously left unset on this path, so building cmd below would
+        # crash with a NameError instead of failing on this clear, actionable message.
+        print("[ERROR] Docker is not installed or not reachable, aborting launch.")
+        return
 
-        print(f"Using {DOCKER_COMMAND} for Docker commands.")
+    # Docker Compose V2 ("docker compose", a CLI plugin) ships with Docker Engine 20.10+;
+    # older engines need the standalone V1 binary ("docker-compose"). The two branches were
+    # previously swapped - verify this matches what's actually installed on your host.
+    if version_gt(docker_version, "20"):
+        DOCKER_COMMAND = "docker compose"
     else:
-        print("Docker is not installed.")
+        DOCKER_COMMAND = "docker-compose"
+    print(f"Using {DOCKER_COMMAND} for Docker commands.")
 
     if yaml_config_file and os.path.exists(yaml_config_file):
         cmd = f"{DOCKER_COMMAND} -f {COMPOSE_PATH}/STARK.docker-compose.yml run --rm --name={containerName} {image} '{launchCommand} --config run={run} --configfile {yaml_config_file}'"
@@ -178,6 +270,14 @@ def myoptions():
         help="Microservice repository name",
         dest="microserviceRepo",
     )
+    parser.add_argument(
+        "-a",
+        "--assembly",
+        type=str,
+        default="",
+        help="Override the auto-detected ASSEMBLY value (ex hg19, hg38) used to pick a yaml config file",
+        dest="assembly",
+    )
     return parser.parse_args()
 
 
@@ -193,4 +293,6 @@ if __name__ == "__main__":
         args.launchCommand,
         args.configFile,
         args.microserviceRepo,
+        args.assembly or None,
     )
+

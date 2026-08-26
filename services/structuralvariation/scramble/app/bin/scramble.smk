@@ -344,13 +344,17 @@ else:
 # Find bed file (Design)
 config['BED_FILE'] = config['BED_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.design.bed', '.genes.bed')
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
-config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes.bed', '.list.genes')
-# Find list.genes files (a list of panel files)
-config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
+# NO_PANEL forces a Design/Full-only run: skip auto-detection entirely so a .genes.bed sitting in the run folder can't
+# silently pull in Panel processing when only Design/Full outputs were wanted (set NO_PANEL=True via --config to opt out)
+if config.get('NO_PANEL', False):
+	print('[INFO] NO_PANEL is set, skipping Panel/genes bed auto-detection')
+	config['GENES_FILE'] = ""
+	config['LIST_GENES'] = ""
+else:
+	config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes.bed', '.list.genes')
+	# Find list.genes files (a list of panel files)
+	config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
 # Find transcripts files (file containing NM)
-config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
-
-# Find transcripts files (NM)
 config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
 # If transcript file exist, create the annotation file for AnnotSV
 annotation_file = f"{resultDir}/{serviceName}.{date_time}.AnnotSV.txt"
@@ -756,7 +760,7 @@ use rule AnnotSV as AnnotSV_panel with:
 
 use rule wait_for_AnnotSV as wait_for_AnnotSV_panel with:
 	input:
-		output_from_AnnotSV=rules.AnnotSV.output,
+		output_from_AnnotSV=rules.AnnotSV_panel.output,
 		log_file=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.log"
 	output:
 		ready=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.ready"

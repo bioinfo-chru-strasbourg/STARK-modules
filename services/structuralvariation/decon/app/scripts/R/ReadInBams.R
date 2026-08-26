@@ -10,7 +10,7 @@
 # PROD v1 21/11/2023
 # Changelog
 #   - refactor code, remove install system, update ExomeDepth 1.16
-#   - parallelisation to speed up the process
+#   - parallelisation to speed up the process (removed crash for random reasons)
 #   - detect bed file with a 5 column with exon numbers, remove custom exon options
 ########################################################################################################
 
@@ -28,8 +28,7 @@ option_list <- list(
     make_option("--refbams", help="Text file containing a list of reference bam files to process (optional)", dest='rbams'),
     make_option("--bed", help='Bed file with 4 or 5 columns (chr, start, stop, gene, +/- exon) used to generate coverage data (required)', dest='bed'),
     make_option("--fasta", help='Reference genome fasta file to use (required)', default=NULL, dest='fasta'),
-    make_option("--rdata", default="./ReadInBams.Rdata", help="Output Rdata file, default: ./ReadInBams.Rdata", dest='data'),
-    make_option("--maxcores", default=16, help="Maximum cores to use, default: 16", dest='mcore')
+    make_option("--rdata", default="./ReadInBams.Rdata", help="Output Rdata file, default: ./ReadInBams.Rdata", dest='data')
 )
 
 opt <- parse_args(OptionParser(option_list=option_list))
@@ -75,7 +74,7 @@ sort_chromosome_df <- function(df) {
 }
 
 
-process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
+process_bams <- function(bamfiles, rbams, bed, fasta, output) {
   bams <- read_bam_files(bamfiles)
 
   if (!is.null(rbams) && file.exists(rbams)) {
@@ -114,9 +113,14 @@ process_bams <- function(bamfiles, rbams, bed, fasta, output, maxcores = 16) {
   # Rename "exon" to "gene" if needed
   colnames(counts)[colnames(counts) == "exon"] <- "gene"
 
-  # Optionally add exon_number
+  # Optionally add exon_number (joined by coordinates rather than bound by row position,
+  # since bind_cols would silently misalign if counts and bed.file were ever in different order)
   if ("exon_number" %in% colnames(bed.file)) {
-    counts <- dplyr::bind_cols(counts, bed.file["exon_number"])
+    counts <- dplyr::left_join(
+      counts,
+      bed.file[c("chromosome", "start", "end", "exon_number")],
+      by = c("chromosome", "start", "end")
+    )
     counts <- counts %>%
       dplyr::relocate(exon_number, .after = gene)
     colnames(bed.file)[colnames(bed.file) == "exon_number"] <- "exon"
@@ -198,7 +202,7 @@ read_bed_file <- function(bedfile) {
     bed.file
 }
 
-main <- function(bamfiles, rbams, bed, fasta, data, mcore) {
+main <- function(bamfiles, rbams, bed, fasta, data) {
     print("BEGIN ReadInBams script")
     
     # Validate input
@@ -206,10 +210,10 @@ main <- function(bamfiles, rbams, bed, fasta, data, mcore) {
     stop_if_missing(bed, "ERROR: BED file must be provided -- Execution halted")
     stop_if_missing(fasta, "ERROR: No reference FASTA file detected -- Execution halted")
     
-    process_bams(bamfiles, rbams, bed, fasta, data, mcore)
+    process_bams(bamfiles, rbams, bed, fasta, data)
     warnings()
     print("END ReadInBams script")
 }
 
 # Run the main function with parsed arguments
-main(opt$bamfiles, opt$rbams, opt$bed, opt$fasta, opt$data, opt$mcore)
+main(opt$bamfiles, opt$rbams, opt$bed, opt$fasta, opt$data)

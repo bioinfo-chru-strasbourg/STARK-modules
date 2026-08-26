@@ -312,7 +312,7 @@ for(call_index in 1:nrow(cnv.calls_plot)){
 	A1 <- A1 + geom_point(data=subset(Data1,testref=="Affected exon(s)"),cex=3.5,col="red") 
     A1 <- A1 + ylab("Log (Coverage)")  + theme_bw() + theme(legend.position= "top") + xlab(" ") + guides(color = guide_legend(nrow = 1, title = NULL))
 
-	Data2 <- Data1[Data1$testref=="Affected exon",]
+	Data2 <- Data1[Data1$testref=="Affected exon(s)",]
 	if(nrow(Data2)>1){
 		for(i in 1:(nrow(Data2)-1)){
 			if ((Data2$exonRange[i]+1)==Data2$exonRange[i+1]) {

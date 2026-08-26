@@ -5,7 +5,7 @@
 			"infos": {
 				"name": "CANOES",
 				"description": "CANOES analysis",
-				"triggers-description": "(STARKCopyComplete.txt AND NOT (CANOESRunning.txt AND CANOESComplete.txt AND CANOESFailed.txt) AND (#CANOES OR GROUP DIAG) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (CANOESRunning.txt OR CANOESComplete.txt OR CANOESFailed.txt) AND (#CANOES OR GROUP DIAG) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
 			},
 			"triggers": {
 				"AND_1":{
@@ -34,9 +34,7 @@
 							],
 							"OR_3":{
 								"file":[
-									"POOLRunning.txt"
-								],
-								"file":[
+									"POOLRunning.txt",
 									"POOLComplete.txt"
 								]
 							}
@@ -47,5 +45,6 @@
 		}
 	}
 }
+
 
 

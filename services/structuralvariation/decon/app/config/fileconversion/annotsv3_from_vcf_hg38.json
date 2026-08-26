@@ -13,35 +13,35 @@
 		"keep_empty_info": "false"
 	},
 	"GENOME": {
-		"assembly": "hg19",
-		"path": "/databases/genomes/current/hg19.fa",
+		"assembly": "hg38",
+		"path": "/databases/genomes/current/hg38/hg38.fa",
 		"vcf_header": [
-			"##contig=<ID=chr1,length=249250621,assembly=hg19>",
-			"##contig=<ID=chr2,length=243199373,assembly=hg19>",
-			"##contig=<ID=chr3,length=198022430,assembly=hg19>",
-			"##contig=<ID=chr4,length=191154276,assembly=hg19>",
-			"##contig=<ID=chr5,length=180915260,assembly=hg19>",
-			"##contig=<ID=chr6,length=171115067,assembly=hg19>",
-			"##contig=<ID=chr7,length=159138663,assembly=hg19>",
-			"##contig=<ID=chr8,length=146364022,assembly=hg19>",
-			"##contig=<ID=chr9,length=141213431,assembly=hg19>",
-			"##contig=<ID=chr10,length=135534747,assembly=hg19>",
-			"##contig=<ID=chr11,length=135006516,assembly=hg19>",
-			"##contig=<ID=chr12,length=133851895,assembly=hg19>",
-			"##contig=<ID=chr13,length=115169878,assembly=hg19>",
-			"##contig=<ID=chr14,length=107349540,assembly=hg19>",
-			"##contig=<ID=chr15,length=102531392,assembly=hg19>",
-			"##contig=<ID=chr16,length=90354753,assembly=hg19>",
-			"##contig=<ID=chr17,length=81195210,assembly=hg19>",
-			"##contig=<ID=chr18,length=78077248,assembly=hg19>",
-			"##contig=<ID=chr19,length=59128983,assembly=hg19>",
-			"##contig=<ID=chr20,length=63025520,assembly=hg19>",
-			"##contig=<ID=chr21,length=48129895,assembly=hg19>",
-			"##contig=<ID=chr22,length=51304566,assembly=hg19>",
-			"##contig=<ID=chrM,length=16571,assembly=hg19>",
-			"##contig=<ID=chrX,length=155270560,assembly=hg19>",
-			"##contig=<ID=chrY,length=59034049,assembly=hg19>",
-			"##reference=file://databases/genomes/current/hg19.fa"
+			"##contig=<ID=chr1,length=248956422,assembly=hg38>",
+			"##contig=<ID=chr2,length=242193529,assembly=hg38>",
+			"##contig=<ID=chr3,length=198295559,assembly=hg38>",
+			"##contig=<ID=chr4,length=190214555,assembly=hg38>",
+			"##contig=<ID=chr5,length=181538259,assembly=hg38>",
+			"##contig=<ID=chr6,length=170805979,assembly=hg38>",
+			"##contig=<ID=chr7,length=159345973,assembly=hg38>",
+			"##contig=<ID=chr8,length=145138636,assembly=hg38>",
+			"##contig=<ID=chr9,length=138394717,assembly=hg38>",
+			"##contig=<ID=chr10,length=133797422,assembly=hg38>",
+			"##contig=<ID=chr11,length=135086622,assembly=hg38>",
+			"##contig=<ID=chr12,length=133275309,assembly=hg38>",
+			"##contig=<ID=chr13,length=114364328,assembly=hg38>",
+			"##contig=<ID=chr14,length=107043718,assembly=hg38>",
+			"##contig=<ID=chr15,length=101991189,assembly=hg38>",
+			"##contig=<ID=chr16,length=90338345,assembly=hg38>",
+			"##contig=<ID=chr17,length=83257441,assembly=hg38>",
+			"##contig=<ID=chr18,length=80373285,assembly=hg38>",
+			"##contig=<ID=chr19,length=58617616,assembly=hg38>",
+			"##contig=<ID=chr20,length=64444167,assembly=hg38>",
+			"##contig=<ID=chr21,length=46709983,assembly=hg38>",
+			"##contig=<ID=chr22,length=50818468,assembly=hg38>",
+			"##contig=<ID=chrM,length=16569,assembly=hg38>",
+			"##contig=<ID=chrX,length=156040895,assembly=hg38>",
+			"##contig=<ID=chrY,length=57227415,assembly=hg38>",
+			"##reference=file://databases/genomes/current/hg38/hg38.fa"
 		]
 	},
 	"VCF_COLUMNS": {
@@ -163,37 +163,15 @@
 			"AnnotSV_ranking_score": "AnnotSV_ranking_score",
 			"AnnotSV_ranking_criteria": "AnnotSV_ranking_criteria",
 			"ACMG_class": "ACMG_class",
-			"MEINFO": "MEINFO",
-			"COUNTS": "COUNTS",
-			"CLIPPED_READS_IN_CLUSTER": "CLIPPED_READS_IN_CLUSTER",
-			"ALIGNMENT_PERCENT_LENGHT": "ALIGNMENT_PERCENT_LENGHT",
-			"ALIGNMENT_PERCENT_IDENTITY": "ALIGNMENT_PERCENT_IDENTITY",
-			"CLIPPED_SEQUENCE": "CLIPPED_SEQUENCE",
-			"CLIPPED_SIDE": "CLIPPED_SIDE",
-			"Start_In_MEI": "Start_In_MEI",
-			"Stop_In_MEI": "Stop_In_MEI",
-			"polyA_Position": "polyA_Position",
-			"polyA_Seq": "polyA_Seq",
-			"polyA_SupportingReads": "polyA_SupportingReads",
-			"TSD": "TSD",
-			"TSD_length": "TSD_length",
-			"REF_ANCHOR_BASE": "REF_ANCHOR_BASE",
-			"RIGHT_CLUSTER": "RIGHT_CLUSTER",
-			"RIGHT_CLUSTER_COUNTS": "RIGHT_CLUSTER_COUNTS",
-			"LEFT_CLUSTER": "LEFT_CLUSTER",
-			"LEFT_CLUSTER_COUNTS": "LEFT_CLUSTER_COUNTS",
-			"LEN_RIGHT_ALIGNMENT": "LEN_RIGHT_ALIGNMENT",
-			"SCORE_RIGHT_ALIGNMENT": "SCORE_RIGHT_ALIGNMENT",
-			"PCT_COV_RIGHT_ALIGNMENT": "PCT_COV_RIGHT_ALIGNMENT",
-			"PCT_IDENTITY_RIGHT_ALIGNMENT": "PCT_IDENTITY_RIGHT_ALIGNMENT",
-			"LEN_LEFT_ALIGNMENT": "LEN_LEFT_ALIGNMENT",
-			"SCORE_LEFT_ALIGNMENT": "SCORE_LEFT_ALIGNMENT",
-			"PCT_COV_LEFT_ALIGNMENT": "PCT_COV_LEFT_ALIGNMENT",
-			"PCT_IDENTITY_LEFT_ALIGNMENT": "PCT_IDENTITY_LEFT_ALIGNMENT",
-			"INS_SIZE": "INS_SIZE",
-			"INS_SEQ": "INS_SEQ",
-			"RIGHT_CLIPPED_SEQ": "RIGHT_CLIPPED_SEQ",
-			"LEFT_CLIPPED_SEQ": "LEFT_CLIPPED_SEQ"
+			"CNV.ID": "CNV.ID",
+			"N.exons": "N.exons",
+			"Start.b": "Start.b",
+			"End.b": "End.b",
+			"Genomic.ID": "Genomic.ID",
+			"Confidence": "Confidence",
+			"Comparator.name": "Comparator.name",
+			"Start.p": "Start.p",
+			"End.p": "End.p"
 		},
 		"FORMAT": "FORMAT",
 		"SAMPLE": "Samples_ID"
@@ -202,17 +180,9 @@
 		"REF": {},
 		"ALT": {
 			"DUP": "Duplication",
-			"DEL": "Deletion",
-			"INS:ME:ALU": "Insertion of ALU element",
-			"INS:ME:L1":  "Insertion of L1 element",
-			"INS:ME:SVA": "Insertion of SVA element"
+			"DEL": "Deletion"
 		},
 		"INFO": {
-			"MEINFO": {
-				"Type": "String",
-				"Number": "4",
-				"Description": "Mobile element info of the form NAME,START,END,POLARITY; if END is not accurate, it is computed as START + 1"
-			},
 			"AC": {
 				"Type": "Integer",
 				"Number": "A",
@@ -222,7 +192,7 @@
 				"Type": "Integer",
 				"Number": "1",
 				"Description": "The total number of alleles in called genotypes"
-			},		
+			},
 			"AnnotSV_ID": {
 				"Type": "String",
 				"Number": ".",
@@ -753,12 +723,12 @@
 				"Number": ".",
 				"Description": "Number of heterozygous SNV/indel (extracted from VCF input file) in the individual 'sample' which are present: 1) in the SV ('full' annotation) and 2) between intersectStart and intersectEnd ('split' annotation)"
 			},
-			"Count_htz_allHom_SAMPLENAME_":  {
+			"Count_htz_allHom_SAMPLENAME_": {
 				"Type": "Float",
 				"Number": ".",
 				"Description": "Ratio for QC filtering: #htz(sample)/#allHom(sample)"
 			},
-			"Count_htz_total_cohort_":  {
+			"Count_htz_total_cohort_": {
 				"Type": "Float",
 				"Number": ".",
 				"Description": "Ratio for QC filtering: #htz(sample)/#total(cohort)"
@@ -783,155 +753,55 @@
 				"Number": ".",
 				"Description": "SV ranking class into 1 of 5: class 1 (benign), class 2 (likely benign), class 3 (variant of unknown significance), class 4 (likely pathogenic), class 5 (pathogenic)"
 			},
-			"COUNTS": {
+			"CNV.ID": {
 				"Type": "Integer",
-				"Number": ".",
-				"Description": "Number of supporting reads for the MEI"
+				"Number": "1",
+				"Description": "Decon's unique identifier of the CNV call. This ID is searchable in the GUI"
 			},
-			"CLIPPED_READS_IN_CLUSTER": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Number of supporting reads in cluster"
+			"N.exons": {
+				"Type": "Integer",
+				"Number": "1",
+				"Description": "The number of exons encompassed by the call"
 			},
-			"ALIGNMENT_PERCENT_LENGHT": {
+			"Start.b": {
 				"Type": "Float",
-				"Number": ".",
-				"Description": "Percent of clipped read consensus sequence involved in alignment to MEI reference sequence"
+				"Number": "1",
+				"Description": "The number of the first exon in the call from the analyzed BED file"
 			},
-			"ALIGNMENT_PERCENT_IDENTITY": {
+			"End.b": {
 				"Type": "Float",
-				"Number": ".",
-				"Description": "Percent identity of alignment of clipped read consensus sequence with MEI reference sequence"
+				"Number": "1",
+				"Description": "The number of the last exon in the call from the analyzed BED file"
 			},
-			"CLIPPED_SEQUENCE": {
+			"Genomic.ID": {
+				"Type": "String",
+				"Number": "1",
+				"Description": "DECoN genomic identifier"
+			},
+			"Genes": {
+				"Type": "String",
+				"Number": "1",
+				"Description": "The affected genes from the analyzed bed file (from DECoN)"
+			},
+			"Confidence": {
+				"Type": "String",
+				"Number": "1",
+				"Description": "Confidence score (from DECoN)"
+			},
+			"Comparator.name": {
 				"Type": "String",
 				"Number": ".",
-				"Description": "Clipped cluster consensus sequences"
+				"Description": "Comparator name (from DECoN)"
 			},
-			"CLIPPED_SIDE": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Left or right, side of read where soft-clipping occurred"
-			},
-			"Start_In_MEI": {
-				"Type": "Integer",
-				"Number": ".",
-				"Description": "Left-most position of alignment to MEI reference sequence"
-			},
-			"Stop_In_MEI": {
-				"Type": "Integer",
-				"Number": ".",
-				"Description": "Right-most position of alignment to MEI reference sequence"
-			},
-			"polyA_Position": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Position of polyA clipped read cluster if found"
-			},
-			"polyA_Seq": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Clipped cluster consensus sequences of polyA clipped read cluster if found"
-			},
-			"polyA_SupportingReads": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Number of supporting reads in polyA clipped read cluster if found"
-			},
-			"TSD": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Target site duplication sequence if polyA clipped read cluster found"
-			},
-			"TSD_length": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Length of target site duplication if polyA clipped read cluster found"
-			},
-			"REF_ANCHOR_BASE": {
-				"Type": "Integer",
-				"Number": ".",
-				"Description": "Reference based at deletion start"
-			},
-			"RIGHT_CLUSTER": {
-				"Type": "Integer",
-				"Number": ".",
-				"Description": "Name of right cluster"
-			},
-			"RIGHT_CLUSTER_COUNTS": {
-				"Type": "Integer",
-				"Number": ".",
-				"Description": "Number of supporting reads in right cluster"
-			},
-			"LEFT_CLUSTER": {
-				"Type": "Integer",
-				"Number": ".",
-				"Description": "Name of left cluster"
-			},
-			"LEFT_CLUSTER_COUNTS": {
-				"Type": "Integer",
-				"Number": ".",
-				"Description": "Number of supporting reads in left cluster"
-			},
-			"LEN_RIGHT_ALIGNMENT": {
-				"Type": "Integer",
-				"Number": ".",
-				"Description": "Length of right-clipped consensus sequence involved in alignment"
-			},
-			"SCORE_RIGHT_ALIGNMENT": {
+			"Start.p": {
 				"Type": "Float",
-				"Number": ".",
-				"Description": "BLAST alignment bitscore for right-clipped consensus"
+				"Number": "1",
+				"Description": "The number of the first line in the call from the analyzed BED file"
 			},
-			"PCT_COV_RIGHT_ALIGNMENT": {
+			"End.p": {
 				"Type": "Float",
-				"Number": ".",
-				"Description": "Percent length of right-clipped consensus involved in alignment"
-			},
-			"PCT_IDENTITY_RIGHT_ALIGNMENT": {
-				"Type": "Float",
-				"Number": ".",
-				"Description": "Percent identity of right-clipped consensus in alignment"
-			},
-			"LEN_LEFT_ALIGNMENT": {
-				"Type": "Integer",
-				"Number": ".",
-				"Description": "Length of left-clipped consensus sequence involved in alignment"
-			},
-			"SCORE_LEFT_ALIGNMENT": {
-				"Type": "Float",
-				"Number": ".",
-				"Description": "BLAST alignment bitscore for left-clipped consensus"
-			},
-			"PCT_COV_LEFT_ALIGNMENT": {
-				"Type": "Float",
-				"Number": ".",
-				"Description": "Percent length of left-clipped consensus involved in alignment"
-			},
-			"PCT_IDENTITY_LEFT_ALIGNMENT": {
-				"Type": "Float",
-				"Number": ".",
-				"Description": "Percent identity of right-clipped consensus in alignment"
-			},
-			"INS_SIZE": {
-				"Type": "Integer",
-				"Number": ".",
-				"Description": "Length of insert within deleted sequence (for two-end deletions only)"
-			},
-			"INS_SEQ": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Inserted sequence (for two-end deletions only)"
-			},
-			"RIGHT_CLIPPED_SEQ": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Clipped consensus sequence for right-clipped cluster"
-			},
-			"LEFT_CLIPPED_SEQ": {
-				"Type": "String",
-				"Number": ".",
-				"Description": "Clipped consensus sequence for left-clipped cluster"
+				"Number": "1",
+				"Description": "The number of the last line in the call from the analyzed BED file"
 			}
 		},
 		"FORMAT": {
@@ -973,3 +843,4 @@
 		}
 	}
 }
+

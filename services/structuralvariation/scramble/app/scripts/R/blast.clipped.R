@@ -1,4 +1,4 @@
- ##########################################################################
+##########################################################################
 # SCRAMBLE Rscript         Version: 2.0
 # Description:             R script to blast sequence
 ##########################################################################
@@ -52,8 +52,9 @@ suppressPackageStartupMessages({
   
   reference.clusters = merge(reference.clusters, results, by.x = "rname_clippedPos_Orientation_ReadSide", by.y = "query", all.x = TRUE)
   
-  # Filter by percent length of alignment
-  reference.clusters = reference.clusters[(nchar(reference.clusters$clipped_seq) / reference.clusters$length) > pctAlign, ]
+  # Filter by percent length of alignment (percentage-scale, matching pctAlign's default of 90;
+  # mirrors the same 100 * qlen / length formula best.hits() uses below for its pct_aligned column)
+  reference.clusters = reference.clusters[(100 * reference.clusters$qlen / reference.clusters$length) > pctAlign, ]
   
   return(reference.clusters)
 }

@@ -1,5 +1,5 @@
 ##########################################################################
-# Snakemakefile Version:   3.0
+# Snakemakefile Version:   4.0
 # Description:             Snakemake file to run DECoN module (Detection of Exon Copy Number variants)
 ##########################################################################
 
@@ -27,10 +27,17 @@
 	# more options to process DECON bed, k-merisation
 	# R scripts rewrite, to speed up ReadInBam, separate plotting, call CNV with a reference bam list (see changlog in the R scripts for details)
 	# re-arrange/simplify/compact code a lot, input files copying is within the rules, f-string, etc.
-	# add a draft for an html report using jinja2
+	# add a draft for an html report using jinja2 (junky)
+
+# PROD version 4 : 17/08/2026 changelog
+	# AnnotSV version 3.5 (still patched with extra rules to avoid crash because tcl why the f*** ?)
+	# remove panel dependency for DECON bed processing
+	# hg38 ready (hope so)
+	# remove vcf2tsv convert (crappy not installable with other conda dependencies)
 
 ################## Import libraries ##################
 import os
+import sys
 import re
 import glob
 import pandas as pd
@@ -366,6 +373,15 @@ def intersectbed(input_df, ref_df):
 
 def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene=None, transcripts_file=None, unknown_gene=False, gene_list_restrict=None, chr_list_restrict=None, old_bed=False, exon_sep=None, kmer=None, customexon=False, list_genes=None, genes_file=None):
 	
+	# STANDARD mode needs a panel bed (list_genes/genes_file) to paint gene names onto the raw
+	# design intervals via intersection. When none is configured/available (ex: NO_PANEL is set,
+	# or a run that only has a design bed and no panel), fall back to REGEN's approach instead of
+	# hard-failing: intersect against REFSEQGENE, the same general (non-panel-specific) gene
+	# reference REGEN already uses, rather than requiring a run-specific panel.
+	if bed_process == 'STANDARD' and not (list_genes or genes_file):
+		print("[INFO] No panel/gene-list available for STANDARD bed processing, falling back to REGEN using REFSEQGENE")
+		bed_process = 'REGEN'
+
 	# Case: REGEN - Generate custom exon file and intersect with refseqgene
 	if bed_process == 'REGEN':
 		print("[INFO] Starting generating DECON bed with external reference.")
@@ -400,8 +416,10 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene=None, tran
 		if chr_list_restrict:
 			intersected_df = intersected_df[~intersected_df['Chr'].isin(chr_list_restrict)]
 		df = intersected_df.drop(columns=['4', '5', '6', 'Strand', 'NM']).drop_duplicates(subset=['Chr', 'Start', 'End'])
-		# Remove 'exon' prefix in Custom.Exon
-		df['Custom.Exon'] = df['Custom.Exon'].str.replace('exon', '', regex=False)
+		# Remove 'exon' prefix in Custom.Exon (defensive astype: intersectbed round-trips through a
+		# tsv file, so a purely-numeric exon identifier can come back as int64 rather than string,
+		# and .str accessors raise on non-string dtypes)
+		df['Custom.Exon'] = df['Custom.Exon'].astype(str).str.replace('exon', '', regex=False)
 		# Remove rows where Gene or Custom.Exon is empty (dot)
 		df = df[(df['Gene'] != '.') & (df['Custom.Exon'] != '.')]
 	
@@ -421,7 +439,7 @@ def process_bed_file(bed_file, inputbed_file, bed_process, refseqgene=None, tran
 		
 		elif config['GENES_FILE']:
 			cat_panels_bed = f"/tmp/catpanel.bed"
-			shell(f"xargs --delimiter='\\t' cat < {config['GENES_FILE']} >> {cat_panels_bed}")
+			shell(f"cat {config['GENES_FILE']} >> {cat_panels_bed}")
 		
 		else:
 			raise SystemExit("[ERROR] No valid configuration for LIST_GENES or GENES_FILE was provided. Stopping execution.")
@@ -656,10 +674,17 @@ if not config['BED_FILE']:
 	sys.exit(1)
 
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
-config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes.bed', '.list.genes')
-
-# Find list.genes files, containing the name of the panel's files (without path)
-config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
+# NO_PANEL forces a Design-only run: skip auto-detection entirely so a .genes.bed sitting in the run folder can't
+# silently pull in Panel processing when only a Design bed was wanted (set NO_PANEL=True via --config to opt out).
+# Combined with the STANDARD->REGEN fallback in process_bed_file, this lets a run go through using only BED_FILE.
+if config.get('NO_PANEL', False):
+	print('[INFO] NO_PANEL is set, skipping Panel/genes bed auto-detection, Design bed only')
+	config['GENES_FILE'] = ""
+	config['LIST_GENES'] = ""
+else:
+	config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes.bed', '.list.genes')
+	# Find list.genes files, containing the name of the panel's files (without path)
+	config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
 panels_list = []
@@ -873,14 +898,13 @@ rule ReadInBams:
 	params:
 		refbamlist=("--refbams " + config['REF_BAM_LIST']) if config.get('REF_BAM_LIST') else "",
 		decondir=config['R_SCRIPTS'],
-		refgene=config['REFGENEFA_PATH'],
-		mcores=config['MCORES']
+		refgene=config['REFGENEFA_PATH']
 	log:
 		log=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.ReadInBams.log",
 		err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.ReadInBams.err"
 	shell:
 		"""
-		Rscript {params.decondir}/ReadInBams.R --maxcores {params.mcores} --bams {input.allbamlist} --bed {deconbed_file} --fasta {params.refgene} --rdata {output} {params.refbamlist} 1> {log.log} 2> {log.err}
+		Rscript {params.decondir}/ReadInBams.R --bams {input.allbamlist} --bed {deconbed_file} --fasta {params.refgene} --rdata {output} {params.refbamlist} 1> {log.log} 2> {log.err}
 		"""
 
 rule IdentifyFailures:
@@ -910,16 +934,16 @@ rule makeCNVcalls:
 		removeY=config['REMOVE_Y'],
 		refbamlist=("--refbams " + config['REF_BAM_LIST']) if config.get('REF_BAM_LIST') else "",
 		decondir=config['R_SCRIPTS'],
-		fail=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.DECON.Failed",
-		rdata=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVcalls.RData"
+		fail=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.DECON.Failed"
 	output:
-		calltsv=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv")
+		calltsv=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv"),
+		rdata=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.CNVcalls.RData"
 	log:
 		log=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.log",
 		err=f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.makeCNVcalls.err"
 	shell:
 		"""
-		Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --removeY {params.removeY} {params.refbamlist} --tsv {output.calltsv} --outrdata {params.rdata} 1> {log.log} 2> {log.err} && \
+		Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --removeY {params.removeY} {params.refbamlist} --tsv {output.calltsv} --outrdata {output.rdata} 1> {log.log} 2> {log.err} && \
 		( [[ -s {output.calltsv} ]] || touch {params.fail} ) && touch {output.calltsv}; \
 		if [[ -f {params.fail} ]]; then exit 1; fi
 
@@ -1181,7 +1205,7 @@ use rule AnnotSV as AnnotSV_panel with:
 
 use rule wait_for_AnnotSV as wait_for_AnnotSV_panel with:
 	input:
-		output_from_AnnotSV=rules.AnnotSV.output,
+		output_from_AnnotSV=rules.AnnotSV_panel.output,
 		log_file=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.log"
 	output:
 		ready=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.ready"
@@ -1239,8 +1263,7 @@ rule plot:
 		folder=f"{resultDir}/{serviceName}.{date_time}.temp.pdf/",
 		deconplotscript=config['DECON_PLOT_SCRIPT'],
 		prefix= f"Design.{date_time}",
-		chromosome="{gender}",
-		plotdebug=config['PLOT_DEBUG']		
+		chromosome="{gender}"
 	output:
 		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design.plotSuccess"
 	log:
@@ -1249,7 +1272,7 @@ rule plot:
 	shell:
 		"""
 		mkdir -p {params.folder} &&
-		Rscript {params.deconplotscript} --rdata {input} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} --debug {params.plotdebug} 1> {log.log} 2> {log.err} &&
+		Rscript {params.deconplotscript} --rdata {input} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} 1> {log.log} 2> {log.err} &&
 		touch {output}
 		"""
 
@@ -1296,30 +1319,31 @@ onsuccess:
 		if gene_names_by_panel:
 			for sample in sample_list:
 				design_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{sample}.Design.pdf"
-				
-				for pdf_full in design_pdfs:
-					pdf = os.path.basename(pdf_full)
-					if sample in pdf:
-						for panel_name, genes in gene_names_by_panel.items():
-							gene_pattern = re.compile("|".join(genes)) # Compile a regex pattern for the current gene list
-							if gene_pattern.search(pdf):  # Check if any gene is in the pdf name
-								print('[INFO] Processing panel-specific ', pdf,' for sample:', sample, 'and panel:', panel_name)
-								panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{sample}.Panel.{panel_name}.pdf"
-								os.makedirs(panel_folder, exist_ok=True)
+				if not os.path.isdir(design_folder):
+					continue
+				sample_design_pdfs = os.listdir(design_folder)
 
-								# Rename PDF for this panel
-								panel_pdf_name = pdf.replace("Design", f"{panel_name}.Panel")
-								panel_pdf = os.path.join(panel_folder, panel_pdf_name)
+				for pdf in sample_design_pdfs:
+					for panel_name, genes in gene_names_by_panel.items():
+						gene_pattern = re.compile("|".join(genes)) # Compile a regex pattern for the current gene list
+						if gene_pattern.search(pdf):  # Check if any gene is in the pdf name
+							print('[INFO] Processing panel-specific ', pdf,' for sample:', sample, 'and panel:', panel_name)
+							panel_folder = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{sample}.Panel.{panel_name}.pdf"
+							os.makedirs(panel_folder, exist_ok=True)
 
-								# Copy the renamed PDF to the panel folder
-								shutil.copy(os.path.join(design_folder, pdf), panel_pdf)
-								print(f"[INFO] Copied and renamed {pdf} to {panel_pdf}")
-								
-								# Merged pdf for each panels 
-								panel_pdfs = [f"{panel_folder}/{pdf}" for pdf in os.listdir(panel_folder) if sample in pdf]
-								merged_panel_pdf = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{sample}.{panel_name}.Panel.merge.pdf"
-								merge_pdfs(panel_pdfs, merged_panel_pdf)
-								print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
+							# Rename PDF for this panel
+							panel_pdf_name = pdf.replace("Design", f"{panel_name}.Panel")
+							panel_pdf = os.path.join(panel_folder, panel_pdf_name)
+
+							# Copy the renamed PDF to the panel folder
+							shutil.copy(os.path.join(design_folder, pdf), panel_pdf)
+							print(f"[INFO] Copied and renamed {pdf} to {panel_pdf}")
+							
+							# Merged pdf for each panels 
+							panel_pdfs = [f"{panel_folder}/{pdf}" for pdf in os.listdir(panel_folder) if sample in pdf]
+							merged_panel_pdf = f"{resultDir}/{sample}/{serviceName}/{sample}_{date_time}_{serviceName}/{serviceName}.{date_time}.{sample}.{panel_name}.Panel.merge.pdf"
+							merge_pdfs(panel_pdfs, merged_panel_pdf)
+							print(f"[INFO] Merged panel PDFs into {merged_panel_pdf}")
 
 		# Step 4: Clean up the temporary pdf directory
 		shell(f"rm -rf {resultDir}/{serviceName}.{date_time}.temp.pdf")
@@ -1376,3 +1400,4 @@ onerror:
 	shell(f"rm -f {outputDir}/{serviceName}Running.txt")
 	shell(f"rm -rf {resultDir}/pdfs")
 	shell("rsync -azvh --include={include_log} --exclude='*' {resultDir}/ {outputDir}")
+

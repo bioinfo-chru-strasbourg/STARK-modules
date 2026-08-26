@@ -41,6 +41,9 @@ GENES_FILE: ""
 TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
+# Set to True to force a Design/Full-only run: skips GENES_FILE/LIST_GENES auto-detection entirely, even if a
+# .genes.bed or .list.genes file is present in the run folder
+NO_PANEL: False
 
 # Samples list exclusion (not to be analyse) ; exclude if startwith, case insensitive
 EXCLUDE_SAMPLE: ['POOL_', 'BlcADN', 'blanc', 'BlcPCR', 'blcPCR', 'Z_NTC', 'NTC', 'Blc']
@@ -84,7 +87,7 @@ BCFTOOLS_FILTER: "-e 'ABS(SVLEN) >= 100000'"
 
 ################## Tools specific parameters ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/databases/genomes/current/hg19/hg19.fa"
 
 # Path for scripts and dummy files
 DUMMY_FILES: "/app/scripts/dummy"
@@ -96,7 +99,7 @@ MULTIFIX_SCRIPT: "/app/scripts/python/multifix_vcf.py"
 MERGE_SCRIPT: "/app/scripts/python/merge_tsv.py"
 
 # Fileconversion json for variantconvert
-VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf.json"
+VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf_hg19.json"
 
 # Path to Scramble R directory scripts
 SCRAMBLE_PATH: "/opt/conda/share/scramble/bin" # installed via conda
@@ -133,7 +136,7 @@ GENEHANCER_VERSION: "GeneHancer_hg19_v5.9"
 ANNOTSV_DOWNLOAD_LINK: "https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
 EXOMISER_DOWNLOAD_LINK1: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_{assembly}.zip"
 EXOMISER_DOWNLOAD_LINK2: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_phenotype.zip"
-EXOMISER_JAR: "https://github.com/exomiser/Exomiser/releases/download/14.1.0/exomiser-rest-prioritiser-14.1.0.jar"
+EXOMISER_JAR: "https://github.com/exomiser/Exomiser/releases/download/15.1.0/exomiser-rest-prioritiser-15.1.0.jar"
 
 # Command use to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
@@ -173,3 +176,4 @@ annotSV_limit: 30
 # Extract the URL from the JSON response and make another request to that URL to download the file. For example:
 # curl "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData"
 # You do not need to supply the authentication header on this request. Download links are valid for one hour. 
+

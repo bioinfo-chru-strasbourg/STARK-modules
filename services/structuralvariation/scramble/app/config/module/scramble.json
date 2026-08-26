@@ -4,7 +4,7 @@
 			"infos": {
 				"name": "SCRAMBLE",
 				"description": "SCRAMBLE analysis",
-				"triggers-description": "(STARKCopyComplete.txt AND NOT (SCRAMBLERunning.txt AND SCRAMBLEComplete.txt AND SCRAMBLEFailed.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (SCRAMBLERunning.txt OR SCRAMBLEComplete.txt OR SCRAMBLEFailed.txt) AND (#SCRAMBLE OR (GROUP in [HUSDIAGGEN,HUSTUMSOL,DIAG] AND PROJECT in allowed list)) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
 			},
 			"triggers": {
 				"AND_1":{

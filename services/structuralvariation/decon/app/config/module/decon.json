@@ -4,7 +4,7 @@
 			"infos": {
 				"name": "DECON",
 				"description": "DECON analysis",
-				"triggers-description": "(STARKCopyComplete.txt AND NOT (DECONRunning.txt AND DECONComplete.txt AND DECONFailed.txt) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
+				"triggers-description": "(STARKCopyComplete.txt AND NOT (DECONRunning.txt OR DECONComplete.txt OR DECONFailed.txt) AND (#DECON OR (GROUP in [HUSDIAGGEN,DIAG,HUSTUMSOL] AND PROJECT in allowed list)) AND (NOT #POOL OR (#POOL AND (POOLRunning.txt OR POOLComplete.txt))))"
 			},
 			"triggers": {
 				"AND_1":{

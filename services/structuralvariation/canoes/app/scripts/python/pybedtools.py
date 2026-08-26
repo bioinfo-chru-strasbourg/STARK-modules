@@ -20,19 +20,15 @@ def split_bed(bedfile):
     df = pd.read_csv(bedfile, sep='\t', header=None)
     return [group for _, group in df.groupby(df.iloc[:, 0])]
 
-def multicov(bamfile, bedfile, mq):
-    bam = pysam.AlignmentFile(bamfile, "rb")
+def multicov(bam, bedfile, mq, bam_name):
     results = []
 
     for _, row in bedfile.iterrows():
         chrom, start, end = row[0], row[1], row[2]
         count_reads = sum(1 for read in bam.fetch(chrom, start, end) if read.mapping_quality > mq)
-        bam_name = os.path.basename(bamfile).split('.')[0]
         results.append({'chrom': chrom, 'start': start, 'end': end, bam_name: count_reads})
 
-    df_results = pd.DataFrame(results)
-    print(f"Results for {bamfile}:\n{df_results.head()}\n")
-    return df_results
+    return pd.DataFrame(results)
 
 def read_input_tsv(input_tsv):
     return pd.read_csv(input_tsv, sep='\t')['bam'].tolist()
@@ -40,7 +36,9 @@ def read_input_tsv(input_tsv):
 def multicov_wrapper(args):
     bamfile, chr_split, mq = args
     print(f"Processing BAM file: {bamfile}")
-    combined_df = pd.concat([multicov(bamfile, chr_df, mq) for chr_df in chr_split], ignore_index=True)
+    bam_name = os.path.basename(bamfile).split('.')[0]
+    with pysam.AlignmentFile(bamfile, "rb") as bam:
+        combined_df = pd.concat([multicov(bam, chr_df, mq, bam_name) for chr_df in chr_split], ignore_index=True)
     print(f"Combined results for {bamfile}:\n{combined_df.head()}\n")
     return combined_df
 
@@ -76,3 +74,4 @@ def parseargs():
 
 if __name__ == '__main__':
     main()
+

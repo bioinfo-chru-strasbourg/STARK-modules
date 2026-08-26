@@ -1,0 +1,12 @@
+# Example assembly-specific override for launcher.py's ASSEMBLY-aware yaml selection (see
+# DIAG_hg38.yaml from the CANOES review, and DIAG_hg38.yaml from the DECON review, for the
+# same convention applied to those two services).
+#
+#   {group}_{project}_{assembly}.yaml   ex DIAG_WES_AGILENT_hg38.yaml
+#   {group}_{project}.yaml              ex DIAG_WES_AGILENT.yaml            (pre-existing)
+#   {group}_{assembly}.yaml             ex DIAG_hg38.yaml                   (this file)
+#   {group}.yaml                        ex DIAG.yaml                       (pre-existing)
+
+ASSEMBLY: "hg38"
+genomeBuild: GRCh38
+REFGENEFA_PATH: "/databases/genomes/current/hg38/hg38.fa"

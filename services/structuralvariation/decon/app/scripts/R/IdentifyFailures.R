@@ -135,8 +135,13 @@ main <- function(rdata_file, min_corr, min_cov, output_file) {
     bed.file <- data$bed.file
     sample.names <- data$sample.names
     
-    # Assign column names to each sample
-    colnames(counts)[1:length(sample.names)+5] <- sample.names
+    # Assign column names to each sample (metadata columns before the sample columns are 6 if an
+    # exon_number column was added upstream, 5 otherwise - same check as makeCNVcalls.R uses)
+    if ("exon_number" %in% colnames(counts)) {
+        colnames(counts)[1:length(sample.names) + 6] <- sample.names
+    } else {
+        colnames(counts)[1:length(sample.names) + 5] <- sample.names
+    }
 
     # Calculate metrics & write file
     metrics <- calculate_metrics(counts, sample.names, min_corr, min_cov, bed.file)

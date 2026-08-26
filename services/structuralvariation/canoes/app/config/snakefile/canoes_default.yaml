@@ -26,6 +26,9 @@ GENES_FILE: ""
 TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
+# Set to True to force a Design-bed-only run: skips GENES_FILE/LIST_GENES auto-detection entirely, even if a
+# .genes.bed or .list.genes file is present in the run folder, so no Panel outputs are ever built
+NO_PANEL: False
 
 #List to add run to the analysis
 addruns: []
@@ -71,8 +74,8 @@ MERGEMULTICOV_SCRIPT: "/app/scripts/python/merge_multicov.py"
 PLOT_COVERAGE_SCRIPT: "/app/scripts/python/plot_coverage_stats.py"
 
 # Fileconversion json for variant convert
-VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf.json"
-VARIANT_CONVERT_CANOES: "/app/config/fileconversion/config_canoes_bed.json"
+VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf_hg19.json"
+VARIANT_CONVERT_CANOES: "/app/config/fileconversion/config_canoes_bed_hg19.json"
 
 # Path folder of the template (template is serviceName_template.html)
 TEMPLATE_DIR: "/app/template"
@@ -93,7 +96,7 @@ REMOVE_SAMPLE_XX: []
 
 ################## Misc params ##################
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/databases/genomes/current/hg19/hg19.fa"
 # Java mem option for gatk4 GC % extraction
 JAVA_OPTION: "-Xmx8G"
 
@@ -111,10 +114,10 @@ GENEHANCER_VERSION: "GeneHancer_hg19_v5.9"
 # Cosmic db is CosmicCompleteCNA.tsv.gz
 
 # HTTPS links for AnnotSV and Exomiser downloads
-ANNOTSV_DOWNLOAD_LINK: "https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
+ANNOTSV_DOWNLOAD_LINK: "https://cstb-icube.fr/~geoffroy/Annotations/Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
 EXOMISER_DOWNLOAD_LINK1: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_{assembly}.zip"
 EXOMISER_DOWNLOAD_LINK2: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_phenotype.zip"
-EXOMISER_JAR: "https://github.com/exomiser/Exomiser/releases/download/14.1.0/exomiser-rest-prioritiser-14.1.0.jar"
+EXOMISER_JAR: "https://github.com/exomiser/Exomiser/releases/download/15.1.0/exomiser-rest-prioritiser-15.1.0.jar"
 
 # Command use to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
@@ -171,3 +174,4 @@ REF_BAM_LIST: []
 # Extract the URL from the JSON response and make another request to that URL to download the file. For example:
 # curl "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData"
 # You do not need to supply the authentication header on this request. Download links are valid for one hour. 
+

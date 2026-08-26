@@ -89,17 +89,17 @@ rule install_db:
 		"""
 		echo 'AnnotSV download and extraction'
 		mkdir -p {params.folder_annotSV}
-		{params.command} {params.annotSV_link}
-		tar xzf Annotations_Human_{ANNOTSV_VERSION}.tar.gz -C {params.folder_annotSV}
+		#{params.command} {params.annotSV_link}
+		#tar xzf Annotations_Human_{ANNOTSV_VERSION}.tar.gz -C {params.folder_annotSV}
 		touch {output.annotSV_success}
 
 		echo 'Exomiser data download and extraction'
 		mkdir -p {params.folder_exomiser}/jar
-		{params.command} {params.exomiser_jar} --dir={params.folder_exomiser}/jar
-		{params.command} {params.exomiser_link1}
-		{params.command} {params.exomiser_link2}
-		unzip -q {EXOMISER_VERSION}_{params.assembly}.zip -d {params.folder_exomiser}
-		unzip -q {EXOMISER_VERSION}_phenotype.zip -d {params.folder_exomiser}
+		#{params.command} {params.exomiser_jar} --dir={params.folder_exomiser}/jar
+		#{params.command} {params.exomiser_link1}
+		#{params.command} {params.exomiser_link2}
+		#unzip -q {EXOMISER_VERSION}_{params.assembly}.zip -d {params.folder_exomiser}
+		#unzip -q {EXOMISER_VERSION}_phenotype.zip -d {params.folder_exomiser}
 
 		touch {output.exomiser_success}
 		"""
@@ -108,7 +108,7 @@ if run_cosmic:
 	rule cosmic:
 		input: f"{services_folder}/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
 		output: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_COSMIC_install.success"
-		params: f"{db}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/COSMIC/{genomeBuild}/"
+		params: f"{db}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/COSMIC/{config['genomeBuild']}/"
 		shell: " mkdir -p {params} && unzip -q {input} -d {params} && touch {output} "
 
 if run_genehancer:
@@ -132,9 +132,32 @@ rule annotSV_dummy_vcf:
 	"""
 
 rule cp:
-	input: rules.annotSV_dummy_vcf.output
-	output: f"{services_folder}/cli/SETUPComplete.txt"
-	shell: " mkdir -p {config_folder}/listener && cp -r /app/config/module/* {config_folder}/listener && cp -r /app/config/snakefile/* {config_folder}/cli && touch {output} " 
+    input:
+        rules.annotSV_dummy_vcf.output
+    output:
+        f"{services_folder}/cli/SETUPComplete.txt"
+    shell:
+        """
+        set -euo pipefail
+
+        mkdir -p {config_folder}/listener
+        mkdir -p {config_folder}/cli
+
+        for src in /app/config/module/*; do
+            dst="{config_folder}/listener/$(basename "$src")"
+            rm -rf "$dst"
+            cp -r "$src" "$dst"
+        done
+
+        for src in /app/config/snakefile/*; do
+            dst="{config_folder}/cli/$(basename "$src")"
+            rm -rf "$dst"
+            cp -r "$src" "$dst"
+        done
+
+        touch {output}
+        """
+
 
 
 onstart:

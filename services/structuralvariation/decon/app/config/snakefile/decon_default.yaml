@@ -45,6 +45,10 @@ GENES_FILE: ""
 TRANSCRIPTS_FILE: ""
 # List genes
 LIST_GENES: ""
+# Set to True to force a Design-bed-only run: skips GENES_FILE/LIST_GENES auto-detection entirely (even if a
+# .genes.bed or .list.genes file is present in the run folder), and STANDARD bed processing falls back to
+# REGEN using REFSEQGENE instead of requiring a panel
+NO_PANEL: False
 # VCF on/off
 VCF: True
 
@@ -87,7 +91,7 @@ RESULT_EXT_LIST: ['.vcf.gz', '.vcf.gz.tbi', 'Design.merge.pdf', 'Design.tsv', 'g
 ############## Tools specific parameters ##############
 ### TOOLS PATH ###
 # Default path to a FASTA file with .fasta reference genome (hg19/hg38 for ex)
-REFGENEFA_PATH: "/databases/genomes/current/hg19.fa"
+REFGENEFA_PATH: "/databases/genomes/current/hg19/hg19.fa"
 # path to Refgene file containing custom exon numbers  
 # http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/
 # archive formated_refgene for hg19 avalaible in /app/database
@@ -130,8 +134,8 @@ SPLIT_SCRIPT: "/app/scripts/python/split_tsv.py"
 MULTIFIX_SCRIPT: "/app/scripts/python/multifix_vcf.py"
 MERGE_SCRIPT: "/app/scripts/python/merge_tsv.py"
 # Fileconversion json for variant convert
-VARIANT_CONVERT_DECON: "/app/config/fileconversion/config_decon.json"
-VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf.json"
+VARIANT_CONVERT_DECON: "/app/config/fileconversion/config_decon_hg19.json"
+VARIANT_CONVERT_ANNOTSV: "/app/config/fileconversion/annotsv3_from_vcf_hg19.json"
 
 ### DECON ###
 # Plots for DECON True/False
@@ -146,8 +150,6 @@ PLOT_DEBUG: False
 # the panel of genes and the technology of sequencing (capture/amplicon) must be identical between reference samples and patient samples
 # REF_BAM_LIST: "/pathtoyourbamlist/list.tsv" ; in snakemake command it is REF_BAM_LIST="/databases/CNV/bamrefset/bamreflist.tsv"
 REF_BAM_LIST: []
-# Max cores to use
-MCORES: 16
 
 ################## AnnotSV params for DB setup ##################
 # don't forget to change application.properties from /app/config/annotsv
@@ -165,7 +167,7 @@ GENEHANCER_VERSION: "GeneHancer_hg19_v5.9"
 ANNOTSV_DOWNLOAD_LINK: "https://www.lbgi.fr/~geoffroy/Annotations/Annotations_Human_{ANNOTSV_VERSION}.tar.gz"
 EXOMISER_DOWNLOAD_LINK1: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_{assembly}.zip"
 EXOMISER_DOWNLOAD_LINK2: "https://data.monarchinitiative.org/exomiser/data/{EXOMISER_VERSION}_phenotype.zip"
-EXOMISER_JAR: "https://github.com/exomiser/Exomiser/releases/download/14.1.0/exomiser-rest-prioritiser-14.1.0.jar"
+EXOMISER_JAR: "https://github.com/exomiser/Exomiser/releases/download/15.1.0/exomiser-rest-prioritiser-15.1.0.jar"
 
 # Command use to download db
 COMMAND: "aria2c --async-dns=false -c -s 16 -x 16 -k 1M -j 1"
@@ -211,3 +213,4 @@ annotSV_limit: 30
 # Extract the URL from the JSON response and make another request to that URL to download the file. For example:
 # curl "https://cog.sanger.ac.uk/cosmic/GRCh37/cosmic/v95/CosmicCompleteCNA.tsv.gz?AWSAccessKeyId=yourID&Expires=yourData"
 # You do not need to supply the authentication header on this request. Download links are valid for one hour. 
+

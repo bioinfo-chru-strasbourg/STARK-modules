@@ -61,7 +61,6 @@ process_refbams <- function(refbams.file, mode.chrom, sample.names) {
     a <- length(strsplit(refbams[1], "/")[[1]])
     refsample.names <- sapply(refbams, multi_strsplit, c("/", "."), c(a, 1))
     names(refsample.names) <- NULL
-    sample.names <- setdiff(sample.names, refsample.names)
     if ("gender" %in% colnames(raw.refbams)) {
       if (mode.chrom == "XX") {
         refbams <- subset(refbams, raw.refbams$gender == 'F')
@@ -192,10 +191,10 @@ perform_cnv_calling <- function(ExomeCount, sample.names, refsample.names, trans
 
 calculate_confidence <- function(cnv.calls, bed.file) {
   Confidence <- rep("HIGH", nrow(cnv.calls))
-  Confidence[cnv.calls$correlation < 0.985] <- "LOW"
-  Confidence[cnv.calls$reads.ratio < 1.25 & cnv.calls$reads.ratio > 0.75] <- "LOW"
+  Confidence[cnv.calls$Correlation < 0.985] <- "LOW"
+  Confidence[cnv.calls$Reads.ratio < 1.25 & cnv.calls$Reads.ratio > 0.75] <- "LOW"
   Confidence[cnv.calls$N.comp <= 3] <- "LOW"
-  Confidence[cnv.calls$genes == "PMS2"] <- "LOW"
+  Confidence[cnv.calls$Gene == "PMS2"] <- "LOW"
   return(Confidence)
 }
 
@@ -352,6 +351,7 @@ main <- function(data_file, modechrom, removeY, samples, p_value, output_file, r
 
   refsample.names <- process_refbams(refbams_file, modechrom, sample.names)
   sample.names <- process_samplebams(samples)
+  sample.names <- setdiff(sample.names, refsample.names)
 
   result <- perform_cnv_calling(ExomeCount, sample.names, refsample.names, p_value, bed.file)
   cnv.calls <- result$cnv.calls

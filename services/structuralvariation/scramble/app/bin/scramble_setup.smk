@@ -13,7 +13,6 @@
 	# switch to aria2c & snakemake
 
 ################## Context ##################
-#
 # This snakemake will checking and installing proper databases if needed ; copying launcher.py, .conf and .json files into specific directory
 ####################################
 
@@ -89,17 +88,17 @@ rule install_db:
 		"""
 		echo 'AnnotSV download and extraction'
 		mkdir -p {params.folder_annotSV}
-		{params.command} {params.annotSV_link}
-		tar xzf Annotations_Human_{ANNOTSV_VERSION}.tar.gz -C {params.folder_annotSV}
+		#{params.command} {params.annotSV_link}
+		#tar xzf Annotations_Human_{ANNOTSV_VERSION}.tar.gz -C {params.folder_annotSV}
 		touch {output.annotSV_success}
 
 		echo 'Exomiser data download and extraction'
 		mkdir -p {params.folder_exomiser}/jar
-		{params.command} {params.exomiser_jar} --dir={params.folder_exomiser}/jar
-		{params.command} {params.exomiser_link1}
-		{params.command} {params.exomiser_link2}
-		unzip -q {EXOMISER_VERSION}_{params.assembly}.zip -d {params.folder_exomiser}
-		unzip -q {EXOMISER_VERSION}_phenotype.zip -d {params.folder_exomiser}
+		#params.command} {params.exomiser_jar} --dir={params.folder_exomiser}/jar
+		#params.command} {params.exomiser_link1}
+		#params.command} {params.exomiser_link2}
+		#nzip -q {EXOMISER_VERSION}_{params.assembly}.zip -d {params.folder_exomiser}
+		#nzip -q {EXOMISER_VERSION}_phenotype.zip -d {params.folder_exomiser}
 		touch {output.exomiser_success}
 		"""
 
@@ -107,7 +106,7 @@ if run_cosmic:
 	rule cosmic:
 		input: f"{services_folder}/setup/COSMIC/CosmicCompleteCNA.tsv.gz"
 		output: f"{db}/AnnotSV/{ANNOTSV_VERSION}/AnnotSV_COSMIC_install.success"
-		params: f"{db}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/COSMIC/{genomeBuild}/"
+		params: f"{db}/AnnotSV/{ANNOTSV_VERSION}/Annotations_Human/FtIncludedInSV/COSMIC/{config['genomeBuild']}/"
 		shell: " mkdir -p {params} && unzip -q {input} -d {params} && touch {output} "
 
 if run_genehancer:

@@ -1,0 +1,27 @@
+# Example assembly-specific override for launcher.py's new ASSEMBLY-aware yaml selection.
+#
+# Naming convention picked up by launcher.py's find_yaml_config(), most specific first:
+#   {group}_{project}_{assembly}.yaml   ex DIAG_WES_AGILENT_hg38.yaml
+#   {group}_{project}.yaml              ex DIAG_WES_AGILENT.yaml            (pre-existing)
+#   {group}_{assembly}.yaml             ex DIAG_hg38.yaml                   (this file)
+#   {group}.yaml                        ex DIAG.yaml                       (pre-existing)
+#
+# launcher.py reads ASSEMBLY=... out of the run's STARK '*.config' report file and only
+# switches to one of the two new *_{assembly}.yaml files above when that value is present
+# and a matching file exists; otherwise nothing changes from current behavior.
+#
+# Snakemake merges --configfile on top of canoes_default.yaml (see canoes.smk's own
+# 'rule help' docstring), so this file only needs to list the keys that actually differ
+# for hg38 - everything else is inherited from the default.
+#
+# NOTE: REFGENEFA_PATH below follows the same /databases/genomes/current/<build>/<build>.fa
+# layout as the hg19 default in canoes_default.yaml - adjust to match wherever your hg38
+# fasta actually lives. annotationdir is deliberately NOT overridden: AnnotSV keeps both
+# builds under the same Annotations_Human dir and picks the right one via -genomeBuild
+# (see the {genomeBuild} subdirectory in canoes_setup.smk's cosmic rule), so the shared
+# canoes_default.yaml annotationdir/ANNOTSV_VERSION values still apply here.
+
+ASSEMBLY: "hg38"
+genomeBuild: GRCh38
+REFGENEFA_PATH: "/databases/genomes/current/hg38/hg38.fa"
+

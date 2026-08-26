@@ -1,5 +1,5 @@
 ##########################################################################
-# Snakemakefile Version:   2.0
+# Snakemakefile Version:   3.0
 # Description:             Snakemake file to run CANOES module https://github.com/ShenLab/CANOES
 ##########################################################################
 
@@ -9,14 +9,20 @@
 # PROD version 2 : 14/03/2024 changelog
 # Authoring : Thomas LAVAUX
 	# AnnotSV version 3.4 (include the vcf converter) HPO ready with exomiser
-	# options to process bed, k-merisation
-	# convert R to R scripts and rewrite some code, add external ref bams capability
-	# re-arrange/simplify/compact code a lot, input files copying is within the rules, f-string, etc.
-	# add an html report using jinja2
+	# options to process bed, k-merisation (useless)
+	# convert R to proper R scripts and rewrite some code, add external ref bams capability
+	# re-arrange/simplify/compact this crappy shitty code a lot, input files copying is within the rules, f-string, etc. now it's almost readable
+	# add an html report using jinja2 (still junky)
 	# addruns option
+
+# PROD version 3 : 17/08/2025 changelog
+# Authoring : Thomas LAVAUX
+	# Hg38 ready (hope so)
+	# No panel option to run only with the design bed file, no panel processing
 
 ################## Import libraries ##################
 import os
+import sys
 import glob
 import pandas as pd
 import json
@@ -482,10 +488,13 @@ if not config['BED_FILE']:
 	print('No bed found, CANOES cannot continue, exiting')
 	sys.exit(1)
 # Find genes file (Panel); we can't use .genes files because .list.genes and .genes are not distinctable from the indexing we made
-config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes.bed', '.list.genes')
-# Find transcripts files (NM)
-config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
-
+# NO_PANEL forces a Design-only run: skip auto-detection entirely so a .genes.bed sitting in the run folder can't
+# silently pull in Panel processing when only a Design bed was wanted (set NO_PANEL=True via --config to opt out)
+if config.get('NO_PANEL', False):
+	print('[INFO] NO_PANEL is set, skipping Panel/genes bed auto-detection, Design bed only')
+	config['GENES_FILE'] = ""
+else:
+	config['GENES_FILE'] = config['GENES_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.genes.bed', '.list.genes')
 # Find transcripts files (NM)
 config['TRANSCRIPTS_FILE'] = config['TRANSCRIPTS_FILE'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.transcripts', '.list.transcripts')
 # If transcript file exist, create the annotation file for AnnotSV
@@ -502,7 +511,10 @@ else:
 		f.write("No NM found")
 
 # Find list.genes files 
-config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
+if config.get('NO_PANEL', False):
+	config['LIST_GENES'] = ""
+else:
+	config['LIST_GENES'] = config['LIST_GENES'] or find_item_in_dict(sample_list, config['EXT_INDEX_LIST'], runDict, '.list.genes', '.list.transcripts')
 
 # Transform list_genes into a list if list_genes exist, else use genes_file if exist
 panels_list = []
@@ -765,7 +777,7 @@ rule canoes_calling:
 	shell:
 		"""
 		Rscript {params.Rscripts}/CANOES.v2.2.R --gcfile {input.gc} --readsfile {input.read} --chromosome {params.chromosome} --removeY {params.removeY} \
-		--samples {params.bamlist} --homdel {params.hom} --numref {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
+		--samples {params.bamlist} --homdel {params.hom} --numrefs {params.numreference} --tnum {params.tnumeric} --distance {params.distance} \
 		--pvalue {params.pvalue} {params.refbamlist} {params.refmulticovtsv} --output {output.cnvcall} --rdata {params.rdata} 1> {log.log} 2> {log.err} && \
 		( [[ -s {output.cnvcall} ]] || touch {params.fail} ) && touch {output.cnvcall}; \
 		if [[ -f {params.fail} ]]; then exit 1; fi
@@ -1013,7 +1025,7 @@ use rule AnnotSV as AnnotSV_panel with:
 
 use rule wait_for_AnnotSV as wait_for_AnnotSV_panel with:
 	input:
-		output_from_AnnotSV=rules.AnnotSV.output,
+		output_from_AnnotSV=rules.AnnotSV_panel.output,
 		log_file=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.log"
 	output:
 		ready=f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.ready"
@@ -1086,14 +1098,22 @@ onsuccess:
 			shell(f"rm -rf {resultDir}/{sample} || true")
 
 		# We extract the samples that are present in the sample_list_addruns & the vcf
-		shell(f"bcftools query -l {resultDir}/{serviceName}.{date_time}.allsamples.Design.unfiltered.vcf.gz > vcf_samples.txt")
-		with open('final_sample_list.txt', 'w') as file:
-			file.write('\n'.join(sample_list_addruns))
-		# Then we filter out the vcf
-		shell(f"bcftools view -S final_sample_list.txt -Oz -o {resultDir}/{serviceName}.{date_time}.allsamples.Design.filtered.vcf.gz {resultDir}/{serviceName}.{date_time}.allsamples.Design.unfiltered.vcf.gz")
-		shell(f"bcftools view -c 1 -Oz -o {resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz {resultDir}/{serviceName}.{date_time}.allsamples.Design.filtered.vcf.gz")
-		# And convert vcf to tsv
-		shell(f"conda activate vcf2tsv && vcf2tsvpy --keep_rejected_calls --input_vcf {resultDir}/{serviceName}.{date_time}.allsamples.Design.vcf.gz --out_tsv {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp && cat {resultDir}/{serviceName}.{date_time}.allsamples.Design.tsv.tmp | grep -v '^#' > {resultDir}/{serviceName}.{date_time}.allsamples.AnnotSV.Design.tsv && conda deactivate")
+		# NOTE: this restricts to sample_list_addruns (the borrowed/added samples), matching the pre-existing
+		# comment/behavior below; if the intent is instead to keep this run's own samples and drop the borrowed
+		# ones, use sample_list_to_copy here.
+		for aligner in aligner_list:
+			design_vcf = f"{resultDir}/{serviceName}.{date_time}.allsamples.{aligner}.Design.vcf.gz"
+			addruns_filtered_vcf = f"{resultDir}/{serviceName}.{date_time}.allsamples.{aligner}.Design.addruns_filtered.vcf.gz"
+			vcf_samples_txt = f"{resultDir}/{serviceName}.{date_time}.allsamples.{aligner}.vcf_samples.txt"
+			final_sample_list_txt = f"{resultDir}/{serviceName}.{date_time}.allsamples.{aligner}.final_sample_list.txt"
+			shell(f"bcftools query -l {design_vcf} > {vcf_samples_txt}")
+			with open(final_sample_list_txt, 'w') as file:
+				file.write('\n'.join(sample_list_addruns))
+			# Then we filter out the vcf
+			shell(f"bcftools view -S {final_sample_list_txt} -Oz -o {addruns_filtered_vcf} {design_vcf}")
+			shell(f"bcftools view -c 1 -Oz -o {design_vcf} {addruns_filtered_vcf}")
+			# And convert vcf to tsv
+			shell(f"conda activate vcf2tsv && vcf2tsvpy --keep_rejected_calls --input_vcf {design_vcf} --out_tsv {resultDir}/{serviceName}.{date_time}.allsamples.{aligner}.Design.tsv.tmp && cat {resultDir}/{serviceName}.{date_time}.allsamples.{aligner}.Design.tsv.tmp | grep -v '^#' > {resultDir}/{serviceName}.{date_time}.allsamples.{aligner}.AnnotSV.Design.tsv && conda deactivate")
 
 
 	# Generate dictionary from outputdir
