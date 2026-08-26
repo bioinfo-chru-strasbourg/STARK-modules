@@ -6,26 +6,21 @@
 ##############################################################
 # Updated : 04/2026
 # Authoring : Thomas LAVAUX 
-
 # Ubuntu based Mambaforge (Minimal Focal)
 FROM condaforge/mambaforge:latest
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update --fix-missing && \
-    apt-get install -y --no-install-recommends \
-    unzip \
-    vim \
-    rsync \
-    gzip \
-    ca-certificates && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-
+# Install all packages via mamba (no apt-get needed)
 RUN mamba install -y -c conda-forge -c bioconda \
-    bcftools \
-    bedtools \
-    jq \
-    bc \
+        unzip \
+        vim \
+        rsync \
+        gzip \
+        ca-certificates \
+        bcftools \
+        bedtools \
+        jq \
+        bc \
     && mamba clean -afy
 
 COPY ./app /app
