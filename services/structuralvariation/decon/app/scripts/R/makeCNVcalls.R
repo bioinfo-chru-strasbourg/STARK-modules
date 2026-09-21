@@ -13,6 +13,7 @@
 #   - optparse script, added option to use a list of ref bam files for comparison
 #   - Detect bed file with a 5th column with exon numbers, removed custom exon options
 #   - Mode to remove chrX or Y for calling
+#   - FIX: do not crash when no CNV is detected (split_multi_gene_calls / save_results)
 ########################################################################################################
 
 suppressPackageStartupMessages({
@@ -231,6 +232,13 @@ add_custom_exon_numbers <- function(cnv.calls_ids, bed.file, counts) {
 
 # Replaces single calls involving multiple genes with multiple calls with a single call ID/gene
 split_multi_gene_calls <- function(cnv.calls, bed.file, counts) {
+
+  # ---- FIX: nothing to do when no CNV was called ----
+  if (is.null(cnv.calls) || nrow(cnv.calls) == 0) {
+    return(NULL)
+  }
+  # ---------------------------------------------------
+
   # Add a new column named "CNV.ID" with increasing numbers from 1 to the number of rows in cnv.calls
   cnv.calls_ids <- cbind(CNV.ID = 1:nrow(cnv.calls), cnv.calls)
   # Replaces single calls involving multiple genes with multiple calls with single call ID
@@ -298,6 +306,9 @@ save_results <- function(cnv.calls, cnv.calls_ids, ExomeCount, output, sample.na
     colnames(cnv.calls_ids)[ncol(cnv.calls_ids)] <- "Confidence"
       
     write.table(cnv.calls_ids, file = output, sep = "\t", row.names = FALSE, quote = FALSE)
+  } else {
+    # ---- FIX: write an empty TSV so downstream tools don't fail on a missing file ----
+    file.create(output)
   }
   
   save(ExomeCount,bed.file,counts,sample.names,bams,cnv.calls_ids,cnv.calls, refs, models, fasta, file=output.rdata)
@@ -358,8 +369,15 @@ main <- function(data_file, modechrom, removeY, samples, p_value, output_file, r
   refs <- result$refs
   models <- result$models
   
-  # Split multi-gene calls
-  cnv.calls_ids <- split_multi_gene_calls(cnv.calls, bed.file, counts)
+  # ---- FIX: skip split_multi_gene_calls when there are no CNVs at all ----
+  if (is.null(cnv.calls) || nrow(cnv.calls) == 0) {
+    print("No CNV detected for any sample - skipping split_multi_gene_calls")
+    cnv.calls_ids <- NULL
+  } else {
+    cnv.calls_ids <- split_multi_gene_calls(cnv.calls, bed.file, counts)
+  }
+  # ------------------------------------------------------------------------
+
   save_results(cnv.calls, cnv.calls_ids, ExomeCount, output_file, sample.names, bams, rdata_output, bed.file, counts, refs, models, fasta)
 
   warnings()

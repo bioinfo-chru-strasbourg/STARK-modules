@@ -923,8 +923,7 @@ rule makeCNVcalls:
     shell:
         """
         Rscript {params.decondir}/makeCNVcalls.R --rdata {input} --samples {params.bamlist} --transProb {params.prob} --chromosome {params.chromosome} --removeY {params.removeY} {params.refbamlist} --tsv {output.calltsv} --outrdata {output.rdata} 1> {log.log} 2> {log.err} && \
-        ( [[ -s {output.calltsv} ]] || touch {params.fail} ) && touch {output.calltsv}; \
-        if [[ -f {params.fail} ]]; then exit 1; fi
+        ( [[ -s {output.calltsv} ]] || touch {params.fail} ) && touch {output.calltsv}
         """ 
 rule merge_makeCNVcalls:
 	input: expand(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.{{gender}}.Design_results_all.tsv", gender=gender_list, aligner=aligner_list)
@@ -1004,7 +1003,7 @@ rule fix_vcf:
 rule vcf_normalization:
 	input: rules.fix_vcf.output
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-	shell: "bcftools norm -W=tbi -d none -o {output} -Oz {input}"
+	shell: "bcftools norm -d none -o {output} -Oz {input} ; tabix {output}"
 
 
 # # Design vcf.gz individual samples no annotation
@@ -1045,7 +1044,7 @@ rule merge_vcf:
 	input: expand(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz", sample=sample_list, aligner=aligner_list, panel=panels_list)
 	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.vcf.gz"
 	log: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Panel.{{panel}}.bcftoolsmerge.log"
-	shell: "bcftools merge --force-single -W=tbi {input} -O z -o {output} 2> {log} && [[ -s {output} ]] || echo -e '## Dummy file created because there's no variant found in any samples\n## You can check individual samples for confirmation' | gzip > {output}; tabix {output} || true"
+	shell: "bcftools merge --force-single {input} -O z -o {output} 2> {log} && [[ -s {output} ]] || echo -e '## Dummy file created because there's no variant found in any samples\n## You can check individual samples for confirmation' | gzip > {output}; tabix {output} || true"
 
 
 # Design tsv individual samples AnnotSV
@@ -1240,8 +1239,7 @@ rule plot:
 		folder=f"{resultDir}/{serviceName}.{date_time}.temp.pdf/",
 		deconplotscript=config['DECON_PLOT_SCRIPT'],
 		prefix= f"Design.{date_time}",
-		chromosome="{gender}",
-		plotdebug=config['PLOT_DEBUG']		
+		chromosome="{gender}"
 	output:
 		f"{resultDir}/{serviceName}.{date_time}.{{aligner}}.{{gender}}.Design.plotSuccess"
 	log:
@@ -1250,7 +1248,7 @@ rule plot:
 	shell:
 		"""
 		mkdir -p {params.folder} &&
-		Rscript {params.deconplotscript} --rdata {input} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} --debug {params.plotdebug} 1> {log.log} 2> {log.err} &&
+		Rscript {params.deconplotscript} --rdata {input} --chromosome {params.chromosome} --out {params.folder} --prefix {params.prefix} 1> {log.log} 2> {log.err} &&
 		touch {output}
 		"""
 
