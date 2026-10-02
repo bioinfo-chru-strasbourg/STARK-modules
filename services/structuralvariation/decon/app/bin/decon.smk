@@ -993,17 +993,10 @@ rule vcf2gz:
 rule fix_vcf:
 	input: rules.vcf2gz.output
 	output: 
-			vcfgz=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unnorm.vcf.gz"),
-			vcfgztbi=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design_unnorm.vcf.gz.tbi")
+			vcfgz=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"),
+			vcfgztbi=temp(f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz.tbi")
 	params:	config['MULTIFIX_SCRIPT']
 	shell: " python {params} -i {input} -o {output.vcfgz} -z ; tabix {output.vcfgz} "
-
-
-# Design vcf.gz all samples no annotation
-rule vcf_normalization:
-	input: rules.fix_vcf.output
-	output: f"{resultDir}/{serviceName}.{date_time}.allsamples.{{aligner}}.Design.vcf.gz"
-	shell: "bcftools norm -d none -o {output} -Oz {input} ; tabix {output}"
 
 
 # # Design vcf.gz individual samples no annotation
@@ -1016,26 +1009,20 @@ rule split_vcf:
 	-Oz: output vcf compressed
 	-c1: minimum allele count (INFO/AC) of sites to be printed
 	"""
-	input: rules.vcf_normalization.output
+	input: rules.fix_vcf.output.vcfgz
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Design.vcf.gz"
 	params: config['DUMMY_FILES']
-	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -c1 -Oz -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
+	shell: "mkdir -p {resultDir}/{wildcards.sample}/{serviceName} && bcftools view -Oz -c1 -s {wildcards.sample} -o {output} {input} && [[ -s {output} ]] || cat {params}/empty.vcf | sed 's/SAMPLENAME/{wildcards.sample}/g' | bgzip > {output} ; tabix {output}"
 
 
 # We filter non annoted design to get panels
 rule filter_vcf:
 	"""	Filter vcf with a bed file """
 	input: rules.split_vcf.output
-	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel_unnorm.{{panel}}.vcf.gz")
+	output: temp(f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz")
 	params: lambda wildcards: f"{resultDir}/{wildcards.panel}"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.bedtoolsfilter.{{panel}}.log"
-	shell: "bedtools intersect -header -a {input} -b {params} 2> {log} | bgzip > {output}"
-
-
-# Panel vcf.gz individual samples no annotation
-use rule vcf_normalization as vcf_normalisation_panel with:
-	input: rules.filter_vcf.output
-	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.Panel.{{panel}}.vcf.gz"
+	shell: "bedtools intersect -u -header -a {input} -b {params} 2> {log} | bgzip > {output} ; tabix {output}"
 
 
 # Panel vcf.gz all samples no annotation
@@ -1175,7 +1162,7 @@ use rule merge_vcf as merge_vcf_annotation with:
 
 # Panel tsv individual samples AnnotSV
 use rule AnnotSV as AnnotSV_panel with:
-	input: rules.vcf_normalisation_panel.output
+	input: rules.filter_vcf.output
 	output: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.tsv"
 	log: f"{resultDir}/{{sample}}/{serviceName}/{{sample}}_{date_time}_{serviceName}/{serviceName}.{date_time}.{{sample}}.{{aligner}}.AnnotSV.Panel.{{panel}}.log"
 

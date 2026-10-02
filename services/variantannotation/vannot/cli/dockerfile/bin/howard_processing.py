@@ -1331,14 +1331,21 @@ def tsv_modifier(input_file, run_informations):
                     for count, element in enumerate(line):
                         if "/" in element:
                             line[count] = f'="{element}"'
-                        if "." in element:
-                            element = element.split(".")
-                            if element[0].isdigit() and element[1].isdigit():
-                                line[count] = element[0] + "," + element[1]
+                        if "." in element and is_float_string(element):
+                            line[count] = element.replace(".", ",")
                     # print("\t".join([line[i] for i in index_to_keep]) + "\n")
                     write_file.write("\t".join([line[i] for i in index_to_keep]) + "\n")
     os.remove(input_file)
     os.rename(output_file, input_file)
+
+def is_float_string(value):
+    if not isinstance(value, str):
+        return False
+    try:
+        float(value)
+        return True
+    except (ValueError, TypeError):
+        return False
 
 def cleaner(run_informations):
     log.info("Moving results from temporary folder")

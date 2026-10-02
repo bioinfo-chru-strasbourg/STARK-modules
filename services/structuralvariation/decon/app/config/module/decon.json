@@ -25,7 +25,8 @@
                             "AND_2": {
                                 "group": [
                                     "DIAG",
-                                    "HUSDIAGGEN"
+                                    "HUSDIAGGEN",
+				    "HUSTUMSOL"
                                 ],
                                 "project": [
                                     "BBS_RP",
@@ -66,7 +67,8 @@
                             "AND_4": {
                                 "group": [
                                     "DIAG",
-                                    "HUSDIAGGEN"
+                                    "HUSDIAGGEN",
+				    "HUSTUMSOL"
                                 ],
                                 "project": [
                                     "BBS_RP",

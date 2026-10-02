@@ -270,9 +270,23 @@ def calculate_dejavu(run_informations):
     homcount = "HOMCOUNT"
     allelefreq = "ALLELEFREQ"
     samplecount = "SAMPLECOUNT"
+    samplelist = "SAMPLELIST"
+    gt = "GT"
     # barcode peut être stocké sous forme '[2]' ou '2' -> on extrait le 1er entier
     barcode_int = "CAST(REGEXP_EXTRACT(CAST(barcode AS VARCHAR), '\\d+') AS INT)"
-    query = f'SELECT "#CHROM", POS, REF, ALT, sum({barcode_int}) AS {allelecount}, count(barcode) FILTER(WHERE {barcode_int}=1) AS {hetcount}, count(barcode) FILTER(WHERE {barcode_int}=2) AS {homcount}, sum({barcode_int})/({sample_count}*2) AS {allelefreq}, {sample_count} as {samplecount} FROM variants WHERE PROJECT=\'{project}\' GROUP BY "#CHROM", POS, REF, ALT'
+    gt_expr = f"CASE WHEN {barcode_int}=1 THEN '0/1' WHEN {barcode_int}=2 THEN '1/1' ELSE './.' END"
+    query = (
+        f'SELECT "#CHROM", POS, REF, ALT, '
+        f'sum({barcode_int}) AS {allelecount}, '
+        f'count(barcode) FILTER(WHERE {barcode_int}=1) AS {hetcount}, '
+        f'count(barcode) FILTER(WHERE {barcode_int}=2) AS {homcount}, '
+        f'sum({barcode_int})/({sample_count}*2) AS {allelefreq}, '
+        f'{sample_count} as {samplecount}, '
+        f"STRING_AGG(SAMPLE, ':') FILTER(WHERE {barcode_int} > 0) AS {samplelist}, "
+        f"STRING_AGG({gt_expr}, ':') FILTER(WHERE {barcode_int} > 0) AS {gt} "
+        f"FROM variants WHERE PROJECT='{project}' "
+        f'GROUP BY "#CHROM", POS, REF, ALT'
+    )
     # query = f"SELECT \"#CHROM\", POS, ANY_VALUE(ID) AS ID, REF, ALT, ANY_VALUE(QUAL) AS QUAL, ANY_VALUE(FILTER) AS FILTER, ANY_VALUE(INFO) AS INFO, sum(CAST(barcode AS INT)) AS {allelecount}, count(barcode) FILTER(barcode=1) AS {hetcount}, count(barcode) FILTER(barcode=2) AS {homcount}, sum(CAST(barcode AS INT))/({sample_count}*2) AS {allelefreq} FROM variants WHERE PROJECT='{project}' GROUP BY \"#CHROM\", POS, REF, ALT"
     launch_query_arguments = [
         "query",
