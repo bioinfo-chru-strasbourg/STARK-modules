@@ -29,7 +29,7 @@ def ignore_samples(run_informations):
         data = json.load(read_file)
         ignored_samples = data["ignored_samples"]
     if run_informations["type"] == "run":
-        samplesheet = synchronizer.find_samplesheet(run_informations)
+        samplesheet = synchronizer.find_samplesheet(run_informations, archives=False)
         control_samples = synchronizer.find_tag(samplesheet, "CQI#")
         ignored_samples = ignored_samples + control_samples
         
@@ -314,6 +314,17 @@ def run_initialisation(run_informations):
     vcf_file_to_analyse = glob.glob(
         osj(run_informations["tmp_analysis_folder"], "*.vcf*")
     )
+    
+    if run_informations["run_transcripts"] != "" or run_informations["run_transcripts"] != None:
+        transcripts_file = run_informations["run_transcripts"]
+        subprocess.run(
+            [
+                "rsync",
+                "-rp",
+                transcripts_file,
+                osj(os.environ["HOST_TMP"], "prio.transcripts"),
+            ]
+        )
 
     for vcf_file in vcf_file_to_analyse:
         info_to_format_script(vcf_file, run_informations)
@@ -1697,7 +1708,7 @@ def howard_score_transcripts(run_informations):
                 osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed),
             )
         print("howard_score_transcripts output", osj(run_informations["tmp_analysis_folder"], transcripts_output_renamed))
-
+    # os.remove(osj(run_informations["tmp_analysis_folder"], "prio.transcripts"))
 
 def convert_to_final_tsv(run_informations):
     log.info("Converting output file into readable tsv")
@@ -1799,6 +1810,9 @@ def convert_to_final_tsv(run_informations):
             for token in ordered_fields:
                 if token in ("FORMAT", "sample"):
                     trailing_tokens.append(token)
+                elif token.startswith("FORMAT/"):
+                    # Explicit FORMAT field extraction (e.g. FORMAT/DP, FORMAT/AD)
+                    info_prefix.append(token)
                 else:
                     info_prefix.append(token)
                     seen_listed_fields.add(token)
@@ -1813,6 +1827,13 @@ def convert_to_final_tsv(run_informations):
                     header.append("FORMAT")
                 elif token == "sample":
                     header.extend(samples)
+                elif token.startswith("FORMAT/"):
+                    fmt_key = token.split("/", 1)[1]
+                    if len(samples) > 1:
+                        # Multi-sample: add column per sample, e.g. Sample1_DP, Sample2_DP
+                        header.extend(f"{s}_{fmt_key}" for s in samples)
+                    else:
+                        header.append(fmt_key)
                 else:
                     header.append(token)
 
@@ -1842,6 +1863,14 @@ def convert_to_final_tsv(run_informations):
                         for entry in info_string.split(";"):
                             key, _, value = entry.partition("=")
                             info_dict[key] = value if value else "1"
+
+                    # Parse FORMAT keys and per-sample values for this row
+                    fmt_keys = format_values[row_index].split(":") if format_values[row_index] else []
+                    sample_fmt_maps = {}
+                    for sample in samples:
+                        s_vals = sample_values[sample][row_index].split(":") if sample_values[sample][row_index] else []
+                        sample_fmt_maps[sample] = dict(zip(fmt_keys, s_vals))
+
                     for token in fields_for_file:
                         if token == "FORMAT":
                             row.append(format_values[row_index])
@@ -1849,6 +1878,10 @@ def convert_to_final_tsv(run_informations):
                             row.extend(
                                 sample_values[sample][row_index] for sample in samples
                             )
+                        elif token.startswith("FORMAT/"):
+                            fmt_key = token.split("/", 1)[1]
+                            for sample in samples:
+                                row.append(sample_fmt_maps[sample].get(fmt_key, ""))
                         else:
                             row.append(info_dict.get(token, ""))
                     write_file.write("\t".join(row) + "\n")
@@ -2102,12 +2135,14 @@ def tsv_modifier(input_file, run_informations):
             dejavu_to_keep.append(f"{i}_SAMPLECOUNT")
 
     index_to_keep = []
+    special_candid_index = []
     alphanumerical_list_index = []
     last_order_exec = False
     # These are the structural VCF columns convert_to_final_tsv always writes
     # first (constant_header), never INFO annotations: they must stay put, in
     # this exact order, and are never subject to deletion or alphabetical sort.
-    constant_columns = {"chr", "#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER"}
+    CONSTANT_COLUMNS = {"chr", "#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER"}
+    SPECIAL_CANDID_COLUMNS = {"PNOMEN", "RNOMEN", "TNOMEN", "CNOMEN", "ENOMEN", "GNOMEN", "NNOMEN", "TVNOMEN", "VNOMEN", "DP_average", "DP_list", "DP_max", "DP_median", "DP_min", "DP_stats", "VAF_list", "VAF_max", "VAF_median", "VAF_min", "VAF_stats"}
 
     with open(output_file, "w") as write_file:
         with open(input_file, "r") as read_file:
@@ -2115,9 +2150,11 @@ def tsv_modifier(input_file, run_informations):
                 line = line.rstrip("\n").split("\t")
                 if line[0] == "chr" or line[0] == "#CHROM":
                     for i in range(len(line)):
-                        if line[i] in constant_columns:
+                        if line[i] in CONSTANT_COLUMNS:
                             index_to_keep.append(i)
                             continue
+                        if run_informations["run_platform"] == "DIAGGEN" and line[i] in SPECIAL_CANDID_COLUMNS:
+                            special_candid_index.append(i)
                         if last_order is None:
                             last_order_exec = True
                         if last_order_exec == False and line[i] not in values_to_delete and not (line[i].endswith("_ALLELECOUNT") or line[i].endswith("_HETCOUNT") or line[i].endswith("_HOMCOUNT") or line[i].endswith("_ALLELEFREQ") or line[i].endswith("_SAMPLECOUNT")) :
@@ -2159,6 +2196,11 @@ def tsv_modifier(input_file, run_informations):
                                 if element[0].isdigit() and element[1].isdigit():
                                     line[count] = element[0] + "," + element[1]
                     # print("\t".join([line[i] for i in index_to_keep]) + "\n")
+                    elif run_informations["run_platform"] == "DIAGGEN":
+                        for count, element in enumerate(line):
+                            if count in special_candid_index:
+                                if element == "":
+                                    line[count] = "."
                     write_file.write("\t".join([line[i] for i in index_to_keep]) + "\n")
     os.remove(input_file)
     os.rename(output_file, input_file)

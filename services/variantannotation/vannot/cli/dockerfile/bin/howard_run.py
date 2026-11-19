@@ -26,12 +26,7 @@ def launch_run(args):
         "run_application": run_repository_list[-2],
         "run_platform": run_repository_list[-3],
         "run_platform_application": f"{run_repository_list[-3]}.{run_repository_list[-2]}",
-        "run_depository": osj(
-            os.environ["HOST_DEPOSITORY"],
-            run_repository_list[-3],
-            run_repository_list[-2],
-            run_repository_list[-1],
-        ),
+        "run_depository": "/home1/data/STARK/data/vannot_depo/",
         "run_repository": run_repository,
         "vcf_pattern": args.pattern,
         "archives_project_folder": osj(
@@ -104,12 +99,15 @@ def launch_run(args):
     checker.depository_checker(run_informations)
     checker.pattern_checker(run_informations)
     run_informations = checker.panel_checker(run_informations)
+    if run_informations["onco"] == True:
+        run_informations = checker.transcripts_checker(run_informations)
+
     checker.platform_mapping(run_informations)
 
-    # variantannotation_running_log = osj(run_repository, "VANNOTRunning.txt")
+    variantannotation_running_log = osj(run_repository, "VANNOTRunning.txt")
 
-    # with open(variantannotation_running_log, "w") as write_file:
-    #     pass
+    with open(variantannotation_running_log, "w") as write_file:
+        pass
 
     synchronizer.vcf_synchronizer(run_informations)
 

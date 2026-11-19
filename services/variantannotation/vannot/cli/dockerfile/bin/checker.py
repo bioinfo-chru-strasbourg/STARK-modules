@@ -161,7 +161,18 @@ def panel_checker(run_informations):
     log.info(f"Found {len(run_informations["run_panels"])} panels in your run, using them to filter results at the end of the process")
     return run_informations
 
+def transcripts_checker(run_informations):
+    transcripts = find_transcripts(run_informations)
+    run_informations.update({"run_transcripts": transcripts})
+    log.info(f"Found {len(run_informations['run_transcripts'])} transcripts in your run, using them to prioritize transcripts while prioritizing results")
+    return run_informations
 
+def find_transcripts(run_informations):
+    samples = glob.glob(osj(run_informations["run_repository"], "*", ""))
+    sample_name = os.path.basename(samples[0].removesuffix("/"))
+    transcripts = osj(samples[0], "STARK", f"{sample_name}.transcripts")
+    return transcripts
+                       
 def find_panel(run_informations):
     samples = glob.glob(osj(run_informations["run_repository"], "*", ""))
     panels = glob.glob(osj(samples[0], "STARK", "*.manifest.*genes"))

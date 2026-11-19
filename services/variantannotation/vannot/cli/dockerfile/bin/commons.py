@@ -103,7 +103,7 @@ def create_listbypipeline_vcf(run_informations):
             "bcftools", "annotate",
             "-a", annot_tsv_gz,
             "-h", header_file,
-            "-c", "CHROM,POS,REF,ALT,FORMAT/LISTBYPIPELINE,FORMAT/GQ_list",
+            "-c", "CHROM,POS,REF,ALT,FORMAT/ListByPipeline,FORMAT/GQ_list",
             "-Oz", "-o", tmp_vcf,
             original_vcf,
         ]

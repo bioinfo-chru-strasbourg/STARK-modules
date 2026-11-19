@@ -20,7 +20,7 @@ def find_samplesheet(run_informations, archives):
     else: 
         samples = glob.glob(osj(run_informations["run_repository"], "*", ""))
         for sample in samples:
-            samplesheet = osj(sample, f"{os.path.basename(sample.strip('/'))}.SampleSheet.csv")
+            samplesheet = osj(sample, "STARK", f"{os.path.basename(sample.strip('/'))}.SampleSheet.csv")
             is_ss = os.path.isfile(samplesheet)
             if is_ss is True:
                 break
